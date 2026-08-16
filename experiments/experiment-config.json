@@ -1,0 +1,28 @@
+{
+  "protocol_version": "1.0",
+  "treatments": [
+    {
+      "id": "pandas-baseline",
+      "entrypoint": "spark/baseline.py"
+    },
+    {
+      "id": "pyspark-pipeline",
+      "entrypoint": "spark/pipeline.py"
+    }
+  ],
+  "dataset": {
+    "id": "reservas_db",
+    "source": "cockroachdb-e3",
+    "snapshot_id": null
+  },
+  "execution": {
+    "warmup_iterations": 1,
+    "measured_iterations": 5,
+    "alternate_treatment_order": true,
+    "timeout_seconds": 900
+  },
+  "output": {
+    "directory": "experiments/metrics/results",
+    "record_format": "json"
+  }
+}

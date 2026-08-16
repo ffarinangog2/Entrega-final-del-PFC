@@ -1,0 +1,89 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build-test:
+    name: Build and test - ${{ matrix.service }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - service: auth-service
+            database: auth_db
+          - service: usuarios-service
+            database: usuarios_db
+          - service: academico-laboratorios-service
+            database: academico_db
+          - service: reservas-solicitudes-service
+            database: reservas_db
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+          cache-dependency-path: ${{ matrix.service }}/pom.xml
+
+      - name: Start CockroachDB for tests
+        run: |
+          docker run --name ci-cockroach --detach \
+            --publish 26257:26257 \
+            cockroachdb/cockroach:v26.2.0 \
+            start-single-node --insecure
+
+          for attempt in {1..30}; do
+            if docker exec ci-cockroach cockroach sql \
+              --insecure \
+              --host=localhost:26257 \
+              --execute="SELECT 1"; then
+              break
+            fi
+
+            if [ "$attempt" -eq 30 ]; then
+              docker logs ci-cockroach
+              exit 1
+            fi
+
+            sleep 2
+          done
+
+          docker exec ci-cockroach cockroach sql \
+            --insecure \
+            --host=localhost:26257 \
+            --execute="CREATE DATABASE IF NOT EXISTS ${{ matrix.database }};"
+
+      - name: Prepare test environment
+        shell: bash
+        run: |
+          echo "JWT_SECRET=$(openssl rand -base64 48)" >> "$GITHUB_ENV"
+
+      - name: Build and test
+        working-directory: ${{ matrix.service }}
+        env:
+          DB_URL: jdbc:postgresql://localhost:26257/${{ matrix.database }}?sslmode=disable&options=-c%20allow_unsafe_internals%3Dtrue
+          DB_USERNAME: root
+          DB_PASSWORD: ""
+        run: mvn --batch-mode verify
+
+  crdb-tests:
+    name: CockroachDB E3 tests
+    runs-on: ubuntu-latest
+    needs: build-test
+    if: ${{ vars.CRDB_E3_TESTS_ENABLED == 'true' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Pending Paso 2
+        run: |
+          echo "TODO(Paso 2 - Freddy): habilitar las pruebas cuando exista db/schema.sql y crdb-e3-init esté completo."

@@ -1,0 +1,155 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://scli.local/schemas/experiment-metric.json",
+  "title": "Registro de ejecución experimental SCLI",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "run_id",
+    "protocol_version",
+    "treatment",
+    "dataset_id",
+    "started_at",
+    "finished_at",
+    "duration_ms",
+    "cpu_percent_mean",
+    "cpu_percent_max",
+    "memory_mib_mean",
+    "memory_mib_max",
+    "rows_processed",
+    "throughput_rows_per_second",
+    "status",
+    "environment"
+  ],
+  "properties": {
+    "run_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "protocol_version": {
+      "type": "string"
+    },
+    "treatment": {
+      "type": "string",
+      "enum": [
+        "pandas-baseline",
+        "pyspark-pipeline"
+      ]
+    },
+    "dataset_id": {
+      "type": "string"
+    },
+    "dataset_snapshot_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "iteration": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "finished_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "duration_ms": {
+      "type": "number",
+      "minimum": 0
+    },
+    "cpu_percent_mean": {
+      "type": "number",
+      "minimum": 0
+    },
+    "cpu_percent_max": {
+      "type": "number",
+      "minimum": 0
+    },
+    "memory_mib_mean": {
+      "type": "number",
+      "minimum": 0
+    },
+    "memory_mib_max": {
+      "type": "number",
+      "minimum": 0
+    },
+    "rows_processed": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "throughput_rows_per_second": {
+      "type": "number",
+      "minimum": 0
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "completed",
+        "failed",
+        "timeout"
+      ]
+    },
+    "error": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "environment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "host",
+        "operating_system",
+        "cpu_model",
+        "logical_cpu_count",
+        "memory_mib",
+        "python_version"
+      ],
+      "properties": {
+        "host": {
+          "type": "string"
+        },
+        "operating_system": {
+          "type": "string"
+        },
+        "cpu_model": {
+          "type": "string"
+        },
+        "logical_cpu_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "memory_mib": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "python_version": {
+          "type": "string"
+        },
+        "pandas_version": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "spark_version": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "java_version": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    }
+  }
+}

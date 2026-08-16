@@ -1,0 +1,459 @@
+services:
+
+  # =========================================================
+  # BASE DE DATOS DEL AUTH SERVICE
+  # =========================================================
+  cockroach-auth:
+    image: cockroachdb/cockroach:v26.2.0
+    container_name: scli-cockroach-auth
+
+    command:
+      - start-single-node
+      - --insecure
+      - --store=/cockroach/cockroach-data
+
+    ports:
+      - "26257:26257"
+      - "8088:8080"
+
+    volumes:
+      - cockroach-auth-data:/cockroach/cockroach-data
+
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "cockroach",
+          "sql",
+          "--insecure",
+          "--host=localhost:26257",
+          "--execute=SELECT 1"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+    networks:
+      - scli-network
+
+
+  # Crea la base del Auth Service
+  cockroach-auth-init:
+    image: cockroachdb/cockroach:v26.2.0
+    container_name: scli-cockroach-auth-init
+
+    depends_on:
+      cockroach-auth:
+        condition: service_healthy
+
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        cockroach sql \
+          --insecure \
+          --host=cockroach-auth:26257 \
+          --execute="CREATE DATABASE IF NOT EXISTS auth_db;"
+
+    restart: "no"
+
+    networks:
+      - scli-network
+
+
+  # =========================================================
+  # MICROSERVICIO DE AUTH
+  # =========================================================
+  auth-service:
+    build:
+      context: ./auth-service
+      dockerfile: Dockerfile
+
+    container_name: scli-auth-service
+
+    ports:
+      - "8081:8081"
+
+    environment:
+      SERVER_PORT: 8081
+      DB_URL: jdbc:postgresql://cockroach-auth:26257/auth_db?sslmode=disable&options=-c%20allow_unsafe_internals%3Dtrue
+      DB_USERNAME: root
+      DB_PASSWORD: ""
+      INTERNAL_API_KEY: clave-interna-desarrollo
+      USUARIOS_SERVICE_URL: http://usuarios-service:8082
+      JWT_SECRET: ${JWT_SECRET}
+
+    depends_on:
+      cockroach-auth:
+        condition: service_healthy
+      cockroach-auth-init:
+        condition: service_completed_successfully
+      usuarios-service:
+        condition: service_started
+
+    restart: unless-stopped
+
+    networks:
+      - scli-network
+
+
+  # =========================================================
+  # BASE DE DATOS DEL USUARIOS SERVICE
+  # =========================================================
+  cockroach-usuarios:
+    image: cockroachdb/cockroach:v24.3.5
+    container_name: scli-cockroach-usuarios
+
+    command:
+      - start-single-node
+      - --insecure
+      - --store=/cockroach/cockroach-data
+
+    ports:
+      - "26258:26257"
+      - "8089:8080"
+
+    volumes:
+      - cockroach-usuarios-data:/cockroach/cockroach-data
+
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "cockroach",
+          "sql",
+          "--insecure",
+          "--host=localhost:26257",
+          "--execute=SELECT 1"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+    networks:
+      - scli-network
+
+
+  # Crea la base del Usuarios Service
+  cockroach-usuarios-init:
+    image: cockroachdb/cockroach:v24.3.5
+    container_name: scli-cockroach-usuarios-init
+
+    depends_on:
+      cockroach-usuarios:
+        condition: service_healthy
+
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        cockroach sql \
+          --insecure \
+          --host=cockroach-usuarios:26257 \
+          --execute="CREATE DATABASE IF NOT EXISTS usuarios_db;"
+
+    restart: "no"
+
+    networks:
+      - scli-network
+
+
+  # =========================================================
+  # MICROSERVICIO DE USUARIOS
+  # =========================================================
+  usuarios-service:
+    build:
+      context: ./usuarios-service
+      dockerfile: Dockerfile
+
+    container_name: scli-usuarios-service
+
+    ports:
+      - "8082:8082"
+
+    environment:
+      SERVER_PORT: 8082
+      DB_URL: jdbc:postgresql://cockroach-usuarios:26257/usuarios_db?sslmode=disable
+      DB_USERNAME: root
+      DB_PASSWORD: ""
+      INTERNAL_API_KEY: clave-interna-desarrollo
+
+    depends_on:
+      cockroach-usuarios:
+        condition: service_healthy
+      cockroach-usuarios-init:
+        condition: service_completed_successfully
+
+    restart: unless-stopped
+
+    networks:
+      - scli-network
+
+
+  # =========================================================
+  # BASE DE DATOS DEL ACADEMICO-LABORATORIOS SERVICE
+  # =========================================================
+  cockroach-academico:
+    image: cockroachdb/cockroach:v26.2.0
+    container_name: scli-cockroach-academico
+
+    command:
+      - start-single-node
+      - --insecure
+      - --store=/cockroach/cockroach-data
+
+    ports:
+      - "26259:26257"
+      - "8090:8080"
+
+    volumes:
+      - cockroach-academico-data:/cockroach/cockroach-data
+
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "cockroach",
+          "sql",
+          "--insecure",
+          "--host=localhost:26257",
+          "--execute=SELECT 1"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+    networks:
+      - scli-network
+
+
+  # Crea la base del Academico-Laboratorios Service
+  cockroach-academico-init:
+    image: cockroachdb/cockroach:v26.2.0
+    container_name: scli-cockroach-academico-init
+
+    depends_on:
+      cockroach-academico:
+        condition: service_healthy
+
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        cockroach sql \
+          --insecure \
+          --host=cockroach-academico:26257 \
+          --execute="CREATE DATABASE IF NOT EXISTS academico_db;"
+
+    restart: "no"
+
+    networks:
+      - scli-network
+
+
+  # =========================================================
+  # ACADEMICO-LABORATORIOS SERVICE
+  # =========================================================
+  academico-laboratorios-service:
+    build:
+      context: ./academico-laboratorios-service
+      dockerfile: Dockerfile
+
+    container_name: scli-academico-laboratorios-service
+
+    depends_on:
+      cockroach-academico:
+        condition: service_healthy
+      cockroach-academico-init:
+        condition: service_completed_successfully
+
+    environment:
+      DB_URL: jdbc:postgresql://cockroach-academico:26257/academico_db?sslmode=disable&options=-c%20allow_unsafe_internals%3Dtrue
+      DB_USERNAME: root
+      DB_PASSWORD: ""
+      SERVER_PORT: 8083
+      INTERNAL_API_KEY: clave-interna-desarrollo
+
+    ports:
+      - "8083:8083"
+
+    networks:
+      - scli-network
+
+
+  # =========================================================
+  # INICIO - RESERVAS-SOLICITUDES SERVICE (Freddy Farinango)
+  # =========================================================
+
+  # =========================================================
+  # RESERVAS-SOLICITUDES SERVICE
+  # =========================================================
+  reservas-solicitudes-service:
+    build:
+      context: ./reservas-solicitudes-service
+      dockerfile: Dockerfile
+
+    container_name: scli-reservas-solicitudes-service
+
+    ports:
+      - "8084:8084"
+
+    environment:
+      SERVER_PORT: 8084
+      DB_URL: jdbc:postgresql://crdb-e3-1:26257,crdb-e3-2:26257,crdb-e3-3:26257/reservas_db?sslmode=disable&options=-c%20allow_unsafe_internals%3Dtrue
+      DB_USERNAME: root
+      DB_PASSWORD: ""
+      SPRING_FLYWAY_BASELINE_ON_MIGRATE: "true"
+      SPRING_FLYWAY_BASELINE_VERSION: "1"
+      INTERNAL_API_KEY: clave-interna-desarrollo
+      JWT_SECRET: ${JWT_SECRET}
+      USUARIOS_SERVICE_URL: http://usuarios-service:8082
+
+    depends_on:
+      crdb-e3-init:
+        condition: service_completed_successfully
+
+    restart: unless-stopped
+
+    networks:
+      - scli-network
+
+  # =========================================================
+  # FIN - RESERVAS-SOLICITUDES SERVICE (Freddy Farinango)
+  # =========================================================
+
+  # =========================================================
+  # COCKROACHDB CLUSTER E3 (Paso 1 - Isaías Urbina)
+  # =========================================================
+  crdb-e3-1:
+    image: ${CRDB_E3_IMAGE:-cockroachdb/cockroach:v26.2.0}
+    container_name: scli-crdb-e3-1
+    command:
+      - start
+      - --insecure
+      - --advertise-addr=crdb-e3-1
+      - --join=crdb-e3-1,crdb-e3-2,crdb-e3-3
+      - --http-addr=0.0.0.0:8080
+      - --store=/cockroach/cockroach-data
+    ports:
+      - "${CRDB_E3_1_SQL_PORT:-26261}:26257"
+      - "${CRDB_E3_1_HTTP_PORT:-8092}:8080"
+    volumes:
+      - crdb-e3-1-data:/cockroach/cockroach-data
+    restart: unless-stopped
+    networks:
+      - scli-network
+
+  crdb-e3-2:
+    image: ${CRDB_E3_IMAGE:-cockroachdb/cockroach:v26.2.0}
+    container_name: scli-crdb-e3-2
+    command:
+      - start
+      - --insecure
+      - --advertise-addr=crdb-e3-2
+      - --join=crdb-e3-1,crdb-e3-2,crdb-e3-3
+      - --http-addr=0.0.0.0:8080
+      - --store=/cockroach/cockroach-data
+    ports:
+      - "${CRDB_E3_2_SQL_PORT:-26262}:26257"
+      - "${CRDB_E3_2_HTTP_PORT:-8093}:8080"
+    volumes:
+      - crdb-e3-2-data:/cockroach/cockroach-data
+    restart: unless-stopped
+    networks:
+      - scli-network
+
+  crdb-e3-3:
+    image: ${CRDB_E3_IMAGE:-cockroachdb/cockroach:v26.2.0}
+    container_name: scli-crdb-e3-3
+    command:
+      - start
+      - --insecure
+      - --advertise-addr=crdb-e3-3
+      - --join=crdb-e3-1,crdb-e3-2,crdb-e3-3
+      - --http-addr=0.0.0.0:8080
+      - --store=/cockroach/cockroach-data
+    ports:
+      - "${CRDB_E3_3_SQL_PORT:-26263}:26257"
+      - "${CRDB_E3_3_HTTP_PORT:-8094}:8080"
+    volumes:
+      - crdb-e3-3-data:/cockroach/cockroach-data
+    restart: unless-stopped
+    networks:
+      - scli-network
+
+  crdb-e3-init:
+    image: ${CRDB_E3_IMAGE:-cockroachdb/cockroach:v26.2.0}
+    container_name: scli-crdb-e3-init
+    depends_on:
+      crdb-e3-1:
+        condition: service_started
+      crdb-e3-2:
+        condition: service_started
+      crdb-e3-3:
+        condition: service_started
+    entrypoint:
+      - /bin/sh
+      - -ec
+      - |
+        until cockroach init \
+          --insecure \
+          --host=crdb-e3-1:26257
+        do
+          if cockroach sql \
+            --insecure \
+            --host=crdb-e3-1:26257 \
+            --execute="SELECT 1"
+          then
+            break
+          fi
+          sleep 2
+        done
+
+        until cockroach sql \
+          --insecure \
+          --host=crdb-e3-1:26257 \
+          --execute="SELECT 1"
+        do
+          sleep 2
+        done
+
+        if cockroach sql \
+          --insecure \
+          --host=crdb-e3-1:26257 \
+          --database=reservas_db \
+          --execute="SELECT 1 FROM configuraciones_reserva LIMIT 0"
+        then
+          echo "El esquema de reservas ya está aplicado."
+        else
+          cockroach sql \
+            --insecure \
+            --host=crdb-e3-1:26257 \
+            --file=/schema.sql
+        fi
+    volumes:
+      - ./db/schema.sql:/schema.sql:ro
+    restart: "no"
+    networks:
+      - scli-network
+
+
+volumes:
+
+  cockroach-auth-data:
+
+  cockroach-usuarios-data:
+
+  cockroach-academico-data:
+
+  crdb-e3-1-data:
+
+  crdb-e3-2-data:
+
+  crdb-e3-3-data:
+
+
+networks:
+
+  scli-network:
+    driver: bridge

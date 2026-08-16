@@ -1,0 +1,147 @@
+{
+  "info": {
+    "name": "academico-laboratorios-service",
+    "description": "Coleccion de endpoints del microservicio academico-laboratorios-service (SCLI)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8083" },
+    { "key": "internalApiKey", "value": "clave-interna-desarrollo" },
+    { "key": "facultadId", "value": "" },
+    { "key": "carreraId", "value": "" },
+    { "key": "pisoId", "value": "" },
+    { "key": "laboratorioId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Facultades",
+      "item": [
+        {
+          "name": "Crear facultad",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codigo\": \"FISEI\",\n  \"nombre\": \"Facultad de Ingenieria\",\n  \"descripcion\": \"Sistemas e Industrial\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/v1/facultades", "host": ["{{baseUrl}}"], "path": ["api", "v1", "facultades"] }
+          }
+        },
+        {
+          "name": "Listar facultades",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/facultades?activo=true", "host": ["{{baseUrl}}"], "path": ["api", "v1", "facultades"], "query": [{ "key": "activo", "value": "true" }] }
+          }
+        },
+        {
+          "name": "Obtener facultad por id",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/facultades/{{facultadId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "facultades", "{{facultadId}}"] }
+          }
+        },
+        {
+          "name": "Cambiar estado facultad",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"activo\": false\n}" },
+            "url": { "raw": "{{baseUrl}}/api/v1/facultades/{{facultadId}}/estado", "host": ["{{baseUrl}}"], "path": ["api", "v1", "facultades", "{{facultadId}}", "estado"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Carreras",
+      "item": [
+        {
+          "name": "Crear carrera",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"facultadId\": \"{{facultadId}}\",\n  \"codigo\": \"SOFT\",\n  \"nombre\": \"Ingenieria en Software\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/v1/carreras", "host": ["{{baseUrl}}"], "path": ["api", "v1", "carreras"] }
+          }
+        },
+        {
+          "name": "Listar carreras de una facultad",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/facultades/{{facultadId}}/carreras", "host": ["{{baseUrl}}"], "path": ["api", "v1", "facultades", "{{facultadId}}", "carreras"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Laboratorios",
+      "item": [
+        {
+          "name": "Crear laboratorio",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pisoId\": \"{{pisoId}}\",\n  \"codigo\": \"LAB-101\",\n  \"nombre\": \"Laboratorio de Redes\",\n  \"capacidad\": 30\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/v1/laboratorios", "host": ["{{baseUrl}}"], "path": ["api", "v1", "laboratorios"] }
+          }
+        },
+        {
+          "name": "Listar laboratorios disponibles",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/v1/laboratorios/disponibles", "host": ["{{baseUrl}}"], "path": ["api", "v1", "laboratorios", "disponibles"] }
+          }
+        },
+        {
+          "name": "Cambiar estado laboratorio",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"estado\": \"MANTENIMIENTO\"\n}" },
+            "url": { "raw": "{{baseUrl}}/api/v1/laboratorios/{{laboratorioId}}/estado", "host": ["{{baseUrl}}"], "path": ["api", "v1", "laboratorios", "{{laboratorioId}}", "estado"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Internal (Reservas Service)",
+      "item": [
+        {
+          "name": "Disponibilidad base de laboratorio",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "X-Internal-Api-Key", "value": "{{internalApiKey}}" }],
+            "url": { "raw": "{{baseUrl}}/api/v1/internal/laboratorios/{{laboratorioId}}/disponibilidad-base", "host": ["{{baseUrl}}"], "path": ["api", "v1", "internal", "laboratorios", "{{laboratorioId}}", "disponibilidad-base"] }
+          }
+        },
+        {
+          "name": "Existe laboratorio",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "X-Internal-Api-Key", "value": "{{internalApiKey}}" }],
+            "url": { "raw": "{{baseUrl}}/api/v1/internal/laboratorios/{{laboratorioId}}/exists", "host": ["{{baseUrl}}"], "path": ["api", "v1", "internal", "laboratorios", "{{laboratorioId}}", "exists"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Healthcheck",
+      "item": [
+        {
+          "name": "Actuator health",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/actuator/health", "host": ["{{baseUrl}}"], "path": ["actuator", "health"] }
+          }
+        }
+      ]
+    }
+  ]
+}

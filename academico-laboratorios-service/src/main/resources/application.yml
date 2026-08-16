@@ -1,0 +1,45 @@
+server:
+  port: ${SERVER_PORT:8083}
+
+spring:
+  application:
+    name: academico-laboratorios-service
+
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:26259/academico_db?sslmode=disable&options=-c%20allow_unsafe_internals%3Dtrue}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc:
+          time_zone: UTC
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    validate-on-migrate: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+  endpoint:
+    health:
+      show-details: always
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+
+app:
+  internal-api-key: ${INTERNAL_API_KEY:clave-interna-desarrollo}
