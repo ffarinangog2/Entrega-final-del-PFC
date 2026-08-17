@@ -4,7 +4,7 @@ import ec.edu.scli.reservas.presentation.dto.request.CancelarReservaRequest;
 import ec.edu.scli.reservas.presentation.dto.response.PaginaResponse;
 import ec.edu.scli.reservas.presentation.dto.response.ReservaResponse;
 import ec.edu.scli.reservas.entity.Reserva;
-import ec.edu.scli.reservas.enums.EstadoReserva;
+import ec.edu.scli.reservas.domain.model.EstadoReserva;
 import ec.edu.scli.reservas.mapper.ReservaMapper;
 import ec.edu.scli.reservas.repository.ReservaRepository;
 import ec.edu.scli.reservas.application.service.ReservaService;

@@ -1,7 +1,7 @@
 package ec.edu.scli.reservas.repository;
 
 import ec.edu.scli.reservas.entity.SolicitudReserva;
-import ec.edu.scli.reservas.enums.EstadoSolicitud;
+import ec.edu.scli.reservas.domain.model.EstadoSolicitud;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

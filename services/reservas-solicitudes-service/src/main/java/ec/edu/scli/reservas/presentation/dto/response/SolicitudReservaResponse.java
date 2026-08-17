@@ -1,6 +1,6 @@
 package ec.edu.scli.reservas.presentation.dto.response;
 
-import ec.edu.scli.reservas.enums.EstadoSolicitud;
+import ec.edu.scli.reservas.domain.model.EstadoSolicitud;
 
 import java.time.Instant;
 import java.time.LocalDate;

@@ -1,4 +1,4 @@
-package ec.edu.scli.reservas.enums;
+package ec.edu.scli.reservas.domain.model;
 
 public enum EstadoReserva {
     PROGRAMADA,

@@ -9,7 +9,7 @@ import ec.edu.scli.reservas.presentation.dto.response.HistorialSolicitudResponse
 import ec.edu.scli.reservas.presentation.dto.response.PaginaResponse;
 import ec.edu.scli.reservas.presentation.dto.response.ReservaResponse;
 import ec.edu.scli.reservas.presentation.dto.response.SolicitudReservaResponse;
-import ec.edu.scli.reservas.enums.EstadoSolicitud;
+import ec.edu.scli.reservas.domain.model.EstadoSolicitud;
 
 import java.time.LocalDate;
 import java.util.UUID;

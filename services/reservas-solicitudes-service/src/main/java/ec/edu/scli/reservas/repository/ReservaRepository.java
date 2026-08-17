@@ -1,7 +1,7 @@
 package ec.edu.scli.reservas.repository;
 
 import ec.edu.scli.reservas.entity.Reserva;
-import ec.edu.scli.reservas.enums.EstadoReserva;
+import ec.edu.scli.reservas.domain.model.EstadoReserva;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -43,8 +43,8 @@ public interface ReservaRepository extends JpaRepository<Reserva, UUID>, JpaSpec
             FROM Reserva r
             WHERE r.laboratorioId = :laboratorioId
               AND r.fechaReserva = :fecha
-              AND r.estado IN (ec.edu.scli.reservas.enums.EstadoReserva.PROGRAMADA,
-                               ec.edu.scli.reservas.enums.EstadoReserva.EN_CURSO)
+              AND r.estado IN (ec.edu.scli.reservas.domain.model.EstadoReserva.PROGRAMADA,
+                               ec.edu.scli.reservas.domain.model.EstadoReserva.EN_CURSO)
               AND :horaInicio < r.horaFin
               AND :horaFin > r.horaInicio
             """)

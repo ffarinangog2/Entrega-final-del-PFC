@@ -1,6 +1,6 @@
 package ec.edu.scli.reservas.entity;
 
-import ec.edu.scli.reservas.enums.EstadoSolicitud;
+import ec.edu.scli.reservas.domain.model.EstadoSolicitud;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
