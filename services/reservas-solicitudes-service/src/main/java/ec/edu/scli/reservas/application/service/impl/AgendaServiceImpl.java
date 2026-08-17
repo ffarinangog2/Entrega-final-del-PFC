@@ -7,10 +7,10 @@ import ec.edu.scli.reservas.presentation.dto.response.AgendaItemResponse;
 import ec.edu.scli.reservas.presentation.dto.response.BloqueoAgendaResponse;
 import ec.edu.scli.reservas.presentation.dto.response.PaginaResponse;
 import ec.edu.scli.reservas.entity.BloqueoAgenda;
-import ec.edu.scli.reservas.entity.Reserva;
+import ec.edu.scli.reservas.domain.model.Reserva;
 import ec.edu.scli.reservas.mapper.BloqueoAgendaMapper;
 import ec.edu.scli.reservas.repository.BloqueoAgendaRepository;
-import ec.edu.scli.reservas.repository.ReservaRepository;
+import ec.edu.scli.reservas.domain.port.out.ReservaRepositoryPort;
 import ec.edu.scli.reservas.application.service.AgendaService;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
@@ -36,14 +36,14 @@ public class AgendaServiceImpl implements AgendaService {
             Comparator.comparing(AgendaItemResponse::fecha)
                     .thenComparing(AgendaItemResponse::horaInicio);
 
-    private final ReservaRepository reservaRepository;
+    private final ReservaRepositoryPort reservaRepository;
     private final BloqueoAgendaRepository bloqueoAgendaRepository;
     private final BloqueoAgendaMapper bloqueoAgendaMapper;
     private final AcademicoLaboratoriosClient academicoLaboratoriosClient;
     private final TransactionTemplate transactionTemplate;
 
     public AgendaServiceImpl(
-            ReservaRepository reservaRepository,
+            ReservaRepositoryPort reservaRepository,
             BloqueoAgendaRepository bloqueoAgendaRepository,
             BloqueoAgendaMapper bloqueoAgendaMapper,
             AcademicoLaboratoriosClient academicoLaboratoriosClient,
@@ -65,10 +65,6 @@ public class AgendaServiceImpl implements AgendaService {
             int tamanio) {
         validarPaginacionYRango(fechaDesde, fechaHasta, pagina, tamanio);
 
-        Specification<Reserva> reservaSpecification = Specification.allOf(
-                reservaLaboratorioIgualA(laboratorioId),
-                reservaFechaDesde(fechaDesde),
-                reservaFechaHasta(fechaHasta));
         Specification<BloqueoAgenda> bloqueoSpecification = Specification.allOf(
                 bloqueoActivo(),
                 bloqueoLaboratorioIgualA(laboratorioId),
@@ -76,7 +72,7 @@ public class AgendaServiceImpl implements AgendaService {
                 bloqueoFechaHasta(fechaHasta));
 
         List<AgendaItemResponse> elementos = new ArrayList<>();
-        reservaRepository.findAll(reservaSpecification).stream()
+        reservaRepository.buscarParaAgenda(laboratorioId, fechaDesde, fechaHasta).stream()
                 .map(this::mapearReserva)
                 .forEach(elementos::add);
         bloqueoAgendaRepository.findAll(bloqueoSpecification).stream()
@@ -249,24 +245,6 @@ public class AgendaServiceImpl implements AgendaService {
                 totalPaginas,
                 pagina == 0,
                 totalPaginas == 0 || pagina >= totalPaginas - 1);
-    }
-
-    private Specification<Reserva> reservaLaboratorioIgualA(UUID laboratorioId) {
-        return laboratorioId == null ? null
-                : (Root<Reserva> root, CriteriaQuery<?> query, CriteriaBuilder builder) ->
-                builder.equal(root.get("laboratorioId"), laboratorioId);
-    }
-
-    private Specification<Reserva> reservaFechaDesde(LocalDate fechaDesde) {
-        return fechaDesde == null ? null
-                : (Root<Reserva> root, CriteriaQuery<?> query, CriteriaBuilder builder) ->
-                builder.greaterThanOrEqualTo(root.get("fechaReserva"), fechaDesde);
-    }
-
-    private Specification<Reserva> reservaFechaHasta(LocalDate fechaHasta) {
-        return fechaHasta == null ? null
-                : (Root<Reserva> root, CriteriaQuery<?> query, CriteriaBuilder builder) ->
-                builder.lessThanOrEqualTo(root.get("fechaReserva"), fechaHasta);
     }
 
     private Specification<BloqueoAgenda> bloqueoActivo() {

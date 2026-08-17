@@ -15,24 +15,22 @@ import ec.edu.scli.reservas.presentation.dto.response.HistorialSolicitudResponse
 import ec.edu.scli.reservas.presentation.dto.response.PaginaResponse;
 import ec.edu.scli.reservas.presentation.dto.response.ReservaResponse;
 import ec.edu.scli.reservas.presentation.dto.response.SolicitudReservaResponse;
-import ec.edu.scli.reservas.entity.HistorialSolicitud;
-import ec.edu.scli.reservas.entity.Reserva;
-import ec.edu.scli.reservas.entity.SolicitudReserva;
+import ec.edu.scli.reservas.domain.model.HistorialSolicitud;
+import ec.edu.scli.reservas.domain.model.Reserva;
+import ec.edu.scli.reservas.domain.model.SolicitudReserva;
 import ec.edu.scli.reservas.domain.model.EstadoReserva;
 import ec.edu.scli.reservas.domain.model.EstadoSolicitud;
+import ec.edu.scli.reservas.domain.model.FiltroSolicitudReserva;
+import ec.edu.scli.reservas.domain.model.Pagina;
 import ec.edu.scli.reservas.mapper.HistorialSolicitudMapper;
 import ec.edu.scli.reservas.mapper.ReservaMapper;
 import ec.edu.scli.reservas.mapper.SolicitudReservaMapper;
-import ec.edu.scli.reservas.repository.HistorialSolicitudRepository;
-import ec.edu.scli.reservas.repository.ReservaRepository;
-import ec.edu.scli.reservas.repository.SolicitudReservaRepository;
+import ec.edu.scli.reservas.domain.port.out.HistorialSolicitudRepositoryPort;
+import ec.edu.scli.reservas.domain.port.out.ReservaRepositoryPort;
+import ec.edu.scli.reservas.domain.port.out.SolicitudReservaRepositoryPort;
 import ec.edu.scli.reservas.application.service.DisponibilidadService;
 import ec.edu.scli.reservas.application.service.SolicitudReservaService;
 import org.springframework.beans.BeanUtils;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
@@ -45,9 +43,9 @@ import java.util.UUID;
 @Service
 public class SolicitudReservaServiceImpl implements SolicitudReservaService {
 
-    private final SolicitudReservaRepository solicitudReservaRepository;
-    private final ReservaRepository reservaRepository;
-    private final HistorialSolicitudRepository historialSolicitudRepository;
+    private final SolicitudReservaRepositoryPort solicitudReservaRepository;
+    private final ReservaRepositoryPort reservaRepository;
+    private final HistorialSolicitudRepositoryPort historialSolicitudRepository;
     private final SolicitudReservaMapper solicitudReservaMapper;
     private final ReservaMapper reservaMapper;
     private final HistorialSolicitudMapper historialSolicitudMapper;
@@ -56,9 +54,9 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
     private final DisponibilidadService disponibilidadService;
 
     public SolicitudReservaServiceImpl(
-            SolicitudReservaRepository solicitudReservaRepository,
-            ReservaRepository reservaRepository,
-            HistorialSolicitudRepository historialSolicitudRepository,
+            SolicitudReservaRepositoryPort solicitudReservaRepository,
+            ReservaRepositoryPort reservaRepository,
+            HistorialSolicitudRepositoryPort historialSolicitudRepository,
             SolicitudReservaMapper solicitudReservaMapper,
             ReservaMapper reservaMapper,
             HistorialSolicitudMapper historialSolicitudMapper,
@@ -82,7 +80,7 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
             CrearSolicitudReservaRequest request,
             String claveIdempotencia,
             UUID usuarioAutenticadoId) {
-        return solicitudReservaRepository.findByClaveIdempotencia(claveIdempotencia)
+        return solicitudReservaRepository .buscarPorClaveIdempotencia(claveIdempotencia)
                 .map(solicitudReservaMapper::toResponse)
                 .orElseGet(() -> crearNuevaSolicitud(request, claveIdempotencia, usuarioAutenticadoId));
     }
@@ -113,15 +111,15 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
         solicitud.setEstado(EstadoSolicitud.PENDIENTE);
         solicitud.setClaveIdempotencia(claveIdempotencia);
 
-        SolicitudReserva guardada = solicitudReservaRepository.save(solicitud);
+        SolicitudReserva guardada = solicitudReservaRepository.guardar(solicitud);
 
         HistorialSolicitud historial = BeanUtils.instantiateClass(HistorialSolicitud.class);
-        historial.setSolicitud(guardada);
+        historial.setSolicitudId(guardada.getId());
         historial.setEstadoAnterior(null);
         historial.setEstadoNuevo(EstadoSolicitud.PENDIENTE);
         historial.setComentario("Solicitud creada");
         historial.setUsuarioAccionId(usuarioAutenticadoId);
-        historialSolicitudRepository.save(historial);
+        historialSolicitudRepository.guardar(historial);
 
         return solicitudReservaMapper.toResponse(guardada);
     }
@@ -135,27 +133,8 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
             LocalDate fecha,
             int pagina,
             int tamanio) {
-        Pageable pageable = PageRequest.of(pagina, tamanio);
-        boolean existenFiltros =
-                estado != null || solicitanteId != null || laboratorioId != null || fecha != null;
-
-        Page<SolicitudReserva> solicitudes;
-        if (!existenFiltros) {
-            solicitudes = solicitudReservaRepository.findAll(pageable);
-        } else {
-            Specification<SolicitudReserva> specification = Specification.allOf(
-                    igual("estado", estado),
-                    igual("solicitanteId", solicitanteId),
-                    igual("laboratorioId", laboratorioId),
-                    igual("fechaReserva", fecha));
-            solicitudes = solicitudReservaRepository.findAll(specification, pageable);
-        }
-        return mapearPagina(solicitudes);
-    }
-
-    private <T> Specification<SolicitudReserva> igual(String atributo, T valor) {
-        return valor == null ? null : (root, query, criteriaBuilder) ->
-                criteriaBuilder.equal(root.get(atributo), valor);
+        return mapearPagina(solicitudReservaRepository.buscar(
+                new FiltroSolicitudReserva(estado, solicitanteId, laboratorioId, fecha), pagina, tamanio));
     }
 
     @Override
@@ -168,16 +147,16 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
     @Transactional(readOnly = true)
     public PaginaResponse<SolicitudReservaResponse> listarPorSolicitante(
             UUID solicitanteId, int pagina, int tamanio) {
-        return mapearPagina(solicitudReservaRepository.findBySolicitanteId(
-                solicitanteId, PageRequest.of(pagina, tamanio)));
+        return mapearPagina(solicitudReservaRepository.buscarPorSolicitante(
+                solicitanteId, pagina, tamanio));
     }
 
     @Override
     @Transactional(readOnly = true)
     public PaginaResponse<SolicitudReservaResponse> listarPorEstado(
             EstadoSolicitud estado, int pagina, int tamanio) {
-        return mapearPagina(solicitudReservaRepository.findByEstado(
-                estado, PageRequest.of(pagina, tamanio)));
+        return mapearPagina(solicitudReservaRepository.buscarPorEstado(
+                estado, pagina, tamanio));
     }
 
     @Override
@@ -211,11 +190,11 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
         solicitud.setMotivo(request.motivo());
         solicitud.setObservacion(request.observacion());
 
-        return solicitudReservaMapper.toResponse(solicitudReservaRepository.save(solicitud));
+        return solicitudReservaMapper.toResponse(solicitudReservaRepository.guardar(solicitud));
     }
 
     private SolicitudReserva obtenerSolicitud(UUID id) {
-        return solicitudReservaRepository.findById(id)
+        return solicitudReservaRepository.buscarPorId(id)
                 .orElseThrow(() -> new IllegalArgumentException(
                         "No existe la solicitud de reserva indicada"));
     }
@@ -275,21 +254,10 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
         }
     }
 
-    private PaginaResponse<SolicitudReservaResponse> mapearPagina(Page<SolicitudReserva> pagina) {
-        return new PaginaResponse<>(
-                pagina.getContent().stream().map(solicitudReservaMapper::toResponse).toList(),
-                pagina.getNumber(),
-                pagina.getSize(),
-                pagina.getTotalElements(),
-                pagina.getTotalPages(),
-                pagina.isFirst(),
-                pagina.isLast());
-    }
-
     @Override
     @Transactional
     public SolicitudReservaResponse ponerEnRevision(UUID id, UUID usuarioAutenticadoId) {
-        SolicitudReserva solicitud = solicitudReservaRepository.findByIdForUpdate(id)
+        SolicitudReserva solicitud = solicitudReservaRepository.buscarPorIdParaActualizar(id)
                 .orElseThrow(() -> new IllegalArgumentException(
                         "No existe la solicitud de reserva indicada"));
 
@@ -299,15 +267,15 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
         }
 
         solicitud.setEstado(EstadoSolicitud.EN_REVISION);
-        SolicitudReserva guardada = solicitudReservaRepository.save(solicitud);
+        SolicitudReserva guardada = solicitudReservaRepository.guardar(solicitud);
 
         HistorialSolicitud historial = BeanUtils.instantiateClass(HistorialSolicitud.class);
-        historial.setSolicitud(guardada);
+        historial.setSolicitudId(guardada.getId());
         historial.setEstadoAnterior(EstadoSolicitud.PENDIENTE);
         historial.setEstadoNuevo(EstadoSolicitud.EN_REVISION);
         historial.setUsuarioAccionId(usuarioAutenticadoId);
         historial.setComentario("Solicitud puesta en revisión");
-        historialSolicitudRepository.save(historial);
+        historialSolicitudRepository.guardar(historial);
 
         return solicitudReservaMapper.toResponse(guardada);
     }
@@ -319,7 +287,7 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
             AprobarSolicitudRequest request,
             String claveIdempotencia,
             UUID usuarioAutenticadoId) {
-        SolicitudReserva solicitud = solicitudReservaRepository.findByIdForUpdate(id)
+        SolicitudReserva solicitud = solicitudReservaRepository.buscarPorIdParaActualizar(id)
                 .orElseThrow(() -> new IllegalArgumentException(
                         "No existe la solicitud de reserva indicada"));
 
@@ -328,7 +296,7 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
                     "La solicitud solamente puede aprobarse cuando está en revisión");
         }
 
-        if (reservaRepository.existsBySolicitudId(id)) {
+        if (reservaRepository.existePorSolicitudId(id)) {
             throw new IllegalStateException(
                     "La solicitud ya tiene una reserva asociada");
         }
@@ -341,7 +309,7 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
         validarLaboratorio(solicitud.getLaboratorioId());
 
         Reserva reserva = BeanUtils.instantiateClass(Reserva.class);
-        reserva.setSolicitud(solicitud);
+        reserva.setSolicitudId(solicitud.getId());
         reserva.setLaboratorioId(solicitud.getLaboratorioId());
         reserva.setResponsableId(usuarioAutenticadoId);
         reserva.setFechaReserva(solicitud.getFechaReserva());
@@ -350,19 +318,19 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
         reserva.setEstado(EstadoReserva.PROGRAMADA);
         reserva.setCodigoReserva(generarCodigoReserva(solicitud.getFechaReserva()));
 
-        Reserva guardada = reservaRepository.save(reserva);
+        Reserva guardada = reservaRepository.guardar(reserva);
 
         solicitud.setEstado(EstadoSolicitud.APROBADA);
-        solicitud.setReserva(guardada);
-        solicitudReservaRepository.save(solicitud);
+        solicitud.setReservaId(guardada.getId());
+        solicitudReservaRepository.guardar(solicitud);
 
         HistorialSolicitud historial = BeanUtils.instantiateClass(HistorialSolicitud.class);
-        historial.setSolicitud(solicitud);
+        historial.setSolicitudId(solicitud.getId());
         historial.setEstadoAnterior(EstadoSolicitud.EN_REVISION);
         historial.setEstadoNuevo(EstadoSolicitud.APROBADA);
         historial.setComentario(request.comentario());
         historial.setUsuarioAccionId(usuarioAutenticadoId);
-        historialSolicitudRepository.save(historial);
+        historialSolicitudRepository.guardar(historial);
 
         return reservaMapper.toResponse(guardada);
     }
@@ -376,7 +344,7 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
     @Transactional
     public SolicitudReservaResponse rechazar(
             UUID id, RechazarSolicitudRequest request, UUID usuarioAutenticadoId) {
-        SolicitudReserva solicitud = solicitudReservaRepository.findByIdForUpdate(id)
+        SolicitudReserva solicitud = solicitudReservaRepository.buscarPorIdParaActualizar(id)
                 .orElseThrow(() -> new IllegalArgumentException(
                         "No existe la solicitud de reserva indicada"));
         if (solicitud.getEstado() != EstadoSolicitud.EN_REVISION) {
@@ -385,15 +353,15 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
         }
 
         solicitud.setEstado(EstadoSolicitud.RECHAZADA);
-        SolicitudReserva guardada = solicitudReservaRepository.save(solicitud);
+        SolicitudReserva guardada = solicitudReservaRepository.guardar(solicitud);
 
         HistorialSolicitud historial = BeanUtils.instantiateClass(HistorialSolicitud.class);
-        historial.setSolicitud(guardada);
+        historial.setSolicitudId(guardada.getId());
         historial.setEstadoAnterior(EstadoSolicitud.EN_REVISION);
         historial.setEstadoNuevo(EstadoSolicitud.RECHAZADA);
         historial.setComentario(request.comentario());
         historial.setUsuarioAccionId(usuarioAutenticadoId);
-        historialSolicitudRepository.save(historial);
+        historialSolicitudRepository.guardar(historial);
 
         return solicitudReservaMapper.toResponse(guardada);
     }
@@ -402,7 +370,7 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
     @Transactional(isolation = Isolation.SERIALIZABLE)
     public SolicitudReservaResponse cancelar(
             UUID id, CancelarSolicitudRequest request, UUID usuarioAutenticadoId) {
-        SolicitudReserva solicitud = solicitudReservaRepository.findByIdForUpdate(id)
+        SolicitudReserva solicitud = solicitudReservaRepository.buscarPorIdParaActualizar(id)
                 .orElseThrow(() -> new IllegalArgumentException(
                         "No existe la solicitud de reserva indicada"));
         if (solicitud.getEstado() != EstadoSolicitud.APROBADA) {
@@ -410,10 +378,10 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
                     "La solicitud solamente puede cancelarse cuando está aprobada");
         }
 
-        Reserva reservaAsociada = reservaRepository.findBySolicitudId(id)
+        Reserva reservaAsociada = reservaRepository.buscarPorSolicitudId(id)
                 .orElseThrow(() -> new IllegalStateException(
                         "La solicitud aprobada no tiene una reserva asociada"));
-        Reserva reserva = reservaRepository.findByIdForUpdate(reservaAsociada.getId())
+        Reserva reserva = reservaRepository.buscarPorIdParaActualizar(reservaAsociada.getId())
                 .orElseThrow(() -> new IllegalStateException(
                         "La solicitud aprobada no tiene una reserva asociada"));
         if (reserva.getEstado() != EstadoReserva.PROGRAMADA) {
@@ -422,18 +390,18 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
         }
 
         reserva.setEstado(EstadoReserva.CANCELADA);
-        reservaRepository.save(reserva);
+        reservaRepository.guardar(reserva);
 
         solicitud.setEstado(EstadoSolicitud.CANCELADA);
-        SolicitudReserva guardada = solicitudReservaRepository.save(solicitud);
+        SolicitudReserva guardada = solicitudReservaRepository.guardar(solicitud);
 
         HistorialSolicitud historial = BeanUtils.instantiateClass(HistorialSolicitud.class);
-        historial.setSolicitud(guardada);
+        historial.setSolicitudId(guardada.getId());
         historial.setEstadoAnterior(EstadoSolicitud.APROBADA);
         historial.setEstadoNuevo(EstadoSolicitud.CANCELADA);
         historial.setComentario(request.comentario());
         historial.setUsuarioAccionId(usuarioAutenticadoId);
-        historialSolicitudRepository.save(historial);
+        historialSolicitudRepository.guardar(historial);
 
         return solicitudReservaMapper.toResponse(guardada);
     }
@@ -442,18 +410,19 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
     @Transactional(readOnly = true)
     public PaginaResponse<HistorialSolicitudResponse> obtenerHistorial(
             UUID solicitudId, int pagina, int tamanio) {
-        Page<HistorialSolicitud> historial =
-                historialSolicitudRepository.findBySolicitudIdOrderByFechaHoraAsc(
-                        solicitudId, PageRequest.of(pagina, tamanio));
+        Pagina<HistorialSolicitud> historial =
+                historialSolicitudRepository.buscarPorSolicitudId(solicitudId, pagina, tamanio);
         return new PaginaResponse<>(
-                historial.getContent().stream()
+                historial.contenido().stream()
                         .map(historialSolicitudMapper::toResponse)
                         .toList(),
-                historial.getNumber(),
-                historial.getSize(),
-                historial.getTotalElements(),
-                historial.getTotalPages(),
-                historial.isFirst(),
-                historial.isLast());
+                historial.numero(), historial.tamanio(), historial.totalElementos(),
+                historial.totalPaginas(), historial.primera(), historial.ultima());
+    }
+
+    private PaginaResponse<SolicitudReservaResponse> mapearPagina(Pagina<SolicitudReserva> pagina) {
+        return new PaginaResponse<>(pagina.contenido().stream().map(solicitudReservaMapper::toResponse).toList(),
+                pagina.numero(), pagina.tamanio(), pagina.totalElementos(), pagina.totalPaginas(),
+                pagina.primera(), pagina.ultima());
     }
 }

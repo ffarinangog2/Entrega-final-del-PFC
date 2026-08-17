@@ -4,7 +4,7 @@ import ec.edu.scli.reservas.client.AcademicoLaboratoriosClient;
 import ec.edu.scli.reservas.client.dto.LaboratorioExternoResponse;
 import ec.edu.scli.reservas.presentation.dto.response.DisponibilidadResponse;
 import ec.edu.scli.reservas.repository.BloqueoAgendaRepository;
-import ec.edu.scli.reservas.repository.ReservaRepository;
+import ec.edu.scli.reservas.domain.port.out.ReservaRepositoryPort;
 import ec.edu.scli.reservas.application.service.DisponibilidadService;
 import org.springframework.stereotype.Service;
 
@@ -16,12 +16,12 @@ import java.util.UUID;
 @Service
 public class DisponibilidadServiceImpl implements DisponibilidadService {
 
-    private final ReservaRepository reservaRepository;
+    private final ReservaRepositoryPort reservaRepository;
     private final BloqueoAgendaRepository bloqueoAgendaRepository;
     private final AcademicoLaboratoriosClient academicoLaboratoriosClient;
 
     public DisponibilidadServiceImpl(
-            ReservaRepository reservaRepository,
+            ReservaRepositoryPort reservaRepository,
             BloqueoAgendaRepository bloqueoAgendaRepository,
             AcademicoLaboratoriosClient academicoLaboratoriosClient) {
         this.reservaRepository = reservaRepository;

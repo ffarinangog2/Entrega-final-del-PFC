@@ -1,7 +1,7 @@
 package ec.edu.scli.reservas.mapper;
 
 import ec.edu.scli.reservas.presentation.dto.response.SolicitudReservaResponse;
-import ec.edu.scli.reservas.entity.SolicitudReserva;
+import ec.edu.scli.reservas.domain.model.SolicitudReserva;
 import org.springframework.stereotype.Component;
 
 /** Convierte solicitudes de reserva a sus representaciones de respuesta. */
@@ -23,7 +23,7 @@ public class SolicitudReservaMapper {
                 solicitud.getMotivo(),
                 solicitud.getObservacion(),
                 solicitud.getEstado(),
-                solicitud.getReserva() != null ? solicitud.getReserva().getId() : null,
+                solicitud.getReservaId(),
                 solicitud.getCreadaEn(),
                 solicitud.getActualizadaEn(),
                 solicitud.getVersion()
