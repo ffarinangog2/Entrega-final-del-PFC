@@ -18,7 +18,7 @@ jobs:
             database: usuarios_db
           - service: academico-laboratorios-service
             database: academico_db
-          - service: reservas-solicitudes-service
+          - service: services/reservas-solicitudes-service
             database: reservas_db
 
     steps:
