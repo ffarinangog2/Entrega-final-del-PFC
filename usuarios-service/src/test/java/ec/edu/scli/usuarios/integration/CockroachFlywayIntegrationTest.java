@@ -1,12 +1,17 @@
 package ec.edu.scli.usuarios.integration;
 
+import ec.edu.scli.usuarios.domain.model.Perfil;
+import ec.edu.scli.usuarios.domain.port.PerfilRepositoryPort;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.cockroachdb.CockroachContainer;
+
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -34,6 +39,9 @@ class CockroachFlywayIntegrationTest {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    private PerfilRepositoryPort perfilRepositoryPort;
 
     @Test
     void debeLevantarCockroachYAplicarMigracionesFlyway() {
@@ -63,5 +71,26 @@ class CockroachFlywayIntegrationTest {
 
         assertNotNull(cantidadAdministradores);
         assertEquals(1, cantidadAdministradores);
+    }
+
+    @Test
+    @Transactional
+    void adaptadorPerfil_debeGuardarYLeerPerfilConCockroach() {
+
+        Perfil perfil = new Perfil();
+        perfil.setIdentificacion("INT-ADAPTER-001");
+        perfil.setNombres("Integracion");
+        perfil.setApellidos("Adapter");
+        perfil.setEmailInstitucional("integracion.adapter@uteq.edu.ec");
+        perfil.setActivo(true);
+
+        Perfil guardado = perfilRepositoryPort.save(perfil);
+        Optional<Perfil> encontrado = perfilRepositoryPort.findById(guardado.getId());
+
+        assertTrue(encontrado.isPresent());
+        assertEquals(
+                "integracion.adapter@uteq.edu.ec",
+                encontrado.get().getEmailInstitucional()
+        );
     }
 }
