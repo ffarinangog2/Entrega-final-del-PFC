@@ -1,14 +1,14 @@
 package ec.edu.scli.reservas.service;
 
-import ec.edu.scli.reservas.dto.request.ActualizarSolicitudReservaRequest;
-import ec.edu.scli.reservas.dto.request.AprobarSolicitudRequest;
-import ec.edu.scli.reservas.dto.request.CancelarSolicitudRequest;
-import ec.edu.scli.reservas.dto.request.CrearSolicitudReservaRequest;
-import ec.edu.scli.reservas.dto.request.RechazarSolicitudRequest;
-import ec.edu.scli.reservas.dto.response.HistorialSolicitudResponse;
-import ec.edu.scli.reservas.dto.response.PaginaResponse;
-import ec.edu.scli.reservas.dto.response.ReservaResponse;
-import ec.edu.scli.reservas.dto.response.SolicitudReservaResponse;
+import ec.edu.scli.reservas.presentation.dto.request.ActualizarSolicitudReservaRequest;
+import ec.edu.scli.reservas.presentation.dto.request.AprobarSolicitudRequest;
+import ec.edu.scli.reservas.presentation.dto.request.CancelarSolicitudRequest;
+import ec.edu.scli.reservas.presentation.dto.request.CrearSolicitudReservaRequest;
+import ec.edu.scli.reservas.presentation.dto.request.RechazarSolicitudRequest;
+import ec.edu.scli.reservas.presentation.dto.response.HistorialSolicitudResponse;
+import ec.edu.scli.reservas.presentation.dto.response.PaginaResponse;
+import ec.edu.scli.reservas.presentation.dto.response.ReservaResponse;
+import ec.edu.scli.reservas.presentation.dto.response.SolicitudReservaResponse;
 import ec.edu.scli.reservas.enums.EstadoSolicitud;
 
 import java.time.LocalDate;

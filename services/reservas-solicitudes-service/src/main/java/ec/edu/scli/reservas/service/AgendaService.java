@@ -1,9 +1,9 @@
 package ec.edu.scli.reservas.service;
 
-import ec.edu.scli.reservas.dto.request.CrearBloqueoAgendaRequest;
-import ec.edu.scli.reservas.dto.response.AgendaItemResponse;
-import ec.edu.scli.reservas.dto.response.BloqueoAgendaResponse;
-import ec.edu.scli.reservas.dto.response.PaginaResponse;
+import ec.edu.scli.reservas.presentation.dto.request.CrearBloqueoAgendaRequest;
+import ec.edu.scli.reservas.presentation.dto.response.AgendaItemResponse;
+import ec.edu.scli.reservas.presentation.dto.response.BloqueoAgendaResponse;
+import ec.edu.scli.reservas.presentation.dto.response.PaginaResponse;
 
 import java.time.LocalDate;
 import java.util.UUID;

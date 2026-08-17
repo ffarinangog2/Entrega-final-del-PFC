@@ -1,4 +1,4 @@
-package ec.edu.scli.reservas.dto.response;
+package ec.edu.scli.reservas.presentation.dto.response;
 
 import ec.edu.scli.reservas.enums.EstadoReserva;
 

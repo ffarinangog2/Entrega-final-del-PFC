@@ -1,9 +1,9 @@
 
-package ec.edu.scli.reservas.controller;
+package ec.edu.scli.reservas.presentation.controller;
 
-import ec.edu.scli.reservas.dto.request.CancelarReservaRequest;
-import ec.edu.scli.reservas.dto.response.PaginaResponse;
-import ec.edu.scli.reservas.dto.response.ReservaResponse;
+import ec.edu.scli.reservas.presentation.dto.request.CancelarReservaRequest;
+import ec.edu.scli.reservas.presentation.dto.response.PaginaResponse;
+import ec.edu.scli.reservas.presentation.dto.response.ReservaResponse;
 import ec.edu.scli.reservas.enums.EstadoReserva;
 import ec.edu.scli.reservas.service.ReservaService;
 import jakarta.validation.Valid;

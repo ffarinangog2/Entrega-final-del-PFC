@@ -1,31 +1,24 @@
-package ec.edu.scli.reservas.dto.request;
+package ec.edu.scli.reservas.presentation.dto.request;
 
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.UUID;
 
-/** Datos requeridos para crear una solicitud de reserva. */
-public record CrearSolicitudReservaRequest(
-        @NotNull UUID solicitanteId,
-        @NotNull UUID docenteId,
+/** Datos requeridos para bloquear un intervalo de la agenda. */
+public record CrearBloqueoAgendaRequest(
         @NotNull UUID laboratorioId,
-        @NotNull UUID materiaId,
-        @NotNull UUID periodoLectivoId,
-        @NotNull @FutureOrPresent LocalDate fechaReserva,
+        @NotNull @FutureOrPresent LocalDate fecha,
         @NotNull LocalTime horaInicio,
         @NotNull LocalTime horaFin,
-        @NotNull @Positive Integer numeroParticipantes,
-        @NotBlank @Size(max = 500) String motivo,
-        @Size(max = 2000) String observacion
+        @NotBlank @Size(max = 500) String motivo
 ) {
-    /** Valida que el intervalo de la solicitud tenga una duración positiva. */
+    /** Valida que el intervalo del bloqueo tenga una duración positiva. */
     @AssertTrue(message = "La hora final debe ser mayor que la hora inicial")
     public boolean isHorarioValido() {
         return horaInicio == null || horaFin == null || horaFin.isAfter(horaInicio);

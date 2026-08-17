@@ -1,4 +1,4 @@
-package ec.edu.scli.reservas.dto.request;
+package ec.edu.scli.reservas.presentation.dto.request;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;

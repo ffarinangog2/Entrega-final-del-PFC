@@ -1,2 +1,2 @@
 /** DTO para las respuestas emitidas por el servicio. */
-package ec.edu.scli.reservas.dto.response;
+package ec.edu.scli.reservas.presentation.dto.response;

@@ -1,4 +1,4 @@
 /**
  * Objetos para la transferencia de datos.
  */
-package ec.edu.scli.reservas.dto;
+package ec.edu.scli.reservas.presentation.dto;

@@ -1,4 +1,4 @@
-package ec.edu.scli.reservas.dto.response;
+package ec.edu.scli.reservas.presentation.dto.response;
 
 import java.time.LocalDate;
 import java.time.LocalTime;

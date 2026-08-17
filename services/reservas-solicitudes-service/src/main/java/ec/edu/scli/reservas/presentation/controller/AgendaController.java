@@ -1,9 +1,9 @@
-package ec.edu.scli.reservas.controller;
+package ec.edu.scli.reservas.presentation.controller;
 
-import ec.edu.scli.reservas.dto.request.CrearBloqueoAgendaRequest;
-import ec.edu.scli.reservas.dto.response.AgendaItemResponse;
-import ec.edu.scli.reservas.dto.response.BloqueoAgendaResponse;
-import ec.edu.scli.reservas.dto.response.PaginaResponse;
+import ec.edu.scli.reservas.presentation.dto.request.CrearBloqueoAgendaRequest;
+import ec.edu.scli.reservas.presentation.dto.response.AgendaItemResponse;
+import ec.edu.scli.reservas.presentation.dto.response.BloqueoAgendaResponse;
+import ec.edu.scli.reservas.presentation.dto.response.PaginaResponse;
 import ec.edu.scli.reservas.service.AgendaService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;

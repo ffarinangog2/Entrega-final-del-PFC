@@ -1,4 +1,4 @@
-package ec.edu.scli.reservas.exception;
+package ec.edu.scli.reservas.presentation.exception;
 
 import java.time.Instant;
 

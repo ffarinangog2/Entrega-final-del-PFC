@@ -2,10 +2,10 @@ package ec.edu.scli.reservas.service.impl;
 
 import ec.edu.scli.reservas.client.AcademicoLaboratoriosClient;
 import ec.edu.scli.reservas.client.dto.LaboratorioExternoResponse;
-import ec.edu.scli.reservas.dto.request.CrearBloqueoAgendaRequest;
-import ec.edu.scli.reservas.dto.response.AgendaItemResponse;
-import ec.edu.scli.reservas.dto.response.BloqueoAgendaResponse;
-import ec.edu.scli.reservas.dto.response.PaginaResponse;
+import ec.edu.scli.reservas.presentation.dto.request.CrearBloqueoAgendaRequest;
+import ec.edu.scli.reservas.presentation.dto.response.AgendaItemResponse;
+import ec.edu.scli.reservas.presentation.dto.response.BloqueoAgendaResponse;
+import ec.edu.scli.reservas.presentation.dto.response.PaginaResponse;
 import ec.edu.scli.reservas.entity.BloqueoAgenda;
 import ec.edu.scli.reservas.entity.Reserva;
 import ec.edu.scli.reservas.mapper.BloqueoAgendaMapper;

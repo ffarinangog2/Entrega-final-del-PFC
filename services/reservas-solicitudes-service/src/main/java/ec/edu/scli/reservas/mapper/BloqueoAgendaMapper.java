@@ -1,6 +1,6 @@
 package ec.edu.scli.reservas.mapper;
 
-import ec.edu.scli.reservas.dto.response.BloqueoAgendaResponse;
+import ec.edu.scli.reservas.presentation.dto.response.BloqueoAgendaResponse;
 import ec.edu.scli.reservas.entity.BloqueoAgenda;
 import org.springframework.stereotype.Component;
 

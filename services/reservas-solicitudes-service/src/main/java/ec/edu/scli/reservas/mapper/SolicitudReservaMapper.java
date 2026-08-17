@@ -1,6 +1,6 @@
 package ec.edu.scli.reservas.mapper;
 
-import ec.edu.scli.reservas.dto.response.SolicitudReservaResponse;
+import ec.edu.scli.reservas.presentation.dto.response.SolicitudReservaResponse;
 import ec.edu.scli.reservas.entity.SolicitudReserva;
 import org.springframework.stereotype.Component;
 

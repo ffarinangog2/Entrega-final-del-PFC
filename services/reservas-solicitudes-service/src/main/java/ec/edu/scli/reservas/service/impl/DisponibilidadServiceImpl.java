@@ -2,7 +2,7 @@ package ec.edu.scli.reservas.service.impl;
 
 import ec.edu.scli.reservas.client.AcademicoLaboratoriosClient;
 import ec.edu.scli.reservas.client.dto.LaboratorioExternoResponse;
-import ec.edu.scli.reservas.dto.response.DisponibilidadResponse;
+import ec.edu.scli.reservas.presentation.dto.response.DisponibilidadResponse;
 import ec.edu.scli.reservas.repository.BloqueoAgendaRepository;
 import ec.edu.scli.reservas.repository.ReservaRepository;
 import ec.edu.scli.reservas.service.DisponibilidadService;

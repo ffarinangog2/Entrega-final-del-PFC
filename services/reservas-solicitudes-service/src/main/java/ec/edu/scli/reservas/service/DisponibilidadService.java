@@ -1,6 +1,6 @@
 package ec.edu.scli.reservas.service;
 
-import ec.edu.scli.reservas.dto.response.DisponibilidadResponse;
+import ec.edu.scli.reservas.presentation.dto.response.DisponibilidadResponse;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
