@@ -1,4 +1,4 @@
-package ec.edu.scli.reservas.service.impl;
+package ec.edu.scli.reservas.application.service.impl;
 
 import ec.edu.scli.reservas.client.AcademicoLaboratoriosClient;
 import ec.edu.scli.reservas.client.UsuariosClient;
@@ -26,8 +26,8 @@ import ec.edu.scli.reservas.mapper.SolicitudReservaMapper;
 import ec.edu.scli.reservas.repository.HistorialSolicitudRepository;
 import ec.edu.scli.reservas.repository.ReservaRepository;
 import ec.edu.scli.reservas.repository.SolicitudReservaRepository;
-import ec.edu.scli.reservas.service.DisponibilidadService;
-import ec.edu.scli.reservas.service.SolicitudReservaService;
+import ec.edu.scli.reservas.application.service.DisponibilidadService;
+import ec.edu.scli.reservas.application.service.SolicitudReservaService;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;

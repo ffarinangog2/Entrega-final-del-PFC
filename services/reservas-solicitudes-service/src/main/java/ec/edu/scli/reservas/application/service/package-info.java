@@ -1,4 +1,4 @@
 /**
  * Servicios que implementan la lógica de negocio.
  */
-package ec.edu.scli.reservas.service;
+package ec.edu.scli.reservas.application.service;

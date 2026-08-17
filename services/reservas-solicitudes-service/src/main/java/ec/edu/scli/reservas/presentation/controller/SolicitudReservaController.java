@@ -10,7 +10,7 @@ import ec.edu.scli.reservas.presentation.dto.response.PaginaResponse;
 import ec.edu.scli.reservas.presentation.dto.response.ReservaResponse;
 import ec.edu.scli.reservas.presentation.dto.response.SolicitudReservaResponse;
 import ec.edu.scli.reservas.enums.EstadoSolicitud;
-import ec.edu.scli.reservas.service.SolicitudReservaService;
+import ec.edu.scli.reservas.application.service.SolicitudReservaService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;

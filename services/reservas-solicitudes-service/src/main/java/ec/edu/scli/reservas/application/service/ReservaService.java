@@ -1,4 +1,4 @@
-package ec.edu.scli.reservas.service;
+package ec.edu.scli.reservas.application.service;
 
 import ec.edu.scli.reservas.presentation.dto.request.CancelarReservaRequest;
 import ec.edu.scli.reservas.presentation.dto.response.PaginaResponse;

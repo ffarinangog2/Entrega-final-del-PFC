@@ -1,7 +1,7 @@
 package ec.edu.scli.reservas.presentation.controller;
 
 import ec.edu.scli.reservas.presentation.dto.response.DisponibilidadResponse;
-import ec.edu.scli.reservas.service.DisponibilidadService;
+import ec.edu.scli.reservas.application.service.DisponibilidadService;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;

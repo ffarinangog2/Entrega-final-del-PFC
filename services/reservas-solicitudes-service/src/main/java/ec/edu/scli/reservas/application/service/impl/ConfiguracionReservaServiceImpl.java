@@ -1,8 +1,8 @@
-package ec.edu.scli.reservas.service.impl;
+package ec.edu.scli.reservas.application.service.impl;
 
 import ec.edu.scli.reservas.entity.ConfiguracionReserva;
 import ec.edu.scli.reservas.repository.ConfiguracionReservaRepository;
-import ec.edu.scli.reservas.service.ConfiguracionReservaService;
+import ec.edu.scli.reservas.application.service.ConfiguracionReservaService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

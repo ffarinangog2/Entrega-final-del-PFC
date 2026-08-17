@@ -1,4 +1,4 @@
-package ec.edu.scli.reservas.service.impl;
+package ec.edu.scli.reservas.application.service.impl;
 
 import ec.edu.scli.reservas.presentation.dto.request.CancelarReservaRequest;
 import ec.edu.scli.reservas.presentation.dto.response.PaginaResponse;
@@ -7,7 +7,7 @@ import ec.edu.scli.reservas.entity.Reserva;
 import ec.edu.scli.reservas.enums.EstadoReserva;
 import ec.edu.scli.reservas.mapper.ReservaMapper;
 import ec.edu.scli.reservas.repository.ReservaRepository;
-import ec.edu.scli.reservas.service.ReservaService;
+import ec.edu.scli.reservas.application.service.ReservaService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;

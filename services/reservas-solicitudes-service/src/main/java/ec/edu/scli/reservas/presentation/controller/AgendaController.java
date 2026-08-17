@@ -4,7 +4,7 @@ import ec.edu.scli.reservas.presentation.dto.request.CrearBloqueoAgendaRequest;
 import ec.edu.scli.reservas.presentation.dto.response.AgendaItemResponse;
 import ec.edu.scli.reservas.presentation.dto.response.BloqueoAgendaResponse;
 import ec.edu.scli.reservas.presentation.dto.response.PaginaResponse;
-import ec.edu.scli.reservas.service.AgendaService;
+import ec.edu.scli.reservas.application.service.AgendaService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;

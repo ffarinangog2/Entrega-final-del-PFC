@@ -1,4 +1,4 @@
-package ec.edu.scli.reservas.service.impl;
+package ec.edu.scli.reservas.application.service.impl;
 
 import ec.edu.scli.reservas.client.AcademicoLaboratoriosClient;
 import ec.edu.scli.reservas.client.dto.LaboratorioExternoResponse;
@@ -11,7 +11,7 @@ import ec.edu.scli.reservas.entity.Reserva;
 import ec.edu.scli.reservas.mapper.BloqueoAgendaMapper;
 import ec.edu.scli.reservas.repository.BloqueoAgendaRepository;
 import ec.edu.scli.reservas.repository.ReservaRepository;
-import ec.edu.scli.reservas.service.AgendaService;
+import ec.edu.scli.reservas.application.service.AgendaService;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Root;
