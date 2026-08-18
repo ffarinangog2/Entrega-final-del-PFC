@@ -11,4 +11,9 @@
     <string name="incidentes_form_guardar">Guardar incidente</string>
     <string name="incidentes_lista_vacia">Todavía no hay incidentes reportados.</string>
     <string name="incidentes_form_error_campos">Completá laboratorio/equipo y descripción.</string>
+
+    <string name="notification_channel_id" translatable="false">incidentes_channel</string>
+    <string name="notification_channel_nombre">Incidentes</string>
+    <string name="notification_channel_descripcion">Avisos de nuevos incidentes y mensajes push</string>
+    <string name="notification_incidente_creado_titulo">Incidente reportado</string>
 </resources>
