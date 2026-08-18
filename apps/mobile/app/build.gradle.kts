@@ -1,6 +1,14 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
+    id("com.google.devtools.ksp")
+}
+
+// El plugin de Firebase necesita google-services.json, que todavía no existe
+// en este repo (ver apps/mobile/README.md). Se aplica solo si el archivo está
+// presente para no romper el build de quien no lo tenga configurado aún.
+if (file("google-services.json").exists()) {
+    apply(plugin = "com.google.gms.google-services")
 }
 
 android {
@@ -13,6 +21,8 @@ android {
         targetSdk = 34
         versionCode = 1
         versionName = "0.1.0"
+
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
@@ -37,6 +47,12 @@ android {
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.14"
     }
+
+    packaging {
+        resources {
+            excludes += "/META-INF/{AL2.0,LGPL2.1}"
+        }
+    }
 }
 
 dependencies {
@@ -45,4 +61,40 @@ dependencies {
     implementation(platform("androidx.compose:compose-bom:2024.06.00"))
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.material3:material3")
+    implementation("androidx.compose.material:material-icons-extended")
+
+    // Lifecycle / ViewModel
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.4")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.4")
+
+    // Navegación entre pantallas
+    implementation("androidx.navigation:navigation-compose:2.7.7")
+
+    // Persistencia offline (feature Incidentes)
+    implementation("androidx.room:room-runtime:2.6.1")
+    implementation("androidx.room:room-ktx:2.6.1")
+    ksp("androidx.room:room-compiler:2.6.1")
+
+    // Settings / perfil del técnico
+    implementation("androidx.datastore:datastore-preferences:1.1.1")
+
+    // Notificaciones push (capacidad #2)
+    implementation(platform("com.google.firebase:firebase-bom:33.1.2"))
+    implementation("com.google.firebase:firebase-messaging-ktx")
+
+    // Logging estructurado
+    implementation("com.jakewharton.timber:timber:5.0.1")
+
+    // Tests unitarios
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
+    testImplementation("io.mockk:mockk:1.13.11")
+
+    // Tests instrumentados
+    androidTestImplementation("androidx.test:core:1.6.1")
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
+    androidTestImplementation(platform("androidx.compose:compose-bom:2024.06.00"))
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
 }

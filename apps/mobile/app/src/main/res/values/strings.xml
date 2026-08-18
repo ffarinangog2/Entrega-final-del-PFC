@@ -2,6 +2,9 @@
 <resources>
     <string name="app_name">SCLI Mobile</string>
 
+    <string name="nav_incidentes">Incidentes</string>
+    <string name="nav_perfil">Perfil</string>
+
     <string name="incidentes_titulo">Incidentes reportados</string>
     <string name="incidentes_form_titulo">Reportar nuevo incidente</string>
     <string name="incidentes_form_laboratorio_equipo">Laboratorio / equipo afectado</string>
