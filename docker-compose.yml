@@ -290,7 +290,7 @@ services:
   # =========================================================
   reservas-solicitudes-service:
     build:
-      context: ./reservas-solicitudes-service
+      context: ./services/reservas-solicitudes-service
       dockerfile: Dockerfile
 
     container_name: scli-reservas-solicitudes-service
@@ -312,6 +312,13 @@ services:
     depends_on:
       crdb-e3-init:
         condition: service_completed_successfully
+
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8084/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
 
     restart: unless-stopped
 
