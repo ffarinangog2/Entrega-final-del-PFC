@@ -25,6 +25,7 @@ import ec.edu.scli.reservas.domain.model.Pagina;
 import ec.edu.scli.reservas.mapper.HistorialSolicitudMapper;
 import ec.edu.scli.reservas.mapper.ReservaMapper;
 import ec.edu.scli.reservas.mapper.SolicitudReservaMapper;
+import ec.edu.scli.reservas.observability.BusinessEventMetrics;
 import ec.edu.scli.reservas.domain.port.out.HistorialSolicitudRepositoryPort;
 import ec.edu.scli.reservas.domain.port.out.ReservaRepositoryPort;
 import ec.edu.scli.reservas.domain.port.out.SolicitudReservaRepositoryPort;
@@ -54,6 +55,7 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
     private final UsuariosClient usuariosClient;
     private final AcademicoLaboratoriosClient academicoLaboratoriosClient;
     private final DisponibilidadService disponibilidadService;
+    private final BusinessEventMetrics businessEventMetrics;
 
     public SolicitudReservaServiceImpl(
             SolicitudReservaRepositoryPort solicitudReservaRepository,
@@ -64,7 +66,8 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
             HistorialSolicitudMapper historialSolicitudMapper,
             UsuariosClient usuariosClient,
             AcademicoLaboratoriosClient academicoLaboratoriosClient,
-            DisponibilidadService disponibilidadService) {
+            DisponibilidadService disponibilidadService,
+            BusinessEventMetrics businessEventMetrics) {
         this.solicitudReservaRepository = solicitudReservaRepository;
         this.reservaRepository = reservaRepository;
         this.historialSolicitudRepository = historialSolicitudRepository;
@@ -74,6 +77,7 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
         this.usuariosClient = usuariosClient;
         this.academicoLaboratoriosClient = academicoLaboratoriosClient;
         this.disponibilidadService = disponibilidadService;
+        this.businessEventMetrics = businessEventMetrics;
     }
 
     @Override
@@ -123,6 +127,7 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
         historial.setUsuarioAccionId(usuarioAutenticadoId);
         historialSolicitudRepository.guardar(historial);
 
+        businessEventMetrics.solicitudCreada();
         return solicitudReservaMapper.toResponse(guardada);
     }
 
@@ -322,6 +327,8 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
         historial.setUsuarioAccionId(usuarioAutenticadoId);
         historialSolicitudRepository.guardar(historial);
 
+        businessEventMetrics.solicitudAprobada();
+        businessEventMetrics.reservaCreada();
         return reservaMapper.toResponse(guardada);
     }
 
@@ -348,6 +355,7 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
         historial.setUsuarioAccionId(usuarioAutenticadoId);
         historialSolicitudRepository.guardar(historial);
 
+        businessEventMetrics.solicitudRechazada();
         return solicitudReservaMapper.toResponse(guardada);
     }
 
@@ -380,6 +388,8 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
         historial.setUsuarioAccionId(usuarioAutenticadoId);
         historialSolicitudRepository.guardar(historial);
 
+        businessEventMetrics.solicitudCancelada();
+        businessEventMetrics.reservaCancelada();
         return solicitudReservaMapper.toResponse(guardada);
     }
 

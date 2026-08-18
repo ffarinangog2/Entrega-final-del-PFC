@@ -49,7 +49,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,prometheus
 
   endpoint:
     health:
@@ -58,6 +58,11 @@ management:
   health:
     db:
       enabled: true
+
+  metrics:
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
 
 security:
   jwt:

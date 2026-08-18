@@ -7,6 +7,7 @@ import ec.edu.scli.reservas.client.dto.*;
 import ec.edu.scli.reservas.domain.model.*;
 import ec.edu.scli.reservas.domain.port.out.*;
 import ec.edu.scli.reservas.mapper.*;
+import ec.edu.scli.reservas.observability.BusinessEventMetrics;
 import ec.edu.scli.reservas.presentation.dto.request.*;
 import ec.edu.scli.reservas.presentation.dto.response.DisponibilidadResponse;
 import org.junit.jupiter.api.BeforeEach;
@@ -30,6 +31,7 @@ class SolicitudReservaServiceImplTest {
     private AcademicoLaboratoriosClient academico;
     private DisponibilidadService disponibilidad;
     private SolicitudReservaServiceImpl service;
+    private BusinessEventMetrics metrics;
 
     private final UUID solicitanteId = UUID.randomUUID();
     private final UUID docenteId = UUID.randomUUID();
@@ -46,10 +48,11 @@ class SolicitudReservaServiceImplTest {
         usuarios = mock(UsuariosClient.class);
         academico = mock(AcademicoLaboratoriosClient.class);
         disponibilidad = mock(DisponibilidadService.class);
+        metrics = mock(BusinessEventMetrics.class);
         service = new SolicitudReservaServiceImpl(
                 solicitudes, reservas, historiales,
                 new SolicitudReservaMapper(), new ReservaMapper(), new HistorialSolicitudMapper(),
-                usuarios, academico, disponibilidad);
+                usuarios, academico, disponibilidad, metrics);
 
         when(usuarios.obtenerPerfil(docenteId))
                 .thenReturn(new PerfilExternoResponse(docenteId, true, true, List.of("DOCENTE")));
@@ -80,6 +83,7 @@ class SolicitudReservaServiceImplTest {
         assertEquals(EstadoSolicitud.PENDIENTE, respuesta.estado());
         assertEquals(laboratorioId, respuesta.laboratorioId());
         verify(historiales).guardar(argThat(h -> h.getEstadoNuevo() == EstadoSolicitud.PENDIENTE));
+        verify(metrics).solicitudCreada();
     }
 
     @Test
@@ -88,6 +92,7 @@ class SolicitudReservaServiceImplTest {
         when(solicitudes.buscarPorClaveIdempotencia("clave")).thenReturn(Optional.of(existente));
         assertEquals(existente.getId(), service.crear(crearRequest(), "clave", usuarioId).id());
         verify(solicitudes, never()).guardar(any());
+        verify(metrics, never()).solicitudCreada();
     }
 
     @Test
@@ -128,6 +133,8 @@ class SolicitudReservaServiceImplTest {
         assertEquals(EstadoSolicitud.APROBADA, solicitud.getEstado());
         assertNotNull(solicitud.getReservaId());
         verify(historiales).guardar(argThat(h -> h.getEstadoNuevo() == EstadoSolicitud.APROBADA));
+        verify(metrics).solicitudAprobada();
+        verify(metrics).reservaCreada();
     }
 
     @Test
@@ -147,6 +154,7 @@ class SolicitudReservaServiceImplTest {
         assertEquals(EstadoSolicitud.RECHAZADA,
                 service.rechazar(solicitud.getId(), new RechazarSolicitudRequest("no cumple"), usuarioId).estado());
         verify(historiales).guardar(argThat(h -> "no cumple".equals(h.getComentario())));
+        verify(metrics).solicitudRechazada();
     }
 
     @Test
@@ -160,6 +168,8 @@ class SolicitudReservaServiceImplTest {
                 solicitud.getId(), new CancelarSolicitudRequest("cancelada"), usuarioId);
         assertEquals(EstadoSolicitud.CANCELADA, respuesta.estado());
         assertEquals(EstadoReserva.CANCELADA, reserva.getEstado());
+        verify(metrics).solicitudCancelada();
+        verify(metrics).reservaCancelada();
     }
 
     @Test

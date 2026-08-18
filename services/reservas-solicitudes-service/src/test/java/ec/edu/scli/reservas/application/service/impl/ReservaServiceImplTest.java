@@ -3,6 +3,7 @@ package ec.edu.scli.reservas.application.service.impl;
 import ec.edu.scli.reservas.domain.model.*;
 import ec.edu.scli.reservas.domain.port.out.ReservaRepositoryPort;
 import ec.edu.scli.reservas.mapper.ReservaMapper;
+import ec.edu.scli.reservas.observability.BusinessEventMetrics;
 import ec.edu.scli.reservas.presentation.dto.request.CancelarReservaRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -20,12 +21,14 @@ import static org.mockito.Mockito.*;
 class ReservaServiceImplTest {
     private ReservaRepositoryPort repository;
     private ReservaServiceImpl service;
+    private BusinessEventMetrics metrics;
 
     @BeforeEach
     void setUp() {
         repository = mock(ReservaRepositoryPort.class);
+        metrics = mock(BusinessEventMetrics.class);
         when(repository.guardar(any())).thenAnswer(i -> i.getArgument(0));
-        service = new ReservaServiceImpl(repository, new ReservaMapper());
+        service = new ReservaServiceImpl(repository, new ReservaMapper(), metrics);
     }
 
     @Test
@@ -65,6 +68,7 @@ class ReservaServiceImplTest {
         Reserva reserva = reserva(EstadoReserva.EN_CURSO);
         prepararActualizacion(reserva);
         assertEquals(EstadoReserva.FINALIZADA, service.finalizar(reserva.getId(), UUID.randomUUID()).estado());
+        verify(metrics).reservaFinalizada();
     }
 
     @Test
@@ -73,6 +77,7 @@ class ReservaServiceImplTest {
         prepararActualizacion(reserva);
         assertEquals(EstadoReserva.CANCELADA,
                 service.cancelar(reserva.getId(), new CancelarReservaRequest("motivo"), UUID.randomUUID()).estado());
+        verify(metrics).reservaCancelada();
     }
 
     @Test
