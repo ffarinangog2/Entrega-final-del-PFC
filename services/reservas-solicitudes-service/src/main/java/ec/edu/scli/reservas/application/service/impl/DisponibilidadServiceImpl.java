@@ -5,6 +5,9 @@ import ec.edu.scli.reservas.client.dto.LaboratorioExternoResponse;
 import ec.edu.scli.reservas.presentation.dto.response.DisponibilidadResponse;
 import ec.edu.scli.reservas.repository.BloqueoAgendaRepository;
 import ec.edu.scli.reservas.domain.port.out.ReservaRepositoryPort;
+import ec.edu.scli.reservas.domain.strategy.disponibilidad.ConsultaDisponibilidad;
+import ec.edu.scli.reservas.domain.strategy.disponibilidad.DisponibilidadStrategy;
+import ec.edu.scli.reservas.domain.strategy.disponibilidad.EstadoLaboratorio;
 import ec.edu.scli.reservas.application.service.DisponibilidadService;
 import org.springframework.stereotype.Service;
 
@@ -19,14 +22,17 @@ public class DisponibilidadServiceImpl implements DisponibilidadService {
     private final ReservaRepositoryPort reservaRepository;
     private final BloqueoAgendaRepository bloqueoAgendaRepository;
     private final AcademicoLaboratoriosClient academicoLaboratoriosClient;
+    private final DisponibilidadStrategy disponibilidadStrategy;
 
     public DisponibilidadServiceImpl(
             ReservaRepositoryPort reservaRepository,
             BloqueoAgendaRepository bloqueoAgendaRepository,
-            AcademicoLaboratoriosClient academicoLaboratoriosClient) {
+            AcademicoLaboratoriosClient academicoLaboratoriosClient,
+            DisponibilidadStrategy disponibilidadStrategy) {
         this.reservaRepository = reservaRepository;
         this.bloqueoAgendaRepository = bloqueoAgendaRepository;
         this.academicoLaboratoriosClient = academicoLaboratoriosClient;
+        this.disponibilidadStrategy = disponibilidadStrategy;
     }
 
     @Override
@@ -35,58 +41,26 @@ public class DisponibilidadServiceImpl implements DisponibilidadService {
             LocalDate fecha,
             LocalTime horaInicio,
             LocalTime horaFin) {
-        validarArgumentos(laboratorioId, fecha, horaInicio, horaFin);
+        ConsultaDisponibilidad consulta =
+                new ConsultaDisponibilidad(laboratorioId, fecha, horaInicio, horaFin);
+        var resultado = disponibilidadStrategy.evaluar(
+                consulta,
+                LocalDate.now(),
+                () -> obtenerEstadoLaboratorio(laboratorioId),
+                () -> reservaRepository.contarConflictosActivos(
+                        laboratorioId, fecha, horaInicio, horaFin),
+                () -> bloqueoAgendaRepository.contarBloqueosActivosConflictivos(
+                        laboratorioId, fecha, horaInicio, horaFin));
+        return respuesta(laboratorioId, fecha, horaInicio, horaFin,
+                resultado.disponible(), resultado.motivo());
+    }
 
+    private EstadoLaboratorio obtenerEstadoLaboratorio(UUID laboratorioId) {
         LaboratorioExternoResponse laboratorio =
                 academicoLaboratoriosClient.obtenerLaboratorio(laboratorioId);
-
-        if (laboratorio == null || !laboratorio.existe()) {
-            throw new IllegalArgumentException("El laboratorio indicado no existe");
-        }
-        if (!laboratorio.activo()) {
-            throw new IllegalArgumentException("El laboratorio indicado no está activo");
-        }
-        if (laboratorio.estado() != null && !esEstadoDisponible(laboratorio.estado())) {
-            return respuesta(laboratorioId, fecha, horaInicio, horaFin, false,
-                    "El laboratorio no se encuentra disponible");
-        }
-
-        long conflictosReserva = reservaRepository.contarConflictosActivos(
-                laboratorioId, fecha, horaInicio, horaFin);
-        if (conflictosReserva > 0) {
-            return respuesta(laboratorioId, fecha, horaInicio, horaFin, false,
-                    "Existe una reserva que cruza el horario solicitado");
-        }
-
-        long bloqueos = bloqueoAgendaRepository.contarBloqueosActivosConflictivos(
-                laboratorioId, fecha, horaInicio, horaFin);
-        if (bloqueos > 0) {
-            return respuesta(laboratorioId, fecha, horaInicio, horaFin, false,
-                    "El laboratorio tiene un bloqueo de agenda en el horario solicitado");
-        }
-
-        return respuesta(laboratorioId, fecha, horaInicio, horaFin, true, null);
-    }
-
-    private void validarArgumentos(
-            UUID laboratorioId,
-            LocalDate fecha,
-            LocalTime horaInicio,
-            LocalTime horaFin) {
-        if (laboratorioId == null || fecha == null || horaInicio == null || horaFin == null) {
-            throw new IllegalArgumentException(
-                    "El laboratorio, la fecha y las horas de inicio y fin son obligatorios");
-        }
-        if (fecha.isBefore(LocalDate.now())) {
-            throw new IllegalArgumentException("La fecha no puede estar en el pasado");
-        }
-        if (!horaFin.isAfter(horaInicio)) {
-            throw new IllegalArgumentException("La hora de fin debe ser mayor que la hora de inicio");
-        }
-    }
-
-    private boolean esEstadoDisponible(String estado) {
-        return "DISPONIBLE".equalsIgnoreCase(estado) || "ACTIVO".equalsIgnoreCase(estado);
+        return laboratorio == null ? null
+                : new EstadoLaboratorio(
+                        laboratorio.existe(), laboratorio.activo(), laboratorio.estado());
     }
 
     private DisponibilidadResponse respuesta(
