@@ -163,7 +163,7 @@ services:
   # =========================================================
   usuarios-service:
     build:
-      context: ./usuarios-service
+      context: ./services/usuarios-service
       dockerfile: Dockerfile
 
     container_name: scli-usuarios-service

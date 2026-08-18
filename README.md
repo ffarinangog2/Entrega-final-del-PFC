@@ -19,7 +19,7 @@ docker compose up -d
 ## Estructura general
 
 - `auth-service`: autenticación.
-- `usuarios-service`: administración de usuarios.
+- `services/usuarios-service`: administración de usuarios.
 - `academico-laboratorios-service`: información académica y laboratorios.
 - `reservas-solicitudes-service`: solicitudes y reservas.
 - `frontend`: interfaz de usuario.

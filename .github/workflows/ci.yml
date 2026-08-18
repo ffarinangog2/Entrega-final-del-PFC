@@ -14,7 +14,7 @@ jobs:
         include:
           - service: auth-service
             database: auth_db
-          - service: usuarios-service
+          - service: services/usuarios-service
             database: usuarios_db
           - service: academico-laboratorios-service
             database: academico_db

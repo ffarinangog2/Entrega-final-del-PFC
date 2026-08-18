@@ -20,7 +20,7 @@ http://localhost:8082
 ## Preparación local
 
 Los comandos de Docker Compose deben ejecutarse desde la raíz del repositorio.
-Los comandos Maven deben ejecutarse desde `usuarios-service`.
+Los comandos Maven deben ejecutarse desde `services/usuarios-service`.
 
 ### 1. Levantar la base de datos
 
