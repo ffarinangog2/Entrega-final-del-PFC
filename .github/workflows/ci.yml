@@ -66,6 +66,14 @@ jobs:
         run: |
           echo "JWT_SECRET=$(openssl rand -base64 48)" >> "$GITHUB_ENV"
 
+      - name: Generate Reservas consumer Pact
+        if: ${{ matrix.service == 'services/reservas-solicitudes-service' }}
+        run: >-
+          mvn --batch-mode
+          -f tests/contract/pom.xml
+          -Dpact.rootDir="$GITHUB_WORKSPACE/tests/contract/target/pacts"
+          test
+
       - name: Build and test
         working-directory: ${{ matrix.service }}
         env:
