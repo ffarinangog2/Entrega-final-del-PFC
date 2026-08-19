@@ -67,7 +67,7 @@ services:
   # =========================================================
   auth-service:
     build:
-      context: ./auth-service
+      context: ./services/auth-service
       dockerfile: Dockerfile
 
     container_name: scli-auth-service
@@ -356,7 +356,7 @@ services:
   # =========================================================
   api-gateway:
     build:
-      context: ./api-gateway
+      context: ./services/api-gateway
       dockerfile: Dockerfile
 
     container_name: api-gateway
@@ -389,6 +389,24 @@ services:
       start_period: 60s
 
     restart: unless-stopped
+
+    networks:
+      - scli-network
+
+  # =========================================================
+  # APLICACION WEB
+  # =========================================================
+  web:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+
+    ports:
+      - "3000:80"
+
+    depends_on:
+      api-gateway:
+        condition: service_healthy
 
     networks:
       - scli-network

@@ -12,7 +12,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - service: auth-service
+          - service: services/auth-service
             database: auth_db
           - service: services/usuarios-service
             database: usuarios_db
