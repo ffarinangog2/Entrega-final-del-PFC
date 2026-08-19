@@ -3,10 +3,15 @@ package ec.edu.uteq.scli.mobile.common.di
 import android.content.Context
 import androidx.room.Room
 import ec.edu.uteq.scli.mobile.data.local.AppDatabase
+import ec.edu.uteq.scli.mobile.BuildConfig
+import ec.edu.uteq.scli.mobile.common.network.GatewayClientFactory
 import ec.edu.uteq.scli.mobile.features.incidentes.data.IncidenteLocalRepository
 import ec.edu.uteq.scli.mobile.features.incidentes.domain.IncidenteRepository
 import ec.edu.uteq.scli.mobile.features.notifications.NotificationHelper
 import ec.edu.uteq.scli.mobile.features.profile.data.SettingsRepository
+import ec.edu.uteq.scli.mobile.features.reservas.data.RemoteReservaRepository
+import ec.edu.uteq.scli.mobile.features.reservas.data.remote.ReservasApi
+import ec.edu.uteq.scli.mobile.features.reservas.domain.ReservaRepository
 
 /**
  * Contenedor de dependencias manual (sin Hilt) para mantener el scaffold
@@ -26,4 +31,8 @@ class AppContainer(context: Context) {
     val settingsRepository: SettingsRepository = SettingsRepository(context.applicationContext)
 
     val notificationHelper: NotificationHelper = NotificationHelper(context.applicationContext)
+
+    private val gatewayRetrofit = GatewayClientFactory.createRetrofit(BuildConfig.API_BASE_URL)
+    private val reservasApi = gatewayRetrofit.create(ReservasApi::class.java)
+    val reservaRepository: ReservaRepository = RemoteReservaRepository(reservasApi)
 }

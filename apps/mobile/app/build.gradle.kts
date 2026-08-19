@@ -4,6 +4,10 @@ plugins {
     id("com.google.devtools.ksp")
 }
 
+val apiBaseUrl = providers.gradleProperty("SCLI_API_BASE_URL")
+    .orElse(providers.environmentVariable("SCLI_API_BASE_URL"))
+    .orElse("https://scli-api.invalid/")
+
 // El plugin de Firebase necesita google-services.json, que todavía no existe
 // en este repo (ver apps/mobile/README.md). Se aplica solo si el archivo está
 // presente para no romper el build de quien no lo tenga configurado aún.
@@ -42,6 +46,11 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
+    }
+
+    defaultConfig {
+        buildConfigField("String", "API_BASE_URL", "\"${apiBaseUrl.get()}\"")
     }
 
     composeOptions {
@@ -61,7 +70,13 @@ dependencies {
     implementation(platform("androidx.compose:compose-bom:2024.06.00"))
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.material3:material3")
+    implementation("androidx.compose.material:material")
     implementation("androidx.compose.material:material-icons-extended")
+
+    // Cliente compartido para consumir el API Gateway
+    implementation("com.squareup.retrofit2:retrofit:2.11.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.11.0")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
 
     // Lifecycle / ViewModel
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.4")
@@ -89,6 +104,7 @@ dependencies {
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
     testImplementation("io.mockk:mockk:1.13.11")
+    testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
 
     // Tests instrumentados
     androidTestImplementation("androidx.test:core:1.6.1")

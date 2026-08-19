@@ -2,6 +2,7 @@ package ec.edu.uteq.scli.mobile.common.navigation
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
@@ -22,16 +23,28 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
 import ec.edu.uteq.scli.mobile.R
 import ec.edu.uteq.scli.mobile.ScliMobileApplication
 import ec.edu.uteq.scli.mobile.features.incidentes.presentation.IncidentesScreen
 import ec.edu.uteq.scli.mobile.features.incidentes.presentation.IncidentesViewModel
 import ec.edu.uteq.scli.mobile.features.profile.presentation.ProfileScreen
 import ec.edu.uteq.scli.mobile.features.profile.presentation.ProfileViewModel
+import ec.edu.uteq.scli.mobile.features.reservas.presentation.NuevaReservaScreen
+import ec.edu.uteq.scli.mobile.features.reservas.presentation.NuevaReservaViewModel
+import ec.edu.uteq.scli.mobile.features.reservas.presentation.ReservaDetalleScreen
+import ec.edu.uteq.scli.mobile.features.reservas.presentation.ReservasScreen
+import ec.edu.uteq.scli.mobile.features.reservas.presentation.ReservasViewModel
 
 private sealed class AppDestination(val route: String) {
     data object Incidentes : AppDestination("incidentes")
+    data object Reservas : AppDestination("reservas")
     data object Perfil : AppDestination("perfil")
+    data object NuevaReserva : AppDestination("reservas/nueva")
+    data object ReservaDetalle : AppDestination("reservas/{reservaId}") {
+        fun crearRuta(id: String) = "reservas/$id"
+    }
 }
 
 @Composable
@@ -50,6 +63,12 @@ fun AppNavHost(application: ScliMobileApplication) {
                     onClick = { navController.navigateToTab(AppDestination.Incidentes.route) },
                     icon = { Icon(Icons.Filled.Warning, contentDescription = null) },
                     label = { Text(stringResource(R.string.nav_incidentes)) },
+                )
+                NavigationBarItem(
+                    selected = currentDestination.isRoute(AppDestination.Reservas),
+                    onClick = { navController.navigateToTab(AppDestination.Reservas.route) },
+                    icon = { Icon(Icons.Filled.Event, contentDescription = null) },
+                    label = { Text(stringResource(R.string.nav_reservas)) },
                 )
                 NavigationBarItem(
                     selected = currentDestination.isRoute(AppDestination.Perfil),
@@ -84,6 +103,38 @@ fun AppNavHost(application: ScliMobileApplication) {
                     },
                 )
                 ProfileScreen(viewModel)
+            }
+            composable(AppDestination.Reservas.route) {
+                val viewModel: ReservasViewModel = viewModel(
+                    factory = viewModelFactory {
+                        initializer { ReservasViewModel(container.reservaRepository) }
+                    },
+                )
+                ReservasScreen(
+                    viewModel = viewModel,
+                    onReservaClick = { navController.navigate(AppDestination.ReservaDetalle.crearRuta(it)) },
+                    onNuevaReserva = { navController.navigate(AppDestination.NuevaReserva.route) },
+                )
+            }
+            composable(AppDestination.NuevaReserva.route) {
+                val viewModel: NuevaReservaViewModel = viewModel(
+                    factory = viewModelFactory {
+                        initializer { NuevaReservaViewModel(container.reservaRepository) }
+                    },
+                )
+                NuevaReservaScreen(viewModel)
+            }
+            composable(
+                route = AppDestination.ReservaDetalle.route,
+                arguments = listOf(navArgument("reservaId") { type = NavType.StringType }),
+            ) { backStackEntry ->
+                val reservaId = requireNotNull(backStackEntry.arguments?.getString("reservaId"))
+                val viewModel: ReservasViewModel = viewModel(
+                    factory = viewModelFactory {
+                        initializer { ReservasViewModel(container.reservaRepository, cargarInicialmente = false) }
+                    },
+                )
+                ReservaDetalleScreen(reservaId, viewModel)
             }
         }
     }
