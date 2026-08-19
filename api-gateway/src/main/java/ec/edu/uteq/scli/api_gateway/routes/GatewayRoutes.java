@@ -14,20 +14,31 @@ import static org.springframework.cloud.gateway.server.mvc.handler.HandlerFuncti
 @Configuration
 public class GatewayRoutes {
 
+        @Bean
+        public RouterFunction<ServerResponse> authApiRoute(
+                        @Value("${AUTH_SERVICE_URL:http://auth-service:8081}") String authServiceUrl) {
+                return route("auth_api")
+                                .route(request -> request.path().startsWith("/api/v1/auth/"), http())
+                                .before(uri(authServiceUrl))
+                                .build();
+        }
+
     @Bean
-    public RouterFunction<ServerResponse> authServiceRoute() {
+    public RouterFunction<ServerResponse> authServiceRoute(
+            @Value("${AUTH_SERVICE_URL:http://auth-service:8081}") String authServiceUrl) {
         return route("auth_service")
                 .route(request -> request.path().startsWith("/auth-service/"), http())
-                .before(uri("http://localhost:8081"))
+                .before(uri(authServiceUrl))
                 .before(stripPrefix(1))
                 .build();
     }
 
     @Bean
-    public RouterFunction<ServerResponse> usuariosServiceRoute() {
+    public RouterFunction<ServerResponse> usuariosServiceRoute(
+            @Value("${USUARIOS_SERVICE_URL:http://usuarios-service:8082}") String usuariosServiceUrl) {
         return route("usuarios_service")
                 .route(request -> request.path().startsWith("/usuarios-service/"), http())
-                .before(uri("http://localhost:8082"))
+                .before(uri(usuariosServiceUrl))
                 .before(stripPrefix(1))
                 .build();
     }

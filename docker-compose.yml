@@ -30,8 +30,9 @@ services:
           "--execute=SELECT 1"
         ]
       interval: 10s
-      timeout: 5s
-      retries: 10
+      timeout: 10s
+      retries: 6
+      start_period: 60s
 
     networks:
       - scli-network
@@ -89,7 +90,14 @@ services:
       cockroach-auth-init:
         condition: service_completed_successfully
       usuarios-service:
-        condition: service_started
+        condition: service_healthy
+
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:8081/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
 
     restart: unless-stopped
 
@@ -127,8 +135,9 @@ services:
           "--execute=SELECT 1"
         ]
       interval: 10s
-      timeout: 5s
-      retries: 10
+      timeout: 10s
+      retries: 6
+      start_period: 60s
 
     networks:
       - scli-network
@@ -184,6 +193,13 @@ services:
       cockroach-usuarios-init:
         condition: service_completed_successfully
 
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:8082/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+
     restart: unless-stopped
 
     networks:
@@ -220,8 +236,9 @@ services:
           "--execute=SELECT 1"
         ]
       interval: 10s
-      timeout: 5s
-      retries: 10
+      timeout: 10s
+      retries: 6
+      start_period: 60s
 
     networks:
       - scli-network
@@ -273,9 +290,18 @@ services:
       DB_PASSWORD: ""
       SERVER_PORT: 8083
       INTERNAL_API_KEY: clave-interna-desarrollo
+      SPRING_FLYWAY_BASELINE_ON_MIGRATE: "true"
+      SPRING_FLYWAY_BASELINE_VERSION: "1"
 
     ports:
       - "8083:8083"
+
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:8083/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
 
     networks:
       - scli-network
@@ -314,7 +340,49 @@ services:
         condition: service_completed_successfully
 
     healthcheck:
-      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8084/actuator/health"]
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:8084/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+
+    restart: unless-stopped
+
+    networks:
+      - scli-network
+
+  # =========================================================
+  # API GATEWAY
+  # =========================================================
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+
+    container_name: api-gateway
+
+    ports:
+      - "8080:8080"
+
+    environment:
+      SERVER_PORT: 8080
+      AUTH_SERVICE_URL: http://auth-service:8081
+      USUARIOS_SERVICE_URL: http://usuarios-service:8082
+      ACADEMICO_SERVICE_URL: http://academico-laboratorios-service:8083
+      RESERVAS_SOLICITUDES_SERVICE_URL: http://reservas-solicitudes-service:8084
+
+    depends_on:
+      auth-service:
+        condition: service_healthy
+      usuarios-service:
+        condition: service_healthy
+      academico-laboratorios-service:
+        condition: service_healthy
+      reservas-solicitudes-service:
+        condition: service_healthy
+
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:8080/actuator/health || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
