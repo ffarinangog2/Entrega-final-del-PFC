@@ -1,7 +1,7 @@
-package ec.edu.scli.academico.service;
+package ec.edu.scli.academico.application.service;
 
-import ec.edu.scli.academico.dto.piso.PisoRequest;
-import ec.edu.scli.academico.dto.piso.PisoResponse;
+import ec.edu.scli.academico.presentation.dto.piso.PisoRequest;
+import ec.edu.scli.academico.presentation.dto.piso.PisoResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 

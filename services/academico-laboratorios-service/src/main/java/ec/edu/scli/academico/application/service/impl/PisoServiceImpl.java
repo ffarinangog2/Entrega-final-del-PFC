@@ -1,18 +1,16 @@
-package ec.edu.scli.academico.service.impl;
+package ec.edu.scli.academico.application.service.impl;
 
-import ec.edu.scli.academico.dto.piso.PisoRequest;
-import ec.edu.scli.academico.dto.piso.PisoResponse;
-import ec.edu.scli.academico.entity.Piso;
+import ec.edu.scli.academico.application.service.PisoService;
+import ec.edu.scli.academico.domain.model.Piso;
+import ec.edu.scli.academico.domain.port.PisoRepositoryPort;
 import ec.edu.scli.academico.exception.BusinessRuleException;
 import ec.edu.scli.academico.exception.ConflictException;
 import ec.edu.scli.academico.exception.ResourceNotFoundException;
+import ec.edu.scli.academico.presentation.dto.piso.PisoRequest;
+import ec.edu.scli.academico.presentation.dto.piso.PisoResponse;
 import ec.edu.scli.academico.repository.BloqueRepository;
-import ec.edu.scli.academico.repository.PisoRepository;
-import ec.edu.scli.academico.service.PisoService;
-import ec.edu.scli.academico.specification.PisoSpecification;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,11 +20,11 @@ import java.util.UUID;
 @Service
 public class PisoServiceImpl implements PisoService {
 
-    private final PisoRepository pisoRepository;
+    private final PisoRepositoryPort pisoRepositoryPort;
     private final BloqueRepository bloqueRepository;
 
-    public PisoServiceImpl(PisoRepository pisoRepository, BloqueRepository bloqueRepository) {
-        this.pisoRepository = pisoRepository;
+    public PisoServiceImpl(PisoRepositoryPort pisoRepositoryPort, BloqueRepository bloqueRepository) {
+        this.pisoRepositoryPort = pisoRepositoryPort;
         this.bloqueRepository = bloqueRepository;
     }
 
@@ -37,13 +35,9 @@ public class PisoServiceImpl implements PisoService {
         validarBloqueExiste(request.bloqueId());
         validarNumeroDuplicado(request.bloqueId(), request.numero(), null);
 
-        Piso piso = new Piso();
-        piso.setBloqueId(request.bloqueId());
-        piso.setNumero(request.numero());
-        piso.setDescripcion(request.descripcion());
-        piso.setActivo(true);
+        Piso piso = Piso.nuevo(request.bloqueId(), request.numero(), request.descripcion());
 
-        Piso guardado = pisoRepository.save(piso);
+        Piso guardado = pisoRepositoryPort.guardar(piso);
 
         return convertirAResponse(guardado);
     }
@@ -51,12 +45,7 @@ public class PisoServiceImpl implements PisoService {
     @Override
     @Transactional(readOnly = true)
     public Page<PisoResponse> listar(UUID bloqueId, Boolean activo, Pageable pageable) {
-
-        Specification<Piso> specification =
-                PisoSpecification.tieneBloque(bloqueId)
-                        .and(PisoSpecification.tieneEstado(activo));
-
-        return pisoRepository.findAll(specification, pageable)
+        return pisoRepositoryPort.buscar(bloqueId, activo, pageable)
                 .map(this::convertirAResponse);
     }
 
@@ -66,7 +55,7 @@ public class PisoServiceImpl implements PisoService {
 
         validarBloqueExiste(bloqueId);
 
-        return pisoRepository.findByBloqueId(bloqueId)
+        return pisoRepositoryPort.buscarPorBloque(bloqueId)
                 .stream()
                 .map(this::convertirAResponse)
                 .toList();
@@ -87,11 +76,9 @@ public class PisoServiceImpl implements PisoService {
         validarBloqueExiste(request.bloqueId());
         validarNumeroDuplicado(request.bloqueId(), request.numero(), id);
 
-        piso.setBloqueId(request.bloqueId());
-        piso.setNumero(request.numero());
-        piso.setDescripcion(request.descripcion());
+        piso.actualizarDatos(request.bloqueId(), request.numero(), request.descripcion());
 
-        Piso actualizado = pisoRepository.save(piso);
+        Piso actualizado = pisoRepositoryPort.guardar(piso);
 
         return convertirAResponse(actualizado);
     }
@@ -101,13 +88,13 @@ public class PisoServiceImpl implements PisoService {
     public void eliminar(UUID id) {
 
         Piso piso = buscarPiso(id);
-        piso.setActivo(false);
+        piso.desactivar();
 
-        pisoRepository.save(piso);
+        pisoRepositoryPort.guardar(piso);
     }
 
     private Piso buscarPiso(UUID id) {
-        return pisoRepository.findById(id)
+        return pisoRepositoryPort.buscarPorId(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "No existe un piso con el id: " + id));
     }
@@ -122,8 +109,8 @@ public class PisoServiceImpl implements PisoService {
     private void validarNumeroDuplicado(UUID bloqueId, Integer numero, UUID idActual) {
 
         boolean existe = (idActual == null)
-                ? pisoRepository.existsByBloqueIdAndNumero(bloqueId, numero)
-                : pisoRepository.existsByBloqueIdAndNumeroAndIdNot(bloqueId, numero, idActual);
+                ? pisoRepositoryPort.existeNumeroEnBloque(bloqueId, numero)
+                : pisoRepositoryPort.existeNumeroEnBloqueParaOtroId(bloqueId, numero, idActual);
 
         if (existe) {
             throw new ConflictException(

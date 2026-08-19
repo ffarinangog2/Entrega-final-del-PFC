@@ -10,7 +10,7 @@ import ec.edu.scli.academico.exception.BusinessRuleException;
 import ec.edu.scli.academico.exception.ConflictException;
 import ec.edu.scli.academico.exception.ResourceNotFoundException;
 import ec.edu.scli.academico.repository.LaboratorioRepository;
-import ec.edu.scli.academico.repository.PisoRepository;
+import ec.edu.scli.academico.infrastructure.persistence.repository.PisoJpaRepository;
 import ec.edu.scli.academico.service.LaboratorioService;
 import ec.edu.scli.academico.specification.LaboratorioSpecification;
 import org.springframework.data.domain.Page;
@@ -26,9 +26,9 @@ import java.util.UUID;
 public class LaboratorioServiceImpl implements LaboratorioService {
 
     private final LaboratorioRepository laboratorioRepository;
-    private final PisoRepository pisoRepository;
+    private final PisoJpaRepository pisoRepository;
 
-    public LaboratorioServiceImpl(LaboratorioRepository laboratorioRepository, PisoRepository pisoRepository) {
+    public LaboratorioServiceImpl(LaboratorioRepository laboratorioRepository, PisoJpaRepository pisoRepository) {
         this.laboratorioRepository = laboratorioRepository;
         this.pisoRepository = pisoRepository;
     }

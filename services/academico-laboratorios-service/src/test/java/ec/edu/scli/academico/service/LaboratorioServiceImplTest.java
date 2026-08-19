@@ -4,7 +4,7 @@ import ec.edu.scli.academico.dto.internal.LaboratorioDisponibilidadBaseResponse;
 import ec.edu.scli.academico.entity.Laboratorio;
 import ec.edu.scli.academico.enums.EstadoLaboratorio;
 import ec.edu.scli.academico.repository.LaboratorioRepository;
-import ec.edu.scli.academico.repository.PisoRepository;
+import ec.edu.scli.academico.infrastructure.persistence.repository.PisoJpaRepository;
 import ec.edu.scli.academico.service.impl.LaboratorioServiceImpl;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,7 +31,7 @@ class LaboratorioServiceImplTest {
     private LaboratorioRepository laboratorioRepository;
 
     @Mock
-    private PisoRepository pisoRepository;
+    private PisoJpaRepository pisoRepository;
 
     @InjectMocks
     private LaboratorioServiceImpl laboratorioService;

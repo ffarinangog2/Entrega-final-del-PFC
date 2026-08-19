@@ -1,8 +1,8 @@
-package ec.edu.scli.academico.controller;
+package ec.edu.scli.academico.presentation.controller;
 
-import ec.edu.scli.academico.dto.piso.PisoRequest;
-import ec.edu.scli.academico.dto.piso.PisoResponse;
-import ec.edu.scli.academico.service.PisoService;
+import ec.edu.scli.academico.application.service.PisoService;
+import ec.edu.scli.academico.presentation.dto.piso.PisoRequest;
+import ec.edu.scli.academico.presentation.dto.piso.PisoResponse;
 import jakarta.validation.Valid;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
