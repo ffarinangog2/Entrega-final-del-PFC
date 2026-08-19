@@ -20,7 +20,7 @@ docker compose up -d
 
 - `auth-service`: autenticación.
 - `services/usuarios-service`: administración de usuarios.
-- `academico-laboratorios-service`: información académica y laboratorios.
+- `services/academico-laboratorios-service`: información académica y laboratorios.
 - `reservas-solicitudes-service`: solicitudes y reservas.
 - `frontend`: interfaz de usuario.
 - `docker-compose.yml`: servicios y clúster CockroachDB E3.

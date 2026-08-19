@@ -256,7 +256,7 @@ services:
   # =========================================================
   academico-laboratorios-service:
     build:
-      context: ./academico-laboratorios-service
+      context: ./services/academico-laboratorios-service
       dockerfile: Dockerfile
 
     container_name: scli-academico-laboratorios-service
