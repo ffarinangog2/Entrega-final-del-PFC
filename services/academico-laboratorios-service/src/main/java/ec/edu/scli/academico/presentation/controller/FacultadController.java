@@ -1,9 +1,9 @@
-package ec.edu.scli.academico.controller;
+package ec.edu.scli.academico.presentation.controller;
 
-import ec.edu.scli.academico.dto.facultad.FacultadEstadoRequest;
-import ec.edu.scli.academico.dto.facultad.FacultadRequest;
-import ec.edu.scli.academico.dto.facultad.FacultadResponse;
-import ec.edu.scli.academico.service.FacultadService;
+import ec.edu.scli.academico.application.service.FacultadService;
+import ec.edu.scli.academico.presentation.dto.facultad.FacultadEstadoRequest;
+import ec.edu.scli.academico.presentation.dto.facultad.FacultadRequest;
+import ec.edu.scli.academico.presentation.dto.facultad.FacultadResponse;
 import jakarta.validation.Valid;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;

@@ -7,7 +7,7 @@ import ec.edu.scli.academico.exception.BusinessRuleException;
 import ec.edu.scli.academico.exception.ConflictException;
 import ec.edu.scli.academico.exception.ResourceNotFoundException;
 import ec.edu.scli.academico.repository.CarreraRepository;
-import ec.edu.scli.academico.repository.FacultadRepository;
+import ec.edu.scli.academico.infrastructure.persistence.repository.FacultadJpaRepository;
 import ec.edu.scli.academico.service.CarreraService;
 import ec.edu.scli.academico.specification.CarreraSpecification;
 import org.springframework.data.domain.Page;
@@ -23,9 +23,9 @@ import java.util.UUID;
 public class CarreraServiceImpl implements CarreraService {
 
     private final CarreraRepository carreraRepository;
-    private final FacultadRepository facultadRepository;
+    private final FacultadJpaRepository facultadRepository;
 
-    public CarreraServiceImpl(CarreraRepository carreraRepository, FacultadRepository facultadRepository) {
+public CarreraServiceImpl(CarreraRepository carreraRepository, FacultadJpaRepository facultadRepository) {
         this.carreraRepository = carreraRepository;
         this.facultadRepository = facultadRepository;
     }

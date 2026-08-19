@@ -1,12 +1,11 @@
-package ec.edu.scli.academico.service;
+package ec.edu.scli.academico.application.service.impl;
 
-import ec.edu.scli.academico.dto.facultad.FacultadRequest;
-import ec.edu.scli.academico.dto.facultad.FacultadResponse;
-import ec.edu.scli.academico.entity.Facultad;
+import ec.edu.scli.academico.domain.model.Facultad;
+import ec.edu.scli.academico.domain.port.FacultadRepositoryPort;
 import ec.edu.scli.academico.exception.ConflictException;
 import ec.edu.scli.academico.exception.ResourceNotFoundException;
-import ec.edu.scli.academico.repository.FacultadRepository;
-import ec.edu.scli.academico.service.impl.FacultadServiceImpl;
+import ec.edu.scli.academico.presentation.dto.facultad.FacultadRequest;
+import ec.edu.scli.academico.presentation.dto.facultad.FacultadResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -20,14 +19,13 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class FacultadServiceImplTest {
 
     @Mock
-    private FacultadRepository facultadRepository;
+    private FacultadRepositoryPort facultadRepositoryPort;
 
     @InjectMocks
     private FacultadServiceImpl facultadService;
@@ -46,8 +44,8 @@ class FacultadServiceImplTest {
     @Test
     void crear_deberiaGuardarFacultadCuandoCodigoNoExiste() {
 
-        when(facultadRepository.existsByCodigo("FISEI")).thenReturn(false);
-        when(facultadRepository.save(any(Facultad.class)))
+        when(facultadRepositoryPort.existeCodigo("FISEI")).thenReturn(false);
+        when(facultadRepositoryPort.guardar(any(Facultad.class)))
                 .thenAnswer(invocacion -> {
                     Facultad f = invocacion.getArgument(0);
                     f.setId(UUID.randomUUID());
@@ -64,7 +62,7 @@ class FacultadServiceImplTest {
     @Test
     void crear_deberiaLanzarConflictExceptionCuandoCodigoYaExiste() {
 
-        when(facultadRepository.existsByCodigo("FISEI")).thenReturn(true);
+        when(facultadRepositoryPort.existeCodigo("FISEI")).thenReturn(true);
 
         assertThatThrownBy(() -> facultadService.crear(requestValido))
                 .isInstanceOf(ConflictException.class)
@@ -76,7 +74,7 @@ class FacultadServiceImplTest {
 
         UUID idInexistente = UUID.randomUUID();
 
-        when(facultadRepository.findById(idInexistente))
+        when(facultadRepositoryPort.buscarPorId(idInexistente))
                 .thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> facultadService.obtenerPorId(idInexistente))
@@ -87,14 +85,11 @@ class FacultadServiceImplTest {
     void cambiarEstado_deberiaActualizarActivoCorrectamente() {
 
         UUID id = UUID.randomUUID();
-        Facultad facultadExistente = new Facultad();
+        Facultad facultadExistente = Facultad.nueva("FISEI", "Facultad de Ingenieria", null);
         facultadExistente.setId(id);
-        facultadExistente.setCodigo("FISEI");
-        facultadExistente.setNombre("Facultad de Ingenieria");
-        facultadExistente.setActivo(true);
 
-        when(facultadRepository.findById(id)).thenReturn(Optional.of(facultadExistente));
-        when(facultadRepository.save(any(Facultad.class)))
+        when(facultadRepositoryPort.buscarPorId(id)).thenReturn(Optional.of(facultadExistente));
+        when(facultadRepositoryPort.guardar(any(Facultad.class)))
                 .thenAnswer(invocacion -> invocacion.getArgument(0));
 
         FacultadResponse response = facultadService.cambiarEstado(id, false);

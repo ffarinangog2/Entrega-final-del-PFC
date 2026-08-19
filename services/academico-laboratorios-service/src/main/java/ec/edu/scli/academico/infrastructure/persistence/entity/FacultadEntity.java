@@ -1,4 +1,4 @@
-package ec.edu.scli.academico.entity;
+package ec.edu.scli.academico.infrastructure.persistence.entity;
 
 import jakarta.persistence.*;
 
@@ -7,7 +7,7 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "facultades")
-public class Facultad {
+public class FacultadEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)

@@ -1,14 +1,14 @@
-package ec.edu.scli.academico.specification;
+package ec.edu.scli.academico.infrastructure.persistence.specification;
 
-import ec.edu.scli.academico.entity.Facultad;
+import ec.edu.scli.academico.infrastructure.persistence.entity.FacultadEntity;
 import org.springframework.data.jpa.domain.Specification;
 
-public final class FacultadSpecification {
+public final class FacultadJpaSpecification {
 
-    private FacultadSpecification() {
+    private FacultadJpaSpecification() {
     }
 
-    public static Specification<Facultad> codigoContiene(String codigo) {
+    public static Specification<FacultadEntity> codigoContiene(String codigo) {
         return (root, query, cb) -> {
             if (codigo == null || codigo.isBlank()) {
                 return cb.conjunction();
@@ -17,7 +17,7 @@ public final class FacultadSpecification {
         };
     }
 
-    public static Specification<Facultad> nombreContiene(String nombre) {
+    public static Specification<FacultadEntity> nombreContiene(String nombre) {
         return (root, query, cb) -> {
             if (nombre == null || nombre.isBlank()) {
                 return cb.conjunction();
@@ -26,7 +26,7 @@ public final class FacultadSpecification {
         };
     }
 
-    public static Specification<Facultad> tieneEstado(Boolean activo) {
+    public static Specification<FacultadEntity> tieneEstado(Boolean activo) {
         return (root, query, cb) -> {
             if (activo == null) {
                 return cb.conjunction();

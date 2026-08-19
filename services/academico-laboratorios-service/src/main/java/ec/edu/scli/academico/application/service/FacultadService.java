@@ -1,7 +1,7 @@
-package ec.edu.scli.academico.service;
+package ec.edu.scli.academico.application.service;
 
-import ec.edu.scli.academico.dto.facultad.FacultadRequest;
-import ec.edu.scli.academico.dto.facultad.FacultadResponse;
+import ec.edu.scli.academico.presentation.dto.facultad.FacultadRequest;
+import ec.edu.scli.academico.presentation.dto.facultad.FacultadResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
