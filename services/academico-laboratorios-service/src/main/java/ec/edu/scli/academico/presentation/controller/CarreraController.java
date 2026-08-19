@@ -1,8 +1,8 @@
-package ec.edu.scli.academico.controller;
+package ec.edu.scli.academico.presentation.controller;
 
-import ec.edu.scli.academico.dto.carrera.CarreraRequest;
-import ec.edu.scli.academico.dto.carrera.CarreraResponse;
-import ec.edu.scli.academico.service.CarreraService;
+import ec.edu.scli.academico.application.service.CarreraService;
+import ec.edu.scli.academico.presentation.dto.carrera.CarreraRequest;
+import ec.edu.scli.academico.presentation.dto.carrera.CarreraResponse;
 import jakarta.validation.Valid;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;

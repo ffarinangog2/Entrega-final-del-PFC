@@ -56,4 +56,9 @@ public class FacultadRepositoryAdapter implements FacultadRepositoryPort {
     public boolean existeCodigoParaOtroId(String codigo, UUID id) {
         return facultadJpaRepository.existsByCodigoAndIdNot(codigo, id);
     }
+
+    @Override
+    public boolean existePorId(UUID id) {
+        return facultadJpaRepository.existsById(id);
+    }
 }

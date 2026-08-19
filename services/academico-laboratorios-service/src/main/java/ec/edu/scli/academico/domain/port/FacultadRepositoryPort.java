@@ -18,4 +18,6 @@ public interface FacultadRepositoryPort {
     boolean existeCodigo(String codigo);
 
     boolean existeCodigoParaOtroId(String codigo, UUID id);
+
+    boolean existePorId(UUID id);
 }

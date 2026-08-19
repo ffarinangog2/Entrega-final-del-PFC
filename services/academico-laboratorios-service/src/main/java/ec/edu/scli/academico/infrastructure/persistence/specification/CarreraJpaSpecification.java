@@ -1,16 +1,16 @@
-package ec.edu.scli.academico.specification;
+package ec.edu.scli.academico.infrastructure.persistence.specification;
 
-import ec.edu.scli.academico.entity.Carrera;
+import ec.edu.scli.academico.infrastructure.persistence.entity.CarreraEntity;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.util.UUID;
 
-public final class CarreraSpecification {
+public final class CarreraJpaSpecification {
 
-    private CarreraSpecification() {
+    private CarreraJpaSpecification() {
     }
 
-    public static Specification<Carrera> codigoContiene(String codigo) {
+    public static Specification<CarreraEntity> codigoContiene(String codigo) {
         return (root, query, cb) -> {
             if (codigo == null || codigo.isBlank()) {
                 return cb.conjunction();
@@ -19,7 +19,7 @@ public final class CarreraSpecification {
         };
     }
 
-    public static Specification<Carrera> nombreContiene(String nombre) {
+    public static Specification<CarreraEntity> nombreContiene(String nombre) {
         return (root, query, cb) -> {
             if (nombre == null || nombre.isBlank()) {
                 return cb.conjunction();
@@ -28,7 +28,7 @@ public final class CarreraSpecification {
         };
     }
 
-    public static Specification<Carrera> tieneFacultad(UUID facultadId) {
+    public static Specification<CarreraEntity> tieneFacultad(UUID facultadId) {
         return (root, query, cb) -> {
             if (facultadId == null) {
                 return cb.conjunction();
@@ -37,7 +37,7 @@ public final class CarreraSpecification {
         };
     }
 
-    public static Specification<Carrera> tieneEstado(Boolean activo) {
+    public static Specification<CarreraEntity> tieneEstado(Boolean activo) {
         return (root, query, cb) -> {
             if (activo == null) {
                 return cb.conjunction();

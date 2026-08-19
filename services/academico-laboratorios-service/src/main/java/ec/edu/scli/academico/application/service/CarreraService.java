@@ -1,7 +1,7 @@
-package ec.edu.scli.academico.service;
+package ec.edu.scli.academico.application.service;
 
-import ec.edu.scli.academico.dto.carrera.CarreraRequest;
-import ec.edu.scli.academico.dto.carrera.CarreraResponse;
+import ec.edu.scli.academico.presentation.dto.carrera.CarreraRequest;
+import ec.edu.scli.academico.presentation.dto.carrera.CarreraResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 

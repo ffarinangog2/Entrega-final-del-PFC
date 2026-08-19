@@ -1,4 +1,4 @@
-package ec.edu.scli.academico.dto.carrera;
+package ec.edu.scli.academico.presentation.dto.carrera;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

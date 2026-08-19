@@ -7,7 +7,7 @@ import ec.edu.scli.academico.entity.Materia;
 import ec.edu.scli.academico.exception.BusinessRuleException;
 import ec.edu.scli.academico.exception.ConflictException;
 import ec.edu.scli.academico.exception.ResourceNotFoundException;
-import ec.edu.scli.academico.repository.CarreraRepository;
+import ec.edu.scli.academico.infrastructure.persistence.repository.CarreraJpaRepository;
 import ec.edu.scli.academico.repository.MateriaRepository;
 import ec.edu.scli.academico.service.MateriaService;
 import ec.edu.scli.academico.specification.MateriaSpecification;
@@ -24,9 +24,9 @@ import java.util.UUID;
 public class MateriaServiceImpl implements MateriaService {
 
     private final MateriaRepository materiaRepository;
-    private final CarreraRepository carreraRepository;
+    private final CarreraJpaRepository carreraRepository;
 
-    public MateriaServiceImpl(MateriaRepository materiaRepository, CarreraRepository carreraRepository) {
+    public MateriaServiceImpl(MateriaRepository materiaRepository, CarreraJpaRepository carreraRepository) {
         this.materiaRepository = materiaRepository;
         this.carreraRepository = carreraRepository;
     }
