@@ -6,7 +6,7 @@ import ec.edu.scli.academico.entity.HorarioAcademico;
 import ec.edu.scli.academico.exception.BusinessRuleException;
 import ec.edu.scli.academico.exception.ResourceNotFoundException;
 import ec.edu.scli.academico.repository.HorarioAcademicoRepository;
-import ec.edu.scli.academico.repository.LaboratorioRepository;
+import ec.edu.scli.academico.infrastructure.persistence.repository.LaboratorioJpaRepository;
 import ec.edu.scli.academico.repository.MateriaRepository;
 import ec.edu.scli.academico.repository.PeriodoLectivoRepository;
 import ec.edu.scli.academico.service.HorarioAcademicoService;
@@ -22,13 +22,13 @@ public class HorarioAcademicoServiceImpl implements HorarioAcademicoService {
     private final HorarioAcademicoRepository horarioAcademicoRepository;
     private final MateriaRepository materiaRepository;
     private final PeriodoLectivoRepository periodoLectivoRepository;
-    private final LaboratorioRepository laboratorioRepository;
+    private final LaboratorioJpaRepository laboratorioRepository;
 
     public HorarioAcademicoServiceImpl(
             HorarioAcademicoRepository horarioAcademicoRepository,
             MateriaRepository materiaRepository,
             PeriodoLectivoRepository periodoLectivoRepository,
-            LaboratorioRepository laboratorioRepository
+            LaboratorioJpaRepository laboratorioRepository
     ) {
         this.horarioAcademicoRepository = horarioAcademicoRepository;
         this.materiaRepository = materiaRepository;

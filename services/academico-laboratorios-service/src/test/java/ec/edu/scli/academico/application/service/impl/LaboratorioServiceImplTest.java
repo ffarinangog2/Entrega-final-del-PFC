@@ -1,11 +1,10 @@
-package ec.edu.scli.academico.service;
+package ec.edu.scli.academico.application.service.impl;
 
+import ec.edu.scli.academico.domain.model.Laboratorio;
+import ec.edu.scli.academico.domain.port.LaboratorioRepositoryPort;
+import ec.edu.scli.academico.domain.port.PisoRepositoryPort;
 import ec.edu.scli.academico.dto.internal.LaboratorioDisponibilidadBaseResponse;
-import ec.edu.scli.academico.entity.Laboratorio;
 import ec.edu.scli.academico.enums.EstadoLaboratorio;
-import ec.edu.scli.academico.repository.LaboratorioRepository;
-import ec.edu.scli.academico.infrastructure.persistence.repository.PisoJpaRepository;
-import ec.edu.scli.academico.service.impl.LaboratorioServiceImpl;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -28,10 +27,10 @@ import static org.mockito.Mockito.when;
 class LaboratorioServiceImplTest {
 
     @Mock
-    private LaboratorioRepository laboratorioRepository;
+    private LaboratorioRepositoryPort laboratorioRepositoryPort;
 
     @Mock
-    private PisoJpaRepository pisoRepository;
+    private PisoRepositoryPort pisoRepositoryPort;
 
     @InjectMocks
     private LaboratorioServiceImpl laboratorioService;
@@ -41,15 +40,11 @@ class LaboratorioServiceImplTest {
 
         UUID id = UUID.randomUUID();
 
-        Laboratorio laboratorio = new Laboratorio();
+        Laboratorio laboratorio = Laboratorio.nuevo(UUID.randomUUID(), "LAB-001", "Laboratorio de Redes", 30, null);
         laboratorio.setId(id);
-        laboratorio.setCodigo("LAB-001");
-        laboratorio.setNombre("Laboratorio de Redes");
-        laboratorio.setCapacidad(30);
         laboratorio.setEstado(EstadoLaboratorio.DISPONIBLE);
-        laboratorio.setActivo(true);
 
-        when(laboratorioRepository.findById(id)).thenReturn(Optional.of(laboratorio));
+        when(laboratorioRepositoryPort.buscarPorId(id)).thenReturn(Optional.of(laboratorio));
 
         LaboratorioDisponibilidadBaseResponse response =
                 laboratorioService.obtenerDisponibilidadBase(id);
@@ -66,7 +61,7 @@ class LaboratorioServiceImplTest {
 
         UUID idInexistente = UUID.randomUUID();
 
-        when(laboratorioRepository.findById(idInexistente)).thenReturn(Optional.empty());
+        when(laboratorioRepositoryPort.buscarPorId(idInexistente)).thenReturn(Optional.empty());
 
         LaboratorioDisponibilidadBaseResponse response =
                 laboratorioService.obtenerDisponibilidadBase(idInexistente);
@@ -82,11 +77,26 @@ class LaboratorioServiceImplTest {
 
         UUID id = UUID.randomUUID();
 
-        when(laboratorioRepository.existsById(id)).thenReturn(true);
+        when(laboratorioRepositoryPort.existePorId(id)).thenReturn(true);
 
         var response = laboratorioService.verificarExistencia(id);
 
         assertThat(response.id()).isEqualTo(id);
         assertThat(response.existe()).isTrue();
+    }
+
+    @Test
+    void crear_deberiaLanzarBusinessRuleExceptionCuandoPisoNoExiste() {
+
+        UUID pisoInexistente = UUID.randomUUID();
+
+        when(pisoRepositoryPort.buscarPorId(pisoInexistente)).thenReturn(Optional.empty());
+
+        var request = new ec.edu.scli.academico.presentation.dto.laboratorio.LaboratorioRequest(
+                pisoInexistente, "LAB-002", "Laboratorio de Software", 25, null
+        );
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> laboratorioService.crear(request))
+                .isInstanceOf(ec.edu.scli.academico.exception.BusinessRuleException.class);
     }
 }

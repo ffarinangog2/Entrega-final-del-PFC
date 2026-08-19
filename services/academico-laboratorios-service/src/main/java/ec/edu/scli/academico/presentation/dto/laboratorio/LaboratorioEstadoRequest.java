@@ -1,4 +1,4 @@
-package ec.edu.scli.academico.dto.laboratorio;
+package ec.edu.scli.academico.presentation.dto.laboratorio;
 
 import ec.edu.scli.academico.enums.EstadoLaboratorio;
 import jakarta.validation.constraints.NotNull;

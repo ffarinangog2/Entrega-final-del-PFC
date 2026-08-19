@@ -1,10 +1,10 @@
-package ec.edu.scli.academico.service;
+package ec.edu.scli.academico.application.service;
 
 import ec.edu.scli.academico.dto.internal.ExisteResponse;
 import ec.edu.scli.academico.dto.internal.LaboratorioDisponibilidadBaseResponse;
-import ec.edu.scli.academico.dto.laboratorio.LaboratorioRequest;
-import ec.edu.scli.academico.dto.laboratorio.LaboratorioResponse;
 import ec.edu.scli.academico.enums.EstadoLaboratorio;
+import ec.edu.scli.academico.presentation.dto.laboratorio.LaboratorioRequest;
+import ec.edu.scli.academico.presentation.dto.laboratorio.LaboratorioResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 

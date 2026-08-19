@@ -1,4 +1,4 @@
-package ec.edu.scli.academico.dto.laboratorio;
+package ec.edu.scli.academico.presentation.dto.laboratorio;
 
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;

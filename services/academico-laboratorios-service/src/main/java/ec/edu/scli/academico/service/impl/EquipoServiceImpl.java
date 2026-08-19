@@ -8,7 +8,7 @@ import ec.edu.scli.academico.exception.BusinessRuleException;
 import ec.edu.scli.academico.exception.ConflictException;
 import ec.edu.scli.academico.exception.ResourceNotFoundException;
 import ec.edu.scli.academico.repository.EquipoRepository;
-import ec.edu.scli.academico.repository.LaboratorioRepository;
+import ec.edu.scli.academico.infrastructure.persistence.repository.LaboratorioJpaRepository;
 import ec.edu.scli.academico.repository.TipoEquipoRepository;
 import ec.edu.scli.academico.service.EquipoService;
 import ec.edu.scli.academico.specification.EquipoSpecification;
@@ -25,12 +25,12 @@ import java.util.UUID;
 public class EquipoServiceImpl implements EquipoService {
 
     private final EquipoRepository equipoRepository;
-    private final LaboratorioRepository laboratorioRepository;
+    private final LaboratorioJpaRepository laboratorioRepository;
     private final TipoEquipoRepository tipoEquipoRepository;
 
-    public EquipoServiceImpl(
+        public EquipoServiceImpl(
             EquipoRepository equipoRepository,
-            LaboratorioRepository laboratorioRepository,
+            LaboratorioJpaRepository laboratorioRepository,
             TipoEquipoRepository tipoEquipoRepository
     ) {
         this.equipoRepository = equipoRepository;

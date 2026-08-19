@@ -1,26 +1,15 @@
-package ec.edu.scli.academico.specification;
+package ec.edu.scli.academico.infrastructure.persistence.specification;
 
-import ec.edu.scli.academico.entity.Laboratorio;
 import ec.edu.scli.academico.enums.EstadoLaboratorio;
+import ec.edu.scli.academico.infrastructure.persistence.entity.LaboratorioEntity;
 import org.springframework.data.jpa.domain.Specification;
 
-import java.util.UUID;
+public final class LaboratorioJpaSpecification {
 
-public final class LaboratorioSpecification {
-
-    private LaboratorioSpecification() {
+    private LaboratorioJpaSpecification() {
     }
 
-    public static Specification<Laboratorio> tienePiso(UUID pisoId) {
-        return (root, query, cb) -> {
-            if (pisoId == null) {
-                return cb.conjunction();
-            }
-            return cb.equal(root.get("pisoId"), pisoId);
-        };
-    }
-
-    public static Specification<Laboratorio> nombreOCodigoContiene(String texto) {
+    public static Specification<LaboratorioEntity> nombreOCodigoContiene(String texto) {
         return (root, query, cb) -> {
             if (texto == null || texto.isBlank()) {
                 return cb.conjunction();
@@ -33,7 +22,7 @@ public final class LaboratorioSpecification {
         };
     }
 
-    public static Specification<Laboratorio> tieneEstadoLaboratorio(EstadoLaboratorio estado) {
+    public static Specification<LaboratorioEntity> tieneEstadoLaboratorio(EstadoLaboratorio estado) {
         return (root, query, cb) -> {
             if (estado == null) {
                 return cb.conjunction();
@@ -42,7 +31,7 @@ public final class LaboratorioSpecification {
         };
     }
 
-    public static Specification<Laboratorio> tieneEstado(Boolean activo) {
+    public static Specification<LaboratorioEntity> tieneEstado(Boolean activo) {
         return (root, query, cb) -> {
             if (activo == null) {
                 return cb.conjunction();

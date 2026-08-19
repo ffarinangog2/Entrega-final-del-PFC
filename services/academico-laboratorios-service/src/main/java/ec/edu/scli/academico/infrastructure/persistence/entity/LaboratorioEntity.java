@@ -1,4 +1,4 @@
-package ec.edu.scli.academico.entity;
+package ec.edu.scli.academico.infrastructure.persistence.entity;
 
 import ec.edu.scli.academico.enums.EstadoLaboratorio;
 import jakarta.persistence.*;
@@ -8,7 +8,7 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "laboratorios")
-public class Laboratorio {
+public class LaboratorioEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)

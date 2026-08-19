@@ -2,7 +2,7 @@ package ec.edu.scli.academico.controller;
 
 import ec.edu.scli.academico.dto.internal.ExisteResponse;
 import ec.edu.scli.academico.dto.internal.LaboratorioDisponibilidadBaseResponse;
-import ec.edu.scli.academico.service.LaboratorioService;
+import ec.edu.scli.academico.application.service.LaboratorioService;
 import ec.edu.scli.academico.service.MateriaService;
 import ec.edu.scli.academico.service.PeriodoLectivoService;
 import org.springframework.beans.factory.annotation.Value;

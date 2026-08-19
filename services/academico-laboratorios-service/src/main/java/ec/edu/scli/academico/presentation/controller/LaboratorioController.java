@@ -1,10 +1,10 @@
-package ec.edu.scli.academico.controller;
+package ec.edu.scli.academico.presentation.controller;
 
-import ec.edu.scli.academico.dto.laboratorio.LaboratorioEstadoRequest;
-import ec.edu.scli.academico.dto.laboratorio.LaboratorioRequest;
-import ec.edu.scli.academico.dto.laboratorio.LaboratorioResponse;
+import ec.edu.scli.academico.application.service.LaboratorioService;
 import ec.edu.scli.academico.enums.EstadoLaboratorio;
-import ec.edu.scli.academico.service.LaboratorioService;
+import ec.edu.scli.academico.presentation.dto.laboratorio.LaboratorioEstadoRequest;
+import ec.edu.scli.academico.presentation.dto.laboratorio.LaboratorioRequest;
+import ec.edu.scli.academico.presentation.dto.laboratorio.LaboratorioResponse;
 import jakarta.validation.Valid;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
