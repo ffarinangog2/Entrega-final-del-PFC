@@ -1,4 +1,4 @@
-package ec.edu.scli.academico.dto.tipoequipo;
+package ec.edu.scli.academico.presentation.dto.tipoequipo;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;

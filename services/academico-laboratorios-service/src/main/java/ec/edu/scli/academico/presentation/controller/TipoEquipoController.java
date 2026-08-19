@@ -1,8 +1,8 @@
-package ec.edu.scli.academico.controller;
+package ec.edu.scli.academico.presentation.controller;
 
-import ec.edu.scli.academico.dto.tipoequipo.TipoEquipoRequest;
-import ec.edu.scli.academico.dto.tipoequipo.TipoEquipoResponse;
-import ec.edu.scli.academico.service.TipoEquipoService;
+import ec.edu.scli.academico.application.service.TipoEquipoService;
+import ec.edu.scli.academico.presentation.dto.tipoequipo.TipoEquipoRequest;
+import ec.edu.scli.academico.presentation.dto.tipoequipo.TipoEquipoResponse;
 import jakarta.validation.Valid;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;

@@ -1,16 +1,14 @@
-package ec.edu.scli.academico.service.impl;
+package ec.edu.scli.academico.application.service.impl;
 
-import ec.edu.scli.academico.dto.tipoequipo.TipoEquipoRequest;
-import ec.edu.scli.academico.dto.tipoequipo.TipoEquipoResponse;
-import ec.edu.scli.academico.entity.TipoEquipo;
+import ec.edu.scli.academico.application.service.TipoEquipoService;
+import ec.edu.scli.academico.domain.model.TipoEquipo;
+import ec.edu.scli.academico.domain.port.TipoEquipoRepositoryPort;
 import ec.edu.scli.academico.exception.ConflictException;
 import ec.edu.scli.academico.exception.ResourceNotFoundException;
-import ec.edu.scli.academico.repository.TipoEquipoRepository;
-import ec.edu.scli.academico.service.TipoEquipoService;
-import ec.edu.scli.academico.specification.TipoEquipoSpecification;
+import ec.edu.scli.academico.presentation.dto.tipoequipo.TipoEquipoRequest;
+import ec.edu.scli.academico.presentation.dto.tipoequipo.TipoEquipoResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,10 +17,10 @@ import java.util.UUID;
 @Service
 public class TipoEquipoServiceImpl implements TipoEquipoService {
 
-    private final TipoEquipoRepository tipoEquipoRepository;
+    private final TipoEquipoRepositoryPort tipoEquipoRepositoryPort;
 
-    public TipoEquipoServiceImpl(TipoEquipoRepository tipoEquipoRepository) {
-        this.tipoEquipoRepository = tipoEquipoRepository;
+    public TipoEquipoServiceImpl(TipoEquipoRepositoryPort tipoEquipoRepositoryPort) {
+        this.tipoEquipoRepositoryPort = tipoEquipoRepositoryPort;
     }
 
     @Override
@@ -31,13 +29,9 @@ public class TipoEquipoServiceImpl implements TipoEquipoService {
 
         validarCodigoDuplicado(request.codigo(), null);
 
-        TipoEquipo tipoEquipo = new TipoEquipo();
-        tipoEquipo.setCodigo(request.codigo());
-        tipoEquipo.setNombre(request.nombre());
-        tipoEquipo.setDescripcion(request.descripcion());
-        tipoEquipo.setActivo(true);
+        TipoEquipo tipoEquipo = TipoEquipo.nuevo(request.codigo(), request.nombre(), request.descripcion());
 
-        TipoEquipo guardado = tipoEquipoRepository.save(tipoEquipo);
+        TipoEquipo guardado = tipoEquipoRepositoryPort.guardar(tipoEquipo);
 
         return convertirAResponse(guardado);
     }
@@ -45,13 +39,7 @@ public class TipoEquipoServiceImpl implements TipoEquipoService {
     @Override
     @Transactional(readOnly = true)
     public Page<TipoEquipoResponse> listar(String codigo, String nombre, Boolean activo, Pageable pageable) {
-
-        Specification<TipoEquipo> specification =
-                TipoEquipoSpecification.codigoContiene(codigo)
-                        .and(TipoEquipoSpecification.nombreContiene(nombre))
-                        .and(TipoEquipoSpecification.tieneEstado(activo));
-
-        return tipoEquipoRepository.findAll(specification, pageable)
+        return tipoEquipoRepositoryPort.buscar(codigo, nombre, activo, pageable)
                 .map(this::convertirAResponse);
     }
 
@@ -69,11 +57,9 @@ public class TipoEquipoServiceImpl implements TipoEquipoService {
 
         validarCodigoDuplicado(request.codigo(), id);
 
-        tipoEquipo.setCodigo(request.codigo());
-        tipoEquipo.setNombre(request.nombre());
-        tipoEquipo.setDescripcion(request.descripcion());
+        tipoEquipo.actualizarDatos(request.codigo(), request.nombre(), request.descripcion());
 
-        TipoEquipo actualizado = tipoEquipoRepository.save(tipoEquipo);
+        TipoEquipo actualizado = tipoEquipoRepositoryPort.guardar(tipoEquipo);
 
         return convertirAResponse(actualizado);
     }
@@ -83,13 +69,13 @@ public class TipoEquipoServiceImpl implements TipoEquipoService {
     public void eliminar(UUID id) {
 
         TipoEquipo tipoEquipo = buscarTipoEquipo(id);
-        tipoEquipo.setActivo(false);
+        tipoEquipo.desactivar();
 
-        tipoEquipoRepository.save(tipoEquipo);
+        tipoEquipoRepositoryPort.guardar(tipoEquipo);
     }
 
     private TipoEquipo buscarTipoEquipo(UUID id) {
-        return tipoEquipoRepository.findById(id)
+        return tipoEquipoRepositoryPort.buscarPorId(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "No existe un tipo de equipo con el id: " + id));
     }
@@ -97,8 +83,8 @@ public class TipoEquipoServiceImpl implements TipoEquipoService {
     private void validarCodigoDuplicado(String codigo, UUID idActual) {
 
         boolean existe = (idActual == null)
-                ? tipoEquipoRepository.existsByCodigo(codigo)
-                : tipoEquipoRepository.existsByCodigoAndIdNot(codigo, idActual);
+                ? tipoEquipoRepositoryPort.existeCodigo(codigo)
+                : tipoEquipoRepositoryPort.existeCodigoParaOtroId(codigo, idActual);
 
         if (existe) {
             throw new ConflictException("Ya existe un tipo de equipo con el código: " + codigo);

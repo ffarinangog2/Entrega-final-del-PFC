@@ -1,17 +1,17 @@
-package ec.edu.scli.academico.repository;
+package ec.edu.scli.academico.infrastructure.persistence.repository;
 
-import ec.edu.scli.academico.entity.Equipo;
+import ec.edu.scli.academico.infrastructure.persistence.entity.EquipoEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
 import java.util.List;
 import java.util.UUID;
 
-public interface EquipoRepository
-        extends JpaRepository<Equipo, UUID>,
-        JpaSpecificationExecutor<Equipo> {
+public interface EquipoJpaRepository
+        extends JpaRepository<EquipoEntity, UUID>,
+        JpaSpecificationExecutor<EquipoEntity> {
 
-    List<Equipo> findByLaboratorioId(UUID laboratorioId);
+    List<EquipoEntity> findByLaboratorioId(UUID laboratorioId);
 
     boolean existsByCodigoInventario(String codigoInventario);
 

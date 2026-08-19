@@ -1,17 +1,17 @@
-package ec.edu.scli.academico.specification;
+package ec.edu.scli.academico.infrastructure.persistence.specification;
 
-import ec.edu.scli.academico.entity.Equipo;
 import ec.edu.scli.academico.enums.EstadoEquipo;
+import ec.edu.scli.academico.infrastructure.persistence.entity.EquipoEntity;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.util.UUID;
 
-public final class EquipoSpecification {
+public final class EquipoJpaSpecification {
 
-    private EquipoSpecification() {
+    private EquipoJpaSpecification() {
     }
 
-    public static Specification<Equipo> tieneLaboratorio(UUID laboratorioId) {
+    public static Specification<EquipoEntity> tieneLaboratorio(UUID laboratorioId) {
         return (root, query, cb) -> {
             if (laboratorioId == null) {
                 return cb.conjunction();
@@ -20,16 +20,7 @@ public final class EquipoSpecification {
         };
     }
 
-    public static Specification<Equipo> tieneTipoEquipo(UUID tipoEquipoId) {
-        return (root, query, cb) -> {
-            if (tipoEquipoId == null) {
-                return cb.conjunction();
-            }
-            return cb.equal(root.get("tipoEquipoId"), tipoEquipoId);
-        };
-    }
-
-    public static Specification<Equipo> tieneEstadoEquipo(EstadoEquipo estado) {
+    public static Specification<EquipoEntity> tieneEstadoEquipo(EstadoEquipo estado) {
         return (root, query, cb) -> {
             if (estado == null) {
                 return cb.conjunction();
@@ -38,7 +29,7 @@ public final class EquipoSpecification {
         };
     }
 
-    public static Specification<Equipo> tieneEstado(Boolean activo) {
+    public static Specification<EquipoEntity> tieneEstado(Boolean activo) {
         return (root, query, cb) -> {
             if (activo == null) {
                 return cb.conjunction();

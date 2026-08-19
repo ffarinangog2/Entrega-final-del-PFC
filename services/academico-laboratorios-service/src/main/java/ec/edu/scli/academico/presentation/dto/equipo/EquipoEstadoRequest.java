@@ -1,4 +1,4 @@
-package ec.edu.scli.academico.dto.equipo;
+package ec.edu.scli.academico.presentation.dto.equipo;
 
 import ec.edu.scli.academico.enums.EstadoEquipo;
 import jakarta.validation.constraints.NotNull;

@@ -1,14 +1,14 @@
-package ec.edu.scli.academico.specification;
+package ec.edu.scli.academico.infrastructure.persistence.specification;
 
-import ec.edu.scli.academico.entity.TipoEquipo;
+import ec.edu.scli.academico.infrastructure.persistence.entity.TipoEquipoEntity;
 import org.springframework.data.jpa.domain.Specification;
 
-public final class TipoEquipoSpecification {
+public final class TipoEquipoJpaSpecification {
 
-    private TipoEquipoSpecification() {
+    private TipoEquipoJpaSpecification() {
     }
 
-    public static Specification<TipoEquipo> codigoContiene(String codigo) {
+    public static Specification<TipoEquipoEntity> codigoContiene(String codigo) {
         return (root, query, cb) -> {
             if (codigo == null || codigo.isBlank()) {
                 return cb.conjunction();
@@ -17,7 +17,7 @@ public final class TipoEquipoSpecification {
         };
     }
 
-    public static Specification<TipoEquipo> nombreContiene(String nombre) {
+    public static Specification<TipoEquipoEntity> nombreContiene(String nombre) {
         return (root, query, cb) -> {
             if (nombre == null || nombre.isBlank()) {
                 return cb.conjunction();
@@ -26,7 +26,7 @@ public final class TipoEquipoSpecification {
         };
     }
 
-    public static Specification<TipoEquipo> tieneEstado(Boolean activo) {
+    public static Specification<TipoEquipoEntity> tieneEstado(Boolean activo) {
         return (root, query, cb) -> {
             if (activo == null) {
                 return cb.conjunction();

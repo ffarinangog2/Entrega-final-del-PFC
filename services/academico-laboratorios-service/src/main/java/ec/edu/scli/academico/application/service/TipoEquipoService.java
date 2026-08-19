@@ -1,7 +1,7 @@
-package ec.edu.scli.academico.service;
+package ec.edu.scli.academico.application.service;
 
-import ec.edu.scli.academico.dto.tipoequipo.TipoEquipoRequest;
-import ec.edu.scli.academico.dto.tipoequipo.TipoEquipoResponse;
+import ec.edu.scli.academico.presentation.dto.tipoequipo.TipoEquipoRequest;
+import ec.edu.scli.academico.presentation.dto.tipoequipo.TipoEquipoResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 

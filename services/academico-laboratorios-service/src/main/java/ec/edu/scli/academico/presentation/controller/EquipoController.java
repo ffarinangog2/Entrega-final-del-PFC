@@ -1,10 +1,10 @@
-package ec.edu.scli.academico.controller;
+package ec.edu.scli.academico.presentation.controller;
 
-import ec.edu.scli.academico.dto.equipo.EquipoEstadoRequest;
-import ec.edu.scli.academico.dto.equipo.EquipoRequest;
-import ec.edu.scli.academico.dto.equipo.EquipoResponse;
+import ec.edu.scli.academico.application.service.EquipoService;
 import ec.edu.scli.academico.enums.EstadoEquipo;
-import ec.edu.scli.academico.service.EquipoService;
+import ec.edu.scli.academico.presentation.dto.equipo.EquipoEstadoRequest;
+import ec.edu.scli.academico.presentation.dto.equipo.EquipoRequest;
+import ec.edu.scli.academico.presentation.dto.equipo.EquipoResponse;
 import jakarta.validation.Valid;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;

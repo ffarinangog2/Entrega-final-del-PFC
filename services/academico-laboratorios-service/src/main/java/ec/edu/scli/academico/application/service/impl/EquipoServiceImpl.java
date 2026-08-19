@@ -1,20 +1,18 @@
-package ec.edu.scli.academico.service.impl;
+package ec.edu.scli.academico.application.service.impl;
 
-import ec.edu.scli.academico.dto.equipo.EquipoRequest;
-import ec.edu.scli.academico.dto.equipo.EquipoResponse;
-import ec.edu.scli.academico.entity.Equipo;
+import ec.edu.scli.academico.application.service.EquipoService;
+import ec.edu.scli.academico.domain.model.Equipo;
+import ec.edu.scli.academico.domain.port.EquipoRepositoryPort;
+import ec.edu.scli.academico.domain.port.LaboratorioRepositoryPort;
+import ec.edu.scli.academico.domain.port.TipoEquipoRepositoryPort;
 import ec.edu.scli.academico.enums.EstadoEquipo;
 import ec.edu.scli.academico.exception.BusinessRuleException;
 import ec.edu.scli.academico.exception.ConflictException;
 import ec.edu.scli.academico.exception.ResourceNotFoundException;
-import ec.edu.scli.academico.repository.EquipoRepository;
-import ec.edu.scli.academico.infrastructure.persistence.repository.LaboratorioJpaRepository;
-import ec.edu.scli.academico.repository.TipoEquipoRepository;
-import ec.edu.scli.academico.service.EquipoService;
-import ec.edu.scli.academico.specification.EquipoSpecification;
+import ec.edu.scli.academico.presentation.dto.equipo.EquipoRequest;
+import ec.edu.scli.academico.presentation.dto.equipo.EquipoResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,18 +22,18 @@ import java.util.UUID;
 @Service
 public class EquipoServiceImpl implements EquipoService {
 
-    private final EquipoRepository equipoRepository;
-    private final LaboratorioJpaRepository laboratorioRepository;
-    private final TipoEquipoRepository tipoEquipoRepository;
+    private final EquipoRepositoryPort equipoRepositoryPort;
+    private final LaboratorioRepositoryPort laboratorioRepositoryPort;
+    private final TipoEquipoRepositoryPort tipoEquipoRepositoryPort;
 
-        public EquipoServiceImpl(
-            EquipoRepository equipoRepository,
-            LaboratorioJpaRepository laboratorioRepository,
-            TipoEquipoRepository tipoEquipoRepository
+    public EquipoServiceImpl(
+            EquipoRepositoryPort equipoRepositoryPort,
+            LaboratorioRepositoryPort laboratorioRepositoryPort,
+            TipoEquipoRepositoryPort tipoEquipoRepositoryPort
     ) {
-        this.equipoRepository = equipoRepository;
-        this.laboratorioRepository = laboratorioRepository;
-        this.tipoEquipoRepository = tipoEquipoRepository;
+        this.equipoRepositoryPort = equipoRepositoryPort;
+        this.laboratorioRepositoryPort = laboratorioRepositoryPort;
+        this.tipoEquipoRepositoryPort = tipoEquipoRepositoryPort;
     }
 
     @Override
@@ -47,12 +45,22 @@ public class EquipoServiceImpl implements EquipoService {
         validarCodigoInventarioDuplicado(request.codigoInventario(), null);
         validarNumeroSerieDuplicado(request.numeroSerie(), null);
 
-        Equipo equipo = new Equipo();
-        aplicarDatos(equipo, request);
-        equipo.setEstado(EstadoEquipo.OPERATIVO);
-        equipo.setActivo(true);
+        Equipo equipo = Equipo.nuevo(
+                request.laboratorioId(),
+                request.tipoEquipoId(),
+                request.codigoInventario(),
+                request.numeroSerie(),
+                request.marca(),
+                request.modelo(),
+                request.procesador(),
+                request.memoriaRam(),
+                request.almacenamiento(),
+                request.direccionIp(),
+                request.direccionMac(),
+                request.observacion()
+        );
 
-        Equipo guardado = equipoRepository.save(equipo);
+        Equipo guardado = equipoRepositoryPort.guardar(equipo);
 
         return convertirAResponse(guardado);
     }
@@ -60,13 +68,7 @@ public class EquipoServiceImpl implements EquipoService {
     @Override
     @Transactional(readOnly = true)
     public Page<EquipoResponse> listar(UUID laboratorioId, EstadoEquipo estado, Boolean activo, Pageable pageable) {
-
-        Specification<Equipo> specification =
-                EquipoSpecification.tieneLaboratorio(laboratorioId)
-                        .and(EquipoSpecification.tieneEstadoEquipo(estado))
-                        .and(EquipoSpecification.tieneEstado(activo));
-
-        return equipoRepository.findAll(specification, pageable)
+        return equipoRepositoryPort.buscar(laboratorioId, estado, activo, pageable)
                 .map(this::convertirAResponse);
     }
 
@@ -76,7 +78,7 @@ public class EquipoServiceImpl implements EquipoService {
 
         validarLaboratorioExiste(laboratorioId);
 
-        return equipoRepository.findByLaboratorioId(laboratorioId)
+        return equipoRepositoryPort.buscarPorLaboratorio(laboratorioId)
                 .stream()
                 .map(this::convertirAResponse)
                 .toList();
@@ -99,9 +101,22 @@ public class EquipoServiceImpl implements EquipoService {
         validarCodigoInventarioDuplicado(request.codigoInventario(), id);
         validarNumeroSerieDuplicado(request.numeroSerie(), id);
 
-        aplicarDatos(equipo, request);
+        equipo.aplicarDatos(
+                request.laboratorioId(),
+                request.tipoEquipoId(),
+                request.codigoInventario(),
+                request.numeroSerie(),
+                request.marca(),
+                request.modelo(),
+                request.procesador(),
+                request.memoriaRam(),
+                request.almacenamiento(),
+                request.direccionIp(),
+                request.direccionMac(),
+                request.observacion()
+        );
 
-        Equipo actualizado = equipoRepository.save(equipo);
+        Equipo actualizado = equipoRepositoryPort.guardar(equipo);
 
         return convertirAResponse(actualizado);
     }
@@ -111,49 +126,28 @@ public class EquipoServiceImpl implements EquipoService {
     public EquipoResponse cambiarEstado(UUID id, EstadoEquipo estado) {
 
         Equipo equipo = buscarEquipo(id);
-        equipo.setEstado(estado);
+        equipo.cambiarEstado(estado);
 
-        if (estado == EstadoEquipo.FUERA_DE_SERVICIO) {
-            equipo.setActivo(false);
-        } else if (!equipo.isActivo()) {
-            equipo.setActivo(true);
-        }
-
-        Equipo actualizado = equipoRepository.save(equipo);
+        Equipo actualizado = equipoRepositoryPort.guardar(equipo);
 
         return convertirAResponse(actualizado);
     }
 
-    private void aplicarDatos(Equipo equipo, EquipoRequest request) {
-        equipo.setLaboratorioId(request.laboratorioId());
-        equipo.setTipoEquipoId(request.tipoEquipoId());
-        equipo.setCodigoInventario(request.codigoInventario());
-        equipo.setNumeroSerie(request.numeroSerie());
-        equipo.setMarca(request.marca());
-        equipo.setModelo(request.modelo());
-        equipo.setProcesador(request.procesador());
-        equipo.setMemoriaRam(request.memoriaRam());
-        equipo.setAlmacenamiento(request.almacenamiento());
-        equipo.setDireccionIp(request.direccionIp());
-        equipo.setDireccionMac(request.direccionMac());
-        equipo.setObservacion(request.observacion());
-    }
-
     private Equipo buscarEquipo(UUID id) {
-        return equipoRepository.findById(id)
+        return equipoRepositoryPort.buscarPorId(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "No existe un equipo con el id: " + id));
     }
 
     private void validarLaboratorioExiste(UUID laboratorioId) {
-        if (!laboratorioRepository.existsById(laboratorioId)) {
+        if (laboratorioRepositoryPort.buscarPorId(laboratorioId).isEmpty()) {
             throw new BusinessRuleException(
                     "No existe un laboratorio con el id: " + laboratorioId);
         }
     }
 
     private void validarTipoEquipoExiste(UUID tipoEquipoId) {
-        if (!tipoEquipoRepository.existsById(tipoEquipoId)) {
+        if (!tipoEquipoRepositoryPort.existePorId(tipoEquipoId)) {
             throw new BusinessRuleException(
                     "No existe un tipo de equipo con el id: " + tipoEquipoId);
         }
@@ -162,8 +156,8 @@ public class EquipoServiceImpl implements EquipoService {
     private void validarCodigoInventarioDuplicado(String codigoInventario, UUID idActual) {
 
         boolean existe = (idActual == null)
-                ? equipoRepository.existsByCodigoInventario(codigoInventario)
-                : equipoRepository.existsByCodigoInventarioAndIdNot(codigoInventario, idActual);
+                ? equipoRepositoryPort.existeCodigoInventario(codigoInventario)
+                : equipoRepositoryPort.existeCodigoInventarioParaOtroId(codigoInventario, idActual);
 
         if (existe) {
             throw new ConflictException(
@@ -178,8 +172,8 @@ public class EquipoServiceImpl implements EquipoService {
         }
 
         boolean existe = (idActual == null)
-                ? equipoRepository.existsByNumeroSerie(numeroSerie)
-                : equipoRepository.existsByNumeroSerieAndIdNot(numeroSerie, idActual);
+                ? equipoRepositoryPort.existeNumeroSerie(numeroSerie)
+                : equipoRepositoryPort.existeNumeroSerieParaOtroId(numeroSerie, idActual);
 
         if (existe) {
             throw new ConflictException(
