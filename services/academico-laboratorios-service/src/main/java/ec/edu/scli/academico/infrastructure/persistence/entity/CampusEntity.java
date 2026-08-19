@@ -1,13 +1,18 @@
-package ec.edu.scli.academico.entity;
+package ec.edu.scli.academico.infrastructure.persistence.entity;
 
 import jakarta.persistence.*;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
+/**
+ * Entidad JPA de Campus. Vive exclusivamente en infrastructure: es el
+ * detalle técnico de persistencia, separado del modelo de dominio
+ * (domain.model.Campus).
+ */
 @Entity
 @Table(name = "campus")
-public class Campus {
+public class CampusEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)

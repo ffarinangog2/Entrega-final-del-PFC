@@ -1,28 +1,32 @@
-package ec.edu.scli.academico.service.impl;
+package ec.edu.scli.academico.application.service.impl;
 
-import ec.edu.scli.academico.dto.campus.CampusRequest;
-import ec.edu.scli.academico.dto.campus.CampusResponse;
-import ec.edu.scli.academico.entity.Campus;
+import ec.edu.scli.academico.application.service.CampusService;
+import ec.edu.scli.academico.domain.model.Campus;
+import ec.edu.scli.academico.domain.port.CampusRepositoryPort;
 import ec.edu.scli.academico.exception.ConflictException;
 import ec.edu.scli.academico.exception.ResourceNotFoundException;
-import ec.edu.scli.academico.repository.CampusRepository;
-import ec.edu.scli.academico.service.CampusService;
-import ec.edu.scli.academico.specification.CampusSpecification;
+import ec.edu.scli.academico.presentation.dto.campus.CampusRequest;
+import ec.edu.scli.academico.presentation.dto.campus.CampusResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
+/**
+ * Caso de uso de Campus. A diferencia de la versión anterior, esta clase
+ * ya no importa nada de JPA/Spring Data más allá de Page/Pageable: toda
+ * la persistencia pasa por CampusRepositoryPort, cumpliendo con la regla
+ * de dependencia hacia adentro (application -> domain, nunca al revés).
+ */
 @Service
 public class CampusServiceImpl implements CampusService {
 
-    private final CampusRepository campusRepository;
+    private final CampusRepositoryPort campusRepositoryPort;
 
-    public CampusServiceImpl(CampusRepository campusRepository) {
-        this.campusRepository = campusRepository;
+    public CampusServiceImpl(CampusRepositoryPort campusRepositoryPort) {
+        this.campusRepositoryPort = campusRepositoryPort;
     }
 
     @Override
@@ -31,13 +35,9 @@ public class CampusServiceImpl implements CampusService {
 
         validarCodigoDuplicado(request.codigo(), null);
 
-        Campus campus = new Campus();
-        campus.setCodigo(request.codigo());
-        campus.setNombre(request.nombre());
-        campus.setDireccion(request.direccion());
-        campus.setActivo(true);
+        Campus campus = Campus.nuevo(request.codigo(), request.nombre(), request.direccion());
 
-        Campus guardado = campusRepository.save(campus);
+        Campus guardado = campusRepositoryPort.guardar(campus);
 
         return convertirAResponse(guardado);
     }
@@ -45,13 +45,7 @@ public class CampusServiceImpl implements CampusService {
     @Override
     @Transactional(readOnly = true)
     public Page<CampusResponse> listar(String codigo, String nombre, Boolean activo, Pageable pageable) {
-
-        Specification<Campus> specification =
-                CampusSpecification.codigoContiene(codigo)
-                        .and(CampusSpecification.nombreContiene(nombre))
-                        .and(CampusSpecification.tieneEstado(activo));
-
-        return campusRepository.findAll(specification, pageable)
+        return campusRepositoryPort.buscar(codigo, nombre, activo, pageable)
                 .map(this::convertirAResponse);
     }
 
@@ -69,11 +63,9 @@ public class CampusServiceImpl implements CampusService {
 
         validarCodigoDuplicado(request.codigo(), id);
 
-        campus.setCodigo(request.codigo());
-        campus.setNombre(request.nombre());
-        campus.setDireccion(request.direccion());
+        campus.actualizarDatos(request.codigo(), request.nombre(), request.direccion());
 
-        Campus actualizado = campusRepository.save(campus);
+        Campus actualizado = campusRepositoryPort.guardar(campus);
 
         return convertirAResponse(actualizado);
     }
@@ -83,13 +75,13 @@ public class CampusServiceImpl implements CampusService {
     public void eliminar(UUID id) {
 
         Campus campus = buscarCampus(id);
-        campus.setActivo(false);
+        campus.desactivar();
 
-        campusRepository.save(campus);
+        campusRepositoryPort.guardar(campus);
     }
 
     private Campus buscarCampus(UUID id) {
-        return campusRepository.findById(id)
+        return campusRepositoryPort.buscarPorId(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "No existe un campus con el id: " + id));
     }
@@ -97,8 +89,8 @@ public class CampusServiceImpl implements CampusService {
     private void validarCodigoDuplicado(String codigo, UUID idActual) {
 
         boolean existe = (idActual == null)
-                ? campusRepository.existsByCodigo(codigo)
-                : campusRepository.existsByCodigoAndIdNot(codigo, idActual);
+                ? campusRepositoryPort.existeCodigo(codigo)
+                : campusRepositoryPort.existeCodigoParaOtroId(codigo, idActual);
 
         if (existe) {
             throw new ConflictException("Ya existe un campus con el código: " + codigo);

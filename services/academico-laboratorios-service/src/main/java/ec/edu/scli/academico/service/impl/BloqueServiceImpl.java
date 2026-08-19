@@ -7,7 +7,7 @@ import ec.edu.scli.academico.exception.BusinessRuleException;
 import ec.edu.scli.academico.exception.ConflictException;
 import ec.edu.scli.academico.exception.ResourceNotFoundException;
 import ec.edu.scli.academico.repository.BloqueRepository;
-import ec.edu.scli.academico.repository.CampusRepository;
+import ec.edu.scli.academico.infrastructure.persistence.repository.CampusJpaRepository;
 import ec.edu.scli.academico.service.BloqueService;
 import ec.edu.scli.academico.specification.BloqueSpecification;
 import org.springframework.data.domain.Page;
@@ -23,9 +23,9 @@ import java.util.UUID;
 public class BloqueServiceImpl implements BloqueService {
 
     private final BloqueRepository bloqueRepository;
-    private final CampusRepository campusRepository;
+        private final CampusJpaRepository campusRepository;
 
-    public BloqueServiceImpl(BloqueRepository bloqueRepository, CampusRepository campusRepository) {
+    public BloqueServiceImpl(BloqueRepository bloqueRepository, CampusJpaRepository campusRepository) {
         this.bloqueRepository = bloqueRepository;
         this.campusRepository = campusRepository;
     }

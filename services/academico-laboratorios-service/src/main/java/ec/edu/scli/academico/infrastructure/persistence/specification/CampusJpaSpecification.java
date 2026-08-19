@@ -1,14 +1,14 @@
-package ec.edu.scli.academico.specification;
+package ec.edu.scli.academico.infrastructure.persistence.specification;
 
-import ec.edu.scli.academico.entity.Campus;
+import ec.edu.scli.academico.infrastructure.persistence.entity.CampusEntity;
 import org.springframework.data.jpa.domain.Specification;
 
-public final class CampusSpecification {
+public final class CampusJpaSpecification {
 
-    private CampusSpecification() {
+    private CampusJpaSpecification() {
     }
 
-    public static Specification<Campus> codigoContiene(String codigo) {
+    public static Specification<CampusEntity> codigoContiene(String codigo) {
         return (root, query, cb) -> {
             if (codigo == null || codigo.isBlank()) {
                 return cb.conjunction();
@@ -17,7 +17,7 @@ public final class CampusSpecification {
         };
     }
 
-    public static Specification<Campus> nombreContiene(String nombre) {
+    public static Specification<CampusEntity> nombreContiene(String nombre) {
         return (root, query, cb) -> {
             if (nombre == null || nombre.isBlank()) {
                 return cb.conjunction();
@@ -26,7 +26,7 @@ public final class CampusSpecification {
         };
     }
 
-    public static Specification<Campus> tieneEstado(Boolean activo) {
+    public static Specification<CampusEntity> tieneEstado(Boolean activo) {
         return (root, query, cb) -> {
             if (activo == null) {
                 return cb.conjunction();

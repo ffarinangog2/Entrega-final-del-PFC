@@ -1,4 +1,4 @@
-package ec.edu.scli.academico.dto.campus;
+package ec.edu.scli.academico.presentation.dto.campus;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
