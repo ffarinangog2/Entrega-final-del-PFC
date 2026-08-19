@@ -1,4 +1,4 @@
-package ec.edu.scli.academico.dto.materia;
+package ec.edu.scli.academico.presentation.dto.materia;
 
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;

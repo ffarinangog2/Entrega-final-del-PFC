@@ -1,16 +1,16 @@
-package ec.edu.scli.academico.specification;
+package ec.edu.scli.academico.infrastructure.persistence.specification;
 
-import ec.edu.scli.academico.entity.Materia;
+import ec.edu.scli.academico.infrastructure.persistence.entity.MateriaEntity;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.util.UUID;
 
-public final class MateriaSpecification {
+public final class MateriaJpaSpecification {
 
-    private MateriaSpecification() {
+    private MateriaJpaSpecification() {
     }
 
-    public static Specification<Materia> codigoContiene(String codigo) {
+    public static Specification<MateriaEntity> codigoContiene(String codigo) {
         return (root, query, cb) -> {
             if (codigo == null || codigo.isBlank()) {
                 return cb.conjunction();
@@ -19,7 +19,7 @@ public final class MateriaSpecification {
         };
     }
 
-    public static Specification<Materia> nombreContiene(String nombre) {
+    public static Specification<MateriaEntity> nombreContiene(String nombre) {
         return (root, query, cb) -> {
             if (nombre == null || nombre.isBlank()) {
                 return cb.conjunction();
@@ -28,7 +28,7 @@ public final class MateriaSpecification {
         };
     }
 
-    public static Specification<Materia> tieneCarrera(UUID carreraId) {
+    public static Specification<MateriaEntity> tieneCarrera(UUID carreraId) {
         return (root, query, cb) -> {
             if (carreraId == null) {
                 return cb.conjunction();
@@ -37,7 +37,7 @@ public final class MateriaSpecification {
         };
     }
 
-    public static Specification<Materia> tieneEstado(Boolean activo) {
+    public static Specification<MateriaEntity> tieneEstado(Boolean activo) {
         return (root, query, cb) -> {
             if (activo == null) {
                 return cb.conjunction();

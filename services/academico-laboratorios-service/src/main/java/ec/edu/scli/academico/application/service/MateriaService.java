@@ -1,8 +1,8 @@
-package ec.edu.scli.academico.service;
+package ec.edu.scli.academico.application.service;
 
 import ec.edu.scli.academico.dto.internal.ExisteResponse;
-import ec.edu.scli.academico.dto.materia.MateriaRequest;
-import ec.edu.scli.academico.dto.materia.MateriaResponse;
+import ec.edu.scli.academico.presentation.dto.materia.MateriaRequest;
+import ec.edu.scli.academico.presentation.dto.materia.MateriaResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 

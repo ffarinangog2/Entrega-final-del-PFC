@@ -1,19 +1,17 @@
-package ec.edu.scli.academico.service.impl;
+package ec.edu.scli.academico.application.service.impl;
 
+import ec.edu.scli.academico.application.service.MateriaService;
+import ec.edu.scli.academico.domain.model.Materia;
+import ec.edu.scli.academico.domain.port.CarreraRepositoryPort;
+import ec.edu.scli.academico.domain.port.MateriaRepositoryPort;
 import ec.edu.scli.academico.dto.internal.ExisteResponse;
-import ec.edu.scli.academico.dto.materia.MateriaRequest;
-import ec.edu.scli.academico.dto.materia.MateriaResponse;
-import ec.edu.scli.academico.entity.Materia;
 import ec.edu.scli.academico.exception.BusinessRuleException;
 import ec.edu.scli.academico.exception.ConflictException;
 import ec.edu.scli.academico.exception.ResourceNotFoundException;
-import ec.edu.scli.academico.infrastructure.persistence.repository.CarreraJpaRepository;
-import ec.edu.scli.academico.repository.MateriaRepository;
-import ec.edu.scli.academico.service.MateriaService;
-import ec.edu.scli.academico.specification.MateriaSpecification;
+import ec.edu.scli.academico.presentation.dto.materia.MateriaRequest;
+import ec.edu.scli.academico.presentation.dto.materia.MateriaResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,12 +21,15 @@ import java.util.UUID;
 @Service
 public class MateriaServiceImpl implements MateriaService {
 
-    private final MateriaRepository materiaRepository;
-    private final CarreraJpaRepository carreraRepository;
+    private final MateriaRepositoryPort materiaRepositoryPort;
+    private final CarreraRepositoryPort carreraRepositoryPort;
 
-    public MateriaServiceImpl(MateriaRepository materiaRepository, CarreraJpaRepository carreraRepository) {
-        this.materiaRepository = materiaRepository;
-        this.carreraRepository = carreraRepository;
+    public MateriaServiceImpl(
+            MateriaRepositoryPort materiaRepositoryPort,
+            CarreraRepositoryPort carreraRepositoryPort
+    ) {
+        this.materiaRepositoryPort = materiaRepositoryPort;
+        this.carreraRepositoryPort = carreraRepositoryPort;
     }
 
     @Override
@@ -38,14 +39,14 @@ public class MateriaServiceImpl implements MateriaService {
         validarCarreraExiste(request.carreraId());
         validarCodigoDuplicado(request.codigo(), null);
 
-        Materia materia = new Materia();
-        materia.setCarreraId(request.carreraId());
-        materia.setCodigo(request.codigo());
-        materia.setNombre(request.nombre());
-        materia.setNumeroHoras(request.numeroHoras());
-        materia.setActivo(true);
+        Materia materia = Materia.nueva(
+                request.carreraId(),
+                request.codigo(),
+                request.nombre(),
+                request.numeroHoras()
+        );
 
-        Materia guardada = materiaRepository.save(materia);
+        Materia guardada = materiaRepositoryPort.guardar(materia);
 
         return convertirAResponse(guardada);
     }
@@ -53,14 +54,7 @@ public class MateriaServiceImpl implements MateriaService {
     @Override
     @Transactional(readOnly = true)
     public Page<MateriaResponse> listar(UUID carreraId, String codigo, String nombre, Boolean activo, Pageable pageable) {
-
-        Specification<Materia> specification =
-                MateriaSpecification.tieneCarrera(carreraId)
-                        .and(MateriaSpecification.codigoContiene(codigo))
-                        .and(MateriaSpecification.nombreContiene(nombre))
-                        .and(MateriaSpecification.tieneEstado(activo));
-
-        return materiaRepository.findAll(specification, pageable)
+        return materiaRepositoryPort.buscar(carreraId, codigo, nombre, activo, pageable)
                 .map(this::convertirAResponse);
     }
 
@@ -70,7 +64,7 @@ public class MateriaServiceImpl implements MateriaService {
 
         validarCarreraExiste(carreraId);
 
-        return materiaRepository.findByCarreraId(carreraId)
+        return materiaRepositoryPort.buscarPorCarrera(carreraId)
                 .stream()
                 .map(this::convertirAResponse)
                 .toList();
@@ -91,12 +85,14 @@ public class MateriaServiceImpl implements MateriaService {
         validarCarreraExiste(request.carreraId());
         validarCodigoDuplicado(request.codigo(), id);
 
-        materia.setCarreraId(request.carreraId());
-        materia.setCodigo(request.codigo());
-        materia.setNombre(request.nombre());
-        materia.setNumeroHoras(request.numeroHoras());
+        materia.actualizarDatos(
+                request.carreraId(),
+                request.codigo(),
+                request.nombre(),
+                request.numeroHoras()
+        );
 
-        Materia actualizada = materiaRepository.save(materia);
+        Materia actualizada = materiaRepositoryPort.guardar(materia);
 
         return convertirAResponse(actualizada);
     }
@@ -106,26 +102,25 @@ public class MateriaServiceImpl implements MateriaService {
     public void eliminar(UUID id) {
 
         Materia materia = buscarMateria(id);
-        materia.setActivo(false);
+        materia.desactivar();
 
-        materiaRepository.save(materia);
+        materiaRepositoryPort.guardar(materia);
     }
 
     @Override
     @Transactional(readOnly = true)
     public ExisteResponse verificarExistencia(UUID id) {
-        boolean existe = materiaRepository.existsById(id);
-        return new ExisteResponse(id, existe);
+        return new ExisteResponse(id, materiaRepositoryPort.existePorId(id));
     }
 
     private Materia buscarMateria(UUID id) {
-        return materiaRepository.findById(id)
+        return materiaRepositoryPort.buscarPorId(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "No existe una materia con el id: " + id));
     }
 
     private void validarCarreraExiste(UUID carreraId) {
-        if (!carreraRepository.existsById(carreraId)) {
+        if (carreraRepositoryPort.buscarPorId(carreraId).isEmpty()) {
             throw new BusinessRuleException(
                     "No existe una carrera con el id: " + carreraId);
         }
@@ -134,8 +129,8 @@ public class MateriaServiceImpl implements MateriaService {
     private void validarCodigoDuplicado(String codigo, UUID idActual) {
 
         boolean existe = (idActual == null)
-                ? materiaRepository.existsByCodigo(codigo)
-                : materiaRepository.existsByCodigoAndIdNot(codigo, idActual);
+                ? materiaRepositoryPort.existeCodigo(codigo)
+                : materiaRepositoryPort.existeCodigoParaOtroId(codigo, idActual);
 
         if (existe) {
             throw new ConflictException("Ya existe una materia con el código: " + codigo);
