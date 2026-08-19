@@ -34,15 +34,19 @@ class UsuarioPersistenceAdapter implements UsuarioRepository {
     private Usuario toDomain(UsuarioAuth entity) {
         return new Usuario(entity.getId(), entity.getPerfilId(), entity.getUsername(), entity.getEmail(),
                 entity.getPasswordHash(), Boolean.TRUE.equals(entity.getActivo()),
-                Boolean.TRUE.equals(entity.getCuentaBloqueada()), entity.getRoles().stream().map(this::toDomain).collect(java.util.stream.Collectors.toSet()));
+                Boolean.TRUE.equals(entity.getCuentaBloqueada()),
+                entity.getRoles().stream().map(this::toDomain).collect(java.util.stream.Collectors.toSet()));
     }
 
     private ec.edu.uteq.scli.auth_service.domain.model.Rol toDomain(Rol entity) {
-        return new ec.edu.uteq.scli.auth_service.domain.model.Rol(entity.getId(), entity.getCodigo(), entity.getNombre(), entity.getDescripcion(),
-                Boolean.TRUE.equals(entity.getActivo()), entity.getPermisos().stream().map(this::toDomain).collect(java.util.stream.Collectors.toSet()));
+        return new ec.edu.uteq.scli.auth_service.domain.model.Rol(entity.getId(), entity.getCodigo(),
+                entity.getNombre(), entity.getDescripcion(),
+                Boolean.TRUE.equals(entity.getActivo()),
+                entity.getPermisos().stream().map(this::toDomain).collect(java.util.stream.Collectors.toSet()));
     }
 
     private ec.edu.uteq.scli.auth_service.domain.model.Permiso toDomain(Permiso entity) {
-        return new ec.edu.uteq.scli.auth_service.domain.model.Permiso(entity.getId(), entity.getCodigo(), entity.getNombre(), entity.getDescripcion(), Boolean.TRUE.equals(entity.getActivo()));
+        return new ec.edu.uteq.scli.auth_service.domain.model.Permiso(entity.getId(), entity.getCodigo(),
+                entity.getNombre(), entity.getDescripcion(), Boolean.TRUE.equals(entity.getActivo()));
     }
 }

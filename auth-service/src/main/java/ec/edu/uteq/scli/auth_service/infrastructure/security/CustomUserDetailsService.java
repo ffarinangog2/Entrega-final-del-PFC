@@ -14,10 +14,13 @@ import java.util.UUID;
 public class CustomUserDetailsService implements UserDetailsService {
 
     private final UsuarioRepository usuarioRepository;
+    private final UserDetailsFactory userDetailsFactory;
 
     public CustomUserDetailsService(
-            UsuarioRepository usuarioRepository) {
+            UsuarioRepository usuarioRepository,
+            UserDetailsFactory userDetailsFactory) {
         this.usuarioRepository = usuarioRepository;
+        this.userDetailsFactory = userDetailsFactory;
     }
 
     @Override
@@ -25,19 +28,20 @@ public class CustomUserDetailsService implements UserDetailsService {
     public UserDetails loadUserByUsername(String identificador)
             throws UsernameNotFoundException {
 
-        Usuario usuario = usuarioRepository.buscarConRolesPorIdentificador(identificador)
+        Usuario usuario = usuarioRepository
+                .buscarConRolesPorIdentificador(identificador)
                 .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado"));
 
-        return new CustomUserDetails(usuario);
+        return userDetailsFactory.crear(usuario);
     }
 
     @Transactional(readOnly = true)
     public CustomUserDetails loadUserById(UUID usuarioId) {
 
-        Usuario usuario = usuarioRepository.buscarConRolesPorId(usuarioId)
-                .orElseThrow(() -> new UsernameNotFoundException(
-                        "Usuario no encontrado"));
+        Usuario usuario = usuarioRepository
+                .buscarConRolesPorId(usuarioId)
+                .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado"));
 
-        return new CustomUserDetails(usuario);
+        return userDetailsFactory.crear(usuario);
     }
 }
