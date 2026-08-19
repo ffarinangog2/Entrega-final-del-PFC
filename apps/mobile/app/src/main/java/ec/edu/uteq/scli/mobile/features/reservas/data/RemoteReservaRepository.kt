@@ -1,9 +1,13 @@
 package ec.edu.uteq.scli.mobile.features.reservas.data
 
 import ec.edu.uteq.scli.mobile.common.network.NetworkResult
+import ec.edu.uteq.scli.mobile.common.network.DataSource
 import ec.edu.uteq.scli.mobile.features.reservas.data.remote.CancelarReservaDto
 import ec.edu.uteq.scli.mobile.features.reservas.data.remote.CancelarSolicitudDto
 import ec.edu.uteq.scli.mobile.features.reservas.data.remote.ReservasApi
+import ec.edu.uteq.scli.mobile.features.reservas.data.local.ReservaDao
+import ec.edu.uteq.scli.mobile.features.reservas.data.local.toDomain
+import ec.edu.uteq.scli.mobile.features.reservas.data.local.toEntity
 import ec.edu.uteq.scli.mobile.features.reservas.domain.ActualizacionSolicitudReserva
 import ec.edu.uteq.scli.mobile.features.reservas.domain.Disponibilidad
 import ec.edu.uteq.scli.mobile.features.reservas.domain.NuevaSolicitudReserva
@@ -14,12 +18,49 @@ import ec.edu.uteq.scli.mobile.features.reservas.domain.SolicitudReserva
 import retrofit2.Response
 import java.io.IOException
 
-class RemoteReservaRepository(private val api: ReservasApi) : ReservaRepository {
-    override suspend fun listar(pagina: Int, tamanio: Int): NetworkResult<Pagina<Reserva>> =
-        request({ api.listarReservas(pagina, tamanio) }) { it.toDomain { dto -> dto.toDomain() } }
+class RemoteReservaRepository(
+    private val api: ReservasApi,
+    private val reservaDao: ReservaDao,
+) : ReservaRepository {
+    override suspend fun listar(pagina: Int, tamanio: Int): NetworkResult<Pagina<Reserva>> = try {
+        val response = api.listarReservas(pagina, tamanio)
+        val body = response.body()
+        if (response.isSuccessful && body != null) {
+            val page = body.toDomain { dto -> dto.toDomain() }
+            reservaDao.guardarTodas(page.contenido.map { it.toEntity() })
+            NetworkResult.Success(page)
+        } else {
+            NetworkResult.Failure(response.code(), "gateway_http_${response.code()}")
+        }
+    } catch (_: IOException) {
+        val cached = runCatching { reservaDao.obtenerTodas().map { it.toDomain() } }.getOrDefault(emptyList())
+        if (cached.isEmpty()) NetworkResult.Failure(null, "gateway_no_disponible")
+        else NetworkResult.Success(
+            Pagina(cached, 0, cached.size, cached.size.toLong(), 1, primera = true, ultima = true),
+            source = DataSource.CACHE,
+            refreshError = "gateway_no_disponible",
+        )
+    } catch (_: RuntimeException) {
+        NetworkResult.Failure(null, "respuesta_gateway_invalida")
+    }
 
-    override suspend fun obtener(id: String): NetworkResult<Reserva> =
-        request({ api.obtenerReserva(id) }) { it.toDomain() }
+    override suspend fun obtener(id: String): NetworkResult<Reserva> = try {
+        val response = api.obtenerReserva(id)
+        val body = response.body()
+        if (response.isSuccessful && body != null) {
+            val reserva = body.toDomain()
+            reservaDao.guardar(reserva.toEntity())
+            NetworkResult.Success(reserva)
+        } else {
+            NetworkResult.Failure(response.code(), "gateway_http_${response.code()}")
+        }
+    } catch (_: IOException) {
+        val cached = runCatching { reservaDao.obtenerPorId(id)?.toDomain() }.getOrNull()
+        if (cached == null) NetworkResult.Failure(null, "gateway_no_disponible")
+        else NetworkResult.Success(cached, DataSource.CACHE, "gateway_no_disponible")
+    } catch (_: RuntimeException) {
+        NetworkResult.Failure(null, "respuesta_gateway_invalida")
+    }
 
     override suspend fun crearSolicitud(
         solicitud: NuevaSolicitudReserva,

@@ -3,6 +3,7 @@ package ec.edu.uteq.scli.mobile.features.reservas.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import ec.edu.uteq.scli.mobile.common.network.NetworkResult
+import ec.edu.uteq.scli.mobile.common.network.DataSource
 import ec.edu.uteq.scli.mobile.features.reservas.domain.ReservaRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -32,6 +33,8 @@ class ReservasViewModel(
                     reservas = result.value.contenido,
                     cargando = false,
                     refrescando = false,
+                    desdeCache = result.source == DataSource.CACHE,
+                    errorActualizacion = result.refreshError,
                 )
                 is NetworkResult.Failure -> mutableUiState.value = mutableUiState.value.copy(
                     cargando = false,
@@ -50,6 +53,8 @@ class ReservasViewModel(
                     seleccionada = result.value,
                     cargando = false,
                     error = null,
+                    desdeCache = result.source == DataSource.CACHE,
+                    errorActualizacion = result.refreshError,
                 )
                 is NetworkResult.Failure -> mutableUiState.value = mutableUiState.value.copy(
                     cargando = false,

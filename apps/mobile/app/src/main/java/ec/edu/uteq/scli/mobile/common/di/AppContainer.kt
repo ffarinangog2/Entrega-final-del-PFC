@@ -24,7 +24,7 @@ class AppContainer(context: Context) {
         context.applicationContext,
         AppDatabase::class.java,
         "scli-mobile.db",
-    ).build()
+    ).addMigrations(AppDatabase.MIGRATION_1_2).build()
 
     val incidenteRepository: IncidenteRepository = IncidenteLocalRepository(database.incidenteDao())
 
@@ -34,5 +34,5 @@ class AppContainer(context: Context) {
 
     private val gatewayRetrofit = GatewayClientFactory.createRetrofit(BuildConfig.API_BASE_URL)
     private val reservasApi = gatewayRetrofit.create(ReservasApi::class.java)
-    val reservaRepository: ReservaRepository = RemoteReservaRepository(reservasApi)
+    val reservaRepository: ReservaRepository = RemoteReservaRepository(reservasApi, database.reservaDao())
 }

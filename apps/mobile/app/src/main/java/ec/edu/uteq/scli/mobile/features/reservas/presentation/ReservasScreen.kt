@@ -85,6 +85,12 @@ internal fun ReservasContent(
                     modifier = Modifier.fillMaxSize(),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
+                    if (state.desdeCache) {
+                        item { Text("Sin conexión: mostrando reservas guardadas") }
+                        state.errorActualizacion?.let { error ->
+                            item { Text("No se pudo actualizar: $error") }
+                        }
+                    }
                     items(state.reservas, key = { it.id }) { reserva ->
                         Column(
                             modifier = Modifier

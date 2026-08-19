@@ -10,4 +10,6 @@ data class ReservasUiState(
     val error: String? = null,
     val cancelando: Boolean = false,
     val cancelacionExitosa: Boolean = false,
+    val desdeCache: Boolean = false,
+    val errorActualizacion: String? = null,
 )

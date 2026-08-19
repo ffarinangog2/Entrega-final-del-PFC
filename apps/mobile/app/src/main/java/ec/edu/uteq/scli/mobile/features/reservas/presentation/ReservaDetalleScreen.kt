@@ -38,6 +38,10 @@ fun ReservaDetalleScreen(reservaId: String, viewModel: ReservasViewModel) {
             state.error != null -> Text(requireNotNull(state.error))
             state.seleccionada != null -> {
                 val reserva = state.seleccionada
+                if (state.desdeCache) {
+                    Text("Sin conexión: mostrando datos guardados")
+                    state.errorActualizacion?.let { Text("No se pudo actualizar: $it") }
+                }
                 Text(reserva!!.codigoReserva)
                 Text("Estado: ${reserva.estado}")
                 Text("Laboratorio: ${reserva.laboratorioId}")
