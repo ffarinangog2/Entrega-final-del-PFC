@@ -1,8 +1,8 @@
-package ec.edu.scli.academico.service;
+package ec.edu.scli.academico.application.service;
 
 import ec.edu.scli.academico.dto.internal.ExisteResponse;
-import ec.edu.scli.academico.dto.periodolectivo.PeriodoLectivoRequest;
-import ec.edu.scli.academico.dto.periodolectivo.PeriodoLectivoResponse;
+import ec.edu.scli.academico.presentation.dto.periodolectivo.PeriodoLectivoRequest;
+import ec.edu.scli.academico.presentation.dto.periodolectivo.PeriodoLectivoResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 

@@ -1,8 +1,8 @@
-package ec.edu.scli.academico.controller;
+package ec.edu.scli.academico.presentation.controller;
 
-import ec.edu.scli.academico.dto.periodolectivo.PeriodoLectivoRequest;
-import ec.edu.scli.academico.dto.periodolectivo.PeriodoLectivoResponse;
-import ec.edu.scli.academico.service.PeriodoLectivoService;
+import ec.edu.scli.academico.application.service.PeriodoLectivoService;
+import ec.edu.scli.academico.presentation.dto.periodolectivo.PeriodoLectivoRequest;
+import ec.edu.scli.academico.presentation.dto.periodolectivo.PeriodoLectivoResponse;
 import jakarta.validation.Valid;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;

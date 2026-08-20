@@ -1,10 +1,10 @@
-package ec.edu.scli.academico.controller;
+package ec.edu.scli.academico.presentation.controller;
 
-import ec.edu.scli.academico.dto.internal.ExisteResponse;
-import ec.edu.scli.academico.dto.internal.LaboratorioDisponibilidadBaseResponse;
 import ec.edu.scli.academico.application.service.LaboratorioService;
 import ec.edu.scli.academico.application.service.MateriaService;
-import ec.edu.scli.academico.service.PeriodoLectivoService;
+import ec.edu.scli.academico.application.service.PeriodoLectivoService;
+import ec.edu.scli.academico.dto.internal.ExisteResponse;
+import ec.edu.scli.academico.dto.internal.LaboratorioDisponibilidadBaseResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

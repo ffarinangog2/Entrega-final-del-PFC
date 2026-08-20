@@ -1,4 +1,4 @@
-package ec.edu.scli.academico.entity;
+package ec.edu.scli.academico.infrastructure.persistence.entity;
 
 import ec.edu.scli.academico.enums.EstadoPeriodo;
 import jakarta.persistence.*;
@@ -9,7 +9,7 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "periodos_lectivos")
-public class PeriodoLectivo {
+public class PeriodoLectivoEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)

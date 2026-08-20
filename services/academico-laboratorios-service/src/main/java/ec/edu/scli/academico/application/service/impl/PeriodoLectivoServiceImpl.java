@@ -1,19 +1,16 @@
-package ec.edu.scli.academico.service.impl;
+package ec.edu.scli.academico.application.service.impl;
 
+import ec.edu.scli.academico.application.service.PeriodoLectivoService;
+import ec.edu.scli.academico.domain.model.PeriodoLectivo;
+import ec.edu.scli.academico.domain.port.PeriodoLectivoRepositoryPort;
 import ec.edu.scli.academico.dto.internal.ExisteResponse;
-import ec.edu.scli.academico.dto.periodolectivo.PeriodoLectivoRequest;
-import ec.edu.scli.academico.dto.periodolectivo.PeriodoLectivoResponse;
-import ec.edu.scli.academico.entity.PeriodoLectivo;
 import ec.edu.scli.academico.enums.EstadoPeriodo;
-import ec.edu.scli.academico.exception.BusinessRuleException;
 import ec.edu.scli.academico.exception.ConflictException;
 import ec.edu.scli.academico.exception.ResourceNotFoundException;
-import ec.edu.scli.academico.repository.PeriodoLectivoRepository;
-import ec.edu.scli.academico.service.PeriodoLectivoService;
-import ec.edu.scli.academico.specification.PeriodoLectivoSpecification;
+import ec.edu.scli.academico.presentation.dto.periodolectivo.PeriodoLectivoRequest;
+import ec.edu.scli.academico.presentation.dto.periodolectivo.PeriodoLectivoResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,10 +19,10 @@ import java.util.UUID;
 @Service
 public class PeriodoLectivoServiceImpl implements PeriodoLectivoService {
 
-    private final PeriodoLectivoRepository periodoLectivoRepository;
+    private final PeriodoLectivoRepositoryPort periodoLectivoRepositoryPort;
 
-    public PeriodoLectivoServiceImpl(PeriodoLectivoRepository periodoLectivoRepository) {
-        this.periodoLectivoRepository = periodoLectivoRepository;
+    public PeriodoLectivoServiceImpl(PeriodoLectivoRepositoryPort periodoLectivoRepositoryPort) {
+        this.periodoLectivoRepositoryPort = periodoLectivoRepositoryPort;
     }
 
     @Override
@@ -33,16 +30,16 @@ public class PeriodoLectivoServiceImpl implements PeriodoLectivoService {
     public PeriodoLectivoResponse crear(PeriodoLectivoRequest request) {
 
         validarCodigoDuplicado(request.codigo(), null);
-        validarFechas(request);
 
-        PeriodoLectivo periodo = new PeriodoLectivo();
-        periodo.setCodigo(request.codigo());
-        periodo.setNombre(request.nombre());
-        periodo.setFechaInicio(request.fechaInicio());
-        periodo.setFechaFin(request.fechaFin());
-        periodo.setEstado(request.estado() != null ? request.estado() : EstadoPeriodo.PLANIFICADO);
+        PeriodoLectivo periodo = PeriodoLectivo.nuevo(
+                request.codigo(),
+                request.nombre(),
+                request.fechaInicio(),
+                request.fechaFin(),
+                request.estado()
+        );
 
-        PeriodoLectivo guardado = periodoLectivoRepository.save(periodo);
+        PeriodoLectivo guardado = periodoLectivoRepositoryPort.guardar(periodo);
 
         return convertirAResponse(guardado);
     }
@@ -50,11 +47,7 @@ public class PeriodoLectivoServiceImpl implements PeriodoLectivoService {
     @Override
     @Transactional(readOnly = true)
     public Page<PeriodoLectivoResponse> listar(String codigo, Pageable pageable) {
-
-        Specification<PeriodoLectivo> specification =
-                PeriodoLectivoSpecification.codigoContiene(codigo);
-
-        return periodoLectivoRepository.findAll(specification, pageable)
+        return periodoLectivoRepositoryPort.buscar(codigo, pageable)
                 .map(this::convertirAResponse);
     }
 
@@ -67,8 +60,8 @@ public class PeriodoLectivoServiceImpl implements PeriodoLectivoService {
     @Override
     @Transactional(readOnly = true)
     public PeriodoLectivoResponse obtenerActual() {
-        return periodoLectivoRepository
-                .findFirstByEstadoOrderByFechaInicioDesc(EstadoPeriodo.ACTIVO)
+        return periodoLectivoRepositoryPort
+                .buscarActualPorEstado(EstadoPeriodo.ACTIVO)
                 .map(this::convertirAResponse)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "No hay un periodo lectivo activo actualmente"));
@@ -81,18 +74,16 @@ public class PeriodoLectivoServiceImpl implements PeriodoLectivoService {
         PeriodoLectivo periodo = buscarPeriodo(id);
 
         validarCodigoDuplicado(request.codigo(), id);
-        validarFechas(request);
 
-        periodo.setCodigo(request.codigo());
-        periodo.setNombre(request.nombre());
-        periodo.setFechaInicio(request.fechaInicio());
-        periodo.setFechaFin(request.fechaFin());
+        periodo.actualizarDatos(
+                request.codigo(),
+                request.nombre(),
+                request.fechaInicio(),
+                request.fechaFin()
+        );
+        periodo.cambiarEstado(request.estado());
 
-        if (request.estado() != null) {
-            periodo.setEstado(request.estado());
-        }
-
-        PeriodoLectivo actualizado = periodoLectivoRepository.save(periodo);
+        PeriodoLectivo actualizado = periodoLectivoRepositoryPort.guardar(periodo);
 
         return convertirAResponse(actualizado);
     }
@@ -100,12 +91,11 @@ public class PeriodoLectivoServiceImpl implements PeriodoLectivoService {
     @Override
     @Transactional(readOnly = true)
     public ExisteResponse verificarExistencia(UUID id) {
-        boolean existe = periodoLectivoRepository.existsById(id);
-        return new ExisteResponse(id, existe);
+        return new ExisteResponse(id, periodoLectivoRepositoryPort.existePorId(id));
     }
 
     private PeriodoLectivo buscarPeriodo(UUID id) {
-        return periodoLectivoRepository.findById(id)
+        return periodoLectivoRepositoryPort.buscarPorId(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "No existe un periodo lectivo con el id: " + id));
     }
@@ -113,18 +103,11 @@ public class PeriodoLectivoServiceImpl implements PeriodoLectivoService {
     private void validarCodigoDuplicado(String codigo, UUID idActual) {
 
         boolean existe = (idActual == null)
-                ? periodoLectivoRepository.existsByCodigo(codigo)
-                : periodoLectivoRepository.existsByCodigoAndIdNot(codigo, idActual);
+                ? periodoLectivoRepositoryPort.existeCodigo(codigo)
+                : periodoLectivoRepositoryPort.existeCodigoParaOtroId(codigo, idActual);
 
         if (existe) {
             throw new ConflictException("Ya existe un periodo lectivo con el código: " + codigo);
-        }
-    }
-
-    private void validarFechas(PeriodoLectivoRequest request) {
-        if (!request.fechaFin().isAfter(request.fechaInicio())) {
-            throw new BusinessRuleException(
-                    "La fecha de fin debe ser posterior a la fecha de inicio");
         }
     }
 

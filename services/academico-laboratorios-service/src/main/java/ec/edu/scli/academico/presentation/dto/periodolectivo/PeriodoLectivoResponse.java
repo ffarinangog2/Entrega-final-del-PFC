@@ -1,4 +1,4 @@
-package ec.edu.scli.academico.dto.periodolectivo;
+package ec.edu.scli.academico.presentation.dto.periodolectivo;
 
 import ec.edu.scli.academico.enums.EstadoPeriodo;
 

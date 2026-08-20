@@ -8,7 +8,7 @@ import ec.edu.scli.academico.exception.ResourceNotFoundException;
 import ec.edu.scli.academico.repository.HorarioAcademicoRepository;
 import ec.edu.scli.academico.infrastructure.persistence.repository.LaboratorioJpaRepository;
 import ec.edu.scli.academico.infrastructure.persistence.repository.MateriaJpaRepository;
-import ec.edu.scli.academico.repository.PeriodoLectivoRepository;
+import ec.edu.scli.academico.infrastructure.persistence.repository.PeriodoLectivoJpaRepository;
 import ec.edu.scli.academico.service.HorarioAcademicoService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,13 +21,13 @@ public class HorarioAcademicoServiceImpl implements HorarioAcademicoService {
 
     private final HorarioAcademicoRepository horarioAcademicoRepository;
     private final MateriaJpaRepository materiaRepository;
-    private final PeriodoLectivoRepository periodoLectivoRepository;
+    private final PeriodoLectivoJpaRepository periodoLectivoRepository;
     private final LaboratorioJpaRepository laboratorioRepository;
 
         public HorarioAcademicoServiceImpl(
             HorarioAcademicoRepository horarioAcademicoRepository,
             MateriaJpaRepository materiaRepository,
-            PeriodoLectivoRepository periodoLectivoRepository,
+            PeriodoLectivoJpaRepository periodoLectivoRepository,
             LaboratorioJpaRepository laboratorioRepository
     ) {
         this.horarioAcademicoRepository = horarioAcademicoRepository;
