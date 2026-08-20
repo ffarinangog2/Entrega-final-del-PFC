@@ -1,17 +1,17 @@
-package ec.edu.scli.academico.repository;
+package ec.edu.scli.academico.infrastructure.persistence.repository;
 
-import ec.edu.scli.academico.entity.Bloque;
+import ec.edu.scli.academico.infrastructure.persistence.entity.BloqueEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
 import java.util.List;
 import java.util.UUID;
 
-public interface BloqueRepository
-        extends JpaRepository<Bloque, UUID>,
-        JpaSpecificationExecutor<Bloque> {
+public interface BloqueJpaRepository
+        extends JpaRepository<BloqueEntity, UUID>,
+        JpaSpecificationExecutor<BloqueEntity> {
 
-    List<Bloque> findByCampusId(UUID campusId);
+    List<BloqueEntity> findByCampusId(UUID campusId);
 
     boolean existsByCampusIdAndCodigo(UUID campusId, String codigo);
 

@@ -2,13 +2,13 @@ package ec.edu.scli.academico.application.service.impl;
 
 import ec.edu.scli.academico.application.service.PisoService;
 import ec.edu.scli.academico.domain.model.Piso;
+import ec.edu.scli.academico.domain.port.BloqueRepositoryPort;
 import ec.edu.scli.academico.domain.port.PisoRepositoryPort;
 import ec.edu.scli.academico.exception.BusinessRuleException;
 import ec.edu.scli.academico.exception.ConflictException;
 import ec.edu.scli.academico.exception.ResourceNotFoundException;
 import ec.edu.scli.academico.presentation.dto.piso.PisoRequest;
 import ec.edu.scli.academico.presentation.dto.piso.PisoResponse;
-import ec.edu.scli.academico.repository.BloqueRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -21,11 +21,11 @@ import java.util.UUID;
 public class PisoServiceImpl implements PisoService {
 
     private final PisoRepositoryPort pisoRepositoryPort;
-    private final BloqueRepository bloqueRepository;
+    private final BloqueRepositoryPort bloqueRepositoryPort;
 
-    public PisoServiceImpl(PisoRepositoryPort pisoRepositoryPort, BloqueRepository bloqueRepository) {
+    public PisoServiceImpl(PisoRepositoryPort pisoRepositoryPort, BloqueRepositoryPort bloqueRepositoryPort) {
         this.pisoRepositoryPort = pisoRepositoryPort;
-        this.bloqueRepository = bloqueRepository;
+        this.bloqueRepositoryPort = bloqueRepositoryPort;
     }
 
     @Override
@@ -100,7 +100,7 @@ public class PisoServiceImpl implements PisoService {
     }
 
     private void validarBloqueExiste(UUID bloqueId) {
-        if (!bloqueRepository.existsById(bloqueId)) {
+        if (!bloqueRepositoryPort.existePorId(bloqueId)) {
             throw new BusinessRuleException(
                     "No existe un bloque con el id: " + bloqueId);
         }

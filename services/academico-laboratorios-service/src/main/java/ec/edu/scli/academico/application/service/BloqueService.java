@@ -1,7 +1,7 @@
-package ec.edu.scli.academico.service;
+package ec.edu.scli.academico.application.service;
 
-import ec.edu.scli.academico.dto.bloque.BloqueRequest;
-import ec.edu.scli.academico.dto.bloque.BloqueResponse;
+import ec.edu.scli.academico.presentation.dto.bloque.BloqueRequest;
+import ec.edu.scli.academico.presentation.dto.bloque.BloqueResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 

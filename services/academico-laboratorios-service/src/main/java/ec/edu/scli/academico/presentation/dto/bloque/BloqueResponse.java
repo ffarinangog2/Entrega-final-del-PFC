@@ -1,4 +1,4 @@
-package ec.edu.scli.academico.dto.bloque;
+package ec.edu.scli.academico.presentation.dto.bloque;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;

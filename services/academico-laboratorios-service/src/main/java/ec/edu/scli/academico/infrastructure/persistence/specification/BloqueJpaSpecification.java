@@ -1,16 +1,16 @@
-package ec.edu.scli.academico.specification;
+package ec.edu.scli.academico.infrastructure.persistence.specification;
 
-import ec.edu.scli.academico.entity.Bloque;
+import ec.edu.scli.academico.infrastructure.persistence.entity.BloqueEntity;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.util.UUID;
 
-public final class BloqueSpecification {
+public final class BloqueJpaSpecification {
 
-    private BloqueSpecification() {
+    private BloqueJpaSpecification() {
     }
 
-    public static Specification<Bloque> tieneCampus(UUID campusId) {
+    public static Specification<BloqueEntity> tieneCampus(UUID campusId) {
         return (root, query, cb) -> {
             if (campusId == null) {
                 return cb.conjunction();
@@ -19,7 +19,7 @@ public final class BloqueSpecification {
         };
     }
 
-    public static Specification<Bloque> nombreContiene(String nombre) {
+    public static Specification<BloqueEntity> nombreContiene(String nombre) {
         return (root, query, cb) -> {
             if (nombre == null || nombre.isBlank()) {
                 return cb.conjunction();
@@ -28,7 +28,7 @@ public final class BloqueSpecification {
         };
     }
 
-    public static Specification<Bloque> tieneEstado(Boolean activo) {
+    public static Specification<BloqueEntity> tieneEstado(Boolean activo) {
         return (root, query, cb) -> {
             if (activo == null) {
                 return cb.conjunction();

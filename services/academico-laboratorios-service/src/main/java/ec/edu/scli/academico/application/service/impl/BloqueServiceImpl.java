@@ -1,18 +1,16 @@
-package ec.edu.scli.academico.service.impl;
+package ec.edu.scli.academico.application.service.impl;
 
-import ec.edu.scli.academico.dto.bloque.BloqueRequest;
-import ec.edu.scli.academico.dto.bloque.BloqueResponse;
-import ec.edu.scli.academico.entity.Bloque;
+import ec.edu.scli.academico.application.service.BloqueService;
+import ec.edu.scli.academico.domain.model.Bloque;
+import ec.edu.scli.academico.domain.port.BloqueRepositoryPort;
+import ec.edu.scli.academico.domain.port.CampusRepositoryPort;
 import ec.edu.scli.academico.exception.BusinessRuleException;
 import ec.edu.scli.academico.exception.ConflictException;
 import ec.edu.scli.academico.exception.ResourceNotFoundException;
-import ec.edu.scli.academico.repository.BloqueRepository;
-import ec.edu.scli.academico.infrastructure.persistence.repository.CampusJpaRepository;
-import ec.edu.scli.academico.service.BloqueService;
-import ec.edu.scli.academico.specification.BloqueSpecification;
+import ec.edu.scli.academico.presentation.dto.bloque.BloqueRequest;
+import ec.edu.scli.academico.presentation.dto.bloque.BloqueResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,12 +20,15 @@ import java.util.UUID;
 @Service
 public class BloqueServiceImpl implements BloqueService {
 
-    private final BloqueRepository bloqueRepository;
-        private final CampusJpaRepository campusRepository;
+    private final BloqueRepositoryPort bloqueRepositoryPort;
+    private final CampusRepositoryPort campusRepositoryPort;
 
-    public BloqueServiceImpl(BloqueRepository bloqueRepository, CampusJpaRepository campusRepository) {
-        this.bloqueRepository = bloqueRepository;
-        this.campusRepository = campusRepository;
+    public BloqueServiceImpl(
+            BloqueRepositoryPort bloqueRepositoryPort,
+            CampusRepositoryPort campusRepositoryPort
+    ) {
+        this.bloqueRepositoryPort = bloqueRepositoryPort;
+        this.campusRepositoryPort = campusRepositoryPort;
     }
 
     @Override
@@ -37,13 +38,9 @@ public class BloqueServiceImpl implements BloqueService {
         validarCampusExiste(request.campusId());
         validarCodigoDuplicado(request.campusId(), request.codigo(), null);
 
-        Bloque bloque = new Bloque();
-        bloque.setCampusId(request.campusId());
-        bloque.setCodigo(request.codigo());
-        bloque.setNombre(request.nombre());
-        bloque.setActivo(true);
+        Bloque bloque = Bloque.nuevo(request.campusId(), request.codigo(), request.nombre());
 
-        Bloque guardado = bloqueRepository.save(bloque);
+        Bloque guardado = bloqueRepositoryPort.guardar(bloque);
 
         return convertirAResponse(guardado);
     }
@@ -51,13 +48,7 @@ public class BloqueServiceImpl implements BloqueService {
     @Override
     @Transactional(readOnly = true)
     public Page<BloqueResponse> listar(UUID campusId, String nombre, Boolean activo, Pageable pageable) {
-
-        Specification<Bloque> specification =
-                BloqueSpecification.tieneCampus(campusId)
-                        .and(BloqueSpecification.nombreContiene(nombre))
-                        .and(BloqueSpecification.tieneEstado(activo));
-
-        return bloqueRepository.findAll(specification, pageable)
+        return bloqueRepositoryPort.buscar(campusId, nombre, activo, pageable)
                 .map(this::convertirAResponse);
     }
 
@@ -67,7 +58,7 @@ public class BloqueServiceImpl implements BloqueService {
 
         validarCampusExiste(campusId);
 
-        return bloqueRepository.findByCampusId(campusId)
+        return bloqueRepositoryPort.buscarPorCampus(campusId)
                 .stream()
                 .map(this::convertirAResponse)
                 .toList();
@@ -86,13 +77,11 @@ public class BloqueServiceImpl implements BloqueService {
         Bloque bloque = buscarBloque(id);
 
         validarCampusExiste(request.campusId());
-        validarCodigoDuplicadoEnActualizacion(bloque, request);
+        validarCodigoDuplicado(request.campusId(), request.codigo(), id);
 
-        bloque.setCampusId(request.campusId());
-        bloque.setCodigo(request.codigo());
-        bloque.setNombre(request.nombre());
+        bloque.actualizarDatos(request.campusId(), request.codigo(), request.nombre());
 
-        Bloque actualizado = bloqueRepository.save(bloque);
+        Bloque actualizado = bloqueRepositoryPort.guardar(bloque);
 
         return convertirAResponse(actualizado);
     }
@@ -102,19 +91,19 @@ public class BloqueServiceImpl implements BloqueService {
     public void eliminar(UUID id) {
 
         Bloque bloque = buscarBloque(id);
-        bloque.setActivo(false);
+        bloque.desactivar();
 
-        bloqueRepository.save(bloque);
+        bloqueRepositoryPort.guardar(bloque);
     }
 
     private Bloque buscarBloque(UUID id) {
-        return bloqueRepository.findById(id)
+        return bloqueRepositoryPort.buscarPorId(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "No existe un bloque con el id: " + id));
     }
 
     private void validarCampusExiste(UUID campusId) {
-        if (!campusRepository.existsById(campusId)) {
+        if (campusRepositoryPort.buscarPorId(campusId).isEmpty()) {
             throw new BusinessRuleException(
                     "No existe un campus con el id: " + campusId);
         }
@@ -123,17 +112,13 @@ public class BloqueServiceImpl implements BloqueService {
     private void validarCodigoDuplicado(UUID campusId, String codigo, UUID idActual) {
 
         boolean existe = (idActual == null)
-                ? bloqueRepository.existsByCampusIdAndCodigo(campusId, codigo)
-                : bloqueRepository.existsByCampusIdAndCodigoAndIdNot(campusId, codigo, idActual);
+                ? bloqueRepositoryPort.existeCodigoEnCampus(campusId, codigo)
+                : bloqueRepositoryPort.existeCodigoEnCampusParaOtroId(campusId, codigo, idActual);
 
         if (existe) {
             throw new ConflictException(
                     "Ya existe un bloque con el código '" + codigo + "' en ese campus");
         }
-    }
-
-    private void validarCodigoDuplicadoEnActualizacion(Bloque bloque, BloqueRequest request) {
-        validarCodigoDuplicado(request.campusId(), request.codigo(), bloque.getId());
     }
 
     private BloqueResponse convertirAResponse(Bloque bloque) {
