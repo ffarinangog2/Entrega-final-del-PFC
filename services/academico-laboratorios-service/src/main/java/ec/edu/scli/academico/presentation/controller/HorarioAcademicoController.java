@@ -1,8 +1,8 @@
-package ec.edu.scli.academico.controller;
+package ec.edu.scli.academico.presentation.controller;
 
-import ec.edu.scli.academico.dto.horario.HorarioAcademicoRequest;
-import ec.edu.scli.academico.dto.horario.HorarioAcademicoResponse;
-import ec.edu.scli.academico.service.HorarioAcademicoService;
+import ec.edu.scli.academico.application.service.HorarioAcademicoService;
+import ec.edu.scli.academico.presentation.dto.horario.HorarioAcademicoRequest;
+import ec.edu.scli.academico.presentation.dto.horario.HorarioAcademicoResponse;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

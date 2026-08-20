@@ -1,4 +1,4 @@
-package ec.edu.scli.academico.dto.horario;
+package ec.edu.scli.academico.presentation.dto.horario;
 
 import ec.edu.scli.academico.enums.DiaSemana;
 import jakarta.validation.constraints.NotBlank;

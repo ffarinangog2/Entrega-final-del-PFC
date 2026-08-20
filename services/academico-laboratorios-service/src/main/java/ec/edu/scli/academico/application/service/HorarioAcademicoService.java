@@ -1,7 +1,7 @@
-package ec.edu.scli.academico.service;
+package ec.edu.scli.academico.application.service;
 
-import ec.edu.scli.academico.dto.horario.HorarioAcademicoRequest;
-import ec.edu.scli.academico.dto.horario.HorarioAcademicoResponse;
+import ec.edu.scli.academico.presentation.dto.horario.HorarioAcademicoRequest;
+import ec.edu.scli.academico.presentation.dto.horario.HorarioAcademicoResponse;
 
 import java.util.List;
 import java.util.UUID;

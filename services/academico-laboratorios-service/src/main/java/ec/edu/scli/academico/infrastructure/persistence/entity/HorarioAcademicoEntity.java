@@ -1,4 +1,4 @@
-package ec.edu.scli.academico.entity;
+package ec.edu.scli.academico.infrastructure.persistence.entity;
 
 import ec.edu.scli.academico.enums.DiaSemana;
 import jakarta.persistence.*;
@@ -9,7 +9,7 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "horarios_academicos")
-public class HorarioAcademico {
+public class HorarioAcademicoEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
