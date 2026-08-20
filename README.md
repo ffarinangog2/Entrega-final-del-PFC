@@ -21,11 +21,11 @@ docker compose up -d
 - `auth-service`: autenticación.
 - `services/usuarios-service`: administración de usuarios.
 - `services/academico-laboratorios-service`: información académica y laboratorios.
-- `reservas-solicitudes-service`: solicitudes y reservas.
+- `services/reservas-solicitudes-service`: solicitudes y reservas.
 - `frontend`: interfaz de usuario.
 - `docker-compose.yml`: servicios y clúster CockroachDB E3.
 - `.github/workflows/ci.yml`: trabajos `build-test` y `crdb-tests`.
-- `db/schema.sql`: archivo pendiente del Paso 2; todavía no forma parte del repositorio.
+- `db/schema.sql`: esquema de `reservas_db` aplicado por `crdb-e3-init`.
 
 ## Clúster CockroachDB E3
 
@@ -38,9 +38,8 @@ La infraestructura de la Entrega 3 define tres nodos:
 Los nodos comparten la red `scli-network`, mantienen datos en volúmenes
 independientes y se descubren mediante `--join`.
 
-La preparación de `crdb-e3-init` está documentada en `docker-compose.yml`, pero
-permanece deshabilitada. Su inicialización y la carga de `db/schema.sql` dependen
-del Paso 2 de Freddy.
+`crdb-e3-init` inicializa el clúster y aplica `db/schema.sql` sobre `reservas_db`.
+El servicio de Reservas depende de que esa inicialización termine correctamente.
 
 ## Freddy: Reservas/Solicitudes y cliente móvil
 
@@ -61,6 +60,8 @@ Con el servicio iniciado en el puerto local predeterminado, Actuator expone:
 Invoke-RestMethod http://localhost:8084/actuator/health
 Invoke-WebRequest http://localhost:8084/actuator/prometheus
 ```
+
+El API Gateway expone las rutas de Reservas desde `http://localhost:8080`.
 
 El contrato Pact Consumer + Provider se genera y verifica desde la raíz:
 

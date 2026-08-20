@@ -8,7 +8,7 @@ disponibilidad y bloqueos de agenda de los laboratorios.
 
 - Java 21.
 - CockroachDB local o disponible mediante Docker Compose.
-- Puerto SQL `26260` disponible para CockroachDB.
+- Puertos SQL `26261`, `26262` y `26263` disponibles para los nodos E3 de Docker Compose.
 - Puerto `8084` disponible para el microservicio.
 
 ## URL base
@@ -40,7 +40,9 @@ http://localhost:8084
 
 En Docker, las URL de servicios deben usar los nombres DNS de la red de contenedores.
 `localhost` solamente es apropiado cuando los servicios se ejecutan directamente en
-la máquina anfitriona.
+la máquina anfitriona. El valor `26260` anterior es exclusivamente el predeterminado
+para una instancia local iniciada fuera del Compose; el despliegue Docker usa los tres
+nodos `crdb-e3-1`, `crdb-e3-2` y `crdb-e3-3` por su puerto interno `26257`.
 
 ## Seguridad
 
@@ -56,6 +58,8 @@ la máquina anfitriona.
 - Swagger UI: `http://localhost:8084/swagger-ui.html`
 - Health: `http://localhost:8084/actuator/health`
 - Info: `http://localhost:8084/actuator/info`
+- Métricas Prometheus: `http://localhost:8084/actuator/prometheus`
+- Entrada externa por API Gateway: `http://localhost:8080`
 
 Recursos principales:
 
@@ -67,21 +71,21 @@ Recursos principales:
 ## Preparación local
 
 Los comandos de Docker Compose deben ejecutarse desde la raíz del repositorio.
-Los comandos Maven deben ejecutarse desde `reservas-solicitudes-service`.
+Los comandos Maven deben ejecutarse desde `services/reservas-solicitudes-service`.
 
 ### 1. Levantar la base de datos
 
 ```powershell
-docker compose up -d cockroach-reservas cockroach-reservas-init
+docker compose up -d crdb-e3-1 crdb-e3-2 crdb-e3-3 crdb-e3-init
 ```
 
 La base utiliza esta configuración:
 
 - Motor: CockroachDB
-- Contenedor: `scli-cockroach-reservas`
-- Host: `localhost`
-- Puerto SQL: `26260`
-- Puerto administrativo: `8091`
+- Contenedores: `scli-crdb-e3-1`, `scli-crdb-e3-2` y `scli-crdb-e3-3`
+- Hosts internos: `crdb-e3-1`, `crdb-e3-2` y `crdb-e3-3`
+- Puertos SQL externos predeterminados: `26261`, `26262` y `26263`
+- Puertos administrativos predeterminados: `8092`, `8093` y `8094`
 - Base de datos: `reservas_db`
 - Usuario: `root`
 - Contraseña: vacía en desarrollo local inseguro
@@ -89,10 +93,11 @@ La base utiliza esta configuración:
 ### 2. Verificar el contenedor
 
 ```powershell
-docker compose ps cockroach-reservas cockroach-reservas-init
+docker compose ps crdb-e3-1 crdb-e3-2 crdb-e3-3 crdb-e3-init
 ```
 
-Antes de iniciar el microservicio, el contenedor debe aparecer saludable (`healthy`).
+Antes de iniciar el microservicio, los nodos deben estar en ejecución y
+`crdb-e3-init` debe haber finalizado correctamente.
 
 ### 3. Compilar
 
@@ -137,6 +142,18 @@ Para crear o actualizar solicitudes reales también deben estar disponibles:
 El microservicio consulta esos servicios para validar perfiles, docentes, laboratorios,
 materias y períodos lectivos.
 
+## Contratos y cliente móvil
+
+Desde la raíz, el contrato Pact Consumer + Provider se verifica con:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\tests\contract\verify-reservas-provider.ps1
+```
+
+El cliente Mobile configura la entrada del Gateway mediante `SCLI_API_BASE_URL`; para
+el Gateway local debe apuntar a `http://localhost:8080/` (o al host equivalente que
+pueda alcanzar el dispositivo/emulador).
+
 ## Persistencia, concurrencia y clientes internos
 
 - Flyway es la única fuente del esquema; Hibernate usa `ddl-auto: validate`.
@@ -152,7 +169,7 @@ materias y períodos lectivos.
 Desde la raíz del repositorio, conservando el volumen y sus datos:
 
 ```powershell
-docker compose stop cockroach-reservas
+docker compose stop crdb-e3-1 crdb-e3-2 crdb-e3-3
 ```
 
 La eliminación del volumen global debe coordinarse con el equipo para no afectar el
