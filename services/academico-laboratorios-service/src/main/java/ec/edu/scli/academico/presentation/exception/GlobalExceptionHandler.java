@@ -1,5 +1,8 @@
-package ec.edu.scli.academico.exception;
+package ec.edu.scli.academico.presentation.exception;
 
+import ec.edu.scli.academico.domain.exception.BusinessRuleException;
+import ec.edu.scli.academico.domain.exception.ConflictException;
+import ec.edu.scli.academico.domain.exception.ResourceNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

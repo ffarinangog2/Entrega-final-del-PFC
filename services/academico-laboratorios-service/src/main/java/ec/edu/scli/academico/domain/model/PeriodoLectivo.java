@@ -1,7 +1,7 @@
 package ec.edu.scli.academico.domain.model;
 
 import ec.edu.scli.academico.enums.EstadoPeriodo;
-import ec.edu.scli.academico.exception.BusinessRuleException;
+import ec.edu.scli.academico.domain.exception.BusinessRuleException;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;

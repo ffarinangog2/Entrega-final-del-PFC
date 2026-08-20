@@ -97,6 +97,6 @@ class LaboratorioServiceImplTest {
         );
 
         org.assertj.core.api.Assertions.assertThatThrownBy(() -> laboratorioService.crear(request))
-                .isInstanceOf(ec.edu.scli.academico.exception.BusinessRuleException.class);
+                .isInstanceOf(ec.edu.scli.academico.domain.exception.BusinessRuleException.class);
     }
 }

@@ -1,4 +1,4 @@
-package ec.edu.scli.academico.exception;
+package ec.edu.scli.academico.presentation.exception;
 
 import java.time.OffsetDateTime;
 import java.util.Map;

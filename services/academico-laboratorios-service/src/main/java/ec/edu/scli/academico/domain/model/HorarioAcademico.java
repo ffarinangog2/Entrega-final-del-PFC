@@ -1,7 +1,7 @@
 package ec.edu.scli.academico.domain.model;
 
 import ec.edu.scli.academico.enums.DiaSemana;
-import ec.edu.scli.academico.exception.BusinessRuleException;
+import ec.edu.scli.academico.domain.exception.BusinessRuleException;
 
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
