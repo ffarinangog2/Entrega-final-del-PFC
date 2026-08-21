@@ -56,3 +56,8 @@ springdoc:
 
 app:
   internal-api-key: ${INTERNAL_API_KEY:clave-interna-desarrollo}
+
+logging:
+  structured:
+    format:
+      console: logstash
