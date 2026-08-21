@@ -10,6 +10,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerMapping;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
@@ -20,6 +22,7 @@ import java.io.IOException;
  */
 @Component
 public class HttpMetricsFilter extends HttpFilter {
+    private static final Logger log = LoggerFactory.getLogger(HttpMetricsFilter.class);
 
     @Override
     protected void doFilter(HttpServletRequest request, HttpServletResponse response,
@@ -33,6 +36,7 @@ public class HttpMetricsFilter extends HttpFilter {
 
             HttpRequestsMetricsRegistry.getInstance()
                 .incrementarPeticion(ruta, metodo, status);
+            log.info("Peticion procesada: {} {} -> {}", metodo, ruta, status);
         }
     }
 
