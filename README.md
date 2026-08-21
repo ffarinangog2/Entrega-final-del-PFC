@@ -92,3 +92,14 @@ python -m locust -f tests/load/locustfile.py --headless --users 50 --spawn-rate 
 
 El diseño de medición, repetición y conservación de evidencia está definido en
 `experimentos/protocolo-e4.md`. Ese protocolo no constituye resultados ISO ejecutados.
+
+## Harold: Web - academico-laboratorios (monitoreo)
+
+Antes de trabajar en `apps/web` por primera vez, instalar dependencias:
+
+```powershell
+cd apps/web
+npm install
+```
+
+Variables de entorno opcionales (`apps/web/.env`):
