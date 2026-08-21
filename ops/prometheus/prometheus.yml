@@ -11,3 +11,9 @@ scrape_configs:
     static_configs:
       - targets:
           - reservas-solicitudes-service:8084
+  
+  - job_name: academico-laboratorios-service
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets:
+          - academico-laboratorios-service:8083
