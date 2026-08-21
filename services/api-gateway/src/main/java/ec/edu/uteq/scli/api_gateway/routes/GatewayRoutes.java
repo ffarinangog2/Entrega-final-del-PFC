@@ -53,10 +53,34 @@ public class GatewayRoutes {
                 .build();
     }
 
+        @Bean
+        public RouterFunction<ServerResponse> academicoServiceRoute(
+                        @Value("${ACADEMICO_SERVICE_URL:http://academico-laboratorios-service:8083}")
+                        String academicoServiceUrl) {
+                return route("academico_service")
+                                .route(request -> esRutaAcademica(request.path()), http())
+                                .before(uri(academicoServiceUrl))
+                                .build();
+        }
+
     private boolean esRutaReservas(String path) {
         return path.equals("/api/v1/reservas") || path.startsWith("/api/v1/reservas/")
                 || path.equals("/api/v1/solicitudes") || path.startsWith("/api/v1/solicitudes/")
                 || path.equals("/api/v1/agenda") || path.startsWith("/api/v1/agenda/")
                 || path.equals("/api/v1/disponibilidad") || path.startsWith("/api/v1/disponibilidad/");
     }
+
+        private boolean esRutaAcademica(String path) {
+                return path.equals("/api/v1/campus") || path.startsWith("/api/v1/campus/")
+                                || path.equals("/api/v1/bloques") || path.startsWith("/api/v1/bloques/")
+                                || path.equals("/api/v1/pisos") || path.startsWith("/api/v1/pisos/")
+                                || path.equals("/api/v1/laboratorios") || path.startsWith("/api/v1/laboratorios/")
+                                || path.equals("/api/v1/equipos") || path.startsWith("/api/v1/equipos/")
+                                || path.equals("/api/v1/tipos-equipo") || path.startsWith("/api/v1/tipos-equipo/")
+                                || path.equals("/api/v1/facultades") || path.startsWith("/api/v1/facultades/")
+                                || path.equals("/api/v1/carreras") || path.startsWith("/api/v1/carreras/")
+                                || path.equals("/api/v1/materias") || path.startsWith("/api/v1/materias/")
+                                || path.equals("/api/v1/periodos-lectivos") || path.startsWith("/api/v1/periodos-lectivos/")
+                                || path.equals("/api/v1/horarios") || path.startsWith("/api/v1/horarios/");
+        }
 }
