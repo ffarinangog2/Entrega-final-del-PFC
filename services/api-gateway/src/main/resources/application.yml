@@ -22,7 +22,7 @@ spring:
           - id: academico-service
             uri: ${ACADEMICO_SERVICE_URL:http://academico-laboratorios-service:8083}
             predicates:
-              - Path=/api/v1/academico/**
+              - Path=/api/v1/campus/**,/api/v1/bloques/**,/api/v1/pisos/**,/api/v1/laboratorios/**,/api/v1/equipos/**,/api/v1/tipos-equipo/**,/api/v1/facultades/**,/api/v1/carreras/**,/api/v1/materias/**,/api/v1/periodos-lectivos/**,/api/v1/horarios/**
 
 management:
   endpoints:
