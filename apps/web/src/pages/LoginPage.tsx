@@ -2,6 +2,7 @@ import { FormEvent, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AuthApiError } from '../services/authApi'
 import { useAuth } from '../auth'
+import './LoginPage.css'
 
 function getErrorMessage(error: unknown) {
   if (!(error instanceof AuthApiError)) return 'No se pudo iniciar sesión.'
@@ -39,35 +40,56 @@ export function LoginPage() {
   }
 
   return (
-    <main>
-      <h1>Iniciar sesión</h1>
-      <p>Acceso al sistema SCLI.</p>
-      <form onSubmit={handleSubmit}>
-        <label>
-          Usuario o correo
+    <main className="login-page">
+      <div className="login-page__backdrop" aria-hidden="true" />
+      <section className="login-card" aria-labelledby="login-title">
+        <div className="login-card__brand">
+          <span className="login-card__mark">S</span>
+          <div>
+            <p className="login-card__eyebrow">SCLI</p>
+            <p className="login-card__brand-name">UTEQ</p>
+          </div>
+        </div>
+        <div className="login-card__heading">
+          <p className="login-card__kicker">Acceso institucional</p>
+          <h1 id="login-title">SCLI</h1>
+          <p>Sistema de Control de Laboratorios Informáticos</p>
+        </div>
+        <form className="login-form" onSubmit={handleSubmit}>
+          <div className="login-form__field">
+            <label htmlFor="username">Usuario o correo</label>
           <input
+            id="username"
             type="text"
             value={username}
             onChange={(event) => setUsername(event.target.value)}
             autoComplete="username"
             required
           />
-        </label>
-        <label>
-          Contraseña
+          </div>
+          <div className="login-form__field">
+            <label htmlFor="password">Contraseña</label>
           <input
+            id="password"
             type="password"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             autoComplete="current-password"
             required
           />
-        </label>
-        {error && <p role="alert">{error}</p>}
-        <button type="submit" disabled={isLoading}>
-          {isLoading ? 'Iniciando sesión...' : 'Iniciar sesión'}
-        </button>
-      </form>
+          </div>
+          {error && (
+            <p className="login-form__error" role="alert">
+              {error}
+            </p>
+          )}
+          <button className="login-form__submit" type="submit" disabled={isLoading}>
+            {isLoading && <span className="login-form__spinner" aria-hidden="true" />}
+            {isLoading ? 'Iniciando sesión...' : 'Iniciar sesión'}
+          </button>
+        </form>
+        <p className="login-card__footer">UTEQ · Aplicaciones Distribuidas</p>
+      </section>
     </main>
   )
 }

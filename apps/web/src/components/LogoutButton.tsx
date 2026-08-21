@@ -10,5 +10,10 @@ export function LogoutButton() {
     navigate('/login', { replace: true })
   }
 
-  return <button onClick={handleLogout}>Cerrar sesión</button>
+  return (
+    <button className="logout-button" type="button" onClick={handleLogout}>
+      <span aria-hidden="true">↪</span>
+      Cerrar sesión
+    </button>
+  )
 }
