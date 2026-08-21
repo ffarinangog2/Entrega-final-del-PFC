@@ -531,6 +531,28 @@ services:
       - scli-network
 
 
+  # =========================================================
+  # OBSERVABILIDAD - CADVISOR (Isaías Urbina)
+  # =========================================================
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.47.2
+    container_name: scli-cadvisor
+
+    ports:
+      - "8085:8080"
+
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+
+    restart: unless-stopped
+
+    networks:
+      - scli-network
+
+
 volumes:
 
   cockroach-auth-data:
