@@ -1,0 +1,19 @@
+.reservas-panel { padding: 28px; border: 1px solid #dce6e1; border-radius: 12px; background: #fffdf9; box-shadow: 0 10px 30px rgba(28, 62, 54, .06); }
+.reservas-panel__header, .reserva-card__heading, .reserva-detail__header { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.reservas-panel h1 { margin: 4px 0 0; color: #173b36; font-family: 'Space Grotesk', sans-serif; }
+.reservas-panel__eyebrow { margin: 0; color: #718780; font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+.reservas-panel button { padding: 9px 14px; border: 1px solid #b9cec6; border-radius: 7px; background: #eef6f2; color: #245f54; cursor: pointer; font-weight: 700; }
+.reservas-panel button:disabled { cursor: wait; opacity: .6; }
+.reservas-panel__message { padding: 42px 12px; color: #60756d; text-align: center; }
+.reservas-panel__message--error { color: #9b3f34; }
+.reservas-list { display: grid; gap: 14px; margin-top: 24px; }
+.reserva-card { padding: 20px; border: 1px solid #dce6e1; border-radius: 10px; background: #fff; }
+.reserva-card h2 { margin: 5px 0 0; font-size: 18px; }.reserva-card__code { color: #718780; font-size: 12px; font-weight: 700; }
+.reserva-card__status { padding: 6px 9px; border-radius: 999px; background: #e4eee9; color: #315e54; font-size: 11px; font-weight: 700; }.reserva-card__status--cancelada, .reserva-card__status--no_asistida { background: #fae9e5; color: #9b3f34; }
+.reserva-card dl, .reserva-detail__data { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin: 18px 0; }.reserva-card dl div, .reserva-detail__data div { min-width: 0; }
+.reserva-card dt, .reserva-detail dt { color: #7b8e87; font-size: 11px; font-weight: 700; text-transform: uppercase; }.reserva-card dd, .reserva-detail dd { margin: 4px 0 0; overflow-wrap: anywhere; color: #294c45; font-size: 13px; }
+.reserva-card a, .reserva-detail__back { color: #176c5d; font-weight: 700; text-decoration: none; }.reserva-detail__back { display: inline-block; margin-bottom: 24px; }.reserva-detail__data { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 28px; }.reserva-detail__data div { padding: 14px; border-radius: 8px; background: #f3f7f5; }
+@media (max-width: 680px) { .reservas-panel { padding: 20px 16px; } .reserva-card dl, .reserva-detail__data { grid-template-columns: 1fr; } .reservas-panel__header, .reserva-detail__header { align-items: flex-start; } }
+.reserva-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 24px; }.reserva-form label { display: grid; gap: 6px; color: #526c64; font-size: 12px; font-weight: 700; }.reserva-form input, .reserva-form select, .reserva-form textarea { padding: 10px; border: 1px solid #cbdad4; border-radius: 7px; font: inherit; }.reserva-form__wide, .reserva-form__actions, .reserva-form > p { grid-column: 1 / -1; }.reserva-form__actions { display: flex; gap: 10px; }.availability--ok { color: #176c5d; }.availability--conflict { color: #9b3f34; }
+.week-grid { display: grid; grid-template-columns: repeat(7, minmax(130px, 1fr)); gap: 8px; margin-top: 24px; overflow-x: auto; }.week-grid section { min-height: 180px; padding: 10px; border: 1px solid #dce6e1; border-radius: 8px; }.week-grid h2 { margin: 0 0 10px; font-size: 13px; text-transform: capitalize; }.week-grid a { display: grid; gap: 3px; margin-bottom: 8px; padding: 8px; border-radius: 6px; background: #eaf3ef; color: #315e54; font-size: 10px; text-decoration: none; }.week-grid a strong { font-size: 11px; }
+.cancel-box { display: grid; gap: 10px; margin-top: 24px; padding: 16px; border: 1px solid #efd2cb; border-radius: 8px; background: #fff7f5; }.cancel-box label { display: grid; gap: 6px; }.cancel-box textarea { min-height: 70px; padding: 9px; }.cancel-box button { justify-self: start; border-color: #dca99e; color: #9b3f34; }
