@@ -18,13 +18,15 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import ec.edu.scli.academico.application.service.LaboratorioService;
 import ec.edu.scli.academico.application.facade.LaboratorioDetalleFacade;
+import ec.edu.scli.academico.application.service.LaboratorioService;
 import ec.edu.scli.academico.enums.EstadoLaboratorio;
-import ec.edu.scli.academico.presentation.dto.laboratorio.LaboratorioEstadoRequest;
+import ec.edu.scli.academico.infrastructure.observability.PrometheusQueryClient;
 import ec.edu.scli.academico.presentation.dto.laboratorio.LaboratorioDetalleCompletoResponse;
+import ec.edu.scli.academico.presentation.dto.laboratorio.LaboratorioEstadoRequest;
 import ec.edu.scli.academico.presentation.dto.laboratorio.LaboratorioRequest;
 import ec.edu.scli.academico.presentation.dto.laboratorio.LaboratorioResponse;
+import ec.edu.scli.academico.presentation.dto.laboratorio.SerieEstadoResponse;
 import jakarta.validation.Valid;
 
 @RestController
@@ -33,13 +35,17 @@ public class LaboratorioController {
 
     private final LaboratorioService laboratorioService;
     private final LaboratorioDetalleFacade laboratorioDetalleFacade;
+    private final PrometheusQueryClient prometheusQueryClient;
+
 
     public LaboratorioController(
         LaboratorioService laboratorioService,
-        LaboratorioDetalleFacade laboratorioDetalleFacade
+        LaboratorioDetalleFacade laboratorioDetalleFacade,
+        PrometheusQueryClient prometheusQueryClient
     ) {
         this.laboratorioService = laboratorioService;
         this.laboratorioDetalleFacade = laboratorioDetalleFacade;
+        this.prometheusQueryClient = prometheusQueryClient;
     }
 
     @PostMapping
@@ -69,6 +75,12 @@ public class LaboratorioController {
         return ResponseEntity.ok(laboratorioService.listarDisponibles());
     }
 
+    @GetMapping("/metricas/ocupacion")
+    public ResponseEntity<List<SerieEstadoResponse>> obtenerOcupacionHistorica(
+        @RequestParam(defaultValue = "60") int rangoMinutos
+    ) {
+        return ResponseEntity.ok(prometheusQueryClient.consultarOcupacionHistorica(rangoMinutos));
+    }
     @GetMapping("/{id}")
     public ResponseEntity<LaboratorioResponse> obtenerPorId(@PathVariable UUID id) {
         return ResponseEntity.ok(laboratorioService.obtenerPorId(id));
