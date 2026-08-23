@@ -53,7 +53,8 @@ public class MateriaServiceImpl implements MateriaService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<MateriaResponse> listar(UUID carreraId, String codigo, String nombre, Boolean activo, Pageable pageable) {
+        public Page<MateriaResponse> listar(
+            UUID carreraId, String codigo, String nombre, Boolean activo, Pageable pageable) {
         return materiaRepositoryPort.buscar(carreraId, codigo, nombre, activo, pageable)
                 .map(this::convertirAResponse);
     }

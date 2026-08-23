@@ -59,7 +59,8 @@ public class CarreraServiceImpl implements CarreraService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<CarreraResponse> listar(UUID facultadId, String codigo, String nombre, Boolean activo, Pageable pageable) {
+        public Page<CarreraResponse> listar(
+            UUID facultadId, String codigo, String nombre, Boolean activo, Pageable pageable) {
         return carreraRepositoryPort.buscar(facultadId, codigo, nombre, activo, pageable)
                 .map(this::convertirAResponse);
     }

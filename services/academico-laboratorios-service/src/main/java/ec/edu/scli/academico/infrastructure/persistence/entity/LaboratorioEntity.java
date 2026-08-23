@@ -1,10 +1,19 @@
 package ec.edu.scli.academico.infrastructure.persistence.entity;
 
-import ec.edu.scli.academico.enums.EstadoLaboratorio;
-import jakarta.persistence.*;
-
 import java.time.OffsetDateTime;
 import java.util.UUID;
+
+import ec.edu.scli.academico.enums.EstadoLaboratorio;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
+import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "laboratorios")

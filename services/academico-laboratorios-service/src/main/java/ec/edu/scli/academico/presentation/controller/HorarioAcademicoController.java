@@ -1,15 +1,21 @@
 package ec.edu.scli.academico.presentation.controller;
 
+import java.net.URI;
+import java.util.List;
+import java.util.UUID;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
 import ec.edu.scli.academico.application.service.HorarioAcademicoService;
 import ec.edu.scli.academico.presentation.dto.horario.HorarioAcademicoRequest;
 import ec.edu.scli.academico.presentation.dto.horario.HorarioAcademicoResponse;
 import jakarta.validation.Valid;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
-import java.net.URI;
-import java.util.List;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/horarios")
