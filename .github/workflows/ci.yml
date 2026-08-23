@@ -5,6 +5,39 @@ on:
   pull_request:
 
 jobs:
+  lint:
+    name: Lint - backend and web
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+          cache-dependency-path: services/academico-laboratorios-service/pom.xml
+
+      - name: Checkstyle - academico-laboratorios-service
+        working-directory: services/academico-laboratorios-service
+        run: mvn --batch-mode checkstyle:check
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+
+      - name: Install web dependencies
+        working-directory: apps/web
+        run: npm ci
+
+      - name: ESLint - apps/web
+        working-directory: apps/web
+        run: npm run lint
   build-test:
     name: Build and test - ${{ matrix.service }}
     runs-on: ubuntu-latest
