@@ -4,6 +4,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -37,6 +38,8 @@ import ec.edu.uteq.scli.mobile.features.auth.presentation.AuthViewModel
 import ec.edu.uteq.scli.mobile.features.auth.presentation.LoginScreen
 import ec.edu.uteq.scli.mobile.features.profile.presentation.ProfileScreen
 import ec.edu.uteq.scli.mobile.features.profile.presentation.ProfileViewModel
+import ec.edu.uteq.scli.mobile.features.qr.presentation.QrScanScreen
+import ec.edu.uteq.scli.mobile.features.qr.presentation.QrViewModel
 import ec.edu.uteq.scli.mobile.features.reservas.presentation.NuevaReservaScreen
 import ec.edu.uteq.scli.mobile.features.reservas.presentation.NuevaReservaViewModel
 import ec.edu.uteq.scli.mobile.features.reservas.presentation.ReservaDetalleScreen
@@ -47,6 +50,7 @@ private sealed class AppDestination(val route: String) {
     data object Incidentes : AppDestination("incidentes")
     data object Reservas : AppDestination("reservas")
     data object Perfil : AppDestination("perfil")
+    data object EscanearQr : AppDestination("escanear-qr")
     data object NuevaReserva : AppDestination("reservas/nueva")
     data object ReservaDetalle : AppDestination("reservas/{reservaId}") {
         fun crearRuta(id: String) = "reservas/$id"
@@ -100,6 +104,12 @@ fun AppNavHost(application: ScliMobileApplication) {
                     icon = { Icon(Icons.Filled.Person, contentDescription = null) },
                     label = { Text(stringResource(R.string.nav_perfil)) },
                 )
+                NavigationBarItem(
+                    selected = currentDestination.isRoute(AppDestination.EscanearQr),
+                    onClick = { navController.navigateToTab(AppDestination.EscanearQr.route) },
+                    icon = { Icon(Icons.Filled.QrCodeScanner, contentDescription = null) },
+                    label = { Text("Escanear QR") },
+                )
             }
         },
     ) { padding ->
@@ -139,6 +149,14 @@ fun AppNavHost(application: ScliMobileApplication) {
                     onReservaClick = { navController.navigate(AppDestination.ReservaDetalle.crearRuta(it)) },
                     onNuevaReserva = { navController.navigate(AppDestination.NuevaReserva.route) },
                 )
+            }
+            composable(AppDestination.EscanearQr.route) {
+                val viewModel: QrViewModel = viewModel(
+                    factory = viewModelFactory {
+                        initializer { QrViewModel(container.qrRepository) }
+                    },
+                )
+                QrScanScreen(viewModel)
             }
             composable(AppDestination.NuevaReserva.route) {
                 val viewModel: NuevaReservaViewModel = viewModel(
