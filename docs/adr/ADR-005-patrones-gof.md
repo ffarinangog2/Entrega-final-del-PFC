@@ -37,7 +37,16 @@ _Pendiente: Factory Method + Repository._
 _Pendiente: State + Strategy + Repository._
 
 ## Isaías Urbina — usuarios-service
-_Pendiente: Observer + Repository._
+
+### Repository
+**Propósito:** desacoplar el dominio de la tecnología de persistencia (JPA/Hibernate).
+**Dónde:** interfaces `*RepositoryPort` en `domain/port/` (una por cada una de las 5 entidades: `AdministradorRepositoryPort`, `DocenteRepositoryPort`, `EstudianteRepositoryPort`, `PerfilRepositoryPort`, `TecnicoRepositoryPort`), implementadas por adaptadores `*RepositoryAdapter` en `infrastructure/persistence/` (`PerfilRepositoryAdapter`, etc., cada uno delegando en su repositorio Spring Data JPA de `infrastructure/persistence/jpa/`).
+**Por qué es real, no placebo:** el dominio (`domain/model`) no conoce JPA; `PerfilServiceImpl` depende solo de los puertos, y los tests de `application/service/*Test.java` (por ejemplo `PerfilServiceObserverTest`) usan mocks de Mockito de estos puertos sin necesitar base de datos real.
+
+### Observer
+**Propósito:** notificar cambios de estado de un perfil (creación, activación/desactivación) a interesados desacoplados del caso de uso que los origina, sin que `PerfilServiceImpl` conozca quién consume el evento.
+**Dónde:** el evento `PerfilEvent` (record con factorías `creado()` y `estadoCambiado()`) y la interfaz `PerfilEventListener` en `domain/event/`; el listener concreto `LoggingPerfilEventListener` en `infrastructure/observer/`. El sujeto es `PerfilServiceImpl` (`application/service/`), que recibe `List<PerfilEventListener>` inyectada por Spring y notifica a todos en `publicarEvento()`, invocado desde `crear()`, `actualizar()` y `eliminar()`.
+**Por qué es real, no placebo:** Spring inyecta automáticamente todos los beans `PerfilEventListener` existentes en la lista (hoy solo `LoggingPerfilEventListener`, pero agregar un segundo observador —p. ej. auditoría o notificaciones— no requiere tocar `PerfilServiceImpl`); el test `PerfilServiceObserverTest` lo prueba registrando un listener de prueba (`eventos::add`) en lugar del real y verificando que `crear()` dispara `PERFIL_CREADO` sin necesitar logging real.
 
 ---
 
