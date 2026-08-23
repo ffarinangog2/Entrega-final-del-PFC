@@ -19,8 +19,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import ec.edu.scli.academico.application.service.LaboratorioService;
+import ec.edu.scli.academico.application.facade.LaboratorioDetalleFacade;
 import ec.edu.scli.academico.enums.EstadoLaboratorio;
 import ec.edu.scli.academico.presentation.dto.laboratorio.LaboratorioEstadoRequest;
+import ec.edu.scli.academico.presentation.dto.laboratorio.LaboratorioDetalleCompletoResponse;
 import ec.edu.scli.academico.presentation.dto.laboratorio.LaboratorioRequest;
 import ec.edu.scli.academico.presentation.dto.laboratorio.LaboratorioResponse;
 import jakarta.validation.Valid;
@@ -30,9 +32,14 @@ import jakarta.validation.Valid;
 public class LaboratorioController {
 
     private final LaboratorioService laboratorioService;
+    private final LaboratorioDetalleFacade laboratorioDetalleFacade;
 
-    public LaboratorioController(LaboratorioService laboratorioService) {
+    public LaboratorioController(
+        LaboratorioService laboratorioService,
+        LaboratorioDetalleFacade laboratorioDetalleFacade
+    ) {
         this.laboratorioService = laboratorioService;
+        this.laboratorioDetalleFacade = laboratorioDetalleFacade;
     }
 
     @PostMapping
@@ -65,6 +72,11 @@ public class LaboratorioController {
     @GetMapping("/{id}")
     public ResponseEntity<LaboratorioResponse> obtenerPorId(@PathVariable UUID id) {
         return ResponseEntity.ok(laboratorioService.obtenerPorId(id));
+    }
+
+    @GetMapping("/{id}/detalle-completo")
+    public ResponseEntity<LaboratorioDetalleCompletoResponse> obtenerDetalleCompleto(@PathVariable UUID id) {
+        return ResponseEntity.ok(laboratorioDetalleFacade.obtenerDetalleCompleto(id));
     }
 
     @PutMapping("/{id}")
