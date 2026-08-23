@@ -64,6 +64,16 @@ class RemoteReservaRepositoryTest {
     }
 
     @Test
+    fun `HTTP 403 no usa cache`() = runTest {
+        server.enqueue(MockResponse().setResponseCode(403).setBody("{}"))
+
+        val result = repository.listar()
+
+        assertEquals(NetworkResult.Failure(403, "gateway_http_403"), result)
+        coVerify(exactly = 0) { dao.obtenerTodas() }
+    }
+
+    @Test
     fun `fallo de red devuelve listado cacheado`() = runTest {
         coEvery { dao.obtenerTodas() } returns listOf(ENTITY)
         server.shutdown()
