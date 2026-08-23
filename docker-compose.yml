@@ -554,6 +554,69 @@ services:
       - scli-network
 
 
+  # =========================================================
+  # OBSERVABILIDAD - PROMETHEUS + GRAFANA + OTEL COLLECTOR (Isaías Urbina)
+  # =========================================================
+  prometheus:
+    image: prom/prometheus:v3.0.1
+    container_name: scli-prometheus
+
+    ports:
+      - "9090:9090"
+
+    volumes:
+      - ./ops/prometheus:/etc/prometheus:ro
+
+    restart: unless-stopped
+
+    networks:
+      - scli-network
+
+
+  grafana:
+    image: grafana/grafana:11.3.0
+    container_name: scli-grafana
+
+    ports:
+      - "3001:3000"
+
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+
+    volumes:
+      - ./ops/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - ./ops/grafana/provisioning:/etc/grafana/provisioning:ro
+
+    depends_on:
+      - prometheus
+
+    restart: unless-stopped
+
+    networks:
+      - scli-network
+
+
+  otel-collector:
+    image: otel/opentelemetry-collector:0.110.0
+    container_name: scli-otel-collector
+
+    command: ["--config=/etc/otelcol/config.yaml"]
+
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+
+    volumes:
+      - ./ops/otel-collector/config.yaml:/etc/otelcol/config.yaml:ro
+
+    restart: unless-stopped
+
+    networks:
+      - scli-network
+
+
 volumes:
 
   cockroach-auth-data:
