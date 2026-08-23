@@ -69,9 +69,6 @@ security:
     issuer: ${JWT_ISSUER:scli-auth-service}
     secret: ${JWT_SECRET}
 
-  cors:
-    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
-
 app:
   internal-api-key: ${INTERNAL_API_KEY:clave-interna-desarrollo}
 

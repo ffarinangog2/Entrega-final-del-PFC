@@ -27,7 +27,6 @@ http://localhost:8084
 | `DB_PASSWORD` | No | Vacío |
 | `JWT_ISSUER` | No | `scli-auth-service` |
 | `JWT_SECRET` | Sí | Sin valor predeterminado; Base64 de al menos 32 bytes |
-| `CORS_ALLOWED_ORIGINS` | No | `http://localhost:5173` |
 | `INTERNAL_API_KEY` | No | `clave-interna-desarrollo` |
 | `USUARIOS_SERVICE_URL` | No | `http://localhost:8082` |
 | `ACADEMICO_LABORATORIOS_SERVICE_URL` | No | `http://localhost:8083` |
@@ -47,10 +46,12 @@ nodos `crdb-e3-1`, `crdb-e3-2` y `crdb-e3-3` por su puerto interno `26257`.
 ## Seguridad
 
 - API stateless protegida con JWT Bearer para operaciones de escritura.
-- Las consultas `GET`, preflight CORS y Actuator quedan disponibles sin token.
+- Las consultas `GET` y Actuator quedan disponibles sin token.
 - El token debe estar firmado con `JWT_SECRET`, pertenecer a `JWT_ISSUER` e incluir
   `sub` y `perfilId` como UUID.
 - Los clientes internos envían `X-Internal-Api-Key` usando `INTERNAL_API_KEY`.
+- El CORS externo de la aplicación Web es administrado por el API Gateway.
+  Reservas se consume desde la Web exclusivamente a través del Gateway.
 
 ## API y observabilidad
 

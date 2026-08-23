@@ -319,7 +319,7 @@ services:
       context: ./services/reservas-solicitudes-service
       dockerfile: Dockerfile
 
-    container_name: scli-reservas-solicitudes-service
+    container_name: reservas-service
 
     ports:
       - "8084:8084"
@@ -334,6 +334,7 @@ services:
       INTERNAL_API_KEY: clave-interna-desarrollo
       JWT_SECRET: ${JWT_SECRET}
       USUARIOS_SERVICE_URL: http://usuarios-service:8082
+      ACADEMICO_LABORATORIOS_SERVICE_URL: http://academico-laboratorios-service:8083
 
     depends_on:
       crdb-e3-init:
@@ -420,7 +421,7 @@ services:
   # =========================================================
   crdb-e3-1:
     image: ${CRDB_E3_IMAGE:-cockroachdb/cockroach:v26.2.0}
-    container_name: scli-crdb-e3-1
+    container_name: reservas-db-node-1
     command:
       - start
       - --insecure
@@ -439,7 +440,7 @@ services:
 
   crdb-e3-2:
     image: ${CRDB_E3_IMAGE:-cockroachdb/cockroach:v26.2.0}
-    container_name: scli-crdb-e3-2
+    container_name: reservas-db-node-2
     command:
       - start
       - --insecure
@@ -458,7 +459,7 @@ services:
 
   crdb-e3-3:
     image: ${CRDB_E3_IMAGE:-cockroachdb/cockroach:v26.2.0}
-    container_name: scli-crdb-e3-3
+    container_name: reservas-db-node-3
     command:
       - start
       - --insecure
@@ -477,7 +478,7 @@ services:
 
   crdb-e3-init:
     image: ${CRDB_E3_IMAGE:-cockroachdb/cockroach:v26.2.0}
-    container_name: scli-crdb-e3-init
+    container_name: reservas-db-init
     depends_on:
       crdb-e3-1:
         condition: service_started
