@@ -5,6 +5,10 @@ import androidx.room.Room
 import ec.edu.uteq.scli.mobile.data.local.AppDatabase
 import ec.edu.uteq.scli.mobile.BuildConfig
 import ec.edu.uteq.scli.mobile.common.network.GatewayClientFactory
+import ec.edu.uteq.scli.mobile.features.auth.data.AuthApi
+import ec.edu.uteq.scli.mobile.features.auth.data.AuthRepository
+import ec.edu.uteq.scli.mobile.features.auth.data.EncryptedAuthStorage
+import ec.edu.uteq.scli.mobile.features.auth.data.RemoteAuthRepository
 import ec.edu.uteq.scli.mobile.features.incidentes.data.IncidenteLocalRepository
 import ec.edu.uteq.scli.mobile.features.incidentes.domain.IncidenteRepository
 import ec.edu.uteq.scli.mobile.features.notifications.NotificationHelper
@@ -33,6 +37,10 @@ class AppContainer(context: Context) {
     val notificationHelper: NotificationHelper = NotificationHelper(context.applicationContext)
 
     private val gatewayRetrofit = GatewayClientFactory.createRetrofit(BuildConfig.API_BASE_URL)
+    val authRepository: AuthRepository = RemoteAuthRepository(
+        gatewayRetrofit.create(AuthApi::class.java),
+        EncryptedAuthStorage(context.applicationContext),
+    )
     private val reservasApi = gatewayRetrofit.create(ReservasApi::class.java)
     val reservaRepository: ReservaRepository = RemoteReservaRepository(reservasApi, database.reservaDao())
 }

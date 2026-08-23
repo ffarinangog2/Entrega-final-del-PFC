@@ -11,6 +11,7 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -29,6 +30,8 @@ import ec.edu.uteq.scli.mobile.R
 import ec.edu.uteq.scli.mobile.ScliMobileApplication
 import ec.edu.uteq.scli.mobile.features.incidentes.presentation.IncidentesScreen
 import ec.edu.uteq.scli.mobile.features.incidentes.presentation.IncidentesViewModel
+import ec.edu.uteq.scli.mobile.features.auth.presentation.AuthViewModel
+import ec.edu.uteq.scli.mobile.features.auth.presentation.LoginScreen
 import ec.edu.uteq.scli.mobile.features.profile.presentation.ProfileScreen
 import ec.edu.uteq.scli.mobile.features.profile.presentation.ProfileViewModel
 import ec.edu.uteq.scli.mobile.features.reservas.presentation.NuevaReservaScreen
@@ -49,8 +52,21 @@ private sealed class AppDestination(val route: String) {
 
 @Composable
 fun AppNavHost(application: ScliMobileApplication) {
-    val navController = rememberNavController()
     val container = application.container
+    val authViewModel: AuthViewModel = viewModel(
+        factory = viewModelFactory {
+            initializer { AuthViewModel(container.authRepository) }
+        },
+    )
+    val authState by authViewModel.uiState.collectAsState()
+
+    if (authState.restaurando) return
+    if (authState.sesion == null) {
+        LoginScreen(authViewModel)
+        return
+    }
+
+    val navController = rememberNavController()
 
     Scaffold(
         bottomBar = {
@@ -102,7 +118,7 @@ fun AppNavHost(application: ScliMobileApplication) {
                         }
                     },
                 )
-                ProfileScreen(viewModel)
+                ProfileScreen(viewModel, onLogout = authViewModel::logout)
             }
             composable(AppDestination.Reservas.route) {
                 val viewModel: ReservasViewModel = viewModel(

@@ -6,7 +6,7 @@ plugins {
 
 val apiBaseUrl = providers.gradleProperty("SCLI_API_BASE_URL")
     .orElse(providers.environmentVariable("SCLI_API_BASE_URL"))
-    .orElse("https://scli-api.invalid/")
+    .orElse("http://10.0.2.2:8080/")
 
 // El plugin de Firebase necesita google-services.json, que todavía no existe
 // en este repo (ver apps/mobile/README.md). Se aplica solo si el archivo está
@@ -77,6 +77,7 @@ dependencies {
     implementation("com.squareup.retrofit2:retrofit:2.11.0")
     implementation("com.squareup.retrofit2:converter-gson:2.11.0")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("androidx.security:security-crypto:1.1.0-alpha06")
 
     // Lifecycle / ViewModel
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.4")

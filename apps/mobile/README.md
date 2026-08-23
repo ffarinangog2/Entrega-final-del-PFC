@@ -4,6 +4,8 @@ App Android (Kotlin + Jetpack Compose), arquitectura MVVM + repositorio por feat
 
 - `minSdk`: 26
 - `targetSdk` / `compileSdk`: 34
+- El Gateway se configura con `SCLI_API_BASE_URL`. Para el emulador Android,
+  usar `http://10.0.2.2:8080/` (la barra final es obligatoria).
 
 ## Wrapper de Gradle
 
@@ -24,11 +26,12 @@ o abriendo el proyecto en Android Studio, que lo completa automáticamente.
 common/
   di/            AppContainer: DI manual (sin Hilt) instanciado en ScliMobileApplication
   logging/       Timber + JsonTree (logs en JSON con trace_id de sesión)
-  navigation/    NavHost + bottom navigation (Incidentes / Perfil)
+   navigation/    NavHost + bottom navigation, protegido por autenticación
 
 data/local/      AppDatabase (Room)
 
 features/
+   auth/          login contra el Gateway + sesión en EncryptedSharedPreferences
   incidentes/    domain (modelo + interfaz de repositorio), data (Room),
                  presentation (ViewModel + pantalla con listado y formulario)
   notifications/ FirebaseMessagingService, canal de notificaciones,

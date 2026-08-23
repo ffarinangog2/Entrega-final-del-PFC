@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Button
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -19,7 +20,7 @@ import androidx.compose.ui.unit.dp
 import ec.edu.uteq.scli.mobile.R
 
 @Composable
-fun ProfileScreen(viewModel: ProfileViewModel) {
+fun ProfileScreen(viewModel: ProfileViewModel, onLogout: () -> Unit) {
     val uiState by viewModel.uiState.collectAsState()
 
     Column(
@@ -51,6 +52,10 @@ fun ProfileScreen(viewModel: ProfileViewModel) {
                 checked = uiState.notificacionesHabilitadas,
                 onCheckedChange = viewModel::onToggleNotificaciones,
             )
+        }
+
+        Button(onClick = onLogout, modifier = Modifier.fillMaxWidth()) {
+            Text(text = stringResource(R.string.auth_logout))
         }
     }
 }
