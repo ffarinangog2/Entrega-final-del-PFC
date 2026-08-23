@@ -21,4 +21,6 @@ public interface LaboratorioJpaRepository
     boolean existsByCodigoAndIdNot(String codigo, UUID id);
 
     boolean existsByPisoId(UUID pisoId);
+
+    long countByEstadoAndActivoTrue(EstadoLaboratorio estado);
 }

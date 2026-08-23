@@ -74,4 +74,9 @@ public class LaboratorioRepositoryAdapter implements LaboratorioRepositoryPort {
     public boolean existePorId(UUID id) {
         return laboratorioJpaRepository.existsById(id);
     }
+
+    @Override
+    public long contarPorEstado(EstadoLaboratorio estado) {
+        return laboratorioJpaRepository.countByEstadoAndActivoTrue(estado);
+    }
 }

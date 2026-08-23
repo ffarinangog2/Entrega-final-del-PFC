@@ -24,4 +24,6 @@ public interface LaboratorioRepositoryPort {
     boolean existeCodigoParaOtroId(String codigo, UUID id);
 
     boolean existePorId(UUID id);
+
+    long contarPorEstado(EstadoLaboratorio estado);
 }
