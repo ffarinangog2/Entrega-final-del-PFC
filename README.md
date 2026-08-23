@@ -86,7 +86,7 @@ ejecuta desde la raíz, después de instalar `tests/load/requirements.txt` y con
 
 ```powershell
 python -m pip install -r tests/load/requirements.txt
-$env:LOCUST_HOST = "<URL_SERVICIO_RESERVAS>"
+$env:LOCUST_HOST = "http://localhost:8080"
 python -m locust -f tests/load/locustfile.py --headless --users 50 --spawn-rate 10 --run-time 5m
 ```
 

@@ -5,16 +5,17 @@
 Eficiencia, 50 usuarios durante 5 minutos:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File experimentos/ejecutar_iso25010.ps1 -Escenario eficiencia_nominal_50u_5m -Repeticion 1 -HostObjetivo http://localhost:8084
+powershell -ExecutionPolicy Bypass -File experimentos/ejecutar_iso25010.ps1 -Escenario eficiencia_nominal_50u_5m -Repeticion 1 -HostObjetivo http://localhost:8080
 ```
 
 Fiabilidad, 50 usuarios durante 1 hora:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File experimentos/ejecutar_iso25010.ps1 -Escenario fiabilidad_nominal_50u_1h -Repeticion 1 -HostObjetivo http://localhost:8084
+powershell -ExecutionPolicy Bypass -File experimentos/ejecutar_iso25010.ps1 -Escenario fiabilidad_nominal_50u_1h -Repeticion 1 -HostObjetivo http://localhost:8080
 ```
 
-El host es obligatorio y configurable. La herramienta no inicia servicios. Antes de una
+El host es obligatorio y configurable. Para la prueba integrada local debe ser el API
+Gateway en `http://localhost:8080`. La herramienta no inicia servicios. Antes de una
 ejecución real se debe instalar `tests/load/requirements.txt` y verificar el ambiente.
 
 ## Evidencia generada
