@@ -40,4 +40,27 @@ export async function obtenerLaboratoriosDisponibles(): Promise<Laboratorio[]> {
   }
 
   return response.json()
+
+}
+
+export interface PuntoSerie {
+  instante: string
+  valor: number
+}
+
+export interface SerieEstado {
+  estado: EstadoLaboratorio
+  puntos: PuntoSerie[]
+}
+
+export async function obtenerOcupacionHistorica(rangoMinutos = 60): Promise<SerieEstado[]> {
+  const response = await fetch(
+    `${GATEWAY_BASE_URL}/api/v1/laboratorios/metricas/ocupacion?rangoMinutos=${rangoMinutos}`
+  )
+
+  if (!response.ok) {
+    throw new Error(`Error al obtener ocupacion historica: ${response.status}`)
+  }
+
+  return response.json()
 }
