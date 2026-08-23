@@ -5,6 +5,9 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -60,7 +63,12 @@ fun AppNavHost(application: ScliMobileApplication) {
     )
     val authState by authViewModel.uiState.collectAsState()
 
-    if (authState.restaurando) return
+    if (authState.restaurando) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            CircularProgressIndicator()
+        }
+        return
+    }
     if (authState.sesion == null) {
         LoginScreen(authViewModel)
         return

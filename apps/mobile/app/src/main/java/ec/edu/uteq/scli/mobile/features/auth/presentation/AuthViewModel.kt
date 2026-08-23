@@ -35,7 +35,7 @@ class AuthViewModel(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(cargando = true, error = null)
             _uiState.value = when (val result = repository.login(username.trim(), password)) {
-                is NetworkResult.Success -> AuthUiState(sesion = result.value)
+                is NetworkResult.Success -> AuthUiState(restaurando = false, sesion = result.value)
                 is NetworkResult.Failure -> _uiState.value.copy(
                     cargando = false,
                     error = result.message,
