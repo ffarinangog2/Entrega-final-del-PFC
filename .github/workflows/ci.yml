@@ -95,3 +95,117 @@ jobs:
       - name: Pending Paso 2
         run: |
           echo "TODO(Paso 2 - Freddy): habilitar las pruebas cuando exista db/schema.sql y crdb-e3-init esté completo."
+
+  build-images:
+    name: Build and publish image - ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    needs: build-test
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: auth-service
+            context: services/auth-service
+          - name: usuarios-service
+            context: services/usuarios-service
+          - name: academico-laboratorios-service
+            context: services/academico-laboratorios-service
+          - name: reservas-solicitudes-service
+            context: services/reservas-solicitudes-service
+          - name: api-gateway
+            context: services/api-gateway
+          - name: web
+            context: apps/web
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and publish image
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/scli-${{ matrix.name }}:${{ github.sha }}
+
+  integration:
+    name: Compose integration tests
+    runs-on: ubuntu-latest
+    needs: build-images
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Start stack and run integration checks
+        shell: bash
+        env:
+          JWT_SECRET: ${{ secrets.JWT_SECRET || 'ci-integration-secret-change-me' }}
+        run: |
+          set -Eeuo pipefail
+
+          cleanup() {
+            docker compose logs || true
+            docker compose down -v || true
+          }
+          trap cleanup EXIT
+
+          docker compose up -d --build
+
+          wait_for_health() {
+            local service="$1"
+            local container
+            local health
+
+            for attempt in {1..60}; do
+              container="$(docker compose ps -q "$service")"
+              if [ -n "$container" ]; then
+                health="$(docker inspect --format '{{.State.Health.Status}}' "$container" 2>/dev/null || true)"
+                if [ "$health" = "healthy" ]; then
+                  echo "$service is healthy"
+                  return 0
+                fi
+              fi
+              sleep 5
+            done
+
+            echo "Timed out waiting for $service to become healthy"
+            docker compose ps
+            return 1
+          }
+
+          for service in \
+            cockroach-auth auth-service \
+            cockroach-usuarios usuarios-service \
+            cockroach-academico academico-laboratorios-service \
+            reservas-solicitudes-service api-gateway; do
+            wait_for_health "$service"
+          done
+
+          for attempt in {1..30}; do
+            if curl --fail --silent --show-error http://localhost:8080/actuator/health >/dev/null; then
+              break
+            fi
+            if [ "$attempt" -eq 30 ]; then
+              echo "API Gateway health endpoint did not become available"
+              exit 1
+            fi
+            sleep 2
+          done
+
+          curl --fail --silent --show-error http://localhost:8081/actuator/health >/dev/null
+          response_status="$(curl --silent --show-error --output /tmp/campus-response.json --write-out '%{http_code}' http://localhost:8080/api/v1/campus)"
+          case "$response_status" in
+            2*) ;;
+            *) echo "Gateway functional request returned HTTP $response_status"; cat /tmp/campus-response.json; exit 1 ;;
+          esac
