@@ -28,3 +28,11 @@ scrape_configs:
     static_configs:
       - targets:
           - cadvisor:8080
+
+  - job_name: crdb-e3-cluster
+    metrics_path: /_status/vars
+    static_configs:
+      - targets:
+          - crdb-e3-1:8080
+          - crdb-e3-2:8080
+          - crdb-e3-3:8080
