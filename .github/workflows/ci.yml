@@ -140,7 +140,7 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22.22.2"
           cache: npm
           cache-dependency-path: apps/web/package-lock.json
 
@@ -269,7 +269,7 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22.22.2"
 
       - name: Start stack and run integration checks
         shell: bash
@@ -346,4 +346,5 @@ jobs:
         working-directory: apps/web
         env:
           VITE_API_URL: http://localhost:8080
+          VITE_API_BASE_URL: http://localhost:8080
         run: npm run test:e2e -- --project=chromium
