@@ -281,12 +281,6 @@ jobs:
         run: |
           set -Eeuo pipefail
 
-          cleanup() {
-            docker compose logs || true
-            docker compose down -v || true
-          }
-          trap cleanup EXIT
-
           docker compose up -d --build
 
           wait_for_health() {
@@ -467,3 +461,9 @@ jobs:
       - name: Run web E2E tests
         working-directory: apps/web
         run: npm run test:e2e -- --project=chromium
+
+      - name: Cleanup integration stack
+        if: always()
+        run: |
+          docker compose logs || true
+          docker compose down -v || true
