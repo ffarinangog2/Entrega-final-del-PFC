@@ -262,8 +262,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: build-images
     env:
-      VITE_API_URL: http://localhost:8080
-      VITE_API_BASE_URL: http://localhost:8080
+      VITE_API_URL: http://127.0.0.1:8080
+      VITE_API_BASE_URL: http://127.0.0.1:8080
 
     steps:
       - name: Checkout
@@ -345,7 +345,7 @@ jobs:
             -H "Content-Type: application/json" \
             -H "Origin: http://localhost:5173" \
             -d '{"username":"admin","password":"Admin123!"}' \
-            http://localhost:8080/api/v1/auth/login \
+            http://127.0.0.1:8080/api/v1/auth/login \
             > /tmp/login-origin-response.txt 2>&1
           login_exit_code=$?
           set -e
@@ -368,6 +368,9 @@ jobs:
             -H "Origin: http://localhost:5173" \
             -H "Access-Control-Request-Method: POST" \
             -H "Access-Control-Request-Headers: content-type"
+
+          echo "Checking Gateway health over IPv4 before Playwright"
+          curl --fail --silent --show-error http://127.0.0.1:8080/actuator/health >/dev/null
 
           response_status="$(curl --silent --show-error --output /tmp/campus-response.json --write-out '%{http_code}' http://localhost:8080/api/v1/campus)"
           case "$response_status" in
@@ -395,7 +398,7 @@ jobs:
           import { test } from '@playwright/test'
 
           test('diagnose browser login request', async ({ page }) => {
-            const loginUrl = 'http://localhost:8080/api/v1/auth/login'
+            const loginUrl = 'http://127.0.0.1:8080/api/v1/auth/login'
 
             page.on('console', (message) => {
               console.log(`[browser console:${message.type()}] ${message.text()}`)
