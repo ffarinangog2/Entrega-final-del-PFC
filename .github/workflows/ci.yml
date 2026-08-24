@@ -328,6 +328,37 @@ jobs:
           done
 
           curl --fail --silent --show-error http://localhost:8081/actuator/health >/dev/null
+
+          echo "Checking admin user in the clean auth database"
+          docker compose exec -T cockroach-auth cockroach sql \
+            --insecure \
+            --host=localhost:26257 \
+            --database=auth_db \
+            --execute="SELECT username, activo FROM usuarios_auth WHERE username = 'admin';"
+
+          echo "Checking login through the API Gateway"
+          set +e
+          curl --fail-with-body --silent --show-error --include \
+            --write-out '\nLOGIN_HTTP_STATUS=%{http_code}\n' \
+            -H "Content-Type: application/json" \
+            -d '{"username":"admin","password":"Admin123!"}' \
+            http://localhost:8080/api/v1/auth/login \
+            > /tmp/login-response.txt 2>&1
+          login_exit_code=$?
+          set -e
+          cat /tmp/login-response.txt
+          if [ "$login_exit_code" -ne 0 ]; then
+            echo "API login check failed with curl exit code $login_exit_code"
+            exit "$login_exit_code"
+          fi
+
+          echo "Checking CORS preflight for the Vite SPA"
+          curl --fail-with-body --silent --show-error --include -X OPTIONS \
+            http://localhost:8080/api/v1/auth/login \
+            -H "Origin: http://localhost:5173" \
+            -H "Access-Control-Request-Method: POST" \
+            -H "Access-Control-Request-Headers: content-type"
+
           response_status="$(curl --silent --show-error --output /tmp/campus-response.json --write-out '%{http_code}' http://localhost:8080/api/v1/campus)"
           case "$response_status" in
             2*) ;;
