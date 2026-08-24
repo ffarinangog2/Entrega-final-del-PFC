@@ -339,20 +339,27 @@ jobs:
             --database=auth_db \
             --execute="SELECT username, activo FROM usuarios_auth WHERE username = 'admin';"
 
-          echo "Checking login through the API Gateway"
+          echo "Checking login through the API Gateway with the SPA Origin"
           set +e
-          curl --fail-with-body --silent --show-error --include \
-            --write-out '\nLOGIN_HTTP_STATUS=%{http_code}\n' \
+          curl --silent --show-error -i \
             -H "Content-Type: application/json" \
+            -H "Origin: http://localhost:5173" \
             -d '{"username":"admin","password":"Admin123!"}' \
             http://localhost:8080/api/v1/auth/login \
-            > /tmp/login-response.txt 2>&1
+            > /tmp/login-origin-response.txt 2>&1
           login_exit_code=$?
           set -e
-          cat /tmp/login-response.txt
+          login_status="$(sed -n '1s/^HTTP\/[0-9.]* \([0-9][0-9][0-9]\).*/\1/p' /tmp/login-origin-response.txt)"
+          login_allow_origin="$(grep -i '^Access-Control-Allow-Origin:' /tmp/login-origin-response.txt | head -n 1 | tr -d '\r' || true)"
+          echo "LOGIN_ORIGIN_HTTP_STATUS=${login_status:-unavailable}"
+          echo "${login_allow_origin:-Access-Control-Allow-Origin: unavailable}"
           if [ "$login_exit_code" -ne 0 ]; then
             echo "API login check failed with curl exit code $login_exit_code"
             exit "$login_exit_code"
+          fi
+          if [ "$login_allow_origin" != "Access-Control-Allow-Origin: http://localhost:5173" ]; then
+            echo "API login response did not allow the SPA Origin"
+            exit 1
           fi
 
           echo "Checking CORS preflight for the Vite SPA"
@@ -375,6 +382,77 @@ jobs:
       - name: Install Playwright Chromium
         working-directory: apps/web
         run: npx playwright install --with-deps chromium
+
+      - name: Diagnose browser login request
+        working-directory: apps/web
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          diagnostic_spec="$(mktemp --suffix=.spec.ts)"
+          trap 'rm -f "$diagnostic_spec"' EXIT
+
+          cat > "$diagnostic_spec" <<'EOF'
+          import { test } from '@playwright/test'
+
+          test('diagnose browser login request', async ({ page }) => {
+            const loginUrl = 'http://localhost:8080/api/v1/auth/login'
+
+            page.on('console', (message) => {
+              console.log(`[browser console:${message.type()}] ${message.text()}`)
+            })
+            page.on('pageerror', (error) => {
+              console.log(`[pageerror] ${error.message}`)
+            })
+            page.on('requestfailed', (request) => {
+              console.log(
+                `[requestfailed] ${request.method()} ${request.url()} error=${request.failure()?.errorText ?? 'unknown'}`,
+              )
+            })
+            page.on('request', (request) => {
+              if (request.url() === loginUrl) {
+                console.log(`[request] ${request.method()} ${request.url()}`)
+              }
+            })
+            page.on('response', (response) => {
+              if (response.url() === loginUrl) {
+                console.log(
+                  `[response] ${response.request().method()} ${response.url()} status=${response.status()} headers=${JSON.stringify(response.headers())}`,
+                )
+              }
+            })
+
+            await page.goto('/login')
+            const result = await page.evaluate(async (url) => {
+              try {
+                const response = await fetch(url, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ username: 'admin', password: 'Admin123!' }),
+                })
+
+                return {
+                  status: response.status,
+                  ok: response.ok,
+                  error: null,
+                  allowOrigin: response.headers.get('Access-Control-Allow-Origin'),
+                }
+              } catch (error) {
+                return {
+                  status: null,
+                  ok: false,
+                  error: error instanceof Error ? error.message : String(error),
+                  allowOrigin: null,
+                }
+              }
+            }, loginUrl)
+
+            console.log(
+              `[fetch] status=${result.status ?? 'unavailable'} ok=${result.ok} error=${result.error ?? 'none'} Access-Control-Allow-Origin=${result.allowOrigin ?? 'unavailable'}`,
+            )
+          })
+          EOF
+
+          npx playwright test "$diagnostic_spec" --config=playwright.config.ts --project=chromium
 
       - name: Show web API configuration
         run: |
