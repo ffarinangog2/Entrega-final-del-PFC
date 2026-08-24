@@ -388,7 +388,7 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
-          diagnostic_spec="$(mktemp --suffix=.spec.ts)"
+          diagnostic_spec="e2e/ci-browser-auth-diagnostic.spec.ts"
           trap 'rm -f "$diagnostic_spec"' EXIT
 
           cat > "$diagnostic_spec" <<'EOF'
@@ -452,7 +452,7 @@ jobs:
           })
           EOF
 
-          npx playwright test "$diagnostic_spec" --config=playwright.config.ts --project=chromium
+          npx playwright test ci-browser-auth-diagnostic.spec.ts --project=chromium
 
       - name: Show web API configuration
         run: |
