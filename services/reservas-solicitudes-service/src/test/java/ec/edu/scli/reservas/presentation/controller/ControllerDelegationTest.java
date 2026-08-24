@@ -5,6 +5,8 @@ import ec.edu.scli.reservas.domain.model.*;
 import ec.edu.scli.reservas.presentation.dto.request.*;
 import ec.edu.scli.reservas.presentation.dto.response.*;
 import org.junit.jupiter.api.Test;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import java.security.Principal;
 import java.time.LocalDate;
@@ -56,6 +58,10 @@ class ControllerDelegationTest {
         SolicitudReservaResponse solicitud = mock(SolicitudReservaResponse.class);
         ReservaResponse reserva = mock(ReservaResponse.class);
         when(solicitud.id()).thenReturn(recursoId);
+        when(solicitud.solicitanteId()).thenReturn(usuarioId);
+        var authentication = new UsernamePasswordAuthenticationToken(
+                usuarioId.toString(), null,
+                List.of(new SimpleGrantedAuthority("SOLICITUD_APROBAR")));
         PaginaResponse<SolicitudReservaResponse> pagina = new PaginaResponse<>(List.of(), 0, 10, 0, 0, true, true);
         PaginaResponse<HistorialSolicitudResponse> historial = new PaginaResponse<>(List.of(), 0, 10, 0, 0, true, true);
         when(service.crear(any(), anyString(), any())).thenReturn(solicitud);
@@ -77,16 +83,16 @@ class ControllerDelegationTest {
 
         assertEquals(201, controller.crear(crear, "clave", principal).getStatusCode().value());
         verify(service).crear(argThat(r -> usuarioId.equals(r.solicitanteId())), eq("clave"), eq(usuarioId));
-        assertSame(pagina, controller.listar(null, null, null, null, 0, 10).getBody());
-        assertSame(solicitud, controller.buscarPorId(recursoId).getBody());
-        assertSame(pagina, controller.listarPorSolicitante(usuarioId, 0, 10).getBody());
-        assertSame(pagina, controller.listarPorEstado(EstadoSolicitud.PENDIENTE, 0, 10).getBody());
+        assertSame(pagina, controller.listar(null, null, null, null, 0, 10, authentication).getBody());
+        assertSame(solicitud, controller.buscarPorId(recursoId, authentication).getBody());
+        assertSame(pagina, controller.listarPorSolicitante(usuarioId, 0, 10, authentication).getBody());
+        assertSame(pagina, controller.listarPorEstado(EstadoSolicitud.PENDIENTE, 0, 10, authentication).getBody());
         assertSame(solicitud, controller.actualizar(recursoId, actualizar, principal).getBody());
         assertSame(solicitud, controller.ponerEnRevision(recursoId, principal).getBody());
         assertSame(reserva, controller.aprobar(recursoId, new AprobarSolicitudRequest(usuarioId, null), "k", principal).getBody());
         assertSame(solicitud, controller.rechazar(recursoId, new RechazarSolicitudRequest("x"), principal).getBody());
         assertSame(solicitud, controller.cancelar(recursoId, new CancelarSolicitudRequest("x"), principal).getBody());
-        assertSame(historial, controller.obtenerHistorial(recursoId, 0, 10).getBody());
+        assertSame(historial, controller.obtenerHistorial(recursoId, 0, 10, authentication).getBody());
     }
 
     @Test

@@ -5,6 +5,7 @@ import ec.edu.scli.reservas.domain.model.EstadoSolicitud;
 import ec.edu.scli.reservas.domain.model.Reserva;
 import ec.edu.scli.reservas.domain.model.SolicitudReserva;
 import ec.edu.scli.reservas.domain.port.out.IdempotenciaAprobacionRepositoryPort;
+import ec.edu.scli.reservas.domain.port.out.IdempotenciaCreacionSolicitudRepositoryPort;
 import ec.edu.scli.reservas.domain.port.out.ReservaRepositoryPort;
 import ec.edu.scli.reservas.domain.port.out.SolicitudReservaRepositoryPort;
 import jakarta.persistence.EntityManager;
@@ -61,6 +62,8 @@ class CockroachFlywayIntegrationTests {
     @Autowired
     private IdempotenciaAprobacionRepositoryPort idempotenciaAprobacionRepository;
     @Autowired
+    private IdempotenciaCreacionSolicitudRepositoryPort idempotenciaCreacionRepository;
+    @Autowired
     private EntityManager entityManager;
     @Autowired
     private TransactionTemplate transactionTemplate;
@@ -78,12 +81,13 @@ class CockroachFlywayIntegrationTests {
                     'historial_solicitudes',
                     'bloqueos_agenda',
                     'configuraciones_reserva',
-                    'idempotencia_aprobaciones'
+                    'idempotencia_aprobaciones',
+                    'idempotencia_creacion_solicitudes'
                   )
                 """,
                 Integer.class);
 
-        assertThat(tablas).isEqualTo(6);
+        assertThat(tablas).isEqualTo(7);
 
         Integer clavesForaneas = jdbcTemplate.queryForObject(
                 """
@@ -160,6 +164,56 @@ class CockroachFlywayIntegrationTests {
                 "SELECT count(*) FROM idempotencia_aprobaciones WHERE clave = ?",
                 Integer.class,
                 clave)).isEqualTo(1);
+    }
+
+    @Test
+    void idempotenciaCreacionPersisteActorPayloadYResultado() {
+        UUID actorId = UUID.randomUUID();
+        String clave = "creacion-it-" + UUID.randomUUID();
+        String hash = "a".repeat(64);
+        SolicitudReserva solicitud = transactionTemplate.execute(status -> {
+            idempotenciaCreacionRepository.registrarSiAusente(clave, actorId, hash);
+            SolicitudReserva creada = solicitudRepository.guardar(nuevaSolicitud(UUID.randomUUID()));
+            idempotenciaCreacionRepository.completar(clave, creada.getId());
+            return creada;
+        });
+
+        var registro = transactionTemplate.execute(status ->
+                idempotenciaCreacionRepository.buscarParaActualizar(clave).orElseThrow());
+        assertThat(registro.actorId()).isEqualTo(actorId);
+        assertThat(registro.payloadHash()).isEqualTo(hash);
+        assertThat(registro.solicitudId()).isEqualTo(solicitud.getId());
+    }
+
+    @Test
+    void dosTransaccionesDeCreacionConMismaClaveCompartenUnSoloClaim() throws Exception {
+        String clave = "creacion-concurrente-" + UUID.randomUUID();
+        UUID actorId = UUID.randomUUID();
+        String hash = "b".repeat(64);
+        CountDownLatch preparados = new CountDownLatch(2);
+        CountDownLatch iniciar = new CountDownLatch(1);
+
+        try (var executor = Executors.newFixedThreadPool(2)) {
+            var tarea = (java.util.concurrent.Callable<UUID>) () -> {
+                preparados.countDown();
+                assertThat(iniciar.await(10, TimeUnit.SECONDS)).isTrue();
+                return transactionTemplate.execute(status -> {
+                    idempotenciaCreacionRepository.registrarSiAusente(clave, actorId, hash);
+                    return idempotenciaCreacionRepository.buscarParaActualizar(clave)
+                            .orElseThrow().actorId();
+                });
+            };
+            var primera = executor.submit(tarea);
+            var segunda = executor.submit(tarea);
+            assertThat(preparados.await(10, TimeUnit.SECONDS)).isTrue();
+            iniciar.countDown();
+            assertThat(primera.get(20, TimeUnit.SECONDS)).isEqualTo(actorId);
+            assertThat(segunda.get(20, TimeUnit.SECONDS)).isEqualTo(actorId);
+        }
+
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM idempotencia_creacion_solicitudes WHERE clave = ?",
+                Integer.class, clave)).isEqualTo(1);
     }
 
     @Test

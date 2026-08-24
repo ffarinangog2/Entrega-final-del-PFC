@@ -175,3 +175,22 @@ docker compose stop crdb-e3-1 crdb-e3-2 crdb-e3-3
 
 La eliminación del volumen global debe coordinarse con el equipo para no afectar el
 entorno compartido de Docker Compose.
+
+## Cierre técnico previo a pruebas finales
+
+- La API acepta exclusivamente JWT Bearer con claim `type=access`; un refresh token
+  no autentica peticiones de Reservas.
+- Se aplican los permisos existentes de Auth: `SOLICITUD_*`, `RESERVA_*`,
+  `AGENDA_GESTIONAR` y `LABORATORIO_LEER`. Las lecturas de solicitudes se limitan al
+  propietario, excepto para identidades con permisos de gestión ya definidos.
+- La creación y aprobación son idempotentes y persistentes. La creación vincula la
+  clave con operación, actor, SHA-256 canónico del payload y solicitud resultante.
+- Las transacciones serializables críticas tienen hasta tres intentos solo ante
+  conflictos transitorios de locking, con backoff acotado.
+- Flyway es la fuente de verdad. Compose E3 carga V1 desde la carpeta de migraciones
+  y la aplicación aplica V2/V3; `db/schema.sql` queda como referencia histórica.
+- `num_replicas=3` se conserva en la inicialización del cluster E3.
+- `mvn verify` exige al menos 80 % de líneas y 48 % de ramas para este módulo,
+  frente a una línea base medida de 82,50 % y 48,22 % respectivamente.
+- `EXPIRADA` no se automatiza porque el contrato vigente no define una duración o
+  fecha límite de vigencia; hacerlo requeriría una decisión de negocio compartida.

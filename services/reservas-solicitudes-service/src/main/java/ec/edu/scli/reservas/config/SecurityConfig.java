@@ -31,7 +31,20 @@ public class SecurityConfig {
                                         "Se requiere un token Bearer válido")))
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/**").permitAll()
+                        .requestMatchers("/actuator/health", "/actuator/info", "/actuator/prometheus").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/solicitudes").hasAuthority("SOLICITUD_CREAR")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/solicitudes/**").hasAuthority("SOLICITUD_CREAR")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/solicitudes/*/revision").hasAuthority("SOLICITUD_APROBAR")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/solicitudes/*/aprobar").hasAuthority("SOLICITUD_APROBAR")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/solicitudes/*/rechazar").hasAuthority("SOLICITUD_RECHAZAR")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/solicitudes/*/cancelar").hasAuthority("SOLICITUD_CANCELAR")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/solicitudes/**").hasAuthority("SOLICITUD_LEER")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/reservas/**").hasAuthority("RESERVA_LEER")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/reservas/*/cancelar").hasAuthority("RESERVA_CANCELAR")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/reservas/**").hasAuthority("AGENDA_GESTIONAR")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/disponibilidad/**").hasAuthority("LABORATORIO_LEER")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/agenda/**").hasAnyAuthority("RESERVA_LEER", "AGENDA_GESTIONAR")
+                        .requestMatchers("/api/v1/agenda/bloqueos/**").hasAuthority("AGENDA_GESTIONAR")
                         .anyRequest().authenticated())
                 .addFilterBefore(
                         jwtAuthenticationFilter,

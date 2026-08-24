@@ -512,21 +512,25 @@ services:
           sleep 2
         done
 
-        if cockroach sql \
+        cockroach sql \
+          --insecure \
+          --host=crdb-e3-1:26257 \
+          --execute="CREATE DATABASE IF NOT EXISTS reservas_db; ALTER RANGE default CONFIGURE ZONE USING num_replicas = 3"
+
+        if ! cockroach sql \
           --insecure \
           --host=crdb-e3-1:26257 \
           --database=reservas_db \
           --execute="SELECT 1 FROM configuraciones_reserva LIMIT 0"
         then
-          echo "El esquema de reservas ya está aplicado."
-        else
           cockroach sql \
             --insecure \
             --host=crdb-e3-1:26257 \
-            --file=/schema.sql
+            --database=reservas_db \
+            --file=/flyway/V1__crear_esquema_inicial.sql
         fi
     volumes:
-      - ./db/schema.sql:/schema.sql:ro
+      - ./services/reservas-solicitudes-service/src/main/resources/db/migration:/flyway:ro
     restart: "no"
     networks:
       - scli-network

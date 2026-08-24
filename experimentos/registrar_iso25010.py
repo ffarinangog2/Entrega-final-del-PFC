@@ -21,6 +21,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--total-requests", required=True, type=int)
     parser.add_argument("--http-5xx", required=True, type=int)
     parser.add_argument("--p95-ms", required=True, type=float)
+    parser.add_argument("--p99-ms", required=True, type=float)
     parser.add_argument("--evidence-dir", required=True, type=Path)
     parser.add_argument("--observation", default="")
     parser.add_argument(
@@ -55,6 +56,8 @@ def update_csv(args: argparse.Namespace) -> float:
         raise ValueError("http_5xx debe estar entre cero y total_requests")
     if not math.isfinite(args.p95_ms) or args.p95_ms < 0:
         raise ValueError("p95_ms debe ser un número real no negativo")
+    if not math.isfinite(args.p99_ms) or args.p99_ms < args.p95_ms:
+        raise ValueError("p99_ms debe ser válido y mayor o igual que p95_ms")
     validate_evidence(args)
 
     with args.csv_path.open(encoding="utf-8-sig", newline="") as csv_file:
@@ -73,7 +76,7 @@ def update_csv(args: argparse.Namespace) -> float:
     if len(matches) != 1:
         raise ValueError("La plantilla no contiene una única fila para la repetición")
     row = matches[0]
-    measured_fields = ("total_requests", "failures", "failure_rate_percent", "p95_ms", "valida")
+    measured_fields = ("total_requests", "failures", "failure_rate_percent", "p95_ms", "p99_ms", "valida")
     if any(row[field].strip() for field in measured_fields):
         raise ValueError("La fila ya contiene mediciones; no se sobrescribirá")
 
@@ -83,6 +86,7 @@ def update_csv(args: argparse.Namespace) -> float:
         failures=str(args.http_5xx),
         failure_rate_percent=f"{failure_rate:.6f}",
         p95_ms=f"{args.p95_ms:.6f}",
+        p99_ms=f"{args.p99_ms:.6f}",
         valida="si",
         observacion=args.observation,
     )

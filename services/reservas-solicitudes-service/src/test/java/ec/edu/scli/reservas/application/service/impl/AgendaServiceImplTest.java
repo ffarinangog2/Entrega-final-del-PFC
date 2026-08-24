@@ -5,14 +5,13 @@ import ec.edu.scli.reservas.client.dto.LaboratorioExternoResponse;
 import ec.edu.scli.reservas.domain.model.EstadoReserva;
 import ec.edu.scli.reservas.domain.model.Reserva;
 import ec.edu.scli.reservas.domain.port.out.ReservaRepositoryPort;
+import ec.edu.scli.reservas.domain.port.out.BloqueoAgendaRepositoryPort;
 import ec.edu.scli.reservas.entity.BloqueoAgenda;
 import ec.edu.scli.reservas.mapper.BloqueoAgendaMapper;
 import ec.edu.scli.reservas.presentation.dto.request.CrearBloqueoAgendaRequest;
-import ec.edu.scli.reservas.repository.BloqueoAgendaRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.BeanUtils;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.TransactionCallback;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -29,7 +28,7 @@ import static org.mockito.Mockito.*;
 
 class AgendaServiceImplTest {
     private ReservaRepositoryPort reservas;
-    private BloqueoAgendaRepository bloqueos;
+    private BloqueoAgendaRepositoryPort bloqueos;
     private AcademicoLaboratoriosClient academico;
     private TransactionTemplate transactions;
     private AgendaServiceImpl service;
@@ -39,7 +38,7 @@ class AgendaServiceImplTest {
     @BeforeEach
     void setUp() {
         reservas = mock(ReservaRepositoryPort.class);
-        bloqueos = mock(BloqueoAgendaRepository.class);
+        bloqueos = mock(BloqueoAgendaRepositoryPort.class);
         academico = mock(AcademicoLaboratoriosClient.class);
         transactions = mock(TransactionTemplate.class);
         service = new AgendaServiceImpl(
@@ -50,7 +49,7 @@ class AgendaServiceImplTest {
             TransactionCallback<?> callback = invocation.getArgument(0);
             return callback.doInTransaction(mock(TransactionStatus.class));
         });
-        when(bloqueos.save(any())).thenAnswer(i -> i.getArgument(0));
+        when(bloqueos.guardar(any())).thenAnswer(i -> i.getArgument(0));
     }
 
     @Test
@@ -59,7 +58,7 @@ class AgendaServiceImplTest {
         Reserva reserva = reserva(fecha, LocalTime.of(10, 0));
         BloqueoAgenda bloqueo = bloqueo(fecha, LocalTime.of(8, 0), true);
         when(reservas.buscarParaAgenda(laboratorioId, fecha, fecha)).thenReturn(List.of(reserva));
-        when(bloqueos.findAll(any(Specification.class))).thenReturn(List.of(bloqueo));
+        when(bloqueos.buscarActivos(any(), any(), any())).thenReturn(List.of(bloqueo));
 
         var pagina = service.listar(laboratorioId, fecha, fecha, 0, 10);
 
@@ -72,7 +71,7 @@ class AgendaServiceImplTest {
     void listaPorLaboratorioDelegaYValidaId() {
         LocalDate fecha = LocalDate.now();
         when(reservas.buscarParaAgenda(laboratorioId, fecha, fecha)).thenReturn(List.of());
-        when(bloqueos.findAll(any(Specification.class))).thenReturn(List.of());
+        when(bloqueos.buscarActivos(any(), any(), any())).thenReturn(List.of());
         assertTrue(service.listarPorLaboratorio(laboratorioId, fecha, fecha, 0, 10).contenido().isEmpty());
         assertThrows(IllegalArgumentException.class,
                 () -> service.listarPorLaboratorio(null, fecha, fecha, 0, 10));
@@ -92,21 +91,21 @@ class AgendaServiceImplTest {
         var respuesta = service.crearBloqueo(request, usuarioId);
         assertEquals(laboratorioId, respuesta.laboratorioId());
         assertTrue(respuesta.activo());
-        verify(bloqueos).save(argThat(b -> usuarioId.equals(b.getCreadoPor())));
+        verify(bloqueos).guardar(argThat(b -> usuarioId.equals(b.getCreadoPor())));
     }
 
     @Test
     void rechazaBloqueoConflictivo() {
-        when(bloqueos.contarBloqueosActivosConflictivos(any(), any(), any(), any())).thenReturn(1L);
+        when(bloqueos.contarActivosConflictivos(any(), any(), any(), any())).thenReturn(1L);
         assertThrows(IllegalStateException.class, () -> service.crearBloqueo(request(), usuarioId));
-        verify(bloqueos, never()).save(any());
+        verify(bloqueos, never()).guardar(any());
     }
 
     @Test
     void rechazaReservaConflictivaAlCrearBloqueo() {
         when(reservas.contarConflictosActivos(any(), any(), any(), any())).thenReturn(1L);
         assertThrows(IllegalStateException.class, () -> service.crearBloqueo(request(), usuarioId));
-        verify(bloqueos, never()).save(any());
+        verify(bloqueos, never()).guardar(any());
     }
 
     @Test
@@ -124,15 +123,15 @@ class AgendaServiceImplTest {
     @Test
     void eliminaBloqueoActivoYRespetaInactivo() {
         BloqueoAgenda activo = bloqueo(LocalDate.now(), LocalTime.of(8, 0), true);
-        when(bloqueos.findById(activo.getId())).thenReturn(Optional.of(activo));
+        when(bloqueos.buscarPorId(activo.getId())).thenReturn(Optional.of(activo));
         service.eliminarBloqueo(activo.getId(), usuarioId);
         assertFalse(activo.getActivo());
-        verify(bloqueos).save(activo);
+        verify(bloqueos).guardar(activo);
 
         BloqueoAgenda inactivo = bloqueo(LocalDate.now(), LocalTime.of(9, 0), false);
-        when(bloqueos.findById(inactivo.getId())).thenReturn(Optional.of(inactivo));
+        when(bloqueos.buscarPorId(inactivo.getId())).thenReturn(Optional.of(inactivo));
         service.eliminarBloqueo(inactivo.getId(), usuarioId);
-        verify(bloqueos, never()).save(inactivo);
+        verify(bloqueos, never()).guardar(inactivo);
     }
 
     private CrearBloqueoAgendaRequest request() {

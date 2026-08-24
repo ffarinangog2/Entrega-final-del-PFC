@@ -93,6 +93,27 @@ class ReservasConsumerPactTest {
                 .toPact(V4Pact.class);
     }
 
+    @Pact(consumer = "scli-contract-tests")
+    V4Pact cancelarReservaProtegida(PactDslWithProvider builder) {
+        PactDslJsonBody body = new PactDslJsonBody()
+                .uuid("id", RESERVA_ID).uuid("solicitudId", SOLICITUD_ID)
+                .uuid("laboratorioId", LABORATORIO_ID).uuid("responsableId", RESPONSABLE_ID)
+                .stringValue("fechaReserva", "2026-08-20")
+                .stringValue("horaInicio", "08:00:00").stringValue("horaFin", "10:00:00")
+                .stringValue("estado", "CANCELADA").stringValue("codigoReserva", "RES-2026-0001")
+                .stringValue("creadaEn", "2026-08-18T10:00:00Z")
+                .stringValue("actualizadaEn", "2026-08-18T10:00:00Z").integerType("version", 1L);
+        return builder.given("existe una reserva programada cancelable")
+                .uponReceiving("una cancelación protegida de reserva")
+                .path("/api/v1/reservas/" + RESERVA_ID + "/cancelar").method("POST")
+                .headers(Map.of("Authorization", "Bearer pact-access-token",
+                        "Content-Type", "application/json"))
+                .body(new PactDslJsonBody().stringValue("motivo", "Mantenimiento"))
+                .willRespondWith().status(200)
+                .headers(Map.of("Content-Type", "application/json")).body(body)
+                .toPact(V4Pact.class);
+    }
+
     @Test
     @PactTestFor(pactMethod = "listarReservas")
     void listaReservasConLaEstructuraPaginadaReal(MockServer mockServer) throws Exception {
@@ -133,5 +154,20 @@ class ReservasConsumerPactTest {
         assertTrue(response.body().contains("\"responsableId\":\"" + RESPONSABLE_ID + "\""));
         assertTrue(response.body().contains("\"estado\":\"PROGRAMADA\""));
         assertTrue(response.body().contains("\"version\":0"));
+    }
+
+    @Test
+    @PactTestFor(pactMethod = "cancelarReservaProtegida")
+    void cancelaReservaConBearerYContratoReal(MockServer mockServer) throws Exception {
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(mockServer.getUrl() + "/api/v1/reservas/" + RESERVA_ID + "/cancelar"))
+                .header("Authorization", "Bearer pact-access-token")
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString("{\"motivo\":\"Mantenimiento\"}"))
+                .build();
+        HttpResponse<String> response = HttpClient.newHttpClient()
+                .send(request, HttpResponse.BodyHandlers.ofString());
+        assertEquals(200, response.statusCode());
+        assertTrue(response.body().contains("\"estado\":\"CANCELADA\""));
     }
 }

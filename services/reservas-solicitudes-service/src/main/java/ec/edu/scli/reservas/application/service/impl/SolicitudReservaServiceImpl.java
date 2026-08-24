@@ -15,6 +15,7 @@ import ec.edu.scli.reservas.presentation.dto.response.HistorialSolicitudResponse
 import ec.edu.scli.reservas.presentation.dto.response.PaginaResponse;
 import ec.edu.scli.reservas.presentation.dto.response.ReservaResponse;
 import ec.edu.scli.reservas.presentation.dto.response.SolicitudReservaResponse;
+import ec.edu.scli.reservas.presentation.exception.ResourceNotFoundException;
 import ec.edu.scli.reservas.domain.model.HistorialSolicitud;
 import ec.edu.scli.reservas.domain.model.Reserva;
 import ec.edu.scli.reservas.domain.model.SolicitudReserva;
@@ -28,6 +29,7 @@ import ec.edu.scli.reservas.mapper.SolicitudReservaMapper;
 import ec.edu.scli.reservas.observability.BusinessEventMetrics;
 import ec.edu.scli.reservas.domain.port.out.HistorialSolicitudRepositoryPort;
 import ec.edu.scli.reservas.domain.port.out.IdempotenciaAprobacionRepositoryPort;
+import ec.edu.scli.reservas.domain.port.out.IdempotenciaCreacionSolicitudRepositoryPort;
 import ec.edu.scli.reservas.domain.port.out.ReservaRepositoryPort;
 import ec.edu.scli.reservas.domain.port.out.SolicitudReservaRepositoryPort;
 import ec.edu.scli.reservas.domain.state.reserva.ReservaStates;
@@ -38,9 +40,17 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.dao.PessimisticLockingFailureException;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HexFormat;
 import java.util.UUID;
 
 /** Implementa las operaciones de negocio de las solicitudes de reserva. */
@@ -51,6 +61,7 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
     private final ReservaRepositoryPort reservaRepository;
     private final HistorialSolicitudRepositoryPort historialSolicitudRepository;
     private final IdempotenciaAprobacionRepositoryPort idempotenciaAprobacionRepository;
+    private final IdempotenciaCreacionSolicitudRepositoryPort idempotenciaCreacionRepository;
     private final SolicitudReservaMapper solicitudReservaMapper;
     private final ReservaMapper reservaMapper;
     private final HistorialSolicitudMapper historialSolicitudMapper;
@@ -64,6 +75,7 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
             ReservaRepositoryPort reservaRepository,
             HistorialSolicitudRepositoryPort historialSolicitudRepository,
             IdempotenciaAprobacionRepositoryPort idempotenciaAprobacionRepository,
+            IdempotenciaCreacionSolicitudRepositoryPort idempotenciaCreacionRepository,
             SolicitudReservaMapper solicitudReservaMapper,
             ReservaMapper reservaMapper,
             HistorialSolicitudMapper historialSolicitudMapper,
@@ -75,6 +87,7 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
         this.reservaRepository = reservaRepository;
         this.historialSolicitudRepository = historialSolicitudRepository;
         this.idempotenciaAprobacionRepository = idempotenciaAprobacionRepository;
+        this.idempotenciaCreacionRepository = idempotenciaCreacionRepository;
         this.solicitudReservaMapper = solicitudReservaMapper;
         this.reservaMapper = reservaMapper;
         this.historialSolicitudMapper = historialSolicitudMapper;
@@ -85,14 +98,59 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
     }
 
     @Override
-    @Transactional
+    @Transactional(isolation = Isolation.SERIALIZABLE)
+    @Retryable(retryFor = {PessimisticLockingFailureException.class, ObjectOptimisticLockingFailureException.class},
+            maxAttempts = 3, backoff = @Backoff(delay = 25, multiplier = 2, maxDelay = 100))
     public SolicitudReservaResponse crear(
             CrearSolicitudReservaRequest request,
             String claveIdempotencia,
             UUID usuarioAutenticadoId) {
-        return solicitudReservaRepository .buscarPorClaveIdempotencia(claveIdempotencia)
-                .map(solicitudReservaMapper::toResponse)
-                .orElseGet(() -> crearNuevaSolicitud(request, claveIdempotencia, usuarioAutenticadoId));
+        String payloadHash = hashCreacion(request);
+        idempotenciaCreacionRepository.registrarSiAusente(
+                claveIdempotencia, usuarioAutenticadoId, payloadHash);
+        var operacion = idempotenciaCreacionRepository.buscarParaActualizar(claveIdempotencia)
+                .orElseThrow(() -> new IllegalStateException(
+                        "No fue posible registrar la creación idempotente"));
+        if (!"CREAR_SOLICITUD".equals(operacion.operacion())
+                || !usuarioAutenticadoId.equals(operacion.actorId())
+                || !payloadHash.equals(operacion.payloadHash())) {
+            throw new IllegalStateException(
+                    "La clave de idempotencia ya fue utilizada con otro actor o payload");
+        }
+        if (operacion.solicitudId() != null) {
+            return solicitudReservaMapper.toResponse(solicitudReservaRepository
+                    .buscarPorId(operacion.solicitudId())
+                    .orElseThrow(() -> new IllegalStateException(
+                            "El resultado de la creación idempotente no existe")));
+        }
+        SolicitudReservaResponse respuesta = crearNuevaSolicitud(
+                request, claveIdempotencia, usuarioAutenticadoId);
+        idempotenciaCreacionRepository.completar(claveIdempotencia, respuesta.id());
+        return respuesta;
+    }
+
+    String hashCreacion(CrearSolicitudReservaRequest request) {
+        String canonical = String.join("\u001f",
+                value(request.solicitanteId()), value(request.docenteId()),
+                value(request.laboratorioId()), value(request.materiaId()),
+                value(request.periodoLectivoId()), value(request.fechaReserva()),
+                value(request.horaInicio()), value(request.horaFin()),
+                value(request.numeroParticipantes()), value(request.motivo()),
+                value(request.observacion()));
+        try {
+            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
+                    .digest(canonical.getBytes(StandardCharsets.UTF_8)));
+        } catch (NoSuchAlgorithmException exception) {
+            throw new IllegalStateException("SHA-256 no está disponible", exception);
+        }
+    }
+
+    private String value(Object value) {
+        if (value == null) {
+            return "-1:";
+        }
+        String text = value.toString();
+        return text.length() + ":" + text;
     }
 
     private SolicitudReservaResponse crearNuevaSolicitud(
@@ -177,6 +235,7 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
             ActualizarSolicitudReservaRequest request,
             UUID usuarioAutenticadoId) {
         SolicitudReserva solicitud = obtenerSolicitud(id);
+        validarPropietario(solicitud, usuarioAutenticadoId);
         SolicitudReservaStates.desde(solicitud.getEstado()).validarActualizacion();
 
         validarDocente(request.docenteId());
@@ -200,16 +259,23 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
         return solicitudReservaMapper.toResponse(solicitudReservaRepository.guardar(solicitud));
     }
 
+    private void validarPropietario(SolicitudReserva solicitud, UUID usuarioAutenticadoId) {
+        if (!usuarioAutenticadoId.equals(solicitud.getSolicitanteId())) {
+            throw new org.springframework.security.access.AccessDeniedException(
+                    "La solicitud pertenece a otro usuario");
+        }
+    }
+
     private SolicitudReserva obtenerSolicitud(UUID id) {
         return solicitudReservaRepository.buscarPorId(id)
-                .orElseThrow(() -> new IllegalArgumentException(
+                .orElseThrow(() -> new ResourceNotFoundException(
                         "No existe la solicitud de reserva indicada"));
     }
 
     private void validarDocente(UUID docenteId) {
         PerfilExternoResponse docente = usuariosClient.obtenerPerfil(docenteId);
         if (docente == null || !docente.existe()) {
-            throw new IllegalArgumentException("El docente indicado no existe");
+            throw new ResourceNotFoundException("El docente indicado no existe");
         }
         if (!docente.activo()) {
             throw new IllegalArgumentException("El docente indicado no está activo");
@@ -224,7 +290,7 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
         LaboratorioExternoResponse laboratorio =
                 academicoLaboratoriosClient.obtenerLaboratorio(laboratorioId);
         if (laboratorio == null || !laboratorio.existe()) {
-            throw new IllegalArgumentException("El laboratorio indicado no existe");
+            throw new ResourceNotFoundException("El laboratorio indicado no existe");
         }
         if (!laboratorio.activo()) {
             throw new IllegalArgumentException("El laboratorio indicado no está activo");
@@ -234,7 +300,7 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
     private void validarMateria(UUID materiaId) {
         ExisteExternoResponse materia = academicoLaboratoriosClient.verificarMateria(materiaId);
         if (materia == null || !materia.existe()) {
-            throw new IllegalArgumentException("La materia indicada no existe");
+            throw new ResourceNotFoundException("La materia indicada no existe");
         }
     }
 
@@ -242,7 +308,7 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
         ExisteExternoResponse periodo =
                 academicoLaboratoriosClient.verificarPeriodoLectivo(periodoLectivoId);
         if (periodo == null || !periodo.existe()) {
-            throw new IllegalArgumentException("El período lectivo indicado no existe");
+            throw new ResourceNotFoundException("El período lectivo indicado no existe");
         }
     }
 
@@ -265,7 +331,7 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
     @Transactional
     public SolicitudReservaResponse ponerEnRevision(UUID id, UUID usuarioAutenticadoId) {
         SolicitudReserva solicitud = solicitudReservaRepository.buscarPorIdParaActualizar(id)
-                .orElseThrow(() -> new IllegalArgumentException(
+                .orElseThrow(() -> new ResourceNotFoundException(
                         "No existe la solicitud de reserva indicada"));
 
         solicitud.setEstado(SolicitudReservaStates.desde(solicitud.getEstado()).ponerEnRevision());
@@ -284,6 +350,8 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
 
     @Override
     @Transactional(isolation = Isolation.SERIALIZABLE)
+    @Retryable(retryFor = {PessimisticLockingFailureException.class, ObjectOptimisticLockingFailureException.class},
+            maxAttempts = 3, backoff = @Backoff(delay = 25, multiplier = 2, maxDelay = 100))
     public ReservaResponse aprobar(
             UUID id,
             AprobarSolicitudRequest request,
@@ -311,7 +379,7 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
         }
 
         SolicitudReserva solicitud = solicitudReservaRepository.buscarPorIdParaActualizar(id)
-                .orElseThrow(() -> new IllegalArgumentException(
+                .orElseThrow(() -> new ResourceNotFoundException(
                         "No existe la solicitud de reserva indicada"));
 
         EstadoSolicitud estadoAprobado = SolicitudReservaStates.desde(solicitud.getEstado()).aprobar();
@@ -369,7 +437,7 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
     public SolicitudReservaResponse rechazar(
             UUID id, RechazarSolicitudRequest request, UUID usuarioAutenticadoId) {
         SolicitudReserva solicitud = solicitudReservaRepository.buscarPorIdParaActualizar(id)
-                .orElseThrow(() -> new IllegalArgumentException(
+                .orElseThrow(() -> new ResourceNotFoundException(
                         "No existe la solicitud de reserva indicada"));
         solicitud.setEstado(SolicitudReservaStates.desde(solicitud.getEstado()).rechazar());
         SolicitudReserva guardada = solicitudReservaRepository.guardar(solicitud);
@@ -388,10 +456,12 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
 
     @Override
     @Transactional(isolation = Isolation.SERIALIZABLE)
+    @Retryable(retryFor = {PessimisticLockingFailureException.class, ObjectOptimisticLockingFailureException.class},
+            maxAttempts = 3, backoff = @Backoff(delay = 25, multiplier = 2, maxDelay = 100))
     public SolicitudReservaResponse cancelar(
             UUID id, CancelarSolicitudRequest request, UUID usuarioAutenticadoId) {
         SolicitudReserva solicitud = solicitudReservaRepository.buscarPorIdParaActualizar(id)
-                .orElseThrow(() -> new IllegalArgumentException(
+                .orElseThrow(() -> new ResourceNotFoundException(
                         "No existe la solicitud de reserva indicada"));
         EstadoSolicitud estadoCancelado = SolicitudReservaStates.desde(solicitud.getEstado()).cancelar();
 

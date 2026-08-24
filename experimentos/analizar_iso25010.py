@@ -19,6 +19,7 @@ REQUIRED_COLUMNS = {
     "failures",
     "failure_rate_percent",
     "p95_ms",
+    "p99_ms",
     "valida",
     "observacion",
 }
@@ -77,6 +78,7 @@ def valid_measurements(rows: list[dict[str, str]]) -> list[dict[str, str]]:
         and row["failures"].strip()
         and row["failure_rate_percent"].strip()
         and row["p95_ms"].strip()
+        and row["p99_ms"].strip()
     ]
 
 
@@ -96,9 +98,10 @@ def analyze_scenario(scenario: str, rows: list[dict[str, str]]) -> None:
 
     failure_rates = [float(row["failure_rate_percent"]) for row in selected]
     p95_values = [float(row["p95_ms"]) for row in selected]
+    p99_values = [float(row["p99_ms"]) for row in selected]
     total_requests = [int(row["total_requests"]) for row in selected]
     failures = [int(row["failures"]) for row in selected]
-    if any(value < 0 for value in failure_rates + p95_values):
+    if any(value < 0 for value in failure_rates + p95_values + p99_values):
         raise ValueError(f"{scenario}: las métricas no pueden ser negativas")
     for row, total, failed, rate in zip(selected, total_requests, failures, failure_rates):
         repetition = row["_repetition"]
@@ -114,6 +117,7 @@ def analyze_scenario(scenario: str, rows: list[dict[str, str]]) -> None:
     print(f"{scenario}: 8 muestras válidas (repeticiones 2..9)")
     print_summary("failure_rate_percent", failure_rates, 1.0, "%")
     print_summary("p95_ms", p95_values, 500.0, "ms")
+    print_summary("p99_ms", p99_values, 750.0, "ms")
 
 
 def print_summary(name: str, values: list[float], threshold: float, unit: str) -> None:

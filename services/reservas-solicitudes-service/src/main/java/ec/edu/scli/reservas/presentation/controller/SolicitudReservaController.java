@@ -17,6 +17,8 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -65,21 +67,29 @@ public class SolicitudReservaController {
             @RequestParam(required = false) UUID laboratorioId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha,
             @RequestParam(defaultValue = "0") @Min(0) int pagina,
-            @RequestParam(defaultValue = "20") @Min(1) @Max(100) int tamanio) {
+            @RequestParam(defaultValue = "20") @Min(1) @Max(100) int tamanio,
+            Authentication authentication) {
+        UUID filtroSolicitante = puedeGestionarSolicitudes(authentication)
+                ? solicitanteId : obtenerUsuarioId(authentication);
         return ResponseEntity.ok(solicitudReservaService.listar(
-                estado, solicitanteId, laboratorioId, fecha, pagina, tamanio));
+                estado, filtroSolicitante, laboratorioId, fecha, pagina, tamanio));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<SolicitudReservaResponse> buscarPorId(@PathVariable UUID id) {
-        return ResponseEntity.ok(solicitudReservaService.buscarPorId(id));
+    public ResponseEntity<SolicitudReservaResponse> buscarPorId(
+            @PathVariable UUID id, Authentication authentication) {
+        SolicitudReservaResponse respuesta = solicitudReservaService.buscarPorId(id);
+        validarLecturaPropia(respuesta.solicitanteId(), authentication);
+        return ResponseEntity.ok(respuesta);
     }
 
     @GetMapping("/solicitante/{solicitanteId}")
     public ResponseEntity<PaginaResponse<SolicitudReservaResponse>> listarPorSolicitante(
             @PathVariable UUID solicitanteId,
             @RequestParam(defaultValue = "0") @Min(0) int pagina,
-            @RequestParam(defaultValue = "20") @Min(1) @Max(100) int tamanio) {
+            @RequestParam(defaultValue = "20") @Min(1) @Max(100) int tamanio,
+            Authentication authentication) {
+        validarLecturaPropia(solicitanteId, authentication);
         return ResponseEntity.ok(solicitudReservaService.listarPorSolicitante(solicitanteId, pagina, tamanio));
     }
 
@@ -87,7 +97,12 @@ public class SolicitudReservaController {
     public ResponseEntity<PaginaResponse<SolicitudReservaResponse>> listarPorEstado(
             @PathVariable EstadoSolicitud estado,
             @RequestParam(defaultValue = "0") @Min(0) int pagina,
-            @RequestParam(defaultValue = "20") @Min(1) @Max(100) int tamanio) {
+            @RequestParam(defaultValue = "20") @Min(1) @Max(100) int tamanio,
+            Authentication authentication) {
+        if (!puedeGestionarSolicitudes(authentication)) {
+            return ResponseEntity.ok(solicitudReservaService.listar(
+                    estado, obtenerUsuarioId(authentication), null, null, pagina, tamanio));
+        }
         return ResponseEntity.ok(solicitudReservaService.listarPorEstado(estado, pagina, tamanio));
     }
 
@@ -131,8 +146,24 @@ public class SolicitudReservaController {
     public ResponseEntity<PaginaResponse<HistorialSolicitudResponse>> obtenerHistorial(
             @PathVariable UUID id,
             @RequestParam(defaultValue = "0") @Min(0) int pagina,
-            @RequestParam(defaultValue = "20") @Min(1) @Max(100) int tamanio) {
+            @RequestParam(defaultValue = "20") @Min(1) @Max(100) int tamanio,
+            Authentication authentication) {
+        validarLecturaPropia(solicitudReservaService.buscarPorId(id).solicitanteId(), authentication);
         return ResponseEntity.ok(solicitudReservaService.obtenerHistorial(id, pagina, tamanio));
+    }
+
+    private void validarLecturaPropia(UUID solicitanteId, Authentication authentication) {
+        if (!puedeGestionarSolicitudes(authentication)
+                && !solicitanteId.equals(obtenerUsuarioId(authentication))) {
+            throw new AccessDeniedException("No puede consultar solicitudes de otro usuario");
+        }
+    }
+
+    private boolean puedeGestionarSolicitudes(Authentication authentication) {
+        return authentication != null && authentication.getAuthorities().stream()
+                .map(authority -> authority.getAuthority())
+                .anyMatch(authority -> authority.equals("SOLICITUD_APROBAR")
+                        || authority.equals("SOLICITUD_RECHAZAR"));
     }
 
     private UUID obtenerUsuarioId(Principal principal) {

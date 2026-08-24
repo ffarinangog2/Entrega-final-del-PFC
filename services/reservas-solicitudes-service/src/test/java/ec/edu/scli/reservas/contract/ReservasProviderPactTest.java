@@ -13,6 +13,7 @@ import ec.edu.scli.reservas.domain.model.EstadoReserva;
 import ec.edu.scli.reservas.presentation.controller.ReservaController;
 import ec.edu.scli.reservas.presentation.dto.response.PaginaResponse;
 import ec.edu.scli.reservas.presentation.dto.response.ReservaResponse;
+import ec.edu.scli.reservas.presentation.dto.request.CancelarReservaRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -29,8 +30,10 @@ import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
 @Provider("reservas-solicitudes-service")
 @PactFolder("../../tests/contract/target/pacts")
@@ -52,6 +55,7 @@ class ReservasProviderPactTest {
         reservaService = mock(ReservaService.class);
         MockMvc mockMvc = MockMvcBuilders
                 .standaloneSetup(new ReservaController(reservaService))
+                .defaultRequest(get("/").principal(() -> RESPONSABLE_ID.toString()))
                 .setMessageConverters(new MappingJackson2HttpMessageConverter(
                         Jackson2ObjectMapperBuilder.json()
                                 .modulesToInstall(new JavaTimeModule())
@@ -74,6 +78,16 @@ class ReservasProviderPactTest {
     @State("existe una reserva con id 11111111-1111-1111-1111-111111111111")
     void existeReservaPorId() {
         when(reservaService.buscarPorId(RESERVA_ID)).thenReturn(reservaProgramada());
+    }
+
+    @State("existe una reserva programada cancelable")
+    void existeReservaCancelable() {
+        ReservaResponse programada = reservaProgramada();
+        when(reservaService.cancelar(eq(RESERVA_ID), any(CancelarReservaRequest.class), eq(RESPONSABLE_ID)))
+                .thenReturn(new ReservaResponse(programada.id(), programada.solicitudId(),
+                        programada.laboratorioId(), programada.responsableId(), programada.fechaReserva(),
+                        programada.horaInicio(), programada.horaFin(), EstadoReserva.CANCELADA,
+                        programada.codigoReserva(), programada.creadaEn(), programada.actualizadaEn(), 1L));
     }
 
     @TestTemplate

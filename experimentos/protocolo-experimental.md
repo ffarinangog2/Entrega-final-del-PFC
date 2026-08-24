@@ -71,7 +71,7 @@ final pertenecen a los siguientes subpasos.
 
 ## Almacenamiento
 
-Los registros futuros se guardarán en `experiments/metrics/results/`. Cada
+Los registros futuros se guardarán en `experimentos/metrics/results/`. Cada
 registro deberá cumplir el esquema JSON y conservar un identificador único de
 ejecución, el tratamiento, el conjunto de datos, el entorno y las mediciones
 capturadas.

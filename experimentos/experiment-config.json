@@ -22,7 +22,7 @@
     "timeout_seconds": 900
   },
   "output": {
-    "directory": "experiments/metrics/results",
+    "directory": "experimentos/metrics/results",
     "record_format": "json"
   }
 }

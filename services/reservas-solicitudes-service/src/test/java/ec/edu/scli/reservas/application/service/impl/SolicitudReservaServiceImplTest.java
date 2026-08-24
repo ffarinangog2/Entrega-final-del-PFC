@@ -28,6 +28,7 @@ class SolicitudReservaServiceImplTest {
     private ReservaRepositoryPort reservas;
     private HistorialSolicitudRepositoryPort historiales;
     private IdempotenciaAprobacionRepositoryPort idempotenciaAprobaciones;
+    private IdempotenciaCreacionSolicitudRepositoryPort idempotenciaCreaciones;
     private UsuariosClient usuarios;
     private AcademicoLaboratoriosClient academico;
     private DisponibilidadService disponibilidad;
@@ -47,12 +48,13 @@ class SolicitudReservaServiceImplTest {
         reservas = mock(ReservaRepositoryPort.class);
         historiales = mock(HistorialSolicitudRepositoryPort.class);
         idempotenciaAprobaciones = mock(IdempotenciaAprobacionRepositoryPort.class);
+        idempotenciaCreaciones = mock(IdempotenciaCreacionSolicitudRepositoryPort.class);
         usuarios = mock(UsuariosClient.class);
         academico = mock(AcademicoLaboratoriosClient.class);
         disponibilidad = mock(DisponibilidadService.class);
         metrics = mock(BusinessEventMetrics.class);
         service = new SolicitudReservaServiceImpl(
-                solicitudes, reservas, historiales, idempotenciaAprobaciones,
+                solicitudes, reservas, historiales, idempotenciaAprobaciones, idempotenciaCreaciones,
                 new SolicitudReservaMapper(), new ReservaMapper(), new HistorialSolicitudMapper(),
                 usuarios, academico, disponibilidad, metrics);
 
@@ -76,30 +78,58 @@ class SolicitudReservaServiceImplTest {
             return reserva;
         });
         when(historiales.guardar(any())).thenAnswer(i -> i.getArgument(0));
+        when(idempotenciaCreaciones.buscarParaActualizar(anyString())).thenAnswer(i ->
+                Optional.of(new IdempotenciaCreacionSolicitud(i.getArgument(0),
+                        "CREAR_SOLICITUD", usuarioId, service.hashCreacion(crearRequest()), null)));
     }
 
     @Test
     void creaSolicitudYRegistraHistorial() {
-        when(solicitudes.buscarPorClaveIdempotencia("clave")).thenReturn(Optional.empty());
         var respuesta = service.crear(crearRequest(), "clave", usuarioId);
         assertEquals(EstadoSolicitud.PENDIENTE, respuesta.estado());
         assertEquals(laboratorioId, respuesta.laboratorioId());
         verify(historiales).guardar(argThat(h -> h.getEstadoNuevo() == EstadoSolicitud.PENDIENTE));
         verify(metrics).solicitudCreada();
+        verify(idempotenciaCreaciones).completar("clave", respuesta.id());
     }
 
     @Test
     void devuelveSolicitudExistentePorIdempotencia() {
         SolicitudReserva existente = solicitud(EstadoSolicitud.PENDIENTE);
-        when(solicitudes.buscarPorClaveIdempotencia("clave")).thenReturn(Optional.of(existente));
+        when(idempotenciaCreaciones.buscarParaActualizar("clave")).thenReturn(Optional.of(
+                new IdempotenciaCreacionSolicitud("clave", "CREAR_SOLICITUD",
+                        usuarioId, service.hashCreacion(crearRequest()), existente.getId())));
+        when(solicitudes.buscarPorId(existente.getId())).thenReturn(Optional.of(existente));
         assertEquals(existente.getId(), service.crear(crearRequest(), "clave", usuarioId).id());
         verify(solicitudes, never()).guardar(any());
         verify(metrics, never()).solicitudCreada();
     }
 
     @Test
+    void rechazaClaveDeCreacionConActorDiferente() {
+        when(idempotenciaCreaciones.buscarParaActualizar("clave")).thenReturn(Optional.of(
+                new IdempotenciaCreacionSolicitud("clave", "CREAR_SOLICITUD",
+                        UUID.randomUUID(), service.hashCreacion(crearRequest()), null)));
+        assertThrows(IllegalStateException.class,
+                () -> service.crear(crearRequest(), "clave", usuarioId));
+        verify(solicitudes, never()).guardar(any());
+    }
+
+    @Test
+    void rechazaClaveDeCreacionConPayloadDiferente() {
+        when(idempotenciaCreaciones.buscarParaActualizar("clave")).thenReturn(Optional.of(
+                new IdempotenciaCreacionSolicitud("clave", "CREAR_SOLICITUD",
+                        usuarioId, "0".repeat(64), null)));
+        assertThrows(IllegalStateException.class,
+                () -> service.crear(crearRequest(), "clave", usuarioId));
+        verify(solicitudes, never()).guardar(any());
+    }
+
+
+    @Test
     void actualizaSolicitudPermitida() {
         SolicitudReserva solicitud = solicitud(EstadoSolicitud.PENDIENTE);
+        solicitud.setSolicitanteId(usuarioId);
         when(solicitudes.buscarPorId(solicitud.getId())).thenReturn(Optional.of(solicitud));
         var respuesta = service.actualizar(solicitud.getId(), actualizarRequest(), usuarioId);
         assertEquals("actualizado", respuesta.motivo());
@@ -109,6 +139,7 @@ class SolicitudReservaServiceImplTest {
     @Test
     void rechazaActualizacionEnEstadoFinal() {
         SolicitudReserva solicitud = solicitud(EstadoSolicitud.RECHAZADA);
+        solicitud.setSolicitanteId(usuarioId);
         when(solicitudes.buscarPorId(solicitud.getId())).thenReturn(Optional.of(solicitud));
         assertThrows(IllegalStateException.class,
                 () -> service.actualizar(solicitud.getId(), actualizarRequest(), usuarioId));

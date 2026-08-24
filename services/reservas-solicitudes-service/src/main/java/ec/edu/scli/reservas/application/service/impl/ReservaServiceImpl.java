@@ -8,12 +8,19 @@ import ec.edu.scli.reservas.mapper.ReservaMapper;
 import ec.edu.scli.reservas.observability.BusinessEventMetrics;
 import ec.edu.scli.reservas.presentation.dto.request.CancelarReservaRequest;
 import ec.edu.scli.reservas.presentation.dto.response.*;
+import ec.edu.scli.reservas.presentation.exception.ResourceNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.dao.PessimisticLockingFailureException;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.transaction.annotation.*;
 import java.time.*;
 import java.util.UUID;
 
 @Service
+@Retryable(retryFor = {PessimisticLockingFailureException.class, ObjectOptimisticLockingFailureException.class},
+        maxAttempts = 3, backoff = @Backoff(delay = 25, multiplier = 2, maxDelay = 100))
 public class ReservaServiceImpl implements ReservaService {
     private final ReservaRepositoryPort reservaRepository;
     private final ReservaMapper reservaMapper;
@@ -42,7 +49,7 @@ public class ReservaServiceImpl implements ReservaService {
     public ReservaResponse finalizar(UUID id,UUID usuario){Reserva r=obtenerReservaParaActualizar(id);r.setEstado(ReservaStates.desde(r.getEstado()).finalizar());ReservaResponse response=reservaMapper.toResponse(reservaRepository.guardar(r));businessEventMetrics.reservaFinalizada();return response;}
     @Override @Transactional(isolation=Isolation.SERIALIZABLE)
     public ReservaResponse marcarNoAsistida(UUID id,UUID usuario){Reserva r=obtenerReservaParaActualizar(id);r.setEstado(ReservaStates.desde(r.getEstado()).marcarNoAsistida(r,LocalDateTime.now()));return reservaMapper.toResponse(reservaRepository.guardar(r));}
-    private Reserva obtenerReserva(UUID id){return reservaRepository.buscarPorId(id).orElseThrow(()->new IllegalArgumentException("No existe la reserva indicada"));}
-    private Reserva obtenerReservaParaActualizar(UUID id){return reservaRepository.buscarPorIdParaActualizar(id).orElseThrow(()->new IllegalArgumentException("No existe la reserva indicada"));}
+    private Reserva obtenerReserva(UUID id){return reservaRepository.buscarPorId(id).orElseThrow(()->new ResourceNotFoundException("No existe la reserva indicada"));}
+    private Reserva obtenerReservaParaActualizar(UUID id){return reservaRepository.buscarPorIdParaActualizar(id).orElseThrow(()->new ResourceNotFoundException("No existe la reserva indicada"));}
     private PaginaResponse<ReservaResponse> mapearPagina(Pagina<Reserva> p){return new PaginaResponse<>(p.contenido().stream().map(reservaMapper::toResponse).toList(),p.numero(),p.tamanio(),p.totalElementos(),p.totalPaginas(),p.primera(),p.ultima());}
 }

@@ -44,6 +44,11 @@ public class JwtTokenProvider {
                 .parseSignedClaims(token)
                 .getPayload();
 
+        String tokenType = claims.get("type", String.class);
+        if (!"access".equals(tokenType)) {
+            throw new IllegalArgumentException("Solo se aceptan access tokens");
+        }
+
         UUID usuarioAuthId = requiredUuid(claims.getSubject(), "sub");
         UUID perfilId = requiredUuid(
                 claims.get("perfilId", String.class), "perfilId");

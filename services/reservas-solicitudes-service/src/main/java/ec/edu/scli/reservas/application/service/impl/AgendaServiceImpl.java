@@ -9,14 +9,10 @@ import ec.edu.scli.reservas.presentation.dto.response.PaginaResponse;
 import ec.edu.scli.reservas.entity.BloqueoAgenda;
 import ec.edu.scli.reservas.domain.model.Reserva;
 import ec.edu.scli.reservas.mapper.BloqueoAgendaMapper;
-import ec.edu.scli.reservas.repository.BloqueoAgendaRepository;
+import ec.edu.scli.reservas.domain.port.out.BloqueoAgendaRepositoryPort;
 import ec.edu.scli.reservas.domain.port.out.ReservaRepositoryPort;
 import ec.edu.scli.reservas.application.service.AgendaService;
-import jakarta.persistence.criteria.CriteriaBuilder;
-import jakarta.persistence.criteria.CriteriaQuery;
-import jakarta.persistence.criteria.Root;
 import org.springframework.beans.BeanUtils;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,14 +33,14 @@ public class AgendaServiceImpl implements AgendaService {
                     .thenComparing(AgendaItemResponse::horaInicio);
 
     private final ReservaRepositoryPort reservaRepository;
-    private final BloqueoAgendaRepository bloqueoAgendaRepository;
+    private final BloqueoAgendaRepositoryPort bloqueoAgendaRepository;
     private final BloqueoAgendaMapper bloqueoAgendaMapper;
     private final AcademicoLaboratoriosClient academicoLaboratoriosClient;
     private final TransactionTemplate transactionTemplate;
 
     public AgendaServiceImpl(
             ReservaRepositoryPort reservaRepository,
-            BloqueoAgendaRepository bloqueoAgendaRepository,
+            BloqueoAgendaRepositoryPort bloqueoAgendaRepository,
             BloqueoAgendaMapper bloqueoAgendaMapper,
             AcademicoLaboratoriosClient academicoLaboratoriosClient,
             TransactionTemplate transactionTemplate) {
@@ -65,17 +61,11 @@ public class AgendaServiceImpl implements AgendaService {
             int tamanio) {
         validarPaginacionYRango(fechaDesde, fechaHasta, pagina, tamanio);
 
-        Specification<BloqueoAgenda> bloqueoSpecification = Specification.allOf(
-                bloqueoActivo(),
-                bloqueoLaboratorioIgualA(laboratorioId),
-                bloqueoFechaDesde(fechaDesde),
-                bloqueoFechaHasta(fechaHasta));
-
         List<AgendaItemResponse> elementos = new ArrayList<>();
         reservaRepository.buscarParaAgenda(laboratorioId, fechaDesde, fechaHasta).stream()
                 .map(this::mapearReserva)
                 .forEach(elementos::add);
-        bloqueoAgendaRepository.findAll(bloqueoSpecification).stream()
+        bloqueoAgendaRepository.buscarActivos(laboratorioId, fechaDesde, fechaHasta).stream()
                 .map(this::mapearBloqueo)
                 .forEach(elementos::add);
         elementos.sort(ORDEN_AGENDA);
@@ -125,7 +115,7 @@ public class AgendaServiceImpl implements AgendaService {
     private BloqueoAgendaResponse crearBloqueoEnTransaccion(
             CrearBloqueoAgendaRequest request, UUID usuarioAutenticadoId) {
         long bloqueosConflictivos =
-                bloqueoAgendaRepository.contarBloqueosActivosConflictivos(
+                bloqueoAgendaRepository.contarActivosConflictivos(
                         request.laboratorioId(),
                         request.fecha(),
                         request.horaInicio(),
@@ -154,7 +144,7 @@ public class AgendaServiceImpl implements AgendaService {
         bloqueo.setCreadoPor(usuarioAutenticadoId);
         bloqueo.setActivo(true);
 
-        return bloqueoAgendaMapper.toResponse(bloqueoAgendaRepository.save(bloqueo));
+        return bloqueoAgendaMapper.toResponse(bloqueoAgendaRepository.guardar(bloqueo));
     }
 
     @Override
@@ -167,7 +157,7 @@ public class AgendaServiceImpl implements AgendaService {
             throw new IllegalArgumentException("El usuario autenticado es obligatorio");
         }
 
-        BloqueoAgenda bloqueo = bloqueoAgendaRepository.findById(bloqueoId)
+        BloqueoAgenda bloqueo = bloqueoAgendaRepository.buscarPorId(bloqueoId)
                 .orElseThrow(() -> new IllegalArgumentException(
                         "El bloqueo de agenda no existe"));
         if (Boolean.FALSE.equals(bloqueo.getActivo())) {
@@ -175,7 +165,7 @@ public class AgendaServiceImpl implements AgendaService {
         }
 
         bloqueo.setActivo(false);
-        bloqueoAgendaRepository.save(bloqueo);
+        bloqueoAgendaRepository.guardar(bloqueo);
     }
 
     private void validarPaginacionYRango(
@@ -247,26 +237,4 @@ public class AgendaServiceImpl implements AgendaService {
                 totalPaginas == 0 || pagina >= totalPaginas - 1);
     }
 
-    private Specification<BloqueoAgenda> bloqueoActivo() {
-        return (Root<BloqueoAgenda> root, CriteriaQuery<?> query, CriteriaBuilder builder) ->
-                builder.isTrue(root.get("activo"));
-    }
-
-    private Specification<BloqueoAgenda> bloqueoLaboratorioIgualA(UUID laboratorioId) {
-        return laboratorioId == null ? null
-                : (Root<BloqueoAgenda> root, CriteriaQuery<?> query, CriteriaBuilder builder) ->
-                builder.equal(root.get("laboratorioId"), laboratorioId);
-    }
-
-    private Specification<BloqueoAgenda> bloqueoFechaDesde(LocalDate fechaDesde) {
-        return fechaDesde == null ? null
-                : (Root<BloqueoAgenda> root, CriteriaQuery<?> query, CriteriaBuilder builder) ->
-                builder.greaterThanOrEqualTo(root.get("fecha"), fechaDesde);
-    }
-
-    private Specification<BloqueoAgenda> bloqueoFechaHasta(LocalDate fechaHasta) {
-        return fechaHasta == null ? null
-                : (Root<BloqueoAgenda> root, CriteriaQuery<?> query, CriteriaBuilder builder) ->
-                builder.lessThanOrEqualTo(root.get("fecha"), fechaHasta);
-    }
 }

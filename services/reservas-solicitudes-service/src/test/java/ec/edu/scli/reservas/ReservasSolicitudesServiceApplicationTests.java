@@ -45,7 +45,19 @@ class ReservasSolicitudesServiceApplicationTests {
                 .isInstanceOf(io.jsonwebtoken.JwtException.class);
     }
 
+    @Test
+    void refreshTokenEsRechazado() {
+        String token = crearToken(UUID.randomUUID(), UUID.randomUUID(), ISSUER, "refresh");
+        assertThatThrownBy(() -> new JwtTokenProvider(ISSUER, SECRET).parse(token))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("access tokens");
+    }
+
     private String crearToken(UUID usuarioAuthId, UUID perfilId, String issuer) {
+        return crearToken(usuarioAuthId, perfilId, issuer, "access");
+    }
+
+    private String crearToken(UUID usuarioAuthId, UUID perfilId, String issuer, String type) {
         return Jwts.builder()
                 .subject(usuarioAuthId.toString())
                 .issuer(issuer)
@@ -53,6 +65,7 @@ class ReservasSolicitudesServiceApplicationTests {
                 .claim("username", "docente@scli.edu.ec")
                 .claim("roles", List.of("DOCENTE"))
                 .claim("permissions", List.of("RESERVAS_CREAR"))
+                .claim("type", type)
                 .expiration(new Date(System.currentTimeMillis() + 60_000))
                 .signWith(Keys.hmacShaKeyFor(
                         "0123456789abcdef0123456789abcdef"

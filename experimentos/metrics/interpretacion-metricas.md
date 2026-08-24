@@ -2,7 +2,7 @@
 
 ## Archivos generados
 
-Al ejecutar `experiments/run_comparison.py`, el directorio `metrics/results/`
+Al ejecutar `experimentos/run_comparison.py`, el directorio `experimentos/metrics/results/`
 contendrá:
 
 - un JSON por repetición, que conserva la observación completa y su entorno;

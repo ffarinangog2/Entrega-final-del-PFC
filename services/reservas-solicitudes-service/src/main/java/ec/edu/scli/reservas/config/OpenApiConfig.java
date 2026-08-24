@@ -3,6 +3,7 @@ package ec.edu.scli.reservas.config;
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.responses.ApiResponse;
+import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.servers.Server;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
@@ -25,6 +26,9 @@ public class OpenApiConfig {
     @Bean
     OpenAPI reservasOpenApi() {
         return new OpenAPI()
+                .info(new Info().title("SCLI - Reservas y Solicitudes API")
+                        .version("1.0.0")
+                        .description("Gestión segura e idempotente de solicitudes, reservas y agenda"))
                 .servers(List.of(new Server().url("/").description("Servidor actual")))
                 .components(new Components().addSecuritySchemes(
                         BEARER_AUTH,
@@ -37,12 +41,15 @@ public class OpenApiConfig {
     @Bean
     OperationCustomizer documentarJwtEnEscrituras() {
         return (operation, handlerMethod) -> {
-            if (handlerMethod.hasMethodAnnotation(PostMapping.class)
-                    || handlerMethod.hasMethodAnnotation(PutMapping.class)
-                    || handlerMethod.hasMethodAnnotation(PatchMapping.class)
-                    || handlerMethod.hasMethodAnnotation(DeleteMapping.class)) {
+            if (handlerMethod.getBeanType().getPackageName()
+                    .startsWith("ec.edu.scli.reservas.presentation.controller")) {
                 operation.addSecurityItem(new SecurityRequirement().addList(BEARER_AUTH));
             }
+            operation.getResponses().addApiResponse("400", new ApiResponse().description("Petición inválida"));
+            operation.getResponses().addApiResponse("401", new ApiResponse().description("Access token ausente o inválido"));
+            operation.getResponses().addApiResponse("403", new ApiResponse().description("Permiso u ownership insuficiente"));
+            operation.getResponses().addApiResponse("404", new ApiResponse().description("Recurso inexistente"));
+            operation.getResponses().addApiResponse("409", new ApiResponse().description("Conflicto de estado, concurrencia o idempotencia"));
             documentarEstadoHttpReal(operation, handlerMethod.getBeanType(),
                     handlerMethod.getMethod().getName());
             return operation;
