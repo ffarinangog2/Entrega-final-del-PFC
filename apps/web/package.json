@@ -13,10 +13,13 @@
     "format": "prettier --write ."
   },
   "dependencies": {
+    "i18next": "^26.4.0",
     "react": "18.3.1",
     "react-dom": "18.3.1",
+    "react-i18next": "^17.0.12",
     "react-router-dom": "^6.30.6",
-    "recharts": "3.10.1"
+    "recharts": "3.10.1",
+    "zustand": "^5.0.15"
   },
   "devDependencies": {
     "@playwright/test": "^1.62.1",

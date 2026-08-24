@@ -1,0 +1,49 @@
+{
+  "dashboard": {
+    "topbar": {
+      "tagline": "Computer Labs"
+    },
+    "sidebar": {
+      "workspaceLabel": "Workspaces",
+      "systemLabel": "System",
+      "note": "Services operational"
+    },
+    "nav": {
+      "home": "Home",
+      "labs": "Labs",
+      "reservations": "Reservations",
+      "newRequest": "New request",
+      "calendar": "Calendar",
+      "settings": "Settings",
+      "about": "About"
+    },
+    "breadcrumbHome": "Home",
+    "userNameFallback": "User",
+    "userRoleFallback": "System user"
+  },
+  "settings": {
+    "title": "Settings",
+    "subtitle": "Application preferences.",
+    "language": {
+      "label": "Language",
+      "description": "Choose the interface language.",
+      "es": "Español",
+      "en": "English"
+    },
+    "theme": {
+      "label": "Theme",
+      "description": "Choose the interface appearance.",
+      "light": "Light",
+      "dark": "Dark"
+    }
+  },
+  "about": {
+    "title": "About SCLI",
+    "subtitle": "UTEQ distributed application.",
+    "appNameLabel": "System name",
+    "appName": "SCLI — Computer Labs Control System",
+    "versionLabel": "Version",
+    "stackLabel": "Technology stack",
+    "stackValue": "React, TypeScript, Vite, Spring Boot, CockroachDB"
+  }
+}
