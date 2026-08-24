@@ -27,6 +27,7 @@ class SolicitudReservaServiceImplTest {
     private SolicitudReservaRepositoryPort solicitudes;
     private ReservaRepositoryPort reservas;
     private HistorialSolicitudRepositoryPort historiales;
+    private IdempotenciaAprobacionRepositoryPort idempotenciaAprobaciones;
     private UsuariosClient usuarios;
     private AcademicoLaboratoriosClient academico;
     private DisponibilidadService disponibilidad;
@@ -45,12 +46,13 @@ class SolicitudReservaServiceImplTest {
         solicitudes = mock(SolicitudReservaRepositoryPort.class);
         reservas = mock(ReservaRepositoryPort.class);
         historiales = mock(HistorialSolicitudRepositoryPort.class);
+        idempotenciaAprobaciones = mock(IdempotenciaAprobacionRepositoryPort.class);
         usuarios = mock(UsuariosClient.class);
         academico = mock(AcademicoLaboratoriosClient.class);
         disponibilidad = mock(DisponibilidadService.class);
         metrics = mock(BusinessEventMetrics.class);
         service = new SolicitudReservaServiceImpl(
-                solicitudes, reservas, historiales,
+                solicitudes, reservas, historiales, idempotenciaAprobaciones,
                 new SolicitudReservaMapper(), new ReservaMapper(), new HistorialSolicitudMapper(),
                 usuarios, academico, disponibilidad, metrics);
 
@@ -126,6 +128,7 @@ class SolicitudReservaServiceImplTest {
     void apruebaSolicitudCreaReservaEHistorial() {
         SolicitudReserva solicitud = solicitud(EstadoSolicitud.EN_REVISION);
         prepararBloqueo(solicitud);
+        prepararIdempotenciaPendiente("clave", solicitud.getId());
         when(reservas.existePorSolicitudId(solicitud.getId())).thenReturn(false);
         var respuesta = service.aprobar(
                 solicitud.getId(), new AprobarSolicitudRequest(usuarioId, "aprobada"), "clave", usuarioId);
@@ -135,15 +138,77 @@ class SolicitudReservaServiceImplTest {
         verify(historiales).guardar(argThat(h -> h.getEstadoNuevo() == EstadoSolicitud.APROBADA));
         verify(metrics).solicitudAprobada();
         verify(metrics).reservaCreada();
+        verify(idempotenciaAprobaciones).completar(eq("clave"), eq(respuesta.id()));
     }
 
     @Test
-    void impideAprobacionDuplicada() {
+    void replayDeAprobacionDevuelveLaMismaReservaSinRepetirEfectos() {
+        SolicitudReserva solicitud = solicitud(EstadoSolicitud.APROBADA);
+        Reserva reservaExistente = reserva(EstadoReserva.PROGRAMADA, solicitud.getId());
+        when(idempotenciaAprobaciones.buscarParaActualizar("clave"))
+                .thenReturn(Optional.of(new IdempotenciaAprobacion(
+                        "clave", "APROBAR_SOLICITUD", solicitud.getId(), reservaExistente.getId())));
+        when(reservas.buscarPorId(reservaExistente.getId())).thenReturn(Optional.of(reservaExistente));
+
+        var respuesta = service.aprobar(
+                solicitud.getId(), new AprobarSolicitudRequest(usuarioId, "aprobada"),
+                "clave", usuarioId);
+
+        assertEquals(reservaExistente.getId(), respuesta.id());
+        verify(reservas, never()).guardar(any());
+        verify(solicitudes, never()).guardar(any());
+        verify(historiales, never()).guardar(any());
+        verify(metrics, never()).solicitudAprobada();
+        verify(metrics, never()).reservaCreada();
+        verify(idempotenciaAprobaciones, never()).completar(anyString(), any());
+    }
+
+    @Test
+    void rechazaLaMismaClaveParaOtraSolicitud() {
+        UUID otraSolicitudId = UUID.randomUUID();
+        when(idempotenciaAprobaciones.buscarParaActualizar("clave"))
+                .thenReturn(Optional.of(new IdempotenciaAprobacion(
+                        "clave", "APROBAR_SOLICITUD", otraSolicitudId, null)));
+
+        assertThrows(IllegalStateException.class, () -> service.aprobar(
+                UUID.randomUUID(), new AprobarSolicitudRequest(usuarioId, null),
+                "clave", usuarioId));
+
+        verify(reservas, never()).guardar(any());
+        verify(solicitudes, never()).buscarPorIdParaActualizar(any());
+    }
+
+    @Test
+    void dosReplaysDeLaMismaClaveNoDuplicanReserva() {
+        SolicitudReserva solicitud = solicitud(EstadoSolicitud.APROBADA);
+        Reserva reservaExistente = reserva(EstadoReserva.PROGRAMADA, solicitud.getId());
+        var operacion = new IdempotenciaAprobacion(
+                "clave", "APROBAR_SOLICITUD", solicitud.getId(), reservaExistente.getId());
+        when(idempotenciaAprobaciones.buscarParaActualizar("clave"))
+                .thenReturn(Optional.of(operacion));
+        when(reservas.buscarPorId(reservaExistente.getId())).thenReturn(Optional.of(reservaExistente));
+
+        var primera = service.aprobar(
+                solicitud.getId(), new AprobarSolicitudRequest(usuarioId, null),
+                "clave", usuarioId);
+        var segunda = service.aprobar(
+                solicitud.getId(), new AprobarSolicitudRequest(usuarioId, null),
+                "clave", usuarioId);
+
+        assertEquals(primera.id(), segunda.id());
+        verify(reservas, never()).guardar(any());
+        verify(reservas, times(2)).buscarPorId(reservaExistente.getId());
+    }
+
+    @Test
+    void impideAprobacionDuplicadaConOtraClave() {
         SolicitudReserva solicitud = solicitud(EstadoSolicitud.EN_REVISION);
         prepararBloqueo(solicitud);
+        prepararIdempotenciaPendiente("otra-clave", solicitud.getId());
         when(reservas.existePorSolicitudId(solicitud.getId())).thenReturn(true);
         assertThrows(IllegalStateException.class, () -> service.aprobar(
-                solicitud.getId(), new AprobarSolicitudRequest(usuarioId, null), "clave", usuarioId));
+                solicitud.getId(), new AprobarSolicitudRequest(usuarioId, null),
+                "otra-clave", usuarioId));
         verify(reservas, never()).guardar(any());
     }
 
@@ -194,6 +259,12 @@ class SolicitudReservaServiceImplTest {
 
     private void prepararBloqueo(SolicitudReserva solicitud) {
         when(solicitudes.buscarPorIdParaActualizar(solicitud.getId())).thenReturn(Optional.of(solicitud));
+    }
+
+    private void prepararIdempotenciaPendiente(String clave, UUID solicitudId) {
+        when(idempotenciaAprobaciones.buscarParaActualizar(clave))
+                .thenReturn(Optional.of(new IdempotenciaAprobacion(
+                        clave, "APROBAR_SOLICITUD", solicitudId, null)));
     }
 
     private CrearSolicitudReservaRequest crearRequest() {

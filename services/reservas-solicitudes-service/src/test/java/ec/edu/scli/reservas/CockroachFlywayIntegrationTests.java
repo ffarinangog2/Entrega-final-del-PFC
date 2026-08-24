@@ -4,6 +4,7 @@ import ec.edu.scli.reservas.domain.model.EstadoReserva;
 import ec.edu.scli.reservas.domain.model.EstadoSolicitud;
 import ec.edu.scli.reservas.domain.model.Reserva;
 import ec.edu.scli.reservas.domain.model.SolicitudReserva;
+import ec.edu.scli.reservas.domain.port.out.IdempotenciaAprobacionRepositoryPort;
 import ec.edu.scli.reservas.domain.port.out.ReservaRepositoryPort;
 import ec.edu.scli.reservas.domain.port.out.SolicitudReservaRepositoryPort;
 import jakarta.persistence.EntityManager;
@@ -14,6 +15,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -24,6 +26,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 @Testcontainers(disabledWithoutDocker = true)
 @SpringBootTest
@@ -54,7 +59,11 @@ class CockroachFlywayIntegrationTests {
     @Autowired
     private ReservaRepositoryPort reservaRepository;
     @Autowired
+    private IdempotenciaAprobacionRepositoryPort idempotenciaAprobacionRepository;
+    @Autowired
     private EntityManager entityManager;
+    @Autowired
+    private TransactionTemplate transactionTemplate;
 
     @Test
     void flywayCreaTodasLasTablasDelMicroservicio() {
@@ -68,12 +77,13 @@ class CockroachFlywayIntegrationTests {
                     'reservas',
                     'historial_solicitudes',
                     'bloqueos_agenda',
-                    'configuraciones_reserva'
+                    'configuraciones_reserva',
+                    'idempotencia_aprobaciones'
                   )
                 """,
                 Integer.class);
 
-        assertThat(tablas).isEqualTo(5);
+        assertThat(tablas).isEqualTo(6);
 
         Integer clavesForaneas = jdbcTemplate.queryForObject(
                 """
@@ -88,6 +98,68 @@ class CockroachFlywayIntegrationTests {
                 """,
                 Integer.class);
         assertThat(clavesForaneas).isEqualTo(2);
+    }
+
+    @Test
+    void idempotenciaAprobacionConservaSolicitudYResultadoSinDuplicarClave() {
+        SolicitudReserva solicitud = transactionTemplate.execute(status ->
+                solicitudRepository.guardar(nuevaSolicitud(UUID.randomUUID())));
+        UUID reservaId = transactionTemplate.execute(status -> {
+            Reserva reserva = reservaRepository.guardar(nuevaReserva(
+                    solicitud.getId(), solicitud.getLaboratorioId(), UUID.randomUUID()));
+            idempotenciaAprobacionRepository.registrarSiAusente("aprobacion-it", solicitud.getId());
+            idempotenciaAprobacionRepository.registrarSiAusente("aprobacion-it", solicitud.getId());
+            idempotenciaAprobacionRepository.completar("aprobacion-it", reserva.getId());
+            return reserva.getId();
+        });
+
+        var registro = transactionTemplate.execute(status ->
+                idempotenciaAprobacionRepository.buscarParaActualizar("aprobacion-it")
+                        .orElseThrow());
+
+        assertThat(registro.operacion()).isEqualTo("APROBAR_SOLICITUD");
+        assertThat(registro.solicitudId()).isEqualTo(solicitud.getId());
+        assertThat(registro.reservaId()).isEqualTo(reservaId);
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM idempotencia_aprobaciones WHERE clave = ?",
+                Integer.class,
+                "aprobacion-it")).isEqualTo(1);
+    }
+
+    @Test
+    void dosTransaccionesConLaMismaClaveConservanUnSoloRegistro() throws Exception {
+        SolicitudReserva solicitud = transactionTemplate.execute(status ->
+                solicitudRepository.guardar(nuevaSolicitud(UUID.randomUUID())));
+        String clave = "aprobacion-concurrente-" + UUID.randomUUID();
+        CountDownLatch preparados = new CountDownLatch(2);
+        CountDownLatch iniciar = new CountDownLatch(1);
+
+        try (var executor = Executors.newFixedThreadPool(2)) {
+            var tarea = (java.util.concurrent.Callable<UUID>) () -> {
+                preparados.countDown();
+                assertThat(iniciar.await(10, TimeUnit.SECONDS)).isTrue();
+                return transactionTemplate.execute(status -> {
+                    idempotenciaAprobacionRepository.registrarSiAusente(
+                            clave, solicitud.getId());
+                    return idempotenciaAprobacionRepository.buscarParaActualizar(clave)
+                            .orElseThrow()
+                            .solicitudId();
+                });
+            };
+
+            var primera = executor.submit(tarea);
+            var segunda = executor.submit(tarea);
+            assertThat(preparados.await(10, TimeUnit.SECONDS)).isTrue();
+            iniciar.countDown();
+
+            assertThat(primera.get(20, TimeUnit.SECONDS)).isEqualTo(solicitud.getId());
+            assertThat(segunda.get(20, TimeUnit.SECONDS)).isEqualTo(solicitud.getId());
+        }
+
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM idempotencia_aprobaciones WHERE clave = ?",
+                Integer.class,
+                clave)).isEqualTo(1);
     }
 
     @Test

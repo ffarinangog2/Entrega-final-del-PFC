@@ -27,6 +27,7 @@ import ec.edu.scli.reservas.mapper.ReservaMapper;
 import ec.edu.scli.reservas.mapper.SolicitudReservaMapper;
 import ec.edu.scli.reservas.observability.BusinessEventMetrics;
 import ec.edu.scli.reservas.domain.port.out.HistorialSolicitudRepositoryPort;
+import ec.edu.scli.reservas.domain.port.out.IdempotenciaAprobacionRepositoryPort;
 import ec.edu.scli.reservas.domain.port.out.ReservaRepositoryPort;
 import ec.edu.scli.reservas.domain.port.out.SolicitudReservaRepositoryPort;
 import ec.edu.scli.reservas.domain.state.reserva.ReservaStates;
@@ -49,6 +50,7 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
     private final SolicitudReservaRepositoryPort solicitudReservaRepository;
     private final ReservaRepositoryPort reservaRepository;
     private final HistorialSolicitudRepositoryPort historialSolicitudRepository;
+    private final IdempotenciaAprobacionRepositoryPort idempotenciaAprobacionRepository;
     private final SolicitudReservaMapper solicitudReservaMapper;
     private final ReservaMapper reservaMapper;
     private final HistorialSolicitudMapper historialSolicitudMapper;
@@ -61,6 +63,7 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
             SolicitudReservaRepositoryPort solicitudReservaRepository,
             ReservaRepositoryPort reservaRepository,
             HistorialSolicitudRepositoryPort historialSolicitudRepository,
+            IdempotenciaAprobacionRepositoryPort idempotenciaAprobacionRepository,
             SolicitudReservaMapper solicitudReservaMapper,
             ReservaMapper reservaMapper,
             HistorialSolicitudMapper historialSolicitudMapper,
@@ -71,6 +74,7 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
         this.solicitudReservaRepository = solicitudReservaRepository;
         this.reservaRepository = reservaRepository;
         this.historialSolicitudRepository = historialSolicitudRepository;
+        this.idempotenciaAprobacionRepository = idempotenciaAprobacionRepository;
         this.solicitudReservaMapper = solicitudReservaMapper;
         this.reservaMapper = reservaMapper;
         this.historialSolicitudMapper = historialSolicitudMapper;
@@ -285,6 +289,27 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
             AprobarSolicitudRequest request,
             String claveIdempotencia,
             UUID usuarioAutenticadoId) {
+        idempotenciaAprobacionRepository.registrarSiAusente(claveIdempotencia, id);
+        var operacionIdempotente = idempotenciaAprobacionRepository
+                .buscarParaActualizar(claveIdempotencia)
+                .orElseThrow(() -> new IllegalStateException(
+                        "No fue posible registrar la operación idempotente de aprobación"));
+
+        if (!id.equals(operacionIdempotente.solicitudId())) {
+            throw new IllegalStateException(
+                    "La clave de idempotencia ya fue utilizada para otra solicitud");
+        }
+        if (!"APROBAR_SOLICITUD".equals(operacionIdempotente.operacion())) {
+            throw new IllegalStateException(
+                    "La clave de idempotencia pertenece a otra operación");
+        }
+        if (operacionIdempotente.reservaId() != null) {
+            return reservaMapper.toResponse(reservaRepository
+                    .buscarPorId(operacionIdempotente.reservaId())
+                    .orElseThrow(() -> new IllegalStateException(
+                            "El resultado de la aprobación idempotente no existe")));
+        }
+
         SolicitudReserva solicitud = solicitudReservaRepository.buscarPorIdParaActualizar(id)
                 .orElseThrow(() -> new IllegalArgumentException(
                         "No existe la solicitud de reserva indicada"));
@@ -318,6 +343,8 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
         solicitud.setEstado(estadoAprobado);
         solicitud.setReservaId(guardada.getId());
         solicitudReservaRepository.guardar(solicitud);
+
+        idempotenciaAprobacionRepository.completar(claveIdempotencia, guardada.getId());
 
         HistorialSolicitud historial = BeanUtils.instantiateClass(HistorialSolicitud.class);
         historial.setSolicitudId(solicitud.getId());
