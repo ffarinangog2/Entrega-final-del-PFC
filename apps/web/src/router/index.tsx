@@ -3,6 +3,7 @@ import { AboutPage } from '../pages/AboutPage'
 import { LoginPage } from '../pages/LoginPage'
 import { MainPage } from '../pages/MainPage'
 import { SettingsPage } from '../pages/SettingsPage'
+import { UsuariosPage } from '../pages/UsuariosPage'
 import { ProtectedRoute } from './ProtectedRoute'
 import { ReservaDetailPage } from '../features/reservas/ReservaDetailPage'
 import { ReservasListPage } from '../features/reservas/ReservasListPage'
@@ -17,6 +18,7 @@ export function AppRoutes() {
         <Route path="/main" element={<MainPage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/about" element={<AboutPage />} />
+        <Route path="/usuarios" element={<UsuariosPage />} />
         <Route path="/reservas" element={<ReservasListPage />} />
         <Route path="/reservas/nueva" element={<NuevaSolicitudPage />} />
         <Route path="/reservas/calendario" element={<CalendarioReservasPage />} />

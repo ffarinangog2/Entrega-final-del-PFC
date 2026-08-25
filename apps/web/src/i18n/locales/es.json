@@ -15,7 +15,8 @@
       "newRequest": "Nueva solicitud",
       "calendar": "Calendario",
       "settings": "Configuración",
-      "about": "Acerca de"
+      "about": "Acerca de",
+      "usuarios": "Usuarios"
     },
     "breadcrumbHome": "Inicio",
     "userNameFallback": "Usuario",
@@ -45,5 +46,36 @@
     "versionLabel": "Versión",
     "stackLabel": "Stack tecnológico",
     "stackValue": "React, TypeScript, Vite, Spring Boot, CockroachDB"
+  },
+  "usuarios": {
+    "title": "Usuarios",
+    "subtitle": "Perfiles registrados en el sistema.",
+    "table": {
+      "nombres": "Nombres",
+      "apellidos": "Apellidos",
+      "emailInstitucional": "Email institucional",
+      "activo": "Activo",
+      "si": "Sí",
+      "no": "No"
+    },
+    "loading": "Cargando perfiles...",
+    "empty": "No hay perfiles registrados.",
+    "errorLoad": "No se pudo obtener el listado de perfiles.",
+    "retry": "Intentar de nuevo",
+    "form": {
+      "title": "Nuevo perfil",
+      "identificacion": "Identificación",
+      "nombres": "Nombres",
+      "apellidos": "Apellidos",
+      "emailInstitucional": "Email institucional",
+      "emailPersonal": "Email personal",
+      "telefono": "Teléfono",
+      "direccion": "Dirección",
+      "fechaNacimiento": "Fecha de nacimiento",
+      "submit": "Crear perfil",
+      "submitting": "Creando...",
+      "success": "Perfil creado correctamente.",
+      "error": "No se pudo crear el perfil."
+    }
   }
 }

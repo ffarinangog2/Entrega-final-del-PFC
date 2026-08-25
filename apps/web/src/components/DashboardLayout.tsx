@@ -28,6 +28,7 @@ export function DashboardLayout({ breadcrumb, children }: { breadcrumb: string; 
         </nav>
         <p className="dashboard__nav-label dashboard__nav-label--secondary">{t('dashboard.sidebar.systemLabel')}</p>
         <nav aria-label="Navegación del sistema">
+          <NavLink className="dashboard__nav-item" to="/usuarios"><span aria-hidden="true">👤</span>{t('dashboard.nav.usuarios')}</NavLink>
           <NavLink className="dashboard__nav-item" to="/settings"><span aria-hidden="true">⚙</span>{t('dashboard.nav.settings')}</NavLink>
           <NavLink className="dashboard__nav-item" to="/about"><span aria-hidden="true">ⓘ</span>{t('dashboard.nav.about')}</NavLink>
         </nav>
