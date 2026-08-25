@@ -58,7 +58,7 @@ private val ScliDarkColorScheme = darkColorScheme(
 
 /** Identidad visual de SCLI (verde bosque sobre fondo crema) para Compose. */
 @Composable
-fun ScliTheme(content: @Composable () -> Unit) {
-    val colorScheme = if (isSystemInDarkTheme()) ScliDarkColorScheme else ScliLightColorScheme
+fun ScliTheme(darkTheme: Boolean = isSystemInDarkTheme(), content: @Composable () -> Unit) {
+    val colorScheme = if (darkTheme) ScliDarkColorScheme else ScliLightColorScheme
     MaterialTheme(colorScheme = colorScheme, content = content)
 }

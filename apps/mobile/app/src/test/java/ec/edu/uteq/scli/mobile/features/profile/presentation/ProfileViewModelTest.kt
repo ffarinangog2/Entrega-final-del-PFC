@@ -33,26 +33,44 @@ class ProfileViewModelTest {
         Dispatchers.resetMain()
     }
 
-    @Test
-    fun `uiState refleja los valores iniciales de nombreTecnico y notificacionesHabilitadas`() = runTest {
+    private fun mockSettingsRepository(
+        nombreTecnico: String = "",
+        notificacionesHabilitadas: Boolean = true,
+        temaOscuro: Boolean? = null,
+        idiomaApp: String? = null,
+    ): SettingsRepository {
         val settingsRepository = mockk<SettingsRepository>(relaxed = true)
-        every { settingsRepository.nombreTecnico } returns flowOf("Juan Pérez")
-        every { settingsRepository.notificacionesHabilitadas } returns flowOf(false)
-        val viewModel = ProfileViewModel(settingsRepository)
-
-        backgroundScope.launch { viewModel.uiState.collect {} }
-        runCurrent()
-
-        val actual = viewModel.uiState.value
-        assertEquals("Juan Pérez", actual.nombreTecnico)
-        assertEquals(false, actual.notificacionesHabilitadas)
+        every { settingsRepository.nombreTecnico } returns flowOf(nombreTecnico)
+        every { settingsRepository.notificacionesHabilitadas } returns flowOf(notificacionesHabilitadas)
+        every { settingsRepository.temaOscuro } returns flowOf(temaOscuro)
+        every { settingsRepository.idiomaApp } returns flowOf(idiomaApp)
+        return settingsRepository
     }
 
     @Test
+    fun `uiState refleja los valores iniciales de nombreTecnico, notificacionesHabilitadas, temaOscuro e idiomaApp`() =
+        runTest {
+            val settingsRepository = mockSettingsRepository(
+                nombreTecnico = "Juan Pérez",
+                notificacionesHabilitadas = false,
+                temaOscuro = true,
+                idiomaApp = "en",
+            )
+            val viewModel = ProfileViewModel(settingsRepository)
+
+            backgroundScope.launch { viewModel.uiState.collect {} }
+            runCurrent()
+
+            val actual = viewModel.uiState.value
+            assertEquals("Juan Pérez", actual.nombreTecnico)
+            assertEquals(false, actual.notificacionesHabilitadas)
+            assertEquals(true, actual.temaOscuro)
+            assertEquals("en", actual.idiomaApp)
+        }
+
+    @Test
     fun `onNombreChange llama a settingsRepository setNombreTecnico con el valor correcto`() = runTest {
-        val settingsRepository = mockk<SettingsRepository>(relaxed = true)
-        every { settingsRepository.nombreTecnico } returns flowOf("")
-        every { settingsRepository.notificacionesHabilitadas } returns flowOf(true)
+        val settingsRepository = mockSettingsRepository()
         val viewModel = ProfileViewModel(settingsRepository)
 
         viewModel.onNombreChange("Ana Gómez")
@@ -62,15 +80,58 @@ class ProfileViewModelTest {
     }
 
     @Test
-    fun `onToggleNotificaciones llama a settingsRepository setNotificacionesHabilitadas con el valor correcto`() = runTest {
-        val settingsRepository = mockk<SettingsRepository>(relaxed = true)
-        every { settingsRepository.nombreTecnico } returns flowOf("")
-        every { settingsRepository.notificacionesHabilitadas } returns flowOf(true)
+    fun `onToggleNotificaciones llama a settingsRepository setNotificacionesHabilitadas con el valor correcto`() =
+        runTest {
+            val settingsRepository = mockSettingsRepository()
+            val viewModel = ProfileViewModel(settingsRepository)
+
+            viewModel.onToggleNotificaciones(false)
+            runCurrent()
+
+            coVerify { settingsRepository.setNotificacionesHabilitadas(false) }
+        }
+
+    @Test
+    fun `onTemaChange llama a settingsRepository setTemaOscuro al forzar oscuro`() = runTest {
+        val settingsRepository = mockSettingsRepository()
         val viewModel = ProfileViewModel(settingsRepository)
 
-        viewModel.onToggleNotificaciones(false)
+        viewModel.onTemaChange(true)
         runCurrent()
 
-        coVerify { settingsRepository.setNotificacionesHabilitadas(false) }
+        coVerify { settingsRepository.setTemaOscuro(true) }
+    }
+
+    @Test
+    fun `onTemaChange llama a settingsRepository setTemaOscuro al volver al sistema`() = runTest {
+        val settingsRepository = mockSettingsRepository()
+        val viewModel = ProfileViewModel(settingsRepository)
+
+        viewModel.onTemaChange(null)
+        runCurrent()
+
+        coVerify { settingsRepository.setTemaOscuro(null) }
+    }
+
+    @Test
+    fun `onIdiomaChange llama a settingsRepository setIdiomaApp al forzar ingles`() = runTest {
+        val settingsRepository = mockSettingsRepository()
+        val viewModel = ProfileViewModel(settingsRepository)
+
+        viewModel.onIdiomaChange("en")
+        runCurrent()
+
+        coVerify { settingsRepository.setIdiomaApp("en") }
+    }
+
+    @Test
+    fun `onIdiomaChange llama a settingsRepository setIdiomaApp al volver al sistema`() = runTest {
+        val settingsRepository = mockSettingsRepository()
+        val viewModel = ProfileViewModel(settingsRepository)
+
+        viewModel.onIdiomaChange(null)
+        runCurrent()
+
+        coVerify { settingsRepository.setIdiomaApp(null) }
     }
 }

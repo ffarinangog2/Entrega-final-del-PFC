@@ -21,6 +21,14 @@
     <string name="perfil_nombre_label">Nombre</string>
     <string name="perfil_settings_titulo">Configuración</string>
     <string name="perfil_settings_notificaciones">Notificaciones de incidentes</string>
+    <string name="perfil_settings_tema_titulo">Tema</string>
+    <string name="perfil_settings_tema_sistema">Sistema</string>
+    <string name="perfil_settings_tema_claro">Claro</string>
+    <string name="perfil_settings_tema_oscuro">Oscuro</string>
+    <string name="perfil_settings_idioma_titulo">Idioma</string>
+    <string name="perfil_settings_idioma_sistema">Sistema</string>
+    <string name="perfil_settings_idioma_es">Español</string>
+    <string name="perfil_settings_idioma_en">English</string>
 
     <string name="notification_channel_id" translatable="false">incidentes_channel</string>
     <string name="notification_channel_nombre">Incidentes</string>

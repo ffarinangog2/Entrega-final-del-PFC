@@ -17,8 +17,15 @@ class ProfileViewModel(
     val uiState: StateFlow<ProfileUiState> = combine(
         settingsRepository.nombreTecnico,
         settingsRepository.notificacionesHabilitadas,
-    ) { nombre, notificaciones ->
-        ProfileUiState(nombreTecnico = nombre, notificacionesHabilitadas = notificaciones)
+        settingsRepository.temaOscuro,
+        settingsRepository.idiomaApp,
+    ) { nombre, notificaciones, temaOscuro, idiomaApp ->
+        ProfileUiState(
+            nombreTecnico = nombre,
+            notificacionesHabilitadas = notificaciones,
+            temaOscuro = temaOscuro,
+            idiomaApp = idiomaApp,
+        )
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
@@ -36,6 +43,20 @@ class ProfileViewModel(
         viewModelScope.launch {
             settingsRepository.setNotificacionesHabilitadas(habilitadas)
             Timber.tag("ProfileViewModel").d("Notificaciones habilitadas=%s", habilitadas)
+        }
+    }
+
+    fun onTemaChange(oscuro: Boolean?) {
+        viewModelScope.launch {
+            settingsRepository.setTemaOscuro(oscuro)
+            Timber.tag("ProfileViewModel").d("Tema oscuro=%s", oscuro)
+        }
+    }
+
+    fun onIdiomaChange(idioma: String?) {
+        viewModelScope.launch {
+            settingsRepository.setIdiomaApp(idioma)
+            Timber.tag("ProfileViewModel").d("Idioma app=%s", idioma)
         }
     }
 }
