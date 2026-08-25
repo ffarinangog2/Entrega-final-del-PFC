@@ -136,4 +136,18 @@ como mensajes funcionales y no como excepciones internas.
 
 La aplicación se empaqueta mediante un \texttt{Dockerfile} de
 construcción en dos etapas: una primera etapa instala dependencias y
-genera el artefacto de
+genera el artefacto de producción en \texttt{dist/}; posteriormente, una segunda etapa basada
+en Nginx sirve los archivos estáticos de la SPA. Esta separación reduce
+el tamaño de la imagen final y evita incluir dependencias de desarrollo
+en ejecución.
+
+El servicio web se integra en \texttt{docker-compose.yml} y consume las
+API exclusivamente mediante el API Gateway. De esta forma, el navegador
+no accede directamente a los puertos internos de Auth, Usuarios,
+Académico/Laboratorios o Reservas/Solicitudes, manteniendo al Gateway
+como punto único de entrada al sistema.
+
+El pipeline de integración continua genera y valida el artefacto web
+antes de construir su imagen Docker. Las pruebas unitarias y E2E se
+ejecutan previamente al empaquetado, de modo que una versión con errores
+no continúe hacia las etapas de construcción y publicación.
