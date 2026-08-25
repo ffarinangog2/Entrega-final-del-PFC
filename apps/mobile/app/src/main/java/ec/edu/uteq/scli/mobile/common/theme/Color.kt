@@ -19,3 +19,8 @@ val ScliDarkBorder = Color(0xFF24413A)
 val ScliDarkDanger = Color(0xFFE17A6B)
 val ScliDarkDangerBg = Color(0xFF3A2320)
 val ScliDarkDangerText = Color(0xFFF0A99C)
+
+// Acento naranja de la pantalla de login (apps/web/src/pages/LoginPage.css).
+// Sin variante oscura: esa página web tampoco tiene una, se reutiliza igual en ambos temas.
+val ScliAccent = Color(0xFFD08A3D)
+val ScliAccentText = Color(0xFFC0712C)
