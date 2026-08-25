@@ -46,9 +46,10 @@ class InternalControllerTest {
     @Test
     void disponibilidadBaseLaboratorio_deberiaRetornar200CuandoApiKeyEsValida() {
 
-        UUID id = UUID.randomUUID();
+                UUID id = UUID.randomUUID();
+        UUID pisoId = UUID.randomUUID();
         LaboratorioDisponibilidadBaseResponse response = new LaboratorioDisponibilidadBaseResponse(
-                id, true, true, EstadoLaboratorio.DISPONIBLE, 30);
+                id, pisoId, true, true, EstadoLaboratorio.DISPONIBLE, 30);
 
         when(laboratorioService.obtenerDisponibilidadBase(id)).thenReturn(response);
 
