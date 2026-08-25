@@ -11,6 +11,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class JwtServiceTest {
@@ -48,5 +49,37 @@ class JwtServiceTest {
                                 jwtService.extraerUsername(token));
 
                 assertFalse(token.isBlank());
+        }
+
+        @Test
+        void debeGenerarYValidarRefreshToken() {
+                JwtService jwtService = new JwtService(properties());
+                CustomUserDetails userDetails = userDetails();
+
+                String token = jwtService.generarRefreshToken(userDetails);
+
+                assertTrue(jwtService.esRefreshTokenValido(token));
+                assertFalse(jwtService.esTokenValido(token));
+                assertEquals(604800L, jwtService.obtenerExpiracionRefreshTokenSegundos());
+        }
+
+        @Test
+        void rechazaTokensInvalidosYSecretosInseguros() {
+                JwtService jwtService = new JwtService(properties());
+
+                assertFalse(jwtService.esTokenValido("token-invalido"));
+                assertFalse(jwtService.esRefreshTokenValido("token-invalido"));
+                assertThrows(IllegalArgumentException.class, () -> new JwtService(
+                                new JwtProperties("issuer", "MDEyMzQ1Njc4OWFiY2RlZg==", 1000, 1000)));
+        }
+
+        private static JwtProperties properties() {
+                return new JwtProperties("scli-auth-service", SECRET_BASE64, 900000, 604800000);
+        }
+
+        private static CustomUserDetails userDetails() {
+                Usuario usuario = new Usuario(UUID.randomUUID(), UUID.randomUUID(), "admin", "admin@scli.local",
+                                "hash-prueba", true, false, Set.of());
+                return new CustomUserDetails(usuario);
         }
 }
