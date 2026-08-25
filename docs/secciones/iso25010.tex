@@ -40,11 +40,80 @@ Compatibilidad móvil (Android) & minSdk 26+ & API 26+ \\
 
 \subsection{Seguridad}
 
-% [VILLAMARIN] Completar con base en docs/iso25010/seguridad-ivan.md
-% y docs/iso25010/matriz-seguridad-endpoints.csv. Tabla: porcentaje
-% de endpoints con verificacion JWT, ausencia de vulnerabilidades del
-% top 10 de OWASP, umbral objetivo 100% de endpoints protegidos salvo
-% los explicitamente publicos (/api/v1/internal, /actuator/health).
+La evaluación de seguridad se realizó mediante una revisión estática de los
+mecanismos de autenticación, autorización y exposición de servicios, tomando
+como referencia los controles implementados en el API Gateway, Auth,
+Usuarios, Académico/Laboratorios y Reservas/Solicitudes. La unidad de análisis
+fue cada combinación de método HTTP y patrón de ruta declarada por los
+controladores del sistema.
+
+El API Gateway constituye el único punto de entrada externo para los clientes
+web y móvil. Su configuración de seguridad permite sin autenticación
+únicamente las operaciones de inicio de sesión y renovación de token, las
+solicitudes \texttt{OPTIONS} utilizadas por CORS y los endpoints explícitos
+de Actuator. El resto de rutas exige un token JWT de acceso válido. Además,
+los puertos internos de los microservicios no se publican hacia el host,
+evitando el acceso externo directo a los servicios y reduciendo la posibilidad
+de omitir la validación transversal del Gateway.
+
+La matriz de seguridad registró 134 filas de evidencia, correspondientes a
+119 operaciones de controladores y 15 endpoints de Actuator. De este conjunto,
+111 operaciones funcionales fueron clasificadas como protegidas y, en todos
+los casos, se verificó la exigencia de JWT en el perímetro externo oficial.
+Por tanto, la cobertura obtenida se calcula mediante:
+
+\[
+\frac{111}{111}\times 100 = 100\,\%
+\]
+
+Los endpoints públicos, como \texttt{/api/v1/auth/login},
+\texttt{/api/v1/auth/refresh} y los endpoints de Actuator, se excluyeron del
+denominador porque su exposición es intencional. De igual forma, seis rutas
+internas utilizan \texttt{X-Internal-Api-Key} como mecanismo alternativo de
+control y no forman parte de la superficie pública funcional.
+
+\begin{table}[htbp]
+\centering
+\caption{Resultados de Seguridad (ISO/IEC 25010)}
+\label{tab:iso-seguridad}
+\begin{tabular}{llll}
+\toprule
+Métrica & Medido & Objetivo & Estado \\
+\midrule
+Endpoints protegidos con JWT & 111/111 (100\,\%) & 100\,\% & Cumple \\
+Operaciones sin JWT requeridas & 0 & 0 & Cumple \\
+Rutas internas con control alternativo & 6 & Controladas & Cumple \\
+OWASP Top 10 con evidencia integral & 0/10 & Revisión completa & Parcial \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+La revisión complementaria frente al OWASP Top 10 de 2021 mostró que nueve
+categorías presentan controles parciales y una categoría, correspondiente a
+componentes vulnerables o desactualizados, no dispone todavía de evidencia
+automatizada suficiente. Entre las principales fortalezas se identificaron
+la validación JWT transversal en el Gateway, el uso de BCrypt para
+contraseñas, repositorios JPA parametrizados, separación entre access y
+refresh token, restricciones de CORS y gestión de secretos mediante variables
+de entorno.
+
+Sin embargo, permanecen aspectos por fortalecer. El servicio
+Académico/Laboratorios depende de la protección del perímetro y no valida JWT
+internamente; tampoco existen todavía evidencias completas de TLS extremo a
+extremo, análisis automatizado de dependencias, escaneo de secretos, rate
+limiting, CSP global o un modelo de amenazas formal. En consecuencia, el
+resultado del 100\,\% debe interpretarse específicamente como cobertura JWT
+del perímetro externo y no como ausencia total de riesgos de seguridad.
+
+Las pruebas automatizadas complementan esta revisión. En Auth se verifican
+respuestas HTTP 401 y 403, tokens inválidos y exclusión de rutas públicas. En
+el API Gateway, las pruebas de integración comprueban login y refresh
+públicos, rechazo de solicitudes sin token, firmas inválidas, tokens
+expirados, issuer incorrecto y rechazo de refresh tokens utilizados como
+tokens de acceso. Estas evidencias permiten concluir que el objetivo de
+protección JWT del perímetro externo se cumple, aunque la defensa en
+profundidad y algunos controles asociados a OWASP continúan como trabajo de
+mejora.
 
 \subsection{Mantenibilidad}
 % [PENDIENTE -- ISAIAS]
