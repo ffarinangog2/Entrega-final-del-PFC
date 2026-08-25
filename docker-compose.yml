@@ -72,9 +72,6 @@ services:
 
     container_name: scli-auth-service
 
-    ports:
-      - "8081:8081"
-
     environment:
       SERVER_PORT: 8081
       DB_URL: jdbc:postgresql://cockroach-auth:26257/auth_db?sslmode=disable&options=-c%20allow_unsafe_internals%3Dtrue
@@ -176,9 +173,6 @@ services:
       dockerfile: Dockerfile
 
     container_name: scli-usuarios-service
-
-    ports:
-      - "8082:8082"
 
     environment:
       SERVER_PORT: 8082
@@ -294,9 +288,6 @@ services:
       SPRING_FLYWAY_BASELINE_ON_MIGRATE: "true"
       SPRING_FLYWAY_BASELINE_VERSION: "1"
 
-    ports:
-      - "8083:8083"
-
     healthcheck:
       test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:8083/actuator/health || exit 1"]
       interval: 10s
@@ -321,9 +312,6 @@ services:
       dockerfile: Dockerfile
 
     container_name: reservas-service
-
-    ports:
-      - "8084:8084"
 
     environment:
       SERVER_PORT: 8084
@@ -372,6 +360,7 @@ services:
       USUARIOS_SERVICE_URL: http://usuarios-service:8082
       ACADEMICO_SERVICE_URL: http://academico-laboratorios-service:8083
       RESERVAS_SOLICITUDES_SERVICE_URL: http://reservas-solicitudes-service:8084
+      JWT_SECRET: ${JWT_SECRET}
 
     depends_on:
       auth-service:
