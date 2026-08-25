@@ -324,7 +324,32 @@ jobs:
             sleep 2
           done
 
-          response_status="$(curl --silent --show-error --output /tmp/campus-response.json --write-out '%{http_code}' http://localhost:8080/api/v1/campus)"
+          login_status="$(curl --silent --show-error \
+            --output /tmp/login-response.json \
+            --write-out '%{http_code}' \
+            --header 'Content-Type: application/json' \
+            --data '{"username":"admin","password":"Admin123!"}' \
+            http://localhost:8080/api/v1/auth/login)"
+          case "$login_status" in
+            2*) ;;
+            *)
+              echo "LOGIN_HTTP_STATUS=$login_status"
+              node -e "try { const body = JSON.parse(require('fs').readFileSync(0, 'utf8')); console.error(body.message || 'Login request failed'); } catch { console.error('Login request failed'); }" < /tmp/login-response.json
+              exit 1
+              ;;
+          esac
+
+          access_token="$(node -e "try { const body = JSON.parse(require('fs').readFileSync(0, 'utf8')); process.stdout.write(body.accessToken || ''); } catch {}" < /tmp/login-response.json)"
+          if [ -z "$access_token" ]; then
+            echo "Login succeeded but accessToken was not present"
+            exit 1
+          fi
+
+          response_status="$(curl --silent --show-error \
+            --output /tmp/campus-response.json \
+            --write-out '%{http_code}' \
+            --header "Authorization: Bearer $access_token" \
+            http://localhost:8080/api/v1/campus)"
           case "$response_status" in
             2*) ;;
             *) echo "Gateway functional request returned HTTP $response_status"; cat /tmp/campus-response.json; exit 1 ;;
