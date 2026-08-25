@@ -57,6 +57,11 @@ springdoc:
   swagger-ui:
     path: /swagger-ui.html
 
+security:
+  jwt:
+    issuer: ${JWT_ISSUER:scli-auth-service}
+    secret: ${JWT_SECRET}
+
 app:
   internal-api-key: ${INTERNAL_API_KEY:clave-interna-desarrollo}
 
