@@ -723,6 +723,38 @@ representación de despliegue equivalente, a nivel C4, al diagrama de nivel
 se reproduce aquí en \TeX\ nativo para que el documento compile sin
 dependencias externas de imágenes vectoriales.
 
+
+\subsubsection{Vistas C4}
+
+Las Figuras~\ref{fig:c4-nivel1}, \ref{fig:c4-nivel2} y
+\ref{fig:c4-nivel3} presentan la arquitectura del sistema en los tres
+primeros niveles del modelo C4: contexto, contenedores y componentes
+internos del microservicio \texttt{academico-laboratorios-service}.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth]{diagrams/c4-nivel1.png}
+\caption{C4 Nivel 1 -- Contexto del sistema SCLI}
+\label{fig:c4-nivel1}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth]{diagrams/c4-nivel2.png}
+\caption{C4 Nivel 2 -- Contenedores del sistema}
+\label{fig:c4-nivel2}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth]{diagrams/c4-nivel3.png}
+\caption{C4 Nivel 3 -- Componentes de academico-laboratorios-service}
+\label{fig:c4-nivel3}
+\end{figure}
+
+
+
+
 \subsection{Despliegue con Docker Compose}
 
 El clúster E3 se añadió al \texttt{docker-compose.yml} heredado de la

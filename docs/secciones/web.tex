@@ -1,0 +1,100 @@
+\section{Aplicación web}
+\label{sec:aplicacion-web}
+
+\subsection{Arquitectura de la aplicación}
+
+La aplicación web \texttt{apps/web} se construyó como una \emph{single
+page application} (SPA) con React~18, TypeScript y Vite como
+empaquetador. La organización del código sigue el patrón
+\emph{feature-based}: cada dominio funcional (laboratorios, monitoreo,
+reservas) vive en su propio directorio bajo \texttt{src/features/},
+con sus componentes, llamadas a la API y pruebas colocalizadas, en
+lugar de agruparse por tipo técnico. Los directorios
+\texttt{src/router/}, \texttt{src/auth/}, \texttt{src/i18n/} y
+\texttt{src/services/} concentran responsabilidades transversales
+compartidas por todas las características.
+
+\subsection{Enrutamiento y control de acceso}
+
+El enrutamiento se implementó con \texttt{react-router-dom},
+definiendo las cinco rutas principales exigidas por la guía, además de
+las subrutas propias del módulo de reservas. La
+Tabla~\ref{tab:rutas-web} resume las rutas y su protección.
+
+\begin{table}[htbp]
+\centering
+\caption{Rutas de la aplicación web}
+\label{tab:rutas-web}
+\begin{tabular}{lll}
+\toprule
+Ruta & Descripción & Protegida \\
+\midrule
+/login & Inicio de sesión & No \\
+/main & Panel principal & Sí \\
+/settings & Configuración de usuario & Sí \\
+/about & Información del sistema & No \\
+/reservas & Listado de reservas & Sí \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Las rutas protegidas se envuelven mediante el componente
+\texttt{ProtectedRoute.tsx}, que verifica la presencia de un token de
+sesión válido antes de renderizar la ruta solicitada y redirige a
+\texttt{/login} en caso contrario.
+
+\subsection{Internacionalización y tema}
+
+La aplicación soporta español e inglés mediante archivos de traducción
+independientes bajo \texttt{src/i18n/locales/}. La preferencia de
+idioma y el tema visual (claro u oscuro) se gestionan de forma
+centralizada en \texttt{store/preferencesStore.ts} y persisten entre
+sesiones. El comportamiento de ambos mecanismos está cubierto por
+pruebas automatizadas (\texttt{settings-theme-i18n.spec.ts}).
+
+\subsection{Autenticación y gestión de sesión}
+
+El token JWT y su información asociada se almacenan en
+\texttt{sessionStorage} en lugar de \texttt{localStorage}, decisión
+deliberada para limitar la persistencia del token al ciclo de vida de
+la pestaña del navegador y reducir la superficie de exposición ante
+ataques de tipo \emph{cross-site scripting}. El contexto
+\texttt{AuthContext.tsx} centraliza el inicio de sesión, la renovación
+de token y el cierre de sesión, exponiéndolos al resto de la
+aplicación mediante un \emph{hook} de React.
+
+\subsection{Panel de monitoreo de laboratorios}
+
+El panel de monitoreo, implementado en
+\texttt{LaboratoriosPanel.tsx} y \texttt{MonitoreoPanel.tsx}, consume
+el endpoint de detalle completo expuesto por el patrón Facade del
+backend (\texttt{LaboratorioDetalleFacade}, Sección~\ref{sec:pruebas-cicd})
+y la serie histórica de ocupación expuesta por
+\texttt{PrometheusQueryClient}. El diseño visual se inspiró en la
+identidad institucional de la UTEQ: encabezado en verde institucional,
+tarjetas blancas con un borde izquierdo y un indicador luminoso
+coloreado según el estado del laboratorio, una barra de capacidad
+ocupada y tipografía monoespaciada (\texttt{JetBrains Mono}) para los
+códigos de laboratorio. El cliente tipado \texttt{academicoApi.ts}
+refleja exactamente los campos de \texttt{LaboratorioResponse.java}
+del backend, evitando divergencias de contrato entre frontend y
+backend. El componente cuenta con pruebas unitarias que cubren los
+estados de carga, éxito, error y lista vacía.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth]{figuras/panel-monitoreo.png}
+\caption{Panel de monitoreo de laboratorios}
+\label{fig:panel-monitoreo}
+\end{figure}
+
+\subsection{Módulo de reservas}
+% [PENDIENTE -- FREDDY] Describir NuevaSolicitudPage, ReservasListPage,
+% CalendarioReservasPage, ReservaDetailPage. Incluir figura del
+% calendario o del listado.
+
+\subsection{Empaquetado y despliegue}
+
+La aplicación se empaqueta mediante un \texttt{Dockerfile} de
+construcción en dos etapas: una primera etapa instala dependencias y
+genera el artefacto de

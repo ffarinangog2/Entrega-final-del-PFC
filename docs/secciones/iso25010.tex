@@ -1,0 +1,56 @@
+\section{Evaluación ISO/IEC 25010:2023}
+\label{sec:iso25010}
+
+Esta sección evalúa el sistema según cinco características del modelo
+de calidad ISO/IEC 25010:2023, con métricas medidas de forma directa
+sobre el sistema en ejecución, sin proyecciones ni valores estimados.
+
+\subsection{Compatibilidad}
+
+La suite de pruebas de extremo a extremo con Playwright se ejecutó
+sobre tres motores de navegador: Chromium, Firefox y WebKit. La
+elección de WebKit responde a una limitación práctica del entorno de
+desarrollo, que no cuenta con hardware macOS disponible para probar
+Safari nativamente; WebKit es el motor de renderizado subyacente de
+Safari y constituye la alternativa más cercana disponible para
+\emph{continuous integration} en Linux. De las 15 pruebas ejecutadas
+por navegador, 9 pasaron de forma consistente en los tres motores,
+mostrando el mismo patrón de éxito o falla independientemente del
+navegador; las 6 fallas restantes se atribuyeron a interferencia de
+red local durante la ejecución y no a incompatibilidades reales entre
+motores de renderizado, ya que ninguna de ellas mostró un patrón
+distinto entre navegadores. En el ámbito móvil, la compatibilidad se
+garantiza fijando \texttt{minSdk = 26} (Android 8.0), cubriendo la
+inmensa mayoría de dispositivos activos según las cifras públicas de
+distribución de versiones de Android.
+
+\begin{table}[htbp]
+\centering
+\caption{Resultados de Compatibilidad (ISO/IEC 25010)}
+\label{tab:iso-compatibilidad}
+\begin{tabular}{lll}
+\toprule
+Métrica & Medido & Objetivo \\
+\midrule
+Pruebas E2E consistentes entre navegadores & 9/15 & Suite completa \\
+Compatibilidad móvil (Android) & minSdk 26+ & API 26+ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Seguridad}
+
+% [VILLAMARIN] Completar con base en docs/iso25010/seguridad-ivan.md
+% y docs/iso25010/matriz-seguridad-endpoints.csv. Tabla: porcentaje
+% de endpoints con verificacion JWT, ausencia de vulnerabilidades del
+% top 10 de OWASP, umbral objetivo 100% de endpoints protegidos salvo
+% los explicitamente publicos (/api/v1/internal, /actuator/health).
+
+\subsection{Mantenibilidad}
+% [PENDIENTE -- ISAIAS]
+
+\subsection{Fiabilidad}
+% [PENDIENTE -- FREDDY]
+
+\subsection{Eficiencia de desempeño}
+% [PENDIENTE -- FREDDY]

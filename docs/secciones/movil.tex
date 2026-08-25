@@ -1,0 +1,88 @@
+\section{Aplicación móvil}
+\label{sec:aplicacion-movil}
+
+\subsection{Arquitectura MVVM}
+
+La aplicación móvil \texttt{apps/mobile} se desarrolló en Kotlin con
+Jetpack Compose, siguiendo el patrón arquitectónico Modelo-Vista-VistaModelo
+(MVVM). Cada característica funcional (\texttt{auth}, \texttt{incidentes},
+\texttt{profile}, \texttt{qr}, \texttt{notifications}, \texttt{reservas})
+vive en su propio paquete bajo \texttt{features/}, con capas internas
+\texttt{presentation} (composables y \texttt{ViewModel}) y \texttt{data}
+(repositorios y fuentes remotas/locales), replicando a menor escala la
+separación de responsabilidades del backend. La configuración de
+\emph{build} fija \texttt{compileSdk}/\texttt{targetSdk} en 34 y
+\texttt{minSdk} en 26.
+
+\subsection{Autenticación segura}
+
+El token de sesión se almacena mediante
+\texttt{EncryptedAuthStorage.kt}, apoyado en la librería
+\texttt{androidx.security:security-crypto}, que cifra el contenido de
+\texttt{SharedPreferences} en reposo. El \texttt{AuthViewModel}
+gestiona el flujo de inicio de sesión contra el
+\texttt{auth-service} y coordina la renovación automática del token
+cuando expira, sin requerir intervención del usuario.
+
+\subsection{Módulo de incidentes y notificaciones}
+
+El módulo de incidentes permite registrar y consultar novedades sobre
+el estado de los laboratorios. Las notificaciones push se apoyan en
+Firebase Cloud Messaging (\texttt{ScliFirebaseMessagingService.kt},
+\texttt{NotificationHelper.kt}). Es importante documentar con
+honestidad el estado real de esta capacidad: el proyecto todavía no
+cuenta con el archivo \texttt{google-services.json} necesario para
+activar el complemento de Firebase (el \texttt{build.gradle.kts}
+aplica el complemento condicionalmente, solo si el archivo existe), por
+lo que el envío de notificaciones push no es funcional en el estado
+actual del repositorio, aunque el código de la capacidad está
+completo y listo para activarse en cuanto se configure la credencial.
+
+\subsection{Escaneo de código QR}
+
+La segunda capacidad del dispositivo exigida por la guía es el acceso
+a la cámara, implementado mediante CameraX
+(\texttt{camera-camera2}, \texttt{camera-lifecycle}, \texttt{camera-view})
+y ML Kit Barcode Scanning para la detección del código. El flujo
+completo, implementado en \texttt{QrScanScreen.kt},
+\texttt{QrViewModel.kt} y \texttt{QrRepository.kt}, consiste en
+escanear el código QR de un laboratorio, resolver el identificador
+UUID capturado, y consultar el endpoint de detalle completo expuesto
+por el patrón Facade del backend (\texttt{LaboratorioDetalleFacade}),
+el mismo que reutiliza el panel web de monitoreo
+(Sección~\ref{sec:aplicacion-web}). La funcionalidad está cubierta por
+tres pruebas instrumentadas (\texttt{QrFlowTest.kt}), que verifican el
+caso de un QR válido mostrando el detalle del laboratorio, un UUID
+inválido mostrando un mensaje de error, y una falla de red mostrando
+el mensaje correspondiente del \emph{gateway}.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.7\linewidth]{figuras/qr-scan.png}
+\caption{Flujo de escaneo de código QR}
+\label{fig:qr-scan}
+\end{figure}
+
+\subsection{Módulo de reservas móvil}
+% [PENDIENTE -- FREDDY] Describir CalendarioScreen, NuevaReservaScreen,
+% ReservasScreen, SolicitudDetalleScreen, con cache local Room para
+% modo sin conexion.
+
+\subsection{Capacidades del dispositivo utilizadas}
+
+La Tabla~\ref{tab:capacidades-movil} resume las dos capacidades del
+dispositivo exigidas por la guía y su estado real de funcionamiento.
+
+\begin{table}[htbp]
+\centering
+\caption{Capacidades del dispositivo utilizadas}
+\label{tab:capacidades-movil}
+\begin{tabular}{lll}
+\toprule
+Capacidad & Uso & Estado \\
+\midrule
+Cámara (CameraX + ML Kit) & Escaneo QR de laboratorio & Funcional \\
+Notificaciones push (FCM) & Alertas de incidentes/reservas & Pendiente de credencial \\
+\bottomrule
+\end{tabular}
+\end{table}
