@@ -6,9 +6,11 @@
 La estrategia de pruebas del sistema cubre cuatro niveles. Las pruebas
 unitarias emplean JUnit~5 y Mockito para el backend, aislando cada
 componente de sus dependencias mediante dobles de prueba de los puertos
-de dominio, sin necesitar infraestructura real. Las pruebas de
-integración verifican la persistencia contra una instancia real de
-CockroachDB desplegada en Docker Compose. Las pruebas de contrato,
+de dominio, sin necesitar infraestructura real. Las pruebas de integración verifican la persistencia contra instancias reales de
+CockroachDB. En \texttt{auth-service} se emplea Testcontainers para levantar
+dinámicamente una instancia aislada durante la ejecución de las pruebas,
+mientras otros escenarios de integración utilizan la infraestructura definida
+en Docker Compose. Las pruebas de contrato,
 implementadas con Pact, validan la compatibilidad entre los
 microservicios consumidores y proveedores de la API interna. Las
 pruebas de extremo a extremo emplean Playwright para la aplicación web,
@@ -36,8 +38,8 @@ Microservicio & Cobertura & Tests \\
 academico-laboratorios-service & $\geq$ 70\,\% & 254 \\
 usuarios-service & Por confirmar & --- \\
 reservas-solicitudes-service & $>80\,\%$ líneas; $>48\,\%$ ramas & 110 \\
-auth-service & Por confirmar & --- \\
-api-gateway & Por confirmar & --- \\
+auth-service & $\geq$ 70\,\% & 30 \\
+api-gateway & 78.70\,\% & 11 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -59,6 +61,18 @@ CockroachDB. JaCoCo registró más del 80\,\% de líneas y más del
 48\,\% de ramas; el umbral se comprueba durante \texttt{mvn verify} para
 detectar regresiones futuras.
 
+En \texttt{auth-service}, la suite completa ejecutó 30 pruebas sin fallos,
+errores ni omisiones. Además, se incorporó una prueba de integración del
+repositorio utilizando Testcontainers con una instancia real de CockroachDB,
+sobre la cual Flyway aplica las migraciones antes de validar operaciones de
+persistencia y lectura mediante JPA.
+
+En \texttt{api-gateway}, JaCoCo registró una cobertura de líneas del
+78.70\,\% (85 de 108 líneas), superando el umbral mínimo del 70\,\%.
+La ejecución de \texttt{mvn clean verify} completó 11 pruebas sin fallos
+ni errores, y la regla \texttt{jacoco:check} quedó integrada en la fase
+\texttt{verify} para impedir regresiones de cobertura.
+
 En la web, las pruebas unitarias, ESLint y la construcción de producción
 finalizaron correctamente. El flujo E2E de reservas obtuvo dos ejecuciones
 consecutivas de 2/2 casos aprobados, sin reintentos automáticos, y la suite
@@ -67,6 +81,13 @@ sin fallos ni omisiones, Android Lint terminó con cero errores y se generó
 el APK de depuración. La validación visual en dispositivo quedó fuera de
 la evidencia automatizada por no existir emulador o dispositivo disponible
 en el entorno de ejecución.
+
+Las pruebas de contrato con Pact incluyen además el flujo de autenticación
+\texttt{POST /api/v1/auth/login}. El contrato valida la estructura de la
+solicitud, la respuesta HTTP exitosa, los tokens de acceso y renovación,
+su tiempo de expiración y la información del usuario autenticado, incluidos
+roles, permisos y tipos de perfil. La suite de contratos ejecutó seis pruebas
+sin fallos ni errores.
 
 \subsection{Pipeline de integración continua}
 
