@@ -15,7 +15,7 @@ test.describe('Autenticación web', () => {
     await login(page)
 
     await expect(page).toHaveURL(/\/main$/)
-    await expect(page.getByText('Monitoreo de laboratorios')).toBeVisible()
+    await expect(page.getByRole('navigation', { name: 'Navegación principal' })).toBeVisible()
     await expect(page.getByRole('button', { name: 'Cerrar sesión' })).toBeVisible()
   })
 
@@ -57,6 +57,6 @@ test.describe('Autenticación web', () => {
     await page.reload()
 
     await expect(page).toHaveURL(/\/main$/)
-    await expect(page.getByText('Monitoreo de laboratorios')).toBeVisible()
+    await expect(page.getByRole('navigation', { name: 'Navegación principal' })).toBeVisible()
   })
 })
