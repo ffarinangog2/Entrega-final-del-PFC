@@ -16,13 +16,31 @@ separación de responsabilidades del backend. La configuración de
 
 \subsection{Autenticación segura}
 
-El token de sesión se almacena mediante
-\texttt{EncryptedAuthStorage.kt}, apoyado en la librería
-\texttt{androidx.security:security-crypto}, que cifra el contenido de
-\texttt{SharedPreferences} en reposo. El \texttt{AuthViewModel}
-gestiona el flujo de inicio de sesión contra el
-\texttt{auth-service} y coordina la renovación automática del token
-cuando expira, sin requerir intervención del usuario.
+La autenticación móvil consume el mismo flujo de acceso expuesto por el
+API Gateway y utilizado por la aplicación web. El estado de sesión se
+gestiona desde \texttt{AuthViewModel}, que coordina el inicio de sesión,
+la persistencia de credenciales, la recuperación de la sesión existente
+y el cierre de sesión.
+
+Los tokens se almacenan mediante \texttt{EncryptedAuthStorage.kt},
+apoyado en \texttt{androidx.security:security-crypto}, evitando guardar
+credenciales sensibles en texto plano. El \emph{access token} se adjunta
+automáticamente a las solicitudes protegidas mediante el cliente HTTP
+compartido.
+
+Cuando una petición protegida devuelve \texttt{401}, el mecanismo de
+renovación utiliza el \emph{refresh token} para solicitar un nuevo par
+de tokens. Las renovaciones concurrentes se coordinan para evitar múltiples
+peticiones de \emph{refresh} ante varios errores simultáneos, y la petición
+original se reintenta como máximo una vez. Una respuesta \texttt{403} no
+activa la renovación, ya que representa falta de autorización y no expiración
+de la sesión.
+
+Los nuevos tokens generados se almacenan nuevamente de forma cifrada. Si
+la renovación falla o la sesión deja de ser válida, las credenciales se
+eliminan y la navegación retorna a la pantalla de inicio de sesión. De esta
+forma, la aplicación mantiene autenticación persistente de manera controlada,
+sin conservar tokens en almacenamiento inseguro.
 
 \subsection{Módulo de incidentes y notificaciones}
 
