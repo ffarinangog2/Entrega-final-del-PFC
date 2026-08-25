@@ -30,6 +30,7 @@
         <java.version>21</java.version>
         <springdoc.version>2.8.9</springdoc.version>
         <testcontainers.version>2.0.5</testcontainers.version>
+        <pact.version>4.6.17</pact.version>
     </properties>
 
     <dependencyManagement>
@@ -122,6 +123,14 @@
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>testcontainers-cockroachdb</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Contract testing (Pact provider) -->
+        <dependency>
+            <groupId>au.com.dius.pact.provider</groupId>
+            <artifactId>junit5spring</artifactId>
+            <version>${pact.version}</version>
             <scope>test</scope>
         </dependency>
 

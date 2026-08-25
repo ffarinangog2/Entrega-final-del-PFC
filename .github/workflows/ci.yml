@@ -99,8 +99,8 @@ jobs:
         run: |
           echo "JWT_SECRET=$(openssl rand -base64 48)" >> "$GITHUB_ENV"
 
-      - name: Generate Reservas consumer Pact
-        if: ${{ matrix.service == 'services/reservas-solicitudes-service' }}
+      - name: Generate consumer Pacts
+        if: ${{ matrix.service == 'services/reservas-solicitudes-service' || matrix.service == 'services/usuarios-service' }}
         run: >-
           mvn --batch-mode
           -f tests/contract/pom.xml
