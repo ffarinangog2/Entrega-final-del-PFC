@@ -10,6 +10,7 @@ public class Reserva {
     private UUID id;
     private UUID solicitudId;
     private UUID laboratorioId;
+    private UUID pisoId;
     private UUID responsableId;
     private LocalDate fechaReserva;
     private LocalTime horaInicio;
@@ -24,6 +25,7 @@ public class Reserva {
     public UUID getId() { return id; } public void setId(UUID v) { id=v; }
     public UUID getSolicitudId() { return solicitudId; } public void setSolicitudId(UUID v) { solicitudId=v; }
     public UUID getLaboratorioId() { return laboratorioId; } public void setLaboratorioId(UUID v) { laboratorioId=v; }
+    public UUID getPisoId() { return pisoId; } public void setPisoId(UUID v) { pisoId=v; }
     public UUID getResponsableId() { return responsableId; } public void setResponsableId(UUID v) { responsableId=v; }
     public LocalDate getFechaReserva() { return fechaReserva; } public void setFechaReserva(LocalDate v) { fechaReserva=v; }
     public LocalTime getHoraInicio() { return horaInicio; } public void setHoraInicio(LocalTime v) { horaInicio=v; }

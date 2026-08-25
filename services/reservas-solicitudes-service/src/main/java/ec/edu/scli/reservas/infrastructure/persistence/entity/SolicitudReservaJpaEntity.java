@@ -14,6 +14,7 @@ public class SolicitudReservaJpaEntity {
     @Column(name = "solicitante_id", nullable = false) private UUID solicitanteId;
     @Column(name = "docente_id", nullable = false) private UUID docenteId;
     @Column(name = "laboratorio_id", nullable = false) private UUID laboratorioId;
+    @Column(name = "piso_id") private UUID pisoId;
     @Column(name = "materia_id", nullable = false) private UUID materiaId;
     @Column(name = "periodo_lectivo_id", nullable = false) private UUID periodoLectivoId;
     @Column(name = "fecha_reserva", nullable = false) private LocalDate fechaReserva;
@@ -24,6 +25,11 @@ public class SolicitudReservaJpaEntity {
     @Column(name = "observacion", columnDefinition = "TEXT") private String observacion;
     @Enumerated(EnumType.STRING) @Column(name = "estado", nullable = false, length = 30)
     private EstadoSolicitud estado = EstadoSolicitud.PENDIENTE;
+    @Column(name = "propuesta_fecha") private LocalDate propuestaFecha;
+    @Column(name = "propuesta_hora_inicio") private LocalTime propuestaHoraInicio;
+    @Column(name = "propuesta_hora_fin") private LocalTime propuestaHoraFin;
+    @Column(name = "propuesta_laboratorio_id") private UUID propuestaLaboratorioId;
+    @Column(name = "propuesta_observacion", columnDefinition = "TEXT") private String propuestaObservacion;
     @Column(name = "clave_idempotencia", length = 100) private String claveIdempotencia;
     @CreationTimestamp @Column(name = "creada_en", nullable = false, updatable = false) private Instant creadaEn;
     @UpdateTimestamp @Column(name = "actualizada_en", nullable = false) private Instant actualizadaEn;
@@ -36,6 +42,7 @@ public class SolicitudReservaJpaEntity {
     public UUID getSolicitanteId() { return solicitanteId; } public void setSolicitanteId(UUID v) { solicitanteId=v; }
     public UUID getDocenteId() { return docenteId; } public void setDocenteId(UUID v) { docenteId=v; }
     public UUID getLaboratorioId() { return laboratorioId; } public void setLaboratorioId(UUID v) { laboratorioId=v; }
+    public UUID getPisoId() { return pisoId; } public void setPisoId(UUID v) { pisoId=v; }
     public UUID getMateriaId() { return materiaId; } public void setMateriaId(UUID v) { materiaId=v; }
     public UUID getPeriodoLectivoId() { return periodoLectivoId; } public void setPeriodoLectivoId(UUID v) { periodoLectivoId=v; }
     public LocalDate getFechaReserva() { return fechaReserva; } public void setFechaReserva(LocalDate v) { fechaReserva=v; }
@@ -51,4 +58,9 @@ public class SolicitudReservaJpaEntity {
     public Long getVersion() { return version; } public void setVersion(Long v) { version=v; }
     public ReservaJpaEntity getReserva() { return reserva; } public void setReserva(ReservaJpaEntity v) { reserva=v; }
     public List<HistorialSolicitudJpaEntity> getHistorial() { return historial; } public void setHistorial(List<HistorialSolicitudJpaEntity> v) { historial=v; }
+    public LocalDate getPropuestaFecha() { return propuestaFecha; } public void setPropuestaFecha(LocalDate v) { propuestaFecha=v; }
+    public LocalTime getPropuestaHoraInicio() { return propuestaHoraInicio; } public void setPropuestaHoraInicio(LocalTime v) { propuestaHoraInicio=v; }
+    public LocalTime getPropuestaHoraFin() { return propuestaHoraFin; } public void setPropuestaHoraFin(LocalTime v) { propuestaHoraFin=v; }
+    public UUID getPropuestaLaboratorioId() { return propuestaLaboratorioId; } public void setPropuestaLaboratorioId(UUID v) { propuestaLaboratorioId=v; }
+    public String getPropuestaObservacion() { return propuestaObservacion; } public void setPropuestaObservacion(String v) { propuestaObservacion=v; }
 }

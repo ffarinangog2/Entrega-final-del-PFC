@@ -46,7 +46,7 @@ class ReservasViewModelTest {
         }
         val viewModel = ReservasViewModel(repository)
         runCurrent()
-        assertEquals("gateway_http_503", viewModel.uiState.value.error)
+        assertEquals("No fue posible procesar la solicitud.", viewModel.uiState.value.error)
     }
 
     @Test
@@ -108,7 +108,7 @@ class ReservasViewModelTest {
         completarFormulario(viewModel)
         viewModel.enviar()
         runCurrent()
-        assertEquals("gateway_http_400", viewModel.uiState.value.error)
+        assertEquals("No fue posible procesar la solicitud.", viewModel.uiState.value.error)
         assertFalse(viewModel.uiState.value.enviando)
     }
 

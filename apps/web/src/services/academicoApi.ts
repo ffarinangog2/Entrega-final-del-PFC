@@ -1,66 +1,21 @@
-const GATEWAY_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'
+import { apiRequest } from './apiClient'
 
 export type EstadoLaboratorio = 'DISPONIBLE' | 'OCUPADO' | 'MANTENIMIENTO' | 'INACTIVO'
+export interface Laboratorio { id: string; pisoId: string; codigo: string; nombre: string; capacidad: number; descripcion: string; estado: EstadoLaboratorio; activo: boolean; creadoEn: string; actualizadoEn: string }
+export interface Docente { id: string; perfilId: string; codigoDocente: string | null; activo: boolean }
+export interface Materia { id: string; carreraId: string; codigo: string; nombre: string; numeroHoras: number; activo: boolean }
+export interface PeriodoLectivo { id: string; codigo: string; nombre: string; fechaInicio: string; fechaFin: string; estado: 'PLANIFICADO' | 'ACTIVO' | 'FINALIZADO' }
+export interface HorarioAcademico { id: string; materiaId: string; periodoLectivoId: string; laboratorioId: string | null; docenteId: string; diaSemana: string; horaInicio: string; horaFin: string; paralelo: string; activo: boolean }
+interface PageResponse<T> { content: T[]; totalElements: number; totalPages: number }
 
-export interface Laboratorio {
-  id: string
-  pisoId: string
-  codigo: string
-  nombre: string
-  capacidad: number
-  descripcion: string
-  estado: EstadoLaboratorio
-  activo: boolean
-  creadoEn: string
-  actualizadoEn: string
-}
+export async function obtenerLaboratorios(): Promise<Laboratorio[]> { return (await apiRequest<PageResponse<Laboratorio>>('/api/v1/laboratorios?size=100')).content }
+export function obtenerLaboratoriosDisponibles() { return apiRequest<Laboratorio[]>('/api/v1/laboratorios/disponibles') }
+export function obtenerDocentePorPerfil(perfilId: string) { return apiRequest<Docente>(`/api/v1/docentes/perfil/${encodeURIComponent(perfilId)}`) }
+export async function obtenerDocentes(): Promise<Docente[]> { return (await apiRequest<PageResponse<Docente>>('/api/v1/docentes?size=100')).content }
+export function obtenerHorariosDocente(docenteId: string) { return apiRequest<HorarioAcademico[]>(`/api/v1/horarios/docente/${encodeURIComponent(docenteId)}`) }
+export async function obtenerMaterias(): Promise<Materia[]> { return (await apiRequest<PageResponse<Materia>>('/api/v1/materias?size=100')).content }
+export function obtenerPeriodoActual() { return apiRequest<PeriodoLectivo>('/api/v1/periodos-lectivos/actual') }
 
-interface PageResponse<T> {
-  content: T[]
-  totalElements: number
-  totalPages: number
-}
-
-export async function obtenerLaboratorios(): Promise<Laboratorio[]> {
-  const response = await fetch(`${GATEWAY_BASE_URL}/api/v1/laboratorios`)
-
-  if (!response.ok) {
-    throw new Error(`Error al obtener laboratorios: ${response.status}`)
-  }
-
-  const data: PageResponse<Laboratorio> = await response.json()
-  return data.content
-}
-
-export async function obtenerLaboratoriosDisponibles(): Promise<Laboratorio[]> {
-  const response = await fetch(`${GATEWAY_BASE_URL}/api/v1/laboratorios/disponibles`)
-
-  if (!response.ok) {
-    throw new Error(`Error al obtener laboratorios disponibles: ${response.status}`)
-  }
-
-  return response.json()
-
-}
-
-export interface PuntoSerie {
-  instante: string
-  valor: number
-}
-
-export interface SerieEstado {
-  estado: EstadoLaboratorio
-  puntos: PuntoSerie[]
-}
-
-export async function obtenerOcupacionHistorica(rangoMinutos = 60): Promise<SerieEstado[]> {
-  const response = await fetch(
-    `${GATEWAY_BASE_URL}/api/v1/laboratorios/metricas/ocupacion?rangoMinutos=${rangoMinutos}`
-  )
-
-  if (!response.ok) {
-    throw new Error(`Error al obtener ocupacion historica: ${response.status}`)
-  }
-
-  return response.json()
-}
+export interface PuntoSerie { instante: string; valor: number }
+export interface SerieEstado { estado: EstadoLaboratorio; puntos: PuntoSerie[] }
+export function obtenerOcupacionHistorica(rangoMinutos = 60) { return apiRequest<SerieEstado[]>(`/api/v1/laboratorios/metricas/ocupacion?rangoMinutos=${rangoMinutos}`) }

@@ -10,6 +10,14 @@ import retrofit2.http.Path
 import retrofit2.http.Query
 
 interface ReservasApi {
+    @GET("api/v1/solicitudes")
+    suspend fun listarSolicitudes(@Query("pagina") pagina: Int = 0, @Query("tamanio") tamanio: Int = 20): Response<PaginaDto<SolicitudReservaDto>>
+
+    @GET("api/v1/solicitudes/{id}")
+    suspend fun obtenerSolicitud(@Path("id") id: String): Response<SolicitudReservaDto>
+
+    @GET("api/v1/solicitudes/{id}/historial")
+    suspend fun historial(@Path("id") id: String, @Query("pagina") pagina: Int = 0, @Query("tamanio") tamanio: Int = 50): Response<PaginaDto<HistorialDto>>
     @GET("api/v1/reservas")
     suspend fun listarReservas(
         @Query("pagina") pagina: Int,
@@ -42,6 +50,24 @@ interface ReservasApi {
         @Path("id") id: String,
         @Body request: CancelarReservaDto,
     ): Response<ReservaDto>
+
+    @POST("api/v1/solicitudes/{id}/revision")
+    suspend fun revision(@Path("id") id: String): Response<SolicitudReservaDto>
+
+    @POST("api/v1/solicitudes/{id}/aprobar")
+    suspend fun aprobar(@Path("id") id: String, @Header("Idempotency-Key") key: String, @Body body: AprobarSolicitudDto): Response<ReservaDto>
+
+    @POST("api/v1/solicitudes/{id}/rechazar")
+    suspend fun rechazar(@Path("id") id: String, @Body body: ComentarioDto): Response<SolicitudReservaDto>
+
+    @POST("api/v1/solicitudes/{id}/propuesta")
+    suspend fun proponer(@Path("id") id: String, @Body body: PropuestaDto): Response<SolicitudReservaDto>
+
+    @POST("api/v1/solicitudes/{id}/propuesta/aceptar")
+    suspend fun aceptarPropuesta(@Path("id") id: String, @Body body: ComentarioDto): Response<SolicitudReservaDto>
+
+    @POST("api/v1/solicitudes/{id}/propuesta/rechazar")
+    suspend fun rechazarPropuesta(@Path("id") id: String, @Body body: ComentarioDto): Response<SolicitudReservaDto>
 
     @GET("api/v1/disponibilidad/laboratorios/{laboratorioId}")
     suspend fun consultarDisponibilidad(

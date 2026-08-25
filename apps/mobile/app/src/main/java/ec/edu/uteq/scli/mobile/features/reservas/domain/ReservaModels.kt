@@ -15,6 +15,15 @@ data class Reserva(
     val version: Long,
 )
 
+data class HistorialSolicitud(
+    val id: String,
+    val estadoAnterior: String?,
+    val estadoNuevo: String,
+    val usuarioId: String,
+    val comentario: String?,
+    val creadoEn: String,
+)
+
 data class SolicitudReserva(
     val id: String,
     val solicitanteId: String,
@@ -33,6 +42,11 @@ data class SolicitudReserva(
     val creadaEn: String,
     val actualizadaEn: String,
     val version: Long,
+    val propuestaFecha: String? = null,
+    val propuestaHoraInicio: String? = null,
+    val propuestaHoraFin: String? = null,
+    val propuestaLaboratorioId: String? = null,
+    val propuestaObservacion: String? = null,
 )
 
 data class Disponibilidad(

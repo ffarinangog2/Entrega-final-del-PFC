@@ -1,6 +1,8 @@
 package ec.edu.scli.reservas.client;
 
 import ec.edu.scli.reservas.client.dto.PerfilExternoResponse;
+import ec.edu.scli.reservas.client.dto.ContextoInstitucionalExternoResponse;
+import ec.edu.scli.reservas.client.dto.DocenteExternoResponse;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -35,6 +37,24 @@ public class UsuariosClient {
     public boolean existePerfilActivo(UUID perfilId) {
         PerfilExternoResponse response = obtenerPerfil(perfilId);
         return response != null && response.existe() && response.activo();
+    }
+
+    public ContextoInstitucionalExternoResponse obtenerContextoInstitucional(UUID perfilId) {
+        return executeWithReadRetries(() -> restClient.get()
+                .uri("/api/v1/internal/perfiles/{perfilId}/contexto-institucional", perfilId)
+                .retrieve().body(ContextoInstitucionalExternoResponse.class));
+    }
+
+    public DocenteExternoResponse obtenerDocentePorPerfil(UUID perfilId) {
+        return executeWithReadRetries(() -> restClient.get()
+                .uri("/api/v1/internal/docentes/perfil/{perfilId}", perfilId)
+                .retrieve().body(DocenteExternoResponse.class));
+    }
+
+    public DocenteExternoResponse obtenerDocentePorId(UUID docenteId) {
+        return executeWithReadRetries(() -> restClient.get()
+                .uri("/api/v1/internal/docentes/{docenteId}", docenteId)
+                .retrieve().body(DocenteExternoResponse.class));
     }
 
     public boolean existeDocenteActivo(UUID perfilId) {

@@ -12,6 +12,8 @@ import ec.edu.uteq.scli.mobile.features.reservas.domain.NuevaSolicitudReserva
 import ec.edu.uteq.scli.mobile.features.reservas.domain.Pagina
 import ec.edu.uteq.scli.mobile.features.reservas.domain.Reserva
 import ec.edu.uteq.scli.mobile.features.reservas.domain.SolicitudReserva
+import ec.edu.uteq.scli.mobile.features.reservas.domain.HistorialSolicitud
+import ec.edu.uteq.scli.mobile.features.reservas.data.remote.HistorialDto
 
 internal fun ReservaDto.toDomain() = Reserva(
     id, solicitudId, laboratorioId, responsableId, fechaReserva, horaInicio, horaFin,
@@ -21,7 +23,12 @@ internal fun ReservaDto.toDomain() = Reserva(
 internal fun SolicitudReservaDto.toDomain() = SolicitudReserva(
     id, solicitanteId, docenteId, laboratorioId, materiaId, periodoLectivoId,
     fechaReserva, horaInicio, horaFin, numeroParticipantes, motivo, observacion,
-    estado, reservaId, creadaEn, actualizadaEn, version,
+    estado, reservaId, creadaEn, actualizadaEn, version, propuestaFecha, propuestaHoraInicio,
+    propuestaHoraFin, propuestaLaboratorioId, propuestaObservacion,
+)
+
+internal fun HistorialDto.toDomain() = HistorialSolicitud(
+    id, estadoAnterior, estadoNuevo, usuarioId, comentario, creadoEn,
 )
 
 internal fun DisponibilidadDto.toDomain() = Disponibilidad(

@@ -74,6 +74,27 @@ class CockroachFlywayIntegrationTest {
     }
 
     @Test
+    void debeAplicarMigracionDeAdscripcionesConRestriccionesEIndices() {
+        Integer version = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM flyway_schema_history WHERE version = '5' AND success",
+                Integer.class);
+        Integer tabla = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM information_schema.tables "
+                        + "WHERE table_schema = current_schema() "
+                        + "AND table_name = 'adscripciones_institucionales'",
+                Integer.class);
+        Integer indices = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM pg_indexes WHERE schemaname = current_schema() "
+                        + "AND tablename = 'adscripciones_institucionales'",
+                Integer.class);
+
+        assertEquals(1, version);
+        assertEquals(1, tabla);
+        assertNotNull(indices);
+        assertTrue(indices >= 3);
+    }
+
+    @Test
     @Transactional
     void adaptadorPerfil_debeGuardarYLeerPerfilConCockroach() {
 

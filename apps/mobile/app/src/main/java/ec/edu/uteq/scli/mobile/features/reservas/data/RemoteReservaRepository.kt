@@ -15,6 +15,11 @@ import ec.edu.uteq.scli.mobile.features.reservas.domain.Pagina
 import ec.edu.uteq.scli.mobile.features.reservas.domain.Reserva
 import ec.edu.uteq.scli.mobile.features.reservas.domain.ReservaRepository
 import ec.edu.uteq.scli.mobile.features.reservas.domain.SolicitudReserva
+import ec.edu.uteq.scli.mobile.features.reservas.domain.HistorialSolicitud
+import ec.edu.uteq.scli.mobile.features.reservas.domain.PropuestaAlternativa
+import ec.edu.uteq.scli.mobile.features.reservas.data.remote.AprobarSolicitudDto
+import ec.edu.uteq.scli.mobile.features.reservas.data.remote.ComentarioDto
+import ec.edu.uteq.scli.mobile.features.reservas.data.remote.PropuestaDto
 import retrofit2.Response
 import java.io.IOException
 
@@ -22,6 +27,14 @@ class RemoteReservaRepository(
     private val api: ReservasApi,
     private val reservaDao: ReservaDao,
 ) : ReservaRepository {
+    override suspend fun listarSolicitudes(): NetworkResult<Pagina<SolicitudReserva>> =
+        request({ api.listarSolicitudes() }) { it.toDomain { dto -> dto.toDomain() } }
+
+    override suspend fun obtenerSolicitud(id: String): NetworkResult<SolicitudReserva> =
+        request({ api.obtenerSolicitud(id) }) { it.toDomain() }
+
+    override suspend fun historial(id: String): NetworkResult<Pagina<HistorialSolicitud>> =
+        request({ api.historial(id) }) { it.toDomain { dto -> dto.toDomain() } }
     override suspend fun listar(pagina: Int, tamanio: Int): NetworkResult<Pagina<Reserva>> = try {
         val response = api.listarReservas(pagina, tamanio)
         val body = response.body()
@@ -79,6 +92,21 @@ class RemoteReservaRepository(
 
     override suspend fun cancelarReserva(id: String, motivo: String): NetworkResult<Reserva> =
         request({ api.cancelarReserva(id, CancelarReservaDto(motivo)) }) { it.toDomain() }
+
+    override suspend fun ponerEnRevision(id: String): NetworkResult<SolicitudReserva> =
+        request({ api.revision(id) }) { it.toDomain() }
+
+    override suspend fun aprobar(id: String, responsableId: String, comentario: String?, key: String): NetworkResult<Reserva> =
+        request({ api.aprobar(id, key, AprobarSolicitudDto(responsableId, comentario)) }) { it.toDomain() }
+
+    override suspend fun rechazar(id: String, comentario: String): NetworkResult<SolicitudReserva> =
+        request({ api.rechazar(id, ComentarioDto(comentario)) }) { it.toDomain() }
+
+    override suspend fun proponer(id: String, propuesta: PropuestaAlternativa): NetworkResult<SolicitudReserva> =
+        request({ api.proponer(id, PropuestaDto(propuesta.laboratorioId, propuesta.fecha, propuesta.horaInicio, propuesta.horaFin, propuesta.observacion)) }) { it.toDomain() }
+
+    override suspend fun responderPropuesta(id: String, aceptar: Boolean, comentario: String?): NetworkResult<SolicitudReserva> =
+        request({ if (aceptar) api.aceptarPropuesta(id, ComentarioDto(comentario)) else api.rechazarPropuesta(id, ComentarioDto(comentario)) }) { it.toDomain() }
 
     override suspend fun consultarDisponibilidad(
         laboratorioId: String,

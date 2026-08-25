@@ -3,12 +3,15 @@ package ec.edu.scli.usuarios.presentation.controller;
 import ec.edu.scli.usuarios.presentation.dto.docente.DocenteRequest;
 import ec.edu.scli.usuarios.presentation.dto.docente.DocenteResponse;
 import ec.edu.scli.usuarios.application.usecase.DocenteService;
+import ec.edu.scli.usuarios.security.JwtPrincipal;
 
 import jakarta.validation.Valid;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
@@ -77,8 +80,16 @@ public class DocenteController {
 
     @GetMapping("/perfil/{perfilId}")
     public ResponseEntity<DocenteResponse> obtenerPorPerfilId(
-            @PathVariable UUID perfilId
+            @PathVariable UUID perfilId,
+            Authentication authentication
     ) {
+        boolean puedeLeerUsuarios = authentication.getAuthorities().stream()
+                .anyMatch(authority -> "USUARIO_LEER".equals(authority.getAuthority()));
+        boolean esPropio = authentication.getPrincipal() instanceof JwtPrincipal principal
+                && perfilId.equals(principal.perfilId());
+        if (!puedeLeerUsuarios && !esPropio) {
+            throw new AccessDeniedException("No puede consultar el docente de otro perfil");
+        }
 
         DocenteResponse docente =
                 docenteService.obtenerPorPerfilId(perfilId);

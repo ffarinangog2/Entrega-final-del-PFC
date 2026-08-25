@@ -65,8 +65,8 @@ class ControllerDelegationTest {
         PaginaResponse<SolicitudReservaResponse> pagina = new PaginaResponse<>(List.of(), 0, 10, 0, 0, true, true);
         PaginaResponse<HistorialSolicitudResponse> historial = new PaginaResponse<>(List.of(), 0, 10, 0, 0, true, true);
         when(service.crear(any(), anyString(), any())).thenReturn(solicitud);
-        when(service.listar(any(), any(), any(), any(), anyInt(), anyInt())).thenReturn(pagina);
-        when(service.buscarPorId(any())).thenReturn(solicitud);
+        when(service.listarAutorizado(any(), any(), any(), any(), anyInt(), anyInt(), any())).thenReturn(pagina);
+        when(service.buscarPorIdAutorizado(any(), any())).thenReturn(solicitud);
         when(service.listarPorSolicitante(any(), anyInt(), anyInt())).thenReturn(pagina);
         when(service.listarPorEstado(any(), anyInt(), anyInt())).thenReturn(pagina);
         when(service.actualizar(any(), any(), any())).thenReturn(solicitud);

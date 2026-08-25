@@ -5,6 +5,8 @@ import ec.edu.scli.reservas.presentation.dto.request.AprobarSolicitudRequest;
 import ec.edu.scli.reservas.presentation.dto.request.CancelarSolicitudRequest;
 import ec.edu.scli.reservas.presentation.dto.request.CrearSolicitudReservaRequest;
 import ec.edu.scli.reservas.presentation.dto.request.RechazarSolicitudRequest;
+import ec.edu.scli.reservas.presentation.dto.request.ProponerAlternativaRequest;
+import ec.edu.scli.reservas.presentation.dto.request.ResponderPropuestaRequest;
 import ec.edu.scli.reservas.presentation.dto.response.HistorialSolicitudResponse;
 import ec.edu.scli.reservas.presentation.dto.response.PaginaResponse;
 import ec.edu.scli.reservas.presentation.dto.response.ReservaResponse;
@@ -24,7 +26,11 @@ public interface SolicitudReservaService {
                                                      UUID laboratorioId, LocalDate fecha, int pagina,
                                                      int tamanio);
 
+    PaginaResponse<SolicitudReservaResponse> listarAutorizado(EstadoSolicitud estado, UUID solicitanteId,
+            UUID laboratorioId, LocalDate fecha, int pagina, int tamanio, UUID actorId);
+
     SolicitudReservaResponse buscarPorId(UUID id);
+    SolicitudReservaResponse buscarPorIdAutorizado(UUID id, UUID actorId);
 
     PaginaResponse<SolicitudReservaResponse> listarPorSolicitante(UUID solicitanteId, int pagina, int tamanio);
 
@@ -41,6 +47,10 @@ public interface SolicitudReservaService {
     SolicitudReservaResponse rechazar(UUID id, RechazarSolicitudRequest request, UUID usuarioAutenticadoId);
 
     SolicitudReservaResponse cancelar(UUID id, CancelarSolicitudRequest request, UUID usuarioAutenticadoId);
+
+    SolicitudReservaResponse proponerAlternativa(UUID id, ProponerAlternativaRequest request, UUID actorId);
+    SolicitudReservaResponse aceptarPropuesta(UUID id, ResponderPropuestaRequest request, UUID actorId);
+    SolicitudReservaResponse rechazarPropuesta(UUID id, ResponderPropuestaRequest request, UUID actorId);
 
     PaginaResponse<HistorialSolicitudResponse> obtenerHistorial(UUID solicitudId, int pagina, int tamanio);
 }

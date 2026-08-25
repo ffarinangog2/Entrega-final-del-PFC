@@ -114,6 +114,33 @@ class ReservasConsumerPactTest {
                 .toPact(V4Pact.class);
     }
 
+    @Pact(consumer = "scli-contract-tests")
+    V4Pact proponerAlternativaProtegida(PactDslWithProvider builder) {
+        PactDslJsonBody respuesta = new PactDslJsonBody()
+                .uuid("id", SOLICITUD_ID)
+                .stringValue("estado", "PROPUESTA")
+                .stringValue("propuestaFecha", "2026-08-21")
+                .stringValue("propuestaHoraInicio", "12:00:00")
+                .stringValue("propuestaHoraFin", "14:00:00")
+                .uuid("propuestaLaboratorioId", LABORATORIO_ID)
+                .stringValue("propuestaObservacion", "Horario alternativo");
+        PactDslJsonBody solicitud = new PactDslJsonBody()
+                .stringValue("fecha", "2026-08-21")
+                .stringValue("horaInicio", "12:00:00")
+                .stringValue("horaFin", "14:00:00")
+                .uuid("laboratorioId", LABORATORIO_ID)
+                .stringValue("observacion", "Horario alternativo");
+        return builder.given("existe una solicitud en revision del piso administrado")
+                .uponReceiving("una propuesta protegida de horario alternativo")
+                .path("/api/v1/solicitudes/" + SOLICITUD_ID + "/propuesta").method("POST")
+                .headers(Map.of("Authorization", "Bearer pact-access-token",
+                        "Content-Type", "application/json"))
+                .body(solicitud)
+                .willRespondWith().status(200)
+                .headers(Map.of("Content-Type", "application/json")).body(respuesta)
+                .toPact(V4Pact.class);
+    }
+
     @Test
     @PactTestFor(pactMethod = "listarReservas")
     void listaReservasConLaEstructuraPaginadaReal(MockServer mockServer) throws Exception {
@@ -169,5 +196,24 @@ class ReservasConsumerPactTest {
                 .send(request, HttpResponse.BodyHandlers.ofString());
         assertEquals(200, response.statusCode());
         assertTrue(response.body().contains("\"estado\":\"CANCELADA\""));
+    }
+
+    @Test
+    @PactTestFor(pactMethod = "proponerAlternativaProtegida")
+    void proponeAlternativaConBearerYContratoAditivo(MockServer mockServer) throws Exception {
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(mockServer.getUrl() + "/api/v1/solicitudes/" + SOLICITUD_ID + "/propuesta"))
+                .header("Authorization", "Bearer pact-access-token")
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString("""
+                        {"fecha":"2026-08-21","horaInicio":"12:00:00","horaFin":"14:00:00",
+                         "laboratorioId":"33333333-3333-3333-3333-333333333333",
+                         "observacion":"Horario alternativo"}
+                        """))
+                .build();
+        HttpResponse<String> response = HttpClient.newHttpClient()
+                .send(request, HttpResponse.BodyHandlers.ofString());
+        assertEquals(200, response.statusCode());
+        assertTrue(response.body().contains("\"estado\":\"PROPUESTA\""));
     }
 }

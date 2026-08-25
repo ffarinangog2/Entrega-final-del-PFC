@@ -5,6 +5,7 @@ import java.util.UUID;
 /** Respuesta externa con la disponibilidad base de un laboratorio. */
 public record LaboratorioExternoResponse(
         UUID laboratorioId,
+        UUID pisoId,
         boolean existe,
         boolean activo,
         String estado,

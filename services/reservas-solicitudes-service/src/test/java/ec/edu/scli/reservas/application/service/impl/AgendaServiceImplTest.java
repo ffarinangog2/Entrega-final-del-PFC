@@ -2,6 +2,7 @@ package ec.edu.scli.reservas.application.service.impl;
 
 import ec.edu.scli.reservas.client.AcademicoLaboratoriosClient;
 import ec.edu.scli.reservas.client.dto.LaboratorioExternoResponse;
+import ec.edu.scli.reservas.application.service.PoliticaAmbitoLaboratorio;
 import ec.edu.scli.reservas.domain.model.EstadoReserva;
 import ec.edu.scli.reservas.domain.model.Reserva;
 import ec.edu.scli.reservas.domain.port.out.ReservaRepositoryPort;
@@ -31,6 +32,7 @@ class AgendaServiceImplTest {
     private BloqueoAgendaRepositoryPort bloqueos;
     private AcademicoLaboratoriosClient academico;
     private TransactionTemplate transactions;
+    private PoliticaAmbitoLaboratorio politica;
     private AgendaServiceImpl service;
     private final UUID laboratorioId = UUID.randomUUID();
     private final UUID usuarioId = UUID.randomUUID();
@@ -41,10 +43,12 @@ class AgendaServiceImplTest {
         bloqueos = mock(BloqueoAgendaRepositoryPort.class);
         academico = mock(AcademicoLaboratoriosClient.class);
         transactions = mock(TransactionTemplate.class);
+        politica = mock(PoliticaAmbitoLaboratorio.class);
         service = new AgendaServiceImpl(
-                reservas, bloqueos, new BloqueoAgendaMapper(), academico, transactions);
+                reservas, bloqueos, new BloqueoAgendaMapper(), academico, transactions, politica);
         when(academico.obtenerLaboratorio(laboratorioId))
-                .thenReturn(new LaboratorioExternoResponse(laboratorioId, true, true, "ACTIVO", 30));
+                .thenReturn(new LaboratorioExternoResponse(
+                        laboratorioId, UUID.randomUUID(), true, true, "ACTIVO", 30));
         when(transactions.execute(any())).thenAnswer(invocation -> {
             TransactionCallback<?> callback = invocation.getArgument(0);
             return callback.doInTransaction(mock(TransactionStatus.class));
@@ -116,7 +120,8 @@ class AgendaServiceImplTest {
                 laboratorioId, LocalDate.now(), LocalTime.of(10, 0), LocalTime.of(9, 0), "x");
         assertThrows(IllegalArgumentException.class, () -> service.crearBloqueo(horarioInvalido, usuarioId));
         when(academico.obtenerLaboratorio(laboratorioId))
-                .thenReturn(new LaboratorioExternoResponse(laboratorioId, false, false, null, null));
+                .thenReturn(new LaboratorioExternoResponse(
+                        laboratorioId, null, false, false, null, null));
         assertThrows(IllegalArgumentException.class, () -> service.crearBloqueo(request(), usuarioId));
     }
 

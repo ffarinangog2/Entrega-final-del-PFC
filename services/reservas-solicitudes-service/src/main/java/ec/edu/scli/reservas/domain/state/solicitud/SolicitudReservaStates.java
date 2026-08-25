@@ -6,6 +6,7 @@ public final class SolicitudReservaStates {
     private static final SolicitudReservaState PENDIENTE = new PendienteState();
     private static final SolicitudReservaState EN_REVISION = new EnRevisionState();
     private static final SolicitudReservaState APROBADA = new AprobadaState();
+    private static final SolicitudReservaState PROPUESTA = new PropuestaState();
     private static final SolicitudReservaState RECHAZADA = new RechazadaState();
     private static final SolicitudReservaState CANCELADA = new CanceladaState();
     private static final SolicitudReservaState EXPIRADA = new ExpiradaState();
@@ -16,6 +17,7 @@ public final class SolicitudReservaStates {
         return switch (estado) {
             case PENDIENTE -> PENDIENTE;
             case EN_REVISION -> EN_REVISION;
+            case PROPUESTA -> PROPUESTA;
             case APROBADA -> APROBADA;
             case RECHAZADA -> RECHAZADA;
             case CANCELADA -> CANCELADA;

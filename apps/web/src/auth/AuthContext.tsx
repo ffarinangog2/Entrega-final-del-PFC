@@ -8,6 +8,7 @@ import {
 import { login as loginRequest, refresh } from '../services/authApi'
 import type { AuthUser, LoginResponse } from '../types/auth'
 import { AuthContext } from './context'
+import { configureUnauthorizedHandler } from '../services/apiClient'
 
 const ACCESS_TOKEN_KEY = 'accessToken'
 const REFRESH_TOKEN_KEY = 'refreshToken'
@@ -32,9 +33,8 @@ function storeSession(response: LoginResponse) {
 }
 
 function restoreUser() {
-  const expiresAt = Number(sessionStorage.getItem(EXPIRES_AT_KEY))
   const storedUser = sessionStorage.getItem(USER_KEY)
-  if (!expiresAt || expiresAt <= Date.now() || !storedUser) {
+  if (!storedUser) {
     clearStoredSession()
     return null
   }
@@ -50,11 +50,6 @@ function restoreUser() {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [usuario, setUsuario] = useState<AuthUser | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-
-  useEffect(() => {
-    setUsuario(restoreUser())
-    setIsLoading(false)
-  }, [])
 
   const login = useCallback(async (username: string, password: string) => {
     const response = await loginRequest(username, password)
@@ -84,6 +79,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return false
     }
   }, [logout])
+
+  useEffect(() => {
+    const restored = restoreUser()
+    setUsuario(restored)
+    const expiresAt = Number(sessionStorage.getItem(EXPIRES_AT_KEY))
+    if (restored && (!expiresAt || expiresAt <= Date.now())) {
+      void refreshSession().finally(() => setIsLoading(false))
+      return
+    }
+    setIsLoading(false)
+  }, [refreshSession])
+
+  useEffect(() => {
+    configureUnauthorizedHandler(refreshSession)
+    return () => configureUnauthorizedHandler(null)
+  }, [refreshSession])
 
   const value = useMemo(
     () => ({

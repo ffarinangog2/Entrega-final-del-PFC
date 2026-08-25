@@ -8,4 +8,7 @@ public interface SolicitudReservaState {
     EstadoSolicitud aprobar();
     EstadoSolicitud rechazar();
     EstadoSolicitud cancelar();
+    EstadoSolicitud proponerAlternativa();
+    EstadoSolicitud aceptarPropuesta();
+    EstadoSolicitud rechazarPropuesta();
 }

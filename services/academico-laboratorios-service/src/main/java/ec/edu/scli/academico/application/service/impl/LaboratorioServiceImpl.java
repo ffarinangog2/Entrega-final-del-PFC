@@ -117,13 +117,14 @@ public class LaboratorioServiceImpl implements LaboratorioService {
         return laboratorioRepositoryPort.buscarPorId(id)
                 .map(laboratorio -> new LaboratorioDisponibilidadBaseResponse(
                         laboratorio.getId(),
+                        laboratorio.getPisoId(),
                         true,
                         laboratorio.isActivo(),
                         laboratorio.getEstado(),
                         laboratorio.getCapacidad()
                 ))
                 .orElseGet(() -> new LaboratorioDisponibilidadBaseResponse(
-                        id, false, false, null, null
+                        id, null, false, false, null, null
                 ));
     }
 

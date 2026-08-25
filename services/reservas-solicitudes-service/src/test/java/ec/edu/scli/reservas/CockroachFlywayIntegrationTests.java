@@ -8,13 +8,24 @@ import ec.edu.scli.reservas.domain.port.out.IdempotenciaAprobacionRepositoryPort
 import ec.edu.scli.reservas.domain.port.out.IdempotenciaCreacionSolicitudRepositoryPort;
 import ec.edu.scli.reservas.domain.port.out.ReservaRepositoryPort;
 import ec.edu.scli.reservas.domain.port.out.SolicitudReservaRepositoryPort;
+import ec.edu.scli.reservas.domain.port.out.AgendaMutexPort;
+import ec.edu.scli.reservas.application.service.SolicitudReservaService;
+import ec.edu.scli.reservas.application.service.PoliticaAmbitoLaboratorio;
+import ec.edu.scli.reservas.client.AcademicoLaboratoriosClient;
+import ec.edu.scli.reservas.client.dto.LaboratorioExternoResponse;
+import ec.edu.scli.reservas.domain.model.ActorAutenticado;
+import ec.edu.scli.reservas.presentation.dto.request.AprobarSolicitudRequest;
+import ec.edu.scli.reservas.presentation.dto.request.CancelarSolicitudRequest;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.dao.CannotAcquireLockException;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.testcontainers.containers.GenericContainer;
@@ -23,17 +34,28 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.UUID;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 @Testcontainers(disabledWithoutDocker = true)
 @SpringBootTest
 class CockroachFlywayIntegrationTests {
+
+    private final UUID actorId = UUID.randomUUID();
+
+    @MockitoBean
+    private PoliticaAmbitoLaboratorio politicaAmbito;
+    @MockitoBean
+    private AcademicoLaboratoriosClient academicoClient;
 
     @Container
     static final GenericContainer<?> COCKROACH =
@@ -67,6 +89,17 @@ class CockroachFlywayIntegrationTests {
     private EntityManager entityManager;
     @Autowired
     private TransactionTemplate transactionTemplate;
+    @Autowired
+    private AgendaMutexPort agendaMutex;
+    @Autowired
+    private SolicitudReservaService solicitudService;
+
+    @BeforeEach
+    void prepararDependenciasExternas() {
+        when(politicaAmbito.actor()).thenReturn(new ActorAutenticado(
+                actorId, Set.of("ROLE_ADMINISTRADOR", "SOLICITUD_APROBAR")));
+        when(politicaAmbito.validarGestion(any())).thenReturn(UUID.randomUUID());
+    }
 
     @Test
     void flywayCreaTodasLasTablasDelMicroservicio() {
@@ -82,12 +115,13 @@ class CockroachFlywayIntegrationTests {
                     'bloqueos_agenda',
                     'configuraciones_reserva',
                     'idempotencia_aprobaciones',
-                    'idempotencia_creacion_solicitudes'
+                    'idempotencia_creacion_solicitudes',
+                    'mutex_agenda'
                   )
                 """,
                 Integer.class);
 
-        assertThat(tablas).isEqualTo(7);
+        assertThat(tablas).isEqualTo(8);
 
         Integer clavesForaneas = jdbcTemplate.queryForObject(
                 """
@@ -102,6 +136,104 @@ class CockroachFlywayIntegrationTests {
                 """,
                 Integer.class);
         assertThat(clavesForaneas).isEqualTo(2);
+    }
+
+    @Test
+    void mutexAgendaSerializaDosTransaccionesDelMismoLaboratorioYFecha() throws Exception {
+        UUID laboratorioId = UUID.randomUUID();
+        LocalDate fecha = LocalDate.now().plusDays(3);
+        CountDownLatch primeraBloqueada = new CountDownLatch(1);
+        CountDownLatch liberarPrimera = new CountDownLatch(1);
+        CountDownLatch segundaTermino = new CountDownLatch(1);
+
+        try (var executor = Executors.newFixedThreadPool(2)) {
+            var primera = executor.submit(() -> transactionTemplate.executeWithoutResult(status -> {
+                agendaMutex.bloquear(laboratorioId, fecha);
+                primeraBloqueada.countDown();
+                try {
+                    assertThat(liberarPrimera.await(10, TimeUnit.SECONDS)).isTrue();
+                } catch (InterruptedException exception) {
+                    Thread.currentThread().interrupt();
+                    throw new IllegalStateException(exception);
+                }
+            }));
+            assertThat(primeraBloqueada.await(10, TimeUnit.SECONDS)).isTrue();
+            var segunda = executor.submit(() -> {
+                transactionTemplate.executeWithoutResult(
+                        status -> agendaMutex.bloquear(laboratorioId, fecha));
+                segundaTermino.countDown();
+            });
+
+            assertThat(segundaTermino.await(300, TimeUnit.MILLISECONDS)).isFalse();
+            liberarPrimera.countDown();
+            primera.get(10, TimeUnit.SECONDS);
+            segunda.get(10, TimeUnit.SECONDS);
+            assertThat(segundaTermino.getCount()).isZero();
+        }
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM mutex_agenda WHERE laboratorio_id = ? AND fecha = ?",
+                Integer.class, laboratorioId, fecha)).isEqualTo(1);
+    }
+
+    @Test
+    void dosSolicitudesSolapadasAprobadasConcurrentementeCreanComoMaximoUnaReserva() throws Exception {
+        UUID laboratorioId = UUID.randomUUID();
+        UUID pisoId = UUID.randomUUID();
+        LocalDate fecha = LocalDate.now().plusDays(4);
+        when(academicoClient.obtenerLaboratorio(laboratorioId)).thenReturn(
+                new LaboratorioExternoResponse(laboratorioId, pisoId, true, true, "ACTIVO", 40));
+
+        SolicitudReserva primeraSolicitud = nuevaSolicitud(laboratorioId);
+        primeraSolicitud.setEstado(EstadoSolicitud.EN_REVISION);
+        primeraSolicitud.setPisoId(pisoId);
+        primeraSolicitud.setFechaReserva(fecha);
+        SolicitudReserva segundaSolicitud = nuevaSolicitud(laboratorioId);
+        segundaSolicitud.setEstado(EstadoSolicitud.EN_REVISION);
+        segundaSolicitud.setPisoId(pisoId);
+        segundaSolicitud.setFechaReserva(fecha);
+        SolicitudReserva primeraParaGuardar = primeraSolicitud;
+        SolicitudReserva segundaParaGuardar = segundaSolicitud;
+        primeraSolicitud = transactionTemplate.execute(
+                status -> solicitudRepository.guardar(primeraParaGuardar));
+        segundaSolicitud = transactionTemplate.execute(
+                status -> solicitudRepository.guardar(segundaParaGuardar));
+
+        CountDownLatch preparadas = new CountDownLatch(2);
+        CountDownLatch iniciar = new CountDownLatch(1);
+        var resultados = new java.util.concurrent.CopyOnWriteArrayList<Object>();
+        SolicitudReserva solicitudUno = primeraSolicitud;
+        SolicitudReserva solicitudDos = segundaSolicitud;
+        try (var executor = Executors.newFixedThreadPool(2)) {
+            var aprobar = (java.util.function.Consumer<SolicitudReserva>) solicitud -> {
+                preparadas.countDown();
+                try {
+                    assertThat(iniciar.await(10, TimeUnit.SECONDS)).isTrue();
+                    resultados.add(solicitudService.aprobar(solicitud.getId(),
+                            new AprobarSolicitudRequest(actorId, "concurrente"),
+                            "aprobacion-" + solicitud.getId(), actorId));
+                } catch (Exception exception) {
+                    resultados.add(exception);
+                }
+            };
+            var primera = executor.submit(() -> aprobar.accept(solicitudUno));
+            var segunda = executor.submit(() -> aprobar.accept(solicitudDos));
+            assertThat(preparadas.await(10, TimeUnit.SECONDS)).isTrue();
+            iniciar.countDown();
+            primera.get(30, TimeUnit.SECONDS);
+            segunda.get(30, TimeUnit.SECONDS);
+        }
+
+        Long reservas = jdbcTemplate.queryForObject("""
+                SELECT count(*) FROM reservas
+                WHERE laboratorio_id = ? AND fecha_reserva = ?
+                  AND estado <> 'CANCELADA'
+                """, Long.class, laboratorioId, fecha);
+        assertThat(resultados).hasSize(2);
+        assertThat(resultados.stream().filter(
+                ec.edu.scli.reservas.presentation.dto.response.ReservaResponse.class::isInstance).count())
+                .withFailMessage("Resultados concurrentes: %s", resultados)
+                .isEqualTo(1L);
+        assertThat(reservas).isEqualTo(1L);
     }
 
     @Test
@@ -197,11 +329,11 @@ class CockroachFlywayIntegrationTests {
             var tarea = (java.util.concurrent.Callable<UUID>) () -> {
                 preparados.countDown();
                 assertThat(iniciar.await(10, TimeUnit.SECONDS)).isTrue();
-                return transactionTemplate.execute(status -> {
+                return ejecutarConRetrySerializable(() -> transactionTemplate.execute(status -> {
                     idempotenciaCreacionRepository.registrarSiAusente(clave, actorId, hash);
                     return idempotenciaCreacionRepository.buscarParaActualizar(clave)
                             .orElseThrow().actorId();
-                });
+                }));
             };
             var primera = executor.submit(tarea);
             var segunda = executor.submit(tarea);
@@ -214,6 +346,42 @@ class CockroachFlywayIntegrationTests {
         assertThat(jdbcTemplate.queryForObject(
                 "SELECT count(*) FROM idempotencia_creacion_solicitudes WHERE clave = ?",
                 Integer.class, clave)).isEqualTo(1);
+    }
+
+    @Test
+    void cancelacionPropietariaAprobadaEsAtomicaParaSolicitudYReserva() {
+        SolicitudReserva solicitud = transactionTemplate.execute(status ->
+                solicitudRepository.guardar(nuevaSolicitud(UUID.randomUUID())));
+        Reserva reserva = transactionTemplate.execute(status -> {
+            Reserva creada = reservaRepository.guardar(nuevaReserva(
+                    solicitud.getId(), solicitud.getLaboratorioId(), actorId));
+            solicitud.setReservaId(creada.getId());
+            solicitudRepository.guardar(solicitud);
+            return creada;
+        });
+
+        solicitudService.cancelar(solicitud.getId(),
+                new CancelarSolicitudRequest("Retiro docente"), solicitud.getSolicitanteId());
+
+        SolicitudReserva solicitudFinal = transactionTemplate.execute(status ->
+                solicitudRepository.buscarPorId(solicitud.getId()).orElseThrow());
+        Reserva reservaFinal = transactionTemplate.execute(status ->
+                reservaRepository.buscarPorId(reserva.getId()).orElseThrow());
+        assertThat(solicitudFinal.getEstado()).isEqualTo(EstadoSolicitud.CANCELADA);
+        assertThat(reservaFinal.getEstado()).isEqualTo(EstadoReserva.CANCELADA);
+    }
+
+    private <T> T ejecutarConRetrySerializable(Supplier<T> operacion) {
+        CannotAcquireLockException ultimo = null;
+        for (int intento = 1; intento <= 3; intento++) {
+            try {
+                return operacion.get();
+            } catch (CannotAcquireLockException exception) {
+                ultimo = exception;
+                Thread.yield();
+            }
+        }
+        throw ultimo;
     }
 
     @Test

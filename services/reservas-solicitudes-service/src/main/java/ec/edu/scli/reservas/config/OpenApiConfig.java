@@ -27,7 +27,7 @@ public class OpenApiConfig {
     OpenAPI reservasOpenApi() {
         return new OpenAPI()
                 .info(new Info().title("SCLI - Reservas y Solicitudes API")
-                        .version("1.0.0")
+                        .version("1.1.0")
                         .description("Gestión segura e idempotente de solicitudes, reservas y agenda"))
                 .servers(List.of(new Server().url("/").description("Servidor actual")))
                 .components(new Components().addSecuritySchemes(

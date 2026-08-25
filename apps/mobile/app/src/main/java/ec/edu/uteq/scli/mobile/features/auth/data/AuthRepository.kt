@@ -6,7 +6,9 @@ import java.io.IOException
 interface AuthRepository {
     suspend fun login(username: String, password: String): NetworkResult<AuthSession>
     fun restoreSession(): AuthSession?
+    suspend fun refreshSession(): AuthSession? = null
     fun logout()
+    fun onSessionExpired(listener: () -> Unit) {}
 }
 
 interface SecureTokenStorage {
@@ -20,6 +22,7 @@ class RemoteAuthRepository(
     private val storage: SecureTokenStorage,
     private val clock: () -> Long = { System.currentTimeMillis() },
 ) : AuthRepository {
+    private var sessionExpiredListener: () -> Unit = {}
     override suspend fun login(username: String, password: String): NetworkResult<AuthSession> = try {
         val response = api.login(LoginRequest(username, password))
         val body = response.body()
@@ -47,5 +50,32 @@ class RemoteAuthRepository(
 
     override fun restoreSession(): AuthSession? = storage.read()?.takeIf { it.expiresAtMillis > clock() }
 
+    override suspend fun refreshSession(): AuthSession? {
+        val current = storage.read() ?: return null
+        return try {
+            val response = api.refresh(RefreshRequest(current.refreshToken))
+            val body = response.body()
+            if (!response.isSuccessful || body == null) {
+                storage.clear()
+                sessionExpiredListener()
+                null
+            } else {
+                AuthSession(
+                    body.tokenType, body.accessToken, body.refreshToken,
+                    clock() + body.expiresIn * 1000, body.usuario,
+                ).also(storage::save)
+            }
+        } catch (_: IOException) {
+            storage.clear()
+            sessionExpiredListener()
+            null
+        } catch (_: RuntimeException) {
+            storage.clear()
+            sessionExpiredListener()
+            null
+        }
+    }
+
     override fun logout() = storage.clear()
+    override fun onSessionExpired(listener: () -> Unit) { sessionExpiredListener = listener }
 }

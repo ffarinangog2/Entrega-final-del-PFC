@@ -40,7 +40,8 @@ class LaboratorioServiceImplTest {
 
         UUID id = UUID.randomUUID();
 
-        Laboratorio laboratorio = Laboratorio.nuevo(UUID.randomUUID(), "LAB-001", "Laboratorio de Redes", 30, null);
+        UUID pisoId = UUID.randomUUID();
+        Laboratorio laboratorio = Laboratorio.nuevo(pisoId, "LAB-001", "Laboratorio de Redes", 30, null);
         laboratorio.setId(id);
         laboratorio.setEstado(EstadoLaboratorio.DISPONIBLE);
 
@@ -50,6 +51,7 @@ class LaboratorioServiceImplTest {
                 laboratorioService.obtenerDisponibilidadBase(id);
 
         assertThat(response.laboratorioId()).isEqualTo(id);
+        assertThat(response.pisoId()).isEqualTo(pisoId);
         assertThat(response.existe()).isTrue();
         assertThat(response.activo()).isTrue();
         assertThat(response.estado()).isEqualTo(EstadoLaboratorio.DISPONIBLE);
@@ -67,6 +69,7 @@ class LaboratorioServiceImplTest {
                 laboratorioService.obtenerDisponibilidadBase(idInexistente);
 
         assertThat(response.existe()).isFalse();
+        assertThat(response.pisoId()).isNull();
         assertThat(response.activo()).isFalse();
         assertThat(response.estado()).isNull();
         assertThat(response.capacidad()).isNull();

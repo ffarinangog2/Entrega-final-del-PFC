@@ -9,7 +9,9 @@ public final class EnRevisionState extends AbstractSolicitudReservaState {
     public EnRevisionState() {
         super(Map.of(
                 AccionSolicitud.APROBAR, EstadoSolicitud.APROBADA,
-                AccionSolicitud.RECHAZAR, EstadoSolicitud.RECHAZADA),
+                AccionSolicitud.RECHAZAR, EstadoSolicitud.RECHAZADA,
+                AccionSolicitud.CANCELAR, EstadoSolicitud.CANCELADA,
+                AccionSolicitud.PROPONER_ALTERNATIVA, EstadoSolicitud.PROPUESTA),
                 Set.of(AccionSolicitud.ACTUALIZAR));
     }
 }

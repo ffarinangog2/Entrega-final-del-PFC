@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { NavLink } from 'react-router-dom'
-import { useAuth } from '../auth'
+import { hasAnyPermission, hasPermission, useAuth } from '../auth'
 import '../i18n'
 import { LogoutButton } from './LogoutButton'
 import '../pages/MainPage.css'
@@ -11,6 +11,12 @@ export function DashboardLayout({ breadcrumb, children }: { breadcrumb: string; 
   const { t } = useTranslation()
   const nombre = usuario?.nombres || usuario?.username || t('dashboard.userNameFallback')
   const rol = usuario?.roles?.[0] || t('dashboard.userRoleFallback')
+  const verLaboratorios = hasAnyPermission(usuario, ['ACADEMICO_LEER', 'LABORATORIO_LEER'])
+  const verReservas = hasAnyPermission(usuario, ['RESERVA_LEER', 'SOLICITUD_LEER'])
+  const crearSolicitud = hasPermission(usuario, 'SOLICITUD_CREAR')
+  const verCalendario = hasAnyPermission(usuario, ['RESERVA_LEER', 'AGENDA_GESTIONAR'])
+  const verUsuarios = hasPermission(usuario, 'USUARIO_LEER')
+
   return <div className="dashboard">
     <header className="dashboard__topbar">
       <div className="dashboard__identity"><span className="dashboard__logo">S</span><div><strong>SCLI</strong><span>{t('dashboard.topbar.tagline')}</span></div></div>
@@ -21,14 +27,14 @@ export function DashboardLayout({ breadcrumb, children }: { breadcrumb: string; 
         <p className="dashboard__nav-label">{t('dashboard.sidebar.workspaceLabel')}</p>
         <nav aria-label="Navegación principal">
           <NavLink className="dashboard__nav-item" to="/main" end><span aria-hidden="true">⌂</span>{t('dashboard.nav.home')}</NavLink>
-          <NavLink className="dashboard__nav-item" to="/main"><span aria-hidden="true">◦</span>{t('dashboard.nav.labs')}</NavLink>
-          <NavLink className="dashboard__nav-item" to="/reservas"><span aria-hidden="true">◫</span>{t('dashboard.nav.reservations')}</NavLink>
-          <NavLink className="dashboard__nav-item" to="/reservas/nueva"><span aria-hidden="true">+</span>{t('dashboard.nav.newRequest')}</NavLink>
-          <NavLink className="dashboard__nav-item" to="/reservas/calendario"><span aria-hidden="true">▦</span>{t('dashboard.nav.calendar')}</NavLink>
+          {verLaboratorios && <NavLink className="dashboard__nav-item" to="/main"><span aria-hidden="true">◦</span>{t('dashboard.nav.labs')}</NavLink>}
+          {verReservas && <NavLink className="dashboard__nav-item" to="/reservas"><span aria-hidden="true">◫</span>{t('dashboard.nav.reservations')}</NavLink>}
+          {crearSolicitud && <NavLink className="dashboard__nav-item" to="/reservas/nueva"><span aria-hidden="true">+</span>{t('dashboard.nav.newRequest')}</NavLink>}
+          {verCalendario && <NavLink className="dashboard__nav-item" to="/reservas/calendario"><span aria-hidden="true">▦</span>{t('dashboard.nav.calendar')}</NavLink>}
         </nav>
         <p className="dashboard__nav-label dashboard__nav-label--secondary">{t('dashboard.sidebar.systemLabel')}</p>
         <nav aria-label="Navegación del sistema">
-          <NavLink className="dashboard__nav-item" to="/usuarios"><span aria-hidden="true">👤</span>{t('dashboard.nav.usuarios')}</NavLink>
+          {verUsuarios && <NavLink className="dashboard__nav-item" to="/usuarios"><span aria-hidden="true">👤</span>{t('dashboard.nav.usuarios')}</NavLink>}
           <NavLink className="dashboard__nav-item" to="/settings"><span aria-hidden="true">⚙</span>{t('dashboard.nav.settings')}</NavLink>
           <NavLink className="dashboard__nav-item" to="/about"><span aria-hidden="true">ⓘ</span>{t('dashboard.nav.about')}</NavLink>
         </nav>

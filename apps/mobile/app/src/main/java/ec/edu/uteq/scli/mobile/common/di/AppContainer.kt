@@ -6,6 +6,7 @@ import ec.edu.uteq.scli.mobile.data.local.AppDatabase
 import ec.edu.uteq.scli.mobile.BuildConfig
 import ec.edu.uteq.scli.mobile.common.network.BearerAuthInterceptor
 import ec.edu.uteq.scli.mobile.common.network.GatewayClientFactory
+import ec.edu.uteq.scli.mobile.common.network.RefreshAuthenticator
 import ec.edu.uteq.scli.mobile.features.auth.data.AuthApi
 import ec.edu.uteq.scli.mobile.features.auth.data.AuthRepository
 import ec.edu.uteq.scli.mobile.features.auth.data.EncryptedAuthStorage
@@ -19,6 +20,8 @@ import ec.edu.uteq.scli.mobile.features.qr.data.QrRepository
 import ec.edu.uteq.scli.mobile.features.qr.data.QrApi
 import ec.edu.uteq.scli.mobile.features.reservas.data.RemoteReservaRepository
 import ec.edu.uteq.scli.mobile.features.reservas.data.remote.ReservasApi
+import ec.edu.uteq.scli.mobile.features.reservas.data.remote.CatalogosApi
+import ec.edu.uteq.scli.mobile.features.reservas.data.remote.CatalogosRepository
 import ec.edu.uteq.scli.mobile.features.reservas.domain.ReservaRepository
 import okhttp3.OkHttpClient
 
@@ -53,10 +56,12 @@ class AppContainer(context: Context) {
             .addInterceptor(BearerAuthInterceptor {
                 authRepository.restoreSession()?.accessToken
             })
+            .authenticator(RefreshAuthenticator(authRepository))
             .build(),
     )
     private val reservasApi = authenticatedGatewayRetrofit.create(ReservasApi::class.java)
     val reservaRepository: ReservaRepository = RemoteReservaRepository(reservasApi, database.reservaDao())
+    val catalogosRepository = CatalogosRepository(authenticatedGatewayRetrofit.create(CatalogosApi::class.java))
     private val qrApi = authenticatedGatewayRetrofit.create(QrApi::class.java)
     val qrRepository: QrRepository = RemoteQrRepository(qrApi)
 }

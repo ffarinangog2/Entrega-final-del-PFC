@@ -9,6 +9,7 @@ import { ReservaDetailPage } from '../features/reservas/ReservaDetailPage'
 import { ReservasListPage } from '../features/reservas/ReservasListPage'
 import { CalendarioReservasPage } from '../features/reservas/CalendarioReservasPage'
 import { NuevaSolicitudPage } from '../features/reservas/NuevaSolicitudPage'
+import { SolicitudDetailPage } from '../features/reservas/SolicitudDetailPage'
 
 export function AppRoutes() {
   return (
@@ -19,10 +20,17 @@ export function AppRoutes() {
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/about" element={<AboutPage />} />
         <Route path="/usuarios" element={<UsuariosPage />} />
-        <Route path="/reservas" element={<ReservasListPage />} />
-        <Route path="/reservas/nueva" element={<NuevaSolicitudPage />} />
-        <Route path="/reservas/calendario" element={<CalendarioReservasPage />} />
-        <Route path="/reservas/:id" element={<ReservaDetailPage />} />
+        <Route element={<ProtectedRoute permissions={['RESERVA_LEER', 'SOLICITUD_LEER']} />}>
+          <Route path="/reservas" element={<ReservasListPage />} />
+          <Route path="/reservas/:id" element={<ReservaDetailPage />} />
+          <Route path="/solicitudes/:id" element={<SolicitudDetailPage />} />
+        </Route>
+        <Route element={<ProtectedRoute permissions={['SOLICITUD_CREAR']} />}>
+          <Route path="/reservas/nueva" element={<NuevaSolicitudPage />} />
+        </Route>
+        <Route element={<ProtectedRoute permissions={['RESERVA_LEER', 'AGENDA_GESTIONAR']} />}>
+          <Route path="/reservas/calendario" element={<CalendarioReservasPage />} />
+        </Route>
       </Route>
       <Route path="/" element={<Navigate to="/login" replace />} />
       <Route path="*" element={<Navigate to="/login" replace />} />

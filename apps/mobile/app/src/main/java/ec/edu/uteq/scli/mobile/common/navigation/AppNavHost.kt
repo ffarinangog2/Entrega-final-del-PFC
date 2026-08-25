@@ -45,13 +45,19 @@ import ec.edu.uteq.scli.mobile.features.reservas.presentation.NuevaReservaViewMo
 import ec.edu.uteq.scli.mobile.features.reservas.presentation.ReservaDetalleScreen
 import ec.edu.uteq.scli.mobile.features.reservas.presentation.ReservasScreen
 import ec.edu.uteq.scli.mobile.features.reservas.presentation.ReservasViewModel
+import ec.edu.uteq.scli.mobile.features.reservas.presentation.SolicitudDetalleScreen
+import ec.edu.uteq.scli.mobile.features.reservas.presentation.CalendarioScreen
+import ec.edu.uteq.scli.mobile.features.auth.data.hasAnyPermission
+import ec.edu.uteq.scli.mobile.features.auth.data.hasPermission
 
 private sealed class AppDestination(val route: String) {
     data object Incidentes : AppDestination("incidentes")
     data object Reservas : AppDestination("reservas")
     data object Perfil : AppDestination("perfil")
+    data object Calendario : AppDestination("calendario")
     data object EscanearQr : AppDestination("escanear-qr")
     data object NuevaReserva : AppDestination("reservas/nueva")
+    data object SolicitudDetalle : AppDestination("solicitudes/{solicitudId}") { fun crearRuta(id: String) = "solicitudes/$id" }
     data object ReservaDetalle : AppDestination("reservas/{reservaId}") {
         fun crearRuta(id: String) = "reservas/$id"
     }
@@ -79,6 +85,10 @@ fun AppNavHost(application: ScliMobileApplication) {
     }
 
     val navController = rememberNavController()
+    val user = requireNotNull(authState.sesion).usuario
+    val puedeVerReservas = user.hasAnyPermission("RESERVA_LEER", "SOLICITUD_LEER")
+    val puedeCrearSolicitud = user.hasPermission("SOLICITUD_CREAR")
+    val puedeVerCalendario = user.hasAnyPermission("RESERVA_LEER", "AGENDA_GESTIONAR")
 
     Scaffold(
         bottomBar = {
@@ -86,11 +96,17 @@ fun AppNavHost(application: ScliMobileApplication) {
             val currentDestination = navBackStackEntry?.destination
 
             NavigationBar {
-                NavigationBarItem(
+                if (puedeVerReservas) NavigationBarItem(
                     selected = currentDestination.isRoute(AppDestination.Incidentes),
                     onClick = { navController.navigateToTab(AppDestination.Incidentes.route) },
                     icon = { Icon(Icons.Filled.Warning, contentDescription = null) },
                     label = { Text(stringResource(R.string.nav_incidentes)) },
+                )
+                if (puedeVerCalendario) NavigationBarItem(
+                    selected = currentDestination.isRoute(AppDestination.Calendario),
+                    onClick = { navController.navigateToTab(AppDestination.Calendario.route) },
+                    icon = { Icon(Icons.Filled.Event, contentDescription = null) },
+                    label = { Text("Calendario") },
                 )
                 NavigationBarItem(
                     selected = currentDestination.isRoute(AppDestination.Reservas),
@@ -148,6 +164,8 @@ fun AppNavHost(application: ScliMobileApplication) {
                     viewModel = viewModel,
                     onReservaClick = { navController.navigate(AppDestination.ReservaDetalle.crearRuta(it)) },
                     onNuevaReserva = { navController.navigate(AppDestination.NuevaReserva.route) },
+                    onSolicitudClick = { navController.navigate(AppDestination.SolicitudDetalle.crearRuta(it)) },
+                    puedeCrear = puedeCrearSolicitud,
                 )
             }
             composable(AppDestination.EscanearQr.route) {
@@ -159,12 +177,24 @@ fun AppNavHost(application: ScliMobileApplication) {
                 QrScanScreen(viewModel)
             }
             composable(AppDestination.NuevaReserva.route) {
+                if (!puedeCrearSolicitud) { Text("No tienes permisos para realizar esta acción."); return@composable }
                 val viewModel: NuevaReservaViewModel = viewModel(
                     factory = viewModelFactory {
-                        initializer { NuevaReservaViewModel(container.reservaRepository) }
+                        initializer { NuevaReservaViewModel(container.reservaRepository, container.catalogosRepository, user.perfilId) }
                     },
                 )
                 NuevaReservaScreen(viewModel)
+            }
+            composable(AppDestination.Calendario.route) {
+                if (!puedeVerCalendario) { Text("No tienes permisos para realizar esta acción."); return@composable }
+                val viewModel: ReservasViewModel = viewModel(factory = viewModelFactory { initializer { ReservasViewModel(container.reservaRepository) } })
+                CalendarioScreen(viewModel, container.catalogosRepository)
+            }
+            composable(AppDestination.SolicitudDetalle.route, arguments = listOf(navArgument("solicitudId") { type = NavType.StringType })) { entry ->
+                if (!puedeVerReservas) { Text("No tienes permisos para realizar esta acción."); return@composable }
+                val id = requireNotNull(entry.arguments?.getString("solicitudId"))
+                val viewModel: ReservasViewModel = viewModel(factory = viewModelFactory { initializer { ReservasViewModel(container.reservaRepository, false) } })
+                SolicitudDetalleScreen(id, viewModel, user, container.catalogosRepository)
             }
             composable(
                 route = AppDestination.ReservaDetalle.route,
@@ -176,7 +206,7 @@ fun AppNavHost(application: ScliMobileApplication) {
                         initializer { ReservasViewModel(container.reservaRepository, cargarInicialmente = false) }
                     },
                 )
-                ReservaDetalleScreen(reservaId, viewModel)
+                ReservaDetalleScreen(reservaId, viewModel, puedeCancelar = user.hasPermission("RESERVA_CANCELAR"))
             }
         }
     }

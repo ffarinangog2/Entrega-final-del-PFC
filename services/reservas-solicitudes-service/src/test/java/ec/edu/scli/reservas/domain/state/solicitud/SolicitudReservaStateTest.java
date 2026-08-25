@@ -33,6 +33,24 @@ class SolicitudReservaStateTest {
     }
 
     @Test
+    void pendienteYEnRevisionPuedenRetirarse() {
+        assertEquals(EstadoSolicitud.CANCELADA,
+                SolicitudReservaStates.desde(EstadoSolicitud.PENDIENTE).cancelar());
+        assertEquals(EstadoSolicitud.CANCELADA,
+                SolicitudReservaStates.desde(EstadoSolicitud.EN_REVISION).cancelar());
+    }
+
+    @Test
+    void propuestaVuelveARevisionAlAceptarORechazar() {
+        assertEquals(EstadoSolicitud.PROPUESTA,
+                SolicitudReservaStates.desde(EstadoSolicitud.EN_REVISION).proponerAlternativa());
+        assertEquals(EstadoSolicitud.EN_REVISION,
+                SolicitudReservaStates.desde(EstadoSolicitud.PROPUESTA).aceptarPropuesta());
+        assertEquals(EstadoSolicitud.EN_REVISION,
+                SolicitudReservaStates.desde(EstadoSolicitud.PROPUESTA).rechazarPropuesta());
+    }
+
+    @Test
     void pendienteNoPuedeAprobarseDirectamente() {
         assertThrows(IllegalStateException.class,
                 () -> SolicitudReservaStates.desde(EstadoSolicitud.PENDIENTE).aprobar());

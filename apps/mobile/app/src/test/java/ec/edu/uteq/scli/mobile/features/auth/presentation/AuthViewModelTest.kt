@@ -82,6 +82,7 @@ class AuthViewModelTest {
 
         override suspend fun login(username: String, password: String) = loginResult
         override fun restoreSession() = restored
+        override suspend fun refreshSession() = restored
         override fun logout() { loggedOut = true }
     }
 

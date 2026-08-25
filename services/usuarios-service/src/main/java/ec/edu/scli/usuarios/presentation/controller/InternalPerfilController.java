@@ -3,6 +3,9 @@ package ec.edu.scli.usuarios.presentation.controller;
 import ec.edu.scli.usuarios.presentation.dto.perfil.PerfilAuthResponse;
 import ec.edu.scli.usuarios.presentation.dto.perfil.PerfilExistsResponse;
 import ec.edu.scli.usuarios.application.usecase.PerfilService;
+import ec.edu.scli.usuarios.application.usecase.ContextoInstitucionalService;
+import ec.edu.scli.usuarios.domain.model.ContextoInstitucional;
+import ec.edu.scli.usuarios.presentation.dto.perfil.ContextoInstitucionalResponse;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -31,12 +34,15 @@ import java.util.UUID;
 public class InternalPerfilController {
 
         private final PerfilService perfilService;
+        private final ContextoInstitucionalService contextoInstitucionalService;
         private final String internalApiKey;
 
         public InternalPerfilController(
                         PerfilService perfilService,
+                        ContextoInstitucionalService contextoInstitucionalService,
                         @Value("${app.internal-api-key}") String internalApiKey) {
                 this.perfilService = perfilService;
+                this.contextoInstitucionalService = contextoInstitucionalService;
                 this.internalApiKey = internalApiKey;
         }
 
@@ -64,9 +70,7 @@ public class InternalPerfilController {
                                         entre microservicios.
                                         """, required = true, example = "clave-interna-desarrollo") @RequestHeader(value = "X-Internal-Api-Key", required = false) String apiKey) {
 
-                if (apiKey == null
-                                || apiKey.isBlank()
-                                || !internalApiKey.equals(apiKey)) {
+                if (!claveInternaValida(apiKey)) {
 
                         return ResponseEntity
                                         .status(HttpStatus.UNAUTHORIZED)
@@ -102,9 +106,7 @@ public class InternalPerfilController {
                                         entre microservicios.
                                         """, required = true, example = "clave-interna-desarrollo") @RequestHeader(value = "X-Internal-Api-Key", required = false) String apiKey) {
 
-                if (apiKey == null
-                                || apiKey.isBlank()
-                                || !internalApiKey.equals(apiKey)) {
+                if (!claveInternaValida(apiKey)) {
 
                         return ResponseEntity
                                         .status(HttpStatus.UNAUTHORIZED)
@@ -114,5 +116,42 @@ public class InternalPerfilController {
                 PerfilAuthResponse response = perfilService.obtenerParaAuth(perfilId);
 
                 return ResponseEntity.ok(response);
+        }
+
+        @Operation(summary = "Obtener el contexto institucional de un perfil",
+                        description = "Contrato interno de solo lectura para resolver adscripciones organizacionales.")
+        @ApiResponses({
+                        @ApiResponse(responseCode = "200", description = "Contexto institucional resuelto",
+                                        content = @Content(schema = @Schema(implementation = ContextoInstitucionalResponse.class))),
+                        @ApiResponse(responseCode = "401", description = "Clave interna ausente o incorrecta",
+                                        content = @Content)
+        })
+        @GetMapping(value = "/{perfilId}/contexto-institucional", produces = MediaType.APPLICATION_JSON_VALUE)
+        public ResponseEntity<ContextoInstitucionalResponse> obtenerContextoInstitucional(
+                        @PathVariable UUID perfilId,
+                        @RequestHeader(value = "X-Internal-Api-Key", required = false) String apiKey) {
+                if (!claveInternaValida(apiKey)) {
+                        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+                }
+                return ResponseEntity.ok(toResponse(
+                                contextoInstitucionalService.obtenerPorPerfilId(perfilId)));
+        }
+
+        private boolean claveInternaValida(String apiKey) {
+                return apiKey != null && !apiKey.isBlank() && internalApiKey.equals(apiKey);
+        }
+
+        private ContextoInstitucionalResponse toResponse(ContextoInstitucional contexto) {
+                ContextoInstitucional.ContextoAdministrador administrador = contexto.administrador();
+                return new ContextoInstitucionalResponse(
+                                contexto.perfilId(), contexto.existe(), contexto.activo(), contexto.tiposPerfil(),
+                                new ContextoInstitucionalResponse.AdministradorInstitucionalResponse(
+                                                administrador.esAdministrador(), administrador.activo(),
+                                                administrador.pisoId(), administrador.cargo(),
+                                                administrador.administradorPisoOperativo()),
+                                contexto.adscripciones().stream()
+                                                .map(item -> new ContextoInstitucionalResponse.AdscripcionResponse(
+                                                                item.tipoAmbito(), item.ambitoId(), item.activo()))
+                                                .toList());
         }
 }

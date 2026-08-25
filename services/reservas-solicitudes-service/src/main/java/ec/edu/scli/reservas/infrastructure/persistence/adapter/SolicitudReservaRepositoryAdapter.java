@@ -16,8 +16,8 @@ public class SolicitudReservaRepositoryAdapter implements SolicitudReservaReposi
     private final SolicitudReservaSpringDataRepository repository; private final SolicitudReservaPersistenceMapper mapper;
     public SolicitudReservaRepositoryAdapter(SolicitudReservaSpringDataRepository r,SolicitudReservaPersistenceMapper m){repository=r;mapper=m;}
     public Pagina<SolicitudReserva> buscar(FiltroSolicitudReserva f,int p,int t){
-        boolean vacio=f.estado()==null&&f.solicitanteId()==null&&f.laboratorioId()==null&&f.fecha()==null;
-        Specification<SolicitudReservaJpaEntity>s=Specification.allOf(igual("estado",f.estado()),igual("solicitanteId",f.solicitanteId()),igual("laboratorioId",f.laboratorioId()),igual("fechaReserva",f.fecha()));
+        boolean vacio=f.estado()==null&&f.solicitanteId()==null&&f.laboratorioId()==null&&f.pisoId()==null&&f.fecha()==null;
+        Specification<SolicitudReservaJpaEntity>s=Specification.allOf(igual("estado",f.estado()),igual("solicitanteId",f.solicitanteId()),igual("laboratorioId",f.laboratorioId()),igual("pisoId",f.pisoId()),igual("fechaReserva",f.fecha()));
         return pagina(vacio?repository.findAll(PageRequest.of(p,t)):repository.findAll(s,PageRequest.of(p,t)));
     }
     public Pagina<SolicitudReserva> buscarPorSolicitante(UUID id,int p,int t){return pagina(repository.findBySolicitanteId(id,PageRequest.of(p,t)));}

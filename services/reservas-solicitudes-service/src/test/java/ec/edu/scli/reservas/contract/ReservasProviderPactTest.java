@@ -9,11 +9,16 @@ import au.com.dius.pact.provider.spring.junit5.PactVerificationSpringProvider;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import ec.edu.scli.reservas.application.service.ReservaService;
+import ec.edu.scli.reservas.application.service.SolicitudReservaService;
 import ec.edu.scli.reservas.domain.model.EstadoReserva;
+import ec.edu.scli.reservas.domain.model.EstadoSolicitud;
 import ec.edu.scli.reservas.presentation.controller.ReservaController;
+import ec.edu.scli.reservas.presentation.controller.SolicitudReservaController;
 import ec.edu.scli.reservas.presentation.dto.response.PaginaResponse;
 import ec.edu.scli.reservas.presentation.dto.response.ReservaResponse;
 import ec.edu.scli.reservas.presentation.dto.request.CancelarReservaRequest;
+import ec.edu.scli.reservas.presentation.dto.request.ProponerAlternativaRequest;
+import ec.edu.scli.reservas.presentation.dto.response.SolicitudReservaResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -49,12 +54,15 @@ class ReservasProviderPactTest {
             UUID.fromString("44444444-4444-4444-4444-444444444444");
 
     private ReservaService reservaService;
+    private SolicitudReservaService solicitudService;
 
     @BeforeEach
     void configurarTarget(PactVerificationContext context) {
         reservaService = mock(ReservaService.class);
+        solicitudService = mock(SolicitudReservaService.class);
         MockMvc mockMvc = MockMvcBuilders
-                .standaloneSetup(new ReservaController(reservaService))
+                .standaloneSetup(new ReservaController(reservaService),
+                        new SolicitudReservaController(solicitudService))
                 .defaultRequest(get("/").principal(() -> RESPONSABLE_ID.toString()))
                 .setMessageConverters(new MappingJackson2HttpMessageConverter(
                         Jackson2ObjectMapperBuilder.json()
@@ -88,6 +96,21 @@ class ReservasProviderPactTest {
                         programada.laboratorioId(), programada.responsableId(), programada.fechaReserva(),
                         programada.horaInicio(), programada.horaFin(), EstadoReserva.CANCELADA,
                         programada.codigoReserva(), programada.creadaEn(), programada.actualizadaEn(), 1L));
+    }
+
+    @State("existe una solicitud en revision del piso administrado")
+    void existeSolicitudParaPropuesta() {
+        LocalDate fecha = LocalDate.parse("2026-08-21");
+        when(solicitudService.proponerAlternativa(eq(SOLICITUD_ID),
+                any(ProponerAlternativaRequest.class), eq(RESPONSABLE_ID)))
+                .thenReturn(new SolicitudReservaResponse(
+                        SOLICITUD_ID, RESPONSABLE_ID, RESPONSABLE_ID, LABORATORIO_ID,
+                        UUID.randomUUID(), UUID.randomUUID(), LocalDate.parse("2026-08-20"),
+                        LocalTime.of(8, 0), LocalTime.of(10, 0), 20, "Clase", null,
+                        EstadoSolicitud.PROPUESTA, fecha, LocalTime.NOON, LocalTime.of(14, 0),
+                        LABORATORIO_ID, "Horario alternativo", null,
+                        Instant.parse("2026-08-18T10:00:00Z"),
+                        Instant.parse("2026-08-18T10:00:00Z"), 1L));
     }
 
     @TestTemplate

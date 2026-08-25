@@ -6,6 +6,7 @@ import ec.edu.uteq.scli.auth_service.domain.model.Rol;
 import ec.edu.uteq.scli.auth_service.domain.model.Usuario;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -81,5 +82,38 @@ class JwtServiceTest {
                 Usuario usuario = new Usuario(UUID.randomUUID(), UUID.randomUUID(), "admin", "admin@scli.local",
                                 "hash-prueba", true, false, Set.of());
                 return new CustomUserDetails(usuario);
+        }
+
+        @Test
+        void accessTokenDebeExponerNuevosRolesYPermisosSinCambiarFormato() {
+                JwtProperties properties = new JwtProperties(
+                                "scli-auth-service",
+                                SECRET_BASE64,
+                                900000,
+                                604800000);
+                JwtService jwtService = new JwtService(properties);
+
+                Permiso lecturaAcademica = new Permiso(
+                                UUID.randomUUID(), "ACADEMICO_LEER",
+                                "Consultar informacion academica", null, true);
+                Permiso planificacion = new Permiso(
+                                UUID.randomUUID(), "PLANIFICACION_GESTIONAR",
+                                "Gestionar planificacion", null, true);
+                Rol coordinador = new Rol(
+                                UUID.randomUUID(), "COORDINADOR", "Coordinador",
+                                null, true, Set.of(lecturaAcademica, planificacion));
+                Usuario usuario = new Usuario(
+                                UUID.randomUUID(), UUID.randomUUID(), "coordinacion",
+                                "coordinacion@scli.local", "hash-prueba", true, false,
+                                Set.of(coordinador));
+
+                String token = jwtService.generarAccessToken(new CustomUserDetails(usuario));
+                var claims = jwtService.extraerClaims(token);
+
+                assertEquals("access", claims.get("type", String.class));
+                assertEquals(List.of("COORDINADOR"), claims.get("roles", List.class));
+                assertEquals(
+                                List.of("ACADEMICO_LEER", "PLANIFICACION_GESTIONAR"),
+                                claims.get("permissions", List.class));
         }
 }

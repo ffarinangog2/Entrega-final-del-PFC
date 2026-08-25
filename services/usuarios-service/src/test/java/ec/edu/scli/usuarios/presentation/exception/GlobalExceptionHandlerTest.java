@@ -13,6 +13,7 @@ import org.springframework.core.MethodParameter;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.BeanPropertyBindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -46,6 +47,17 @@ class GlobalExceptionHandlerTest {
         assertThat(respuesta.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
         assertThat(respuesta.getBody().message()).isEqualTo("no existe");
         assertThat(respuesta.getBody().path()).isEqualTo("/api/v1/estudiantes/123");
+    }
+
+    @Test
+    void manejarAccesoDenegado_deberiaRetornar403() {
+        ResponseEntity<ApiError> respuesta = handler.manejarAccesoDenegado(
+                new AccessDeniedException("detalle interno"), request
+        );
+
+        assertThat(respuesta.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(respuesta.getBody().message())
+                .isEqualTo("No tiene permisos para acceder al recurso");
     }
 
     @Test

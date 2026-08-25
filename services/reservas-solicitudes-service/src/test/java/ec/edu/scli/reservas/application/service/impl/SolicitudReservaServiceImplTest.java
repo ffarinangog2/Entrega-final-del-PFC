@@ -1,6 +1,7 @@
 package ec.edu.scli.reservas.application.service.impl;
 
 import ec.edu.scli.reservas.application.service.DisponibilidadService;
+import ec.edu.scli.reservas.application.service.PoliticaAmbitoLaboratorio;
 import ec.edu.scli.reservas.client.AcademicoLaboratoriosClient;
 import ec.edu.scli.reservas.client.UsuariosClient;
 import ec.edu.scli.reservas.client.dto.*;
@@ -29,11 +30,13 @@ class SolicitudReservaServiceImplTest {
     private HistorialSolicitudRepositoryPort historiales;
     private IdempotenciaAprobacionRepositoryPort idempotenciaAprobaciones;
     private IdempotenciaCreacionSolicitudRepositoryPort idempotenciaCreaciones;
-    private UsuariosClient usuarios;
+    private DocenteInstitucionalPort docentes;
     private AcademicoLaboratoriosClient academico;
     private DisponibilidadService disponibilidad;
     private SolicitudReservaServiceImpl service;
     private BusinessEventMetrics metrics;
+    private PoliticaAmbitoLaboratorio politica;
+    private AgendaMutexPort agendaMutex;
 
     private final UUID solicitanteId = UUID.randomUUID();
     private final UUID docenteId = UUID.randomUUID();
@@ -49,19 +52,27 @@ class SolicitudReservaServiceImplTest {
         historiales = mock(HistorialSolicitudRepositoryPort.class);
         idempotenciaAprobaciones = mock(IdempotenciaAprobacionRepositoryPort.class);
         idempotenciaCreaciones = mock(IdempotenciaCreacionSolicitudRepositoryPort.class);
-        usuarios = mock(UsuariosClient.class);
+        docentes = mock(DocenteInstitucionalPort.class);
         academico = mock(AcademicoLaboratoriosClient.class);
         disponibilidad = mock(DisponibilidadService.class);
         metrics = mock(BusinessEventMetrics.class);
+        politica = mock(PoliticaAmbitoLaboratorio.class);
+        agendaMutex = mock(AgendaMutexPort.class);
         service = new SolicitudReservaServiceImpl(
                 solicitudes, reservas, historiales, idempotenciaAprobaciones, idempotenciaCreaciones,
                 new SolicitudReservaMapper(), new ReservaMapper(), new HistorialSolicitudMapper(),
-                usuarios, academico, disponibilidad, metrics);
+                docentes, academico, disponibilidad, metrics, politica, agendaMutex);
 
-        when(usuarios.obtenerPerfil(docenteId))
-                .thenReturn(new PerfilExternoResponse(docenteId, true, true, List.of("DOCENTE")));
+        when(politica.actor()).thenReturn(new ActorAutenticado(
+                usuarioId, java.util.Set.of("ROLE_ADMINISTRADOR")));
+        when(politica.obtenerPiso(any())).thenReturn(UUID.randomUUID());
+        when(politica.validarGestion(any())).thenReturn(UUID.randomUUID());
+
+        when(docentes.obtenerPorDocenteId(docenteId))
+                .thenReturn(new DocenteInstitucional(docenteId, UUID.randomUUID(), true));
         when(academico.obtenerLaboratorio(laboratorioId))
-                .thenReturn(new LaboratorioExternoResponse(laboratorioId, true, true, "ACTIVO", 30));
+                .thenReturn(new LaboratorioExternoResponse(
+                        laboratorioId, UUID.randomUUID(), true, true, "ACTIVO", 30));
         when(academico.verificarMateria(materiaId)).thenReturn(new ExisteExternoResponse(materiaId, true));
         when(academico.verificarPeriodoLectivo(periodoId)).thenReturn(new ExisteExternoResponse(periodoId, true));
         when(disponibilidad.consultar(any(), any(), any(), any()))
@@ -91,6 +102,40 @@ class SolicitudReservaServiceImplTest {
         verify(historiales).guardar(argThat(h -> h.getEstadoNuevo() == EstadoSolicitud.PENDIENTE));
         verify(metrics).solicitudCreada();
         verify(idempotenciaCreaciones).completar("clave", respuesta.id());
+    }
+
+    @Test
+    void docenteCreaSolicitudPropiaYNoPuedeSuplantarOtroDocente() {
+        when(politica.actor()).thenReturn(new ActorAutenticado(
+                usuarioId, java.util.Set.of("ROLE_DOCENTE", "SOLICITUD_CREAR")));
+        when(docentes.obtenerPorPerfilId(usuarioId))
+                .thenReturn(new DocenteInstitucional(docenteId, usuarioId, true));
+        CrearSolicitudReservaRequest propia = new CrearSolicitudReservaRequest(
+                UUID.randomUUID(), docenteId, laboratorioId, materiaId, periodoId,
+                LocalDate.now(), LocalTime.of(8, 0), LocalTime.of(10, 0), 10, "clase", null);
+        when(idempotenciaCreaciones.buscarParaActualizar("propia")).thenReturn(Optional.of(
+                new IdempotenciaCreacionSolicitud("propia", "CREAR_SOLICITUD", usuarioId,
+                        service.hashCreacion(propia), null)));
+        assertEquals(docenteId, service.crear(propia, "propia", usuarioId).docenteId());
+
+        CrearSolicitudReservaRequest ajena = new CrearSolicitudReservaRequest(
+                usuarioId, UUID.randomUUID(), laboratorioId, materiaId, periodoId,
+                LocalDate.now(), LocalTime.of(8, 0), LocalTime.of(10, 0), 10, "clase", null);
+        when(idempotenciaCreaciones.buscarParaActualizar("ajena")).thenReturn(Optional.of(
+                new IdempotenciaCreacionSolicitud("ajena", "CREAR_SOLICITUD", usuarioId,
+                        service.hashCreacion(ajena), null)));
+        assertThrows(org.springframework.security.access.AccessDeniedException.class,
+                () -> service.crear(ajena, "ajena", usuarioId));
+    }
+
+    @Test
+    void perfilDocenteSinRegistroObtieneErrorFuncional() {
+        when(politica.actor()).thenReturn(new ActorAutenticado(
+                usuarioId, java.util.Set.of("ROLE_DOCENTE", "SOLICITUD_CREAR")));
+        when(docentes.obtenerPorPerfilId(usuarioId)).thenReturn(null);
+        assertThrows(ec.edu.scli.reservas.presentation.exception.ResourceNotFoundException.class,
+                () -> service.crear(crearRequest(), "sin-docente", usuarioId));
+        verify(solicitudes, never()).guardar(any());
     }
 
     @Test
@@ -266,6 +311,112 @@ class SolicitudReservaServiceImplTest {
         assertEquals(EstadoReserva.CANCELADA, reserva.getEstado());
         verify(metrics).solicitudCancelada();
         verify(metrics).reservaCancelada();
+    }
+
+    @Test
+    void noCancelaSolicitudAprobadaSiReservaEstaEnCursoOFinalizada() {
+        for (EstadoReserva estado : List.of(EstadoReserva.EN_CURSO, EstadoReserva.FINALIZADA)) {
+            SolicitudReserva solicitud = solicitud(EstadoSolicitud.APROBADA);
+            solicitud.setSolicitanteId(usuarioId);
+            Reserva reserva = reserva(estado, solicitud.getId());
+            prepararBloqueo(solicitud);
+            when(reservas.buscarPorSolicitudId(solicitud.getId())).thenReturn(Optional.of(reserva));
+            when(reservas.buscarPorIdParaActualizar(reserva.getId())).thenReturn(Optional.of(reserva));
+            assertThrows(IllegalStateException.class, () -> service.cancelar(
+                    solicitud.getId(), new CancelarSolicitudRequest("fuera de estado"), usuarioId));
+            assertEquals(EstadoSolicitud.APROBADA, solicitud.getEstado());
+            assertEquals(estado, reserva.getEstado());
+        }
+    }
+
+    @Test
+    void propietarioCancelaPendienteYEnRevisionSinExigirReserva() {
+        for (EstadoSolicitud estado : List.of(EstadoSolicitud.PENDIENTE, EstadoSolicitud.EN_REVISION)) {
+            SolicitudReserva solicitud = solicitud(estado);
+            solicitud.setSolicitanteId(usuarioId);
+            prepararBloqueo(solicitud);
+            assertEquals(EstadoSolicitud.CANCELADA,
+                    service.cancelar(solicitud.getId(), new CancelarSolicitudRequest("retiro"), usuarioId).estado());
+        }
+        verify(reservas, never()).buscarPorSolicitudId(any());
+    }
+
+    @Test
+    void docenteNoCancelaSolicitudAjena() {
+        SolicitudReserva solicitud = solicitud(EstadoSolicitud.PENDIENTE);
+        prepararBloqueo(solicitud);
+        when(politica.actor()).thenReturn(new ActorAutenticado(
+                usuarioId, java.util.Set.of("ROLE_DOCENTE", "SOLICITUD_CANCELAR")));
+        doThrow(new org.springframework.security.access.AccessDeniedException("sin gestiÃ³n"))
+                .when(politica).validarGestion(laboratorioId);
+        assertThrows(org.springframework.security.access.AccessDeniedException.class,
+                () -> service.cancelar(solicitud.getId(), new CancelarSolicitudRequest("no"), usuarioId));
+    }
+
+    @Test
+    void propuestaValidaSeAceptaYAplicaSinCrearReserva() {
+        UUID laboratorioAlternativo = UUID.randomUUID();
+        LocalDate fecha = LocalDate.now().plusDays(2);
+        SolicitudReserva solicitud = solicitud(EstadoSolicitud.EN_REVISION);
+        solicitud.setSolicitanteId(usuarioId);
+        prepararBloqueo(solicitud);
+        when(academico.obtenerLaboratorio(laboratorioAlternativo)).thenReturn(
+                new LaboratorioExternoResponse(laboratorioAlternativo, UUID.randomUUID(), true, true, "ACTIVO", 30));
+        when(disponibilidad.consultar(eq(laboratorioAlternativo), eq(fecha), any(), any()))
+                .thenReturn(new DisponibilidadResponse(laboratorioAlternativo, fecha,
+                        LocalTime.of(12, 0), LocalTime.of(14, 0), true, null));
+        UUID pisoAlternativo = UUID.randomUUID();
+        solicitud.setPisoId(UUID.randomUUID());
+        when(politica.obtenerPiso(laboratorioAlternativo)).thenReturn(pisoAlternativo);
+
+        var propuesta = service.proponerAlternativa(solicitud.getId(),
+                new ProponerAlternativaRequest(fecha, LocalTime.of(12, 0), LocalTime.of(14, 0),
+                        laboratorioAlternativo, "alternativa"), usuarioId);
+        assertEquals(EstadoSolicitud.PROPUESTA, propuesta.estado());
+        assertEquals(laboratorioAlternativo, propuesta.propuestaLaboratorioId());
+
+        var aceptada = service.aceptarPropuesta(solicitud.getId(),
+                new ResponderPropuestaRequest("acepto"), usuarioId);
+        assertEquals(EstadoSolicitud.EN_REVISION, aceptada.estado());
+        assertEquals(laboratorioAlternativo, aceptada.laboratorioId());
+        assertEquals(pisoAlternativo, solicitud.getPisoId());
+        assertEquals(fecha, aceptada.fechaReserva());
+        assertEquals(LocalTime.of(12, 0), aceptada.horaInicio());
+        assertEquals(LocalTime.of(14, 0), aceptada.horaFin());
+        assertNull(aceptada.propuestaLaboratorioId());
+        verify(reservas, never()).guardar(any());
+        verify(historiales).guardar(argThat(h -> h.getEstadoAnterior() == EstadoSolicitud.EN_REVISION
+                && h.getEstadoNuevo() == EstadoSolicitud.PROPUESTA));
+        verify(historiales).guardar(argThat(h -> h.getEstadoAnterior() == EstadoSolicitud.PROPUESTA
+                && h.getEstadoNuevo() == EstadoSolicitud.EN_REVISION));
+    }
+
+    @Test
+    void soloPropietarioRespondePropuestaYPuedeRechazarla() {
+        SolicitudReserva solicitud = solicitud(EstadoSolicitud.PROPUESTA);
+        prepararBloqueo(solicitud);
+        assertThrows(org.springframework.security.access.AccessDeniedException.class,
+                () -> service.aceptarPropuesta(solicitud.getId(),
+                        new ResponderPropuestaRequest(null), usuarioId));
+
+        solicitud.setSolicitanteId(usuarioId);
+        var respuesta = service.rechazarPropuesta(solicitud.getId(),
+                new ResponderPropuestaRequest("prefiero original"), usuarioId);
+        assertEquals(EstadoSolicitud.EN_REVISION, respuesta.estado());
+    }
+
+    @Test
+    void gestorNoPuedeProponerLaboratorioFueraDeSuPiso() {
+        UUID alternativo = UUID.randomUUID();
+        SolicitudReserva solicitud = solicitud(EstadoSolicitud.EN_REVISION);
+        prepararBloqueo(solicitud);
+        doThrow(new org.springframework.security.access.AccessDeniedException("otro piso"))
+                .when(politica).validarGestion(alternativo);
+        assertThrows(org.springframework.security.access.AccessDeniedException.class,
+                () -> service.proponerAlternativa(solicitud.getId(),
+                        new ProponerAlternativaRequest(LocalDate.now().plusDays(1),
+                                LocalTime.NOON, LocalTime.of(14, 0), alternativo, null), usuarioId));
+        verify(solicitudes, never()).guardar(solicitud);
     }
 
     @Test

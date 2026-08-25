@@ -4,4 +4,4 @@ import java.time.LocalDate;
 import java.util.UUID;
 
 public record FiltroSolicitudReserva(EstadoSolicitud estado, UUID solicitanteId,
-                                      UUID laboratorioId, LocalDate fecha) { }
+                                      UUID laboratorioId, UUID pisoId, LocalDate fecha) { }

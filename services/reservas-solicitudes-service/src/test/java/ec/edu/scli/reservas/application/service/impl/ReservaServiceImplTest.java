@@ -1,7 +1,9 @@
 package ec.edu.scli.reservas.application.service.impl;
 
 import ec.edu.scli.reservas.domain.model.*;
+import ec.edu.scli.reservas.application.service.PoliticaAmbitoLaboratorio;
 import ec.edu.scli.reservas.domain.port.out.ReservaRepositoryPort;
+import ec.edu.scli.reservas.domain.port.out.SolicitudReservaRepositoryPort;
 import ec.edu.scli.reservas.mapper.ReservaMapper;
 import ec.edu.scli.reservas.observability.BusinessEventMetrics;
 import ec.edu.scli.reservas.presentation.dto.request.CancelarReservaRequest;
@@ -22,13 +24,20 @@ class ReservaServiceImplTest {
     private ReservaRepositoryPort repository;
     private ReservaServiceImpl service;
     private BusinessEventMetrics metrics;
+    private PoliticaAmbitoLaboratorio politica;
+    private SolicitudReservaRepositoryPort solicitudes;
 
     @BeforeEach
     void setUp() {
         repository = mock(ReservaRepositoryPort.class);
         metrics = mock(BusinessEventMetrics.class);
+        politica = mock(PoliticaAmbitoLaboratorio.class);
+        solicitudes = mock(SolicitudReservaRepositoryPort.class);
+        when(politica.actor()).thenReturn(new ActorAutenticado(
+                UUID.randomUUID(), java.util.Set.of("ROLE_ADMINISTRADOR")));
         when(repository.guardar(any())).thenAnswer(i -> i.getArgument(0));
-        service = new ReservaServiceImpl(repository, new ReservaMapper(), metrics);
+        service = new ReservaServiceImpl(
+                repository, new ReservaMapper(), metrics, politica, solicitudes);
     }
 
     @Test
@@ -93,9 +102,7 @@ class ReservaServiceImplTest {
     void delegaListadosEspecializados() {
         Pagina<Reserva> vacia = new Pagina<>(List.of(), 0, 10, 0, 0, true, true);
         UUID id = UUID.randomUUID();
-        when(repository.buscarPorLaboratorio(id, 0, 10)).thenReturn(vacia);
-        when(repository.buscarPorResponsable(id, 0, 10)).thenReturn(vacia);
-        when(repository.buscarCalendario(id, LocalDate.now(), LocalDate.now(), 0, 10)).thenReturn(vacia);
+        when(repository.buscar(any(), eq(0), eq(10))).thenReturn(vacia);
         assertTrue(service.listarPorLaboratorio(id, 0, 10).contenido().isEmpty());
         assertTrue(service.listarPorResponsable(id, 0, 10).contenido().isEmpty());
         assertTrue(service.obtenerCalendario(id, LocalDate.now(), LocalDate.now(), 0, 10).contenido().isEmpty());

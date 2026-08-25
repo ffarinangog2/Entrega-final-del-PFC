@@ -285,6 +285,7 @@ services:
       DB_PASSWORD: ""
       SERVER_PORT: 8083
       INTERNAL_API_KEY: clave-interna-desarrollo
+      JWT_SECRET: ${JWT_SECRET}
       SPRING_FLYWAY_BASELINE_ON_MIGRATE: "true"
       SPRING_FLYWAY_BASELINE_VERSION: "1"
 

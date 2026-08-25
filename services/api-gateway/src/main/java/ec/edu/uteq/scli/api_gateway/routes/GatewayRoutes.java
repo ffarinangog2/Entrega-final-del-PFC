@@ -18,7 +18,7 @@ public class GatewayRoutes {
         public RouterFunction<ServerResponse> authApiRoute(
                         @Value("${AUTH_SERVICE_URL:http://auth-service:8081}") String authServiceUrl) {
                 return route("auth_api")
-                                .route(request -> request.path().startsWith("/api/v1/auth/"), http())
+                                .route(request -> esRutaAuth(request.path()), http())
                                 .before(uri(authServiceUrl))
                                 .build();
         }
@@ -37,9 +37,18 @@ public class GatewayRoutes {
     public RouterFunction<ServerResponse> usuariosServiceRoute(
             @Value("${USUARIOS_SERVICE_URL:http://usuarios-service:8082}") String usuariosServiceUrl) {
         return route("usuarios_service")
-                .route(request -> request.path().startsWith("/usuarios-service/"), http())
+                .route(request -> esRutaUsuariosLegacy(request.path()), http())
                 .before(uri(usuariosServiceUrl))
                 .before(stripPrefix(1))
+                .build();
+    }
+
+    @Bean
+    public RouterFunction<ServerResponse> usuariosApiRoute(
+            @Value("${USUARIOS_SERVICE_URL:http://usuarios-service:8082}") String usuariosServiceUrl) {
+        return route("usuarios_api")
+                .route(request -> esRutaUsuarios(request.path()), http())
+                .before(uri(usuariosServiceUrl))
                 .build();
     }
 
@@ -64,23 +73,48 @@ public class GatewayRoutes {
         }
 
     private boolean esRutaReservas(String path) {
-        return path.equals("/api/v1/reservas") || path.startsWith("/api/v1/reservas/")
-                || path.equals("/api/v1/solicitudes") || path.startsWith("/api/v1/solicitudes/")
-                || path.equals("/api/v1/agenda") || path.startsWith("/api/v1/agenda/")
-                || path.equals("/api/v1/disponibilidad") || path.startsWith("/api/v1/disponibilidad/");
+        return esRutaReservasCanonica(path);
     }
 
-        private boolean esRutaAcademica(String path) {
-                return path.equals("/api/v1/campus") || path.startsWith("/api/v1/campus/")
-                                || path.equals("/api/v1/bloques") || path.startsWith("/api/v1/bloques/")
-                                || path.equals("/api/v1/pisos") || path.startsWith("/api/v1/pisos/")
-                                || path.equals("/api/v1/laboratorios") || path.startsWith("/api/v1/laboratorios/")
-                                || path.equals("/api/v1/equipos") || path.startsWith("/api/v1/equipos/")
-                                || path.equals("/api/v1/tipos-equipo") || path.startsWith("/api/v1/tipos-equipo/")
-                                || path.equals("/api/v1/facultades") || path.startsWith("/api/v1/facultades/")
-                                || path.equals("/api/v1/carreras") || path.startsWith("/api/v1/carreras/")
-                                || path.equals("/api/v1/materias") || path.startsWith("/api/v1/materias/")
-                                || path.equals("/api/v1/periodos-lectivos") || path.startsWith("/api/v1/periodos-lectivos/")
-                                || path.equals("/api/v1/horarios") || path.startsWith("/api/v1/horarios/");
+    static boolean esRutaAuth(String path) {
+        return coincide(path, "/api/v1/auth");
+    }
+
+    static boolean esRutaUsuarios(String path) {
+        return coincideAlguna(path,
+                "/api/v1/perfiles", "/api/v1/docentes", "/api/v1/estudiantes",
+                "/api/v1/tecnicos", "/api/v1/administradores");
+    }
+
+    static boolean esRutaUsuariosLegacy(String path) {
+        return path.startsWith("/usuarios-service/")
+                && !path.equals("/usuarios-service/api/v1/internal")
+                && !path.startsWith("/usuarios-service/api/v1/internal/");
+    }
+
+    static boolean esRutaAcademica(String path) {
+        return coincideAlguna(path,
+                "/api/v1/campus", "/api/v1/bloques", "/api/v1/pisos",
+                "/api/v1/laboratorios", "/api/v1/equipos", "/api/v1/tipos-equipo",
+                "/api/v1/facultades", "/api/v1/carreras", "/api/v1/materias",
+                "/api/v1/periodos-lectivos", "/api/v1/horarios");
+    }
+
+    static boolean esRutaReservasCanonica(String path) {
+        return coincideAlguna(path, "/api/v1/reservas", "/api/v1/solicitudes",
+                "/api/v1/agenda", "/api/v1/disponibilidad");
+    }
+
+    private static boolean coincideAlguna(String path, String... bases) {
+        for (String base : bases) {
+            if (coincide(path, base)) {
+                return true;
+            }
         }
+        return false;
+    }
+
+    private static boolean coincide(String path, String base) {
+        return path.equals(base) || path.startsWith(base + "/");
+    }
 }

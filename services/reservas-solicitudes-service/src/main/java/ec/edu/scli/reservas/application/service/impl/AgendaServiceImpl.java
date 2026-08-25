@@ -12,6 +12,7 @@ import ec.edu.scli.reservas.mapper.BloqueoAgendaMapper;
 import ec.edu.scli.reservas.domain.port.out.BloqueoAgendaRepositoryPort;
 import ec.edu.scli.reservas.domain.port.out.ReservaRepositoryPort;
 import ec.edu.scli.reservas.application.service.AgendaService;
+import ec.edu.scli.reservas.application.service.PoliticaAmbitoLaboratorio;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -37,18 +38,21 @@ public class AgendaServiceImpl implements AgendaService {
     private final BloqueoAgendaMapper bloqueoAgendaMapper;
     private final AcademicoLaboratoriosClient academicoLaboratoriosClient;
     private final TransactionTemplate transactionTemplate;
+    private final PoliticaAmbitoLaboratorio politicaAmbito;
 
     public AgendaServiceImpl(
             ReservaRepositoryPort reservaRepository,
             BloqueoAgendaRepositoryPort bloqueoAgendaRepository,
             BloqueoAgendaMapper bloqueoAgendaMapper,
             AcademicoLaboratoriosClient academicoLaboratoriosClient,
-            TransactionTemplate transactionTemplate) {
+            TransactionTemplate transactionTemplate,
+            PoliticaAmbitoLaboratorio politicaAmbito) {
         this.reservaRepository = reservaRepository;
         this.bloqueoAgendaRepository = bloqueoAgendaRepository;
         this.bloqueoAgendaMapper = bloqueoAgendaMapper;
         this.academicoLaboratoriosClient = academicoLaboratoriosClient;
         this.transactionTemplate = transactionTemplate;
+        this.politicaAmbito = politicaAmbito;
     }
 
     @Override
@@ -98,6 +102,7 @@ public class AgendaServiceImpl implements AgendaService {
             throw new IllegalArgumentException("El usuario autenticado es obligatorio");
         }
         validarHorario(request);
+        politicaAmbito.validarGestion(request.laboratorioId());
 
         LaboratorioExternoResponse laboratorio =
                 academicoLaboratoriosClient.obtenerLaboratorio(request.laboratorioId());
@@ -160,6 +165,7 @@ public class AgendaServiceImpl implements AgendaService {
         BloqueoAgenda bloqueo = bloqueoAgendaRepository.buscarPorId(bloqueoId)
                 .orElseThrow(() -> new IllegalArgumentException(
                         "El bloqueo de agenda no existe"));
+        politicaAmbito.validarGestion(bloqueo.getLaboratorioId());
         if (Boolean.FALSE.equals(bloqueo.getActivo())) {
             return;
         }

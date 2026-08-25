@@ -43,6 +43,11 @@ data class SolicitudReservaDto(
     val creadaEn: String,
     val actualizadaEn: String,
     val version: Long,
+    val propuestaFecha: String? = null,
+    val propuestaHoraInicio: String? = null,
+    val propuestaHoraFin: String? = null,
+    val propuestaLaboratorioId: String? = null,
+    val propuestaObservacion: String? = null,
 )
 
 data class DisponibilidadDto(
@@ -83,3 +88,20 @@ data class ActualizarSolicitudReservaDto(
 
 data class CancelarSolicitudDto(val comentario: String)
 data class CancelarReservaDto(val motivo: String)
+data class ComentarioDto(val comentario: String? = null)
+data class AprobarSolicitudDto(val responsableId: String, val comentario: String? = null)
+data class PropuestaDto(
+    val laboratorioId: String,
+    val fecha: String,
+    val horaInicio: String,
+    val horaFin: String,
+    val observacion: String? = null,
+)
+data class HistorialDto(
+    val id: String,
+    val estadoAnterior: String?,
+    val estadoNuevo: String,
+    val usuarioId: String,
+    val comentario: String?,
+    val creadoEn: String,
+)

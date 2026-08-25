@@ -9,6 +9,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import ec.edu.uteq.scli.mobile.features.reservas.domain.PropuestaAlternativa
+import java.util.UUID
 
 class ReservasViewModel(
     private val repository: ReservaRepository,
@@ -18,7 +20,51 @@ class ReservasViewModel(
     val uiState: StateFlow<ReservasUiState> = mutableUiState.asStateFlow()
 
     init {
-        if (cargarInicialmente) cargarReservas()
+        if (cargarInicialmente) cargarTodo()
+    }
+
+    fun cargarTodo() { cargarReservas(); cargarSolicitudes() }
+
+    fun cargarSolicitudes() = viewModelScope.launch {
+        when (val result = repository.listarSolicitudes()) {
+            is NetworkResult.Success -> mutableUiState.value = mutableUiState.value.copy(solicitudes = result.value.contenido)
+            is NetworkResult.Failure -> if (result.message != "no_implementado") {
+                mutableUiState.value = mutableUiState.value.copy(error = mensaje(result))
+            }
+        }
+    }
+
+    fun cargarSolicitud(id: String) = viewModelScope.launch {
+        mutableUiState.value = mutableUiState.value.copy(cargando = true, error = null)
+        val solicitud = repository.obtenerSolicitud(id)
+        val historial = repository.historial(id)
+        mutableUiState.value = if (solicitud is NetworkResult.Success) mutableUiState.value.copy(
+            cargando = false, solicitudSeleccionada = solicitud.value,
+            historial = (historial as? NetworkResult.Success)?.value?.contenido.orEmpty())
+        else mutableUiState.value.copy(cargando = false, error = mensaje(solicitud as NetworkResult.Failure))
+    }
+
+    fun actuarSolicitud(action: String, perfilId: String, comentario: String = "", propuesta: PropuestaAlternativa? = null) = viewModelScope.launch {
+        val actual = mutableUiState.value.solicitudSeleccionada ?: return@launch
+        val result = when (action) {
+            "revision" -> repository.ponerEnRevision(actual.id)
+            "rechazar" -> repository.rechazar(actual.id, comentario)
+            "cancelar" -> repository.cancelarSolicitud(actual.id, comentario)
+            "aceptar" -> repository.responderPropuesta(actual.id, true, comentario)
+            "rechazar_propuesta" -> repository.responderPropuesta(actual.id, false, comentario)
+            "proponer" -> repository.proponer(actual.id, requireNotNull(propuesta))
+            "aprobar" -> {
+                when (val approved = repository.aprobar(actual.id, perfilId, comentario, UUID.randomUUID().toString())) {
+                    is NetworkResult.Success -> { cargarSolicitud(actual.id); return@launch }
+                    is NetworkResult.Failure -> approved
+                }
+            }
+            else -> return@launch
+        }
+        mutableUiState.value = when (result) {
+            is NetworkResult.Success -> mutableUiState.value.copy(solicitudSeleccionada = result.value, error = null)
+            is NetworkResult.Failure -> mutableUiState.value.copy(error = mensaje(result))
+        }
     }
 
     fun cargarReservas(esRefresco: Boolean = false) {
@@ -39,7 +85,7 @@ class ReservasViewModel(
                 is NetworkResult.Failure -> mutableUiState.value = mutableUiState.value.copy(
                     cargando = false,
                     refrescando = false,
-                    error = result.message,
+                    error = mensaje(result),
                 )
             }
         }
@@ -88,5 +134,13 @@ class ReservasViewModel(
 
     fun consumirCancelacionExitosa() {
         mutableUiState.value = mutableUiState.value.copy(cancelacionExitosa = false)
+    }
+
+    private fun mensaje(error: NetworkResult.Failure) = when (error.statusCode) {
+        401 -> "Tu sesión expiró."
+        403 -> "No tienes permisos para realizar esta acción."
+        404 -> "No se encontró el recurso."
+        409 -> "Existe un conflicto de horario o estado."
+        else -> if (error.statusCode == null) "Sin conexión." else "No fue posible procesar la solicitud."
     }
 }

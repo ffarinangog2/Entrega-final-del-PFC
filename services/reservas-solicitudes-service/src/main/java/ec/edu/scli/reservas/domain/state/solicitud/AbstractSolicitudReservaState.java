@@ -43,6 +43,10 @@ abstract class AbstractSolicitudReservaState implements SolicitudReservaState {
         return transicionar(AccionSolicitud.CANCELAR);
     }
 
+    @Override public EstadoSolicitud proponerAlternativa() { return transicionar(AccionSolicitud.PROPONER_ALTERNATIVA); }
+    @Override public EstadoSolicitud aceptarPropuesta() { return transicionar(AccionSolicitud.ACEPTAR_PROPUESTA); }
+    @Override public EstadoSolicitud rechazarPropuesta() { return transicionar(AccionSolicitud.RECHAZAR_PROPUESTA); }
+
     private EstadoSolicitud transicionar(AccionSolicitud accion) {
         EstadoSolicitud destino = transiciones.get(accion);
         if (destino == null) {
@@ -57,7 +61,9 @@ abstract class AbstractSolicitudReservaState implements SolicitudReservaState {
             case PONER_EN_REVISION -> "La solicitud solamente puede ponerse en revisión cuando está pendiente";
             case APROBAR -> "La solicitud solamente puede aprobarse cuando está en revisión";
             case RECHAZAR -> "La solicitud solamente puede rechazarse cuando está en revisión";
-            case CANCELAR -> "La solicitud solamente puede cancelarse cuando está aprobada";
+            case CANCELAR -> "La solicitud no puede cancelarse en su estado actual";
+            case PROPONER_ALTERNATIVA -> "Solo puede proponerse una alternativa a una solicitud en revisión";
+            case ACEPTAR_PROPUESTA, RECHAZAR_PROPUESTA -> "La solicitud no tiene una propuesta pendiente";
         };
     }
 }

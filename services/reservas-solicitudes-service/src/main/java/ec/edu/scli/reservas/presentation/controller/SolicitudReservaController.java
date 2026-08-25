@@ -5,6 +5,8 @@ import ec.edu.scli.reservas.presentation.dto.request.AprobarSolicitudRequest;
 import ec.edu.scli.reservas.presentation.dto.request.CancelarSolicitudRequest;
 import ec.edu.scli.reservas.presentation.dto.request.CrearSolicitudReservaRequest;
 import ec.edu.scli.reservas.presentation.dto.request.RechazarSolicitudRequest;
+import ec.edu.scli.reservas.presentation.dto.request.ProponerAlternativaRequest;
+import ec.edu.scli.reservas.presentation.dto.request.ResponderPropuestaRequest;
 import ec.edu.scli.reservas.presentation.dto.response.HistorialSolicitudResponse;
 import ec.edu.scli.reservas.presentation.dto.response.PaginaResponse;
 import ec.edu.scli.reservas.presentation.dto.response.ReservaResponse;
@@ -69,17 +71,16 @@ public class SolicitudReservaController {
             @RequestParam(defaultValue = "0") @Min(0) int pagina,
             @RequestParam(defaultValue = "20") @Min(1) @Max(100) int tamanio,
             Authentication authentication) {
-        UUID filtroSolicitante = puedeGestionarSolicitudes(authentication)
-                ? solicitanteId : obtenerUsuarioId(authentication);
-        return ResponseEntity.ok(solicitudReservaService.listar(
-                estado, filtroSolicitante, laboratorioId, fecha, pagina, tamanio));
+        UUID actorId = obtenerUsuarioId(authentication);
+        return ResponseEntity.ok(solicitudReservaService.listarAutorizado(
+                estado, solicitanteId, laboratorioId, fecha, pagina, tamanio, actorId));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<SolicitudReservaResponse> buscarPorId(
             @PathVariable UUID id, Authentication authentication) {
-        SolicitudReservaResponse respuesta = solicitudReservaService.buscarPorId(id);
-        validarLecturaPropia(respuesta.solicitanteId(), authentication);
+        SolicitudReservaResponse respuesta = solicitudReservaService
+                .buscarPorIdAutorizado(id, obtenerUsuarioId(authentication));
         return ResponseEntity.ok(respuesta);
     }
 
@@ -89,8 +90,9 @@ public class SolicitudReservaController {
             @RequestParam(defaultValue = "0") @Min(0) int pagina,
             @RequestParam(defaultValue = "20") @Min(1) @Max(100) int tamanio,
             Authentication authentication) {
-        validarLecturaPropia(solicitanteId, authentication);
-        return ResponseEntity.ok(solicitudReservaService.listarPorSolicitante(solicitanteId, pagina, tamanio));
+        return ResponseEntity.ok(solicitudReservaService.listarAutorizado(
+                null, solicitanteId, null, null, pagina, tamanio,
+                obtenerUsuarioId(authentication)));
     }
 
     @GetMapping("/estado/{estado}")
@@ -99,11 +101,9 @@ public class SolicitudReservaController {
             @RequestParam(defaultValue = "0") @Min(0) int pagina,
             @RequestParam(defaultValue = "20") @Min(1) @Max(100) int tamanio,
             Authentication authentication) {
-        if (!puedeGestionarSolicitudes(authentication)) {
-            return ResponseEntity.ok(solicitudReservaService.listar(
-                    estado, obtenerUsuarioId(authentication), null, null, pagina, tamanio));
-        }
-        return ResponseEntity.ok(solicitudReservaService.listarPorEstado(estado, pagina, tamanio));
+        return ResponseEntity.ok(solicitudReservaService.listarAutorizado(
+                estado, null, null, null, pagina, tamanio,
+                obtenerUsuarioId(authentication)));
     }
 
     @PutMapping("/{id}")
@@ -142,13 +142,37 @@ public class SolicitudReservaController {
         return ResponseEntity.ok(solicitudReservaService.cancelar(id, request, obtenerUsuarioId(principal)));
     }
 
+    @PostMapping("/{id}/propuesta")
+    public ResponseEntity<SolicitudReservaResponse> proponerAlternativa(
+            @PathVariable UUID id, @Valid @RequestBody ProponerAlternativaRequest request,
+            Principal principal) {
+        return ResponseEntity.ok(solicitudReservaService.proponerAlternativa(
+                id, request, obtenerUsuarioId(principal)));
+    }
+
+    @PostMapping("/{id}/propuesta/aceptar")
+    public ResponseEntity<SolicitudReservaResponse> aceptarPropuesta(
+            @PathVariable UUID id, @Valid @RequestBody ResponderPropuestaRequest request,
+            Principal principal) {
+        return ResponseEntity.ok(solicitudReservaService.aceptarPropuesta(
+                id, request, obtenerUsuarioId(principal)));
+    }
+
+    @PostMapping("/{id}/propuesta/rechazar")
+    public ResponseEntity<SolicitudReservaResponse> rechazarPropuesta(
+            @PathVariable UUID id, @Valid @RequestBody ResponderPropuestaRequest request,
+            Principal principal) {
+        return ResponseEntity.ok(solicitudReservaService.rechazarPropuesta(
+                id, request, obtenerUsuarioId(principal)));
+    }
+
     @GetMapping("/{id}/historial")
     public ResponseEntity<PaginaResponse<HistorialSolicitudResponse>> obtenerHistorial(
             @PathVariable UUID id,
             @RequestParam(defaultValue = "0") @Min(0) int pagina,
             @RequestParam(defaultValue = "20") @Min(1) @Max(100) int tamanio,
             Authentication authentication) {
-        validarLecturaPropia(solicitudReservaService.buscarPorId(id).solicitanteId(), authentication);
+        solicitudReservaService.buscarPorIdAutorizado(id, obtenerUsuarioId(authentication));
         return ResponseEntity.ok(solicitudReservaService.obtenerHistorial(id, pagina, tamanio));
     }
 

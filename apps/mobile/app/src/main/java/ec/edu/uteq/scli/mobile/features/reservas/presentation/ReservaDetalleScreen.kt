@@ -24,7 +24,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun ReservaDetalleScreen(reservaId: String, viewModel: ReservasViewModel) {
+fun ReservaDetalleScreen(reservaId: String, viewModel: ReservasViewModel, puedeCancelar: Boolean = true) {
     val state by viewModel.uiState.collectAsState()
     var mostrarCancelacion by remember { mutableStateOf(false) }
     LaunchedEffect(reservaId) { viewModel.cargarDetalle(reservaId) }
@@ -51,7 +51,7 @@ fun ReservaDetalleScreen(reservaId: String, viewModel: ReservasViewModel) {
                 Text("Solicitud: ${reserva.solicitudId}")
                 Text("Creada: ${reserva.creadaEn}")
                 Text("Actualizada: ${reserva.actualizadaEn}")
-                if (reserva.estado == "PROGRAMADA") {
+                if (reserva.estado == "PROGRAMADA" && puedeCancelar) {
                     Button(
                         onClick = { mostrarCancelacion = true },
                         enabled = !state.cancelando,

@@ -45,8 +45,8 @@ nodos `crdb-e3-1`, `crdb-e3-2` y `crdb-e3-3` por su puerto interno `26257`.
 
 ## Seguridad
 
-- API stateless protegida con JWT Bearer para operaciones de escritura.
-- Las consultas `GET` y Actuator quedan disponibles sin token.
+- API stateless protegida con JWT Bearer para lecturas y escrituras de negocio.
+- Solamente `health`, `info`, `prometheus` y preflight CORS son públicos.
 - El token debe estar firmado con `JWT_SECRET`, pertenecer a `JWT_ISSUER` e incluir
   `sub` y `perfilId` como UUID.
 - Los clientes internos envían `X-Internal-Api-Key` usando `INTERNAL_API_KEY`.
@@ -161,6 +161,16 @@ pueda alcanzar el dispositivo/emulador).
 - CockroachDB trabaja con aislamiento serializable.
 - Las entidades mutables usan `@Version` para bloqueo optimista.
 - Las transiciones críticas cargan solicitudes y reservas con bloqueo pesimista.
+- La aprobación toma un mutex transaccional por laboratorio y fecha; dos solicitudes
+  solapadas se serializan antes de volver a comprobar disponibilidad.
+- `ADMINISTRADOR_PISO` requiere simultáneamente rol/permiso JWT, contexto institucional
+  activo de Usuarios y coincidencia entre su `pisoId` y el piso del laboratorio.
+- `ADMINISTRADOR` conserva alcance global y `TECNICO` conserva su comportamiento previo.
+- El docente crea y consulta solicitudes propias; el backend valida su identidad y
+  permite retirar estados `PENDIENTE`/`EN_REVISION`. Al cancelar una solicitud
+  `APROBADA`, también cancela atómicamente la reserva `PROGRAMADA` asociada.
+- Una alternativa usa el estado `PROPUESTA`: el gestor propone sin reservar y el
+  docente propietario acepta o rechaza, regresando a `EN_REVISION` para decisión final.
 - Las referencias a otros microservicios son UUID sin claves foráneas locales.
 - Los clientes REST tienen tiempos máximos configurables y reintentan únicamente
   lecturas fallidas por conectividad o respuestas `5xx`.
@@ -186,7 +196,8 @@ entorno compartido de Docker Compose.
 - La creación y aprobación son idempotentes y persistentes. La creación vincula la
   clave con operación, actor, SHA-256 canónico del payload y solicitud resultante.
 - Las transacciones serializables críticas tienen hasta tres intentos solo ante
-  conflictos transitorios de locking, con backoff acotado.
+  conflictos transitorios de locking, incluidos los `40001` traducidos por Spring,
+  con backoff acotado.
 - Flyway es la fuente de verdad. Compose E3 carga V1 desde la carpeta de migraciones
   y la aplicación aplica V2/V3; `db/schema.sql` queda como referencia histórica.
 - `num_replicas=3` se conserva en la inicialización del cluster E3.

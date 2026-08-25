@@ -1,15 +1,15 @@
 package ec.edu.scli.reservas.application.service.impl;
 
 import ec.edu.scli.reservas.client.AcademicoLaboratoriosClient;
-import ec.edu.scli.reservas.client.UsuariosClient;
 import ec.edu.scli.reservas.client.dto.ExisteExternoResponse;
 import ec.edu.scli.reservas.client.dto.LaboratorioExternoResponse;
-import ec.edu.scli.reservas.client.dto.PerfilExternoResponse;
 import ec.edu.scli.reservas.presentation.dto.request.ActualizarSolicitudReservaRequest;
 import ec.edu.scli.reservas.presentation.dto.request.AprobarSolicitudRequest;
 import ec.edu.scli.reservas.presentation.dto.request.CancelarSolicitudRequest;
 import ec.edu.scli.reservas.presentation.dto.request.CrearSolicitudReservaRequest;
 import ec.edu.scli.reservas.presentation.dto.request.RechazarSolicitudRequest;
+import ec.edu.scli.reservas.presentation.dto.request.ProponerAlternativaRequest;
+import ec.edu.scli.reservas.presentation.dto.request.ResponderPropuestaRequest;
 import ec.edu.scli.reservas.presentation.dto.response.DisponibilidadResponse;
 import ec.edu.scli.reservas.presentation.dto.response.HistorialSolicitudResponse;
 import ec.edu.scli.reservas.presentation.dto.response.PaginaResponse;
@@ -36,11 +36,16 @@ import ec.edu.scli.reservas.domain.state.reserva.ReservaStates;
 import ec.edu.scli.reservas.domain.state.solicitud.SolicitudReservaStates;
 import ec.edu.scli.reservas.application.service.DisponibilidadService;
 import ec.edu.scli.reservas.application.service.SolicitudReservaService;
+import ec.edu.scli.reservas.application.service.PoliticaAmbitoLaboratorio;
+import ec.edu.scli.reservas.domain.port.out.AgendaMutexPort;
+import ec.edu.scli.reservas.domain.port.out.DocenteInstitucionalPort;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.dao.PessimisticLockingFailureException;
+import org.springframework.dao.CannotAcquireLockException;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
@@ -65,10 +70,12 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
     private final SolicitudReservaMapper solicitudReservaMapper;
     private final ReservaMapper reservaMapper;
     private final HistorialSolicitudMapper historialSolicitudMapper;
-    private final UsuariosClient usuariosClient;
+    private final DocenteInstitucionalPort docentes;
     private final AcademicoLaboratoriosClient academicoLaboratoriosClient;
     private final DisponibilidadService disponibilidadService;
     private final BusinessEventMetrics businessEventMetrics;
+    private final PoliticaAmbitoLaboratorio politicaAmbito;
+    private final AgendaMutexPort agendaMutex;
 
     public SolicitudReservaServiceImpl(
             SolicitudReservaRepositoryPort solicitudReservaRepository,
@@ -79,10 +86,12 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
             SolicitudReservaMapper solicitudReservaMapper,
             ReservaMapper reservaMapper,
             HistorialSolicitudMapper historialSolicitudMapper,
-            UsuariosClient usuariosClient,
+            DocenteInstitucionalPort docentes,
             AcademicoLaboratoriosClient academicoLaboratoriosClient,
             DisponibilidadService disponibilidadService,
-            BusinessEventMetrics businessEventMetrics) {
+            BusinessEventMetrics businessEventMetrics,
+            PoliticaAmbitoLaboratorio politicaAmbito,
+            AgendaMutexPort agendaMutex) {
         this.solicitudReservaRepository = solicitudReservaRepository;
         this.reservaRepository = reservaRepository;
         this.historialSolicitudRepository = historialSolicitudRepository;
@@ -91,15 +100,17 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
         this.solicitudReservaMapper = solicitudReservaMapper;
         this.reservaMapper = reservaMapper;
         this.historialSolicitudMapper = historialSolicitudMapper;
-        this.usuariosClient = usuariosClient;
+        this.docentes = docentes;
         this.academicoLaboratoriosClient = academicoLaboratoriosClient;
         this.disponibilidadService = disponibilidadService;
         this.businessEventMetrics = businessEventMetrics;
+        this.politicaAmbito = politicaAmbito;
+        this.agendaMutex = agendaMutex;
     }
 
     @Override
     @Transactional(isolation = Isolation.SERIALIZABLE)
-    @Retryable(retryFor = {PessimisticLockingFailureException.class, ObjectOptimisticLockingFailureException.class},
+    @Retryable(retryFor = {CannotAcquireLockException.class, PessimisticLockingFailureException.class, ObjectOptimisticLockingFailureException.class},
             maxAttempts = 3, backoff = @Backoff(delay = 25, multiplier = 2, maxDelay = 100))
     public SolicitudReservaResponse crear(
             CrearSolicitudReservaRequest request,
@@ -157,7 +168,7 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
             CrearSolicitudReservaRequest request,
             String claveIdempotencia,
             UUID usuarioAutenticadoId) {
-        validarDocente(request.docenteId());
+        UUID docenteId = resolverDocente(request.docenteId(), usuarioAutenticadoId);
         validarLaboratorio(request.laboratorioId());
         validarMateria(request.materiaId());
         validarPeriodoLectivo(request.periodoLectivoId());
@@ -166,8 +177,9 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
 
         SolicitudReserva solicitud = BeanUtils.instantiateClass(SolicitudReserva.class);
         solicitud.setSolicitanteId(request.solicitanteId());
-        solicitud.setDocenteId(request.docenteId());
+        solicitud.setDocenteId(docenteId);
         solicitud.setLaboratorioId(request.laboratorioId());
+        solicitud.setPisoId(politicaAmbito.obtenerPiso(request.laboratorioId()));
         solicitud.setMateriaId(request.materiaId());
         solicitud.setPeriodoLectivoId(request.periodoLectivoId());
         solicitud.setFechaReserva(request.fechaReserva());
@@ -203,13 +215,38 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
             int pagina,
             int tamanio) {
         return mapearPagina(solicitudReservaRepository.buscar(
-                new FiltroSolicitudReserva(estado, solicitanteId, laboratorioId, fecha), pagina, tamanio));
+                new FiltroSolicitudReserva(estado, solicitanteId, laboratorioId, null, fecha), pagina, tamanio));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PaginaResponse<SolicitudReservaResponse> listarAutorizado(
+            EstadoSolicitud estado, UUID solicitanteId, UUID laboratorioId, LocalDate fecha,
+            int pagina, int tamanio, UUID actorId) {
+        var actor = politicaAmbito.actor();
+        if (!actor.perfilId().equals(actorId)) throw new AccessDeniedException("Actor inconsistente");
+        UUID pisoId = null;
+        if (actor.tiene("ROLE_DOCENTE")) solicitanteId = actorId;
+        else if (actor.tiene("ROLE_ADMINISTRADOR_PISO")) pisoId = politicaAmbito.pisoGestionado();
+        else if (!actor.tiene("ROLE_ADMINISTRADOR") && !actor.tiene("ROLE_TECNICO")) {
+            solicitanteId = actorId;
+        }
+        return mapearPagina(solicitudReservaRepository.buscar(
+                new FiltroSolicitudReserva(estado, solicitanteId, laboratorioId, pisoId, fecha), pagina, tamanio));
     }
 
     @Override
     @Transactional(readOnly = true)
     public SolicitudReservaResponse buscarPorId(UUID id) {
         return solicitudReservaMapper.toResponse(obtenerSolicitud(id));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public SolicitudReservaResponse buscarPorIdAutorizado(UUID id, UUID actorId) {
+        SolicitudReserva solicitud = obtenerSolicitud(id);
+        validarLectura(solicitud, actorId);
+        return solicitudReservaMapper.toResponse(solicitud);
     }
 
     @Override
@@ -238,15 +275,16 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
         validarPropietario(solicitud, usuarioAutenticadoId);
         SolicitudReservaStates.desde(solicitud.getEstado()).validarActualizacion();
 
-        validarDocente(request.docenteId());
+        UUID docenteId = resolverDocente(request.docenteId(), usuarioAutenticadoId);
         validarLaboratorio(request.laboratorioId());
         validarMateria(request.materiaId());
         validarPeriodoLectivo(request.periodoLectivoId());
         validarDisponibilidad(
                 request.laboratorioId(), request.fechaReserva(), request.horaInicio(), request.horaFin());
 
-        solicitud.setDocenteId(request.docenteId());
+        solicitud.setDocenteId(docenteId);
         solicitud.setLaboratorioId(request.laboratorioId());
+        solicitud.setPisoId(politicaAmbito.obtenerPiso(request.laboratorioId()));
         solicitud.setMateriaId(request.materiaId());
         solicitud.setPeriodoLectivoId(request.periodoLectivoId());
         solicitud.setFechaReserva(request.fechaReserva());
@@ -272,18 +310,41 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
                         "No existe la solicitud de reserva indicada"));
     }
 
-    private void validarDocente(UUID docenteId) {
-        PerfilExternoResponse docente = usuariosClient.obtenerPerfil(docenteId);
-        if (docente == null || !docente.existe()) {
-            throw new ResourceNotFoundException("El docente indicado no existe");
+    private UUID resolverDocente(UUID docenteIdSolicitado, UUID actorId) {
+        var actor = politicaAmbito.actor();
+        if (!actor.perfilId().equals(actorId)) throw new AccessDeniedException("Actor inconsistente");
+        var docente = actor.tiene("ROLE_DOCENTE")
+                ? docentes.obtenerPorPerfilId(actorId)
+                : docentes.obtenerPorDocenteId(docenteIdSolicitado);
+        if (docente == null || docente.docenteId() == null) {
+            throw new ResourceNotFoundException("No existe un docente asociado al perfil indicado");
         }
         if (!docente.activo()) {
             throw new IllegalArgumentException("El docente indicado no está activo");
         }
-        if (docente.tiposPerfil() == null
-                || docente.tiposPerfil().stream().noneMatch("DOCENTE"::equalsIgnoreCase)) {
-            throw new IllegalArgumentException("El perfil indicado no corresponde a un docente");
+        if (actor.tiene("ROLE_DOCENTE") && !docente.docenteId().equals(docenteIdSolicitado)) {
+            throw new AccessDeniedException("Un docente no puede suplantar a otro docente");
         }
+        return docente.docenteId();
+    }
+
+    private void validarLectura(SolicitudReserva solicitud, UUID actorId) {
+        var actor = politicaAmbito.actor();
+        if (!actor.perfilId().equals(actorId)) throw new AccessDeniedException("Actor inconsistente");
+        if (solicitud.getSolicitanteId().equals(actorId)) return;
+        if (actor.tiene("ROLE_ADMINISTRADOR") || actor.tiene("ROLE_TECNICO")) return;
+        if (actor.tiene("ROLE_ADMINISTRADOR_PISO")) {
+            politicaAmbito.validarGestion(solicitud.getLaboratorioId());
+            return;
+        }
+        throw new AccessDeniedException("La solicitud pertenece a otro usuario");
+    }
+
+    private void validarGestion(SolicitudReserva solicitud, UUID actorId) {
+        if (!politicaAmbito.actor().perfilId().equals(actorId)) {
+            throw new AccessDeniedException("Actor inconsistente");
+        }
+        politicaAmbito.validarGestion(solicitud.getLaboratorioId());
     }
 
     private void validarLaboratorio(UUID laboratorioId) {
@@ -334,6 +395,7 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "No existe la solicitud de reserva indicada"));
 
+        validarGestion(solicitud, usuarioAutenticadoId);
         solicitud.setEstado(SolicitudReservaStates.desde(solicitud.getEstado()).ponerEnRevision());
         SolicitudReserva guardada = solicitudReservaRepository.guardar(solicitud);
 
@@ -350,7 +412,7 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
 
     @Override
     @Transactional(isolation = Isolation.SERIALIZABLE)
-    @Retryable(retryFor = {PessimisticLockingFailureException.class, ObjectOptimisticLockingFailureException.class},
+    @Retryable(retryFor = {CannotAcquireLockException.class, PessimisticLockingFailureException.class, ObjectOptimisticLockingFailureException.class},
             maxAttempts = 3, backoff = @Backoff(delay = 25, multiplier = 2, maxDelay = 100))
     public ReservaResponse aprobar(
             UUID id,
@@ -372,16 +434,19 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
                     "La clave de idempotencia pertenece a otra operación");
         }
         if (operacionIdempotente.reservaId() != null) {
-            return reservaMapper.toResponse(reservaRepository
+            Reserva resultado = reservaRepository
                     .buscarPorId(operacionIdempotente.reservaId())
                     .orElseThrow(() -> new IllegalStateException(
-                            "El resultado de la aprobación idempotente no existe")));
+                            "El resultado de la aprobación idempotente no existe"));
+            politicaAmbito.validarGestion(resultado.getLaboratorioId());
+            return reservaMapper.toResponse(resultado);
         }
 
         SolicitudReserva solicitud = solicitudReservaRepository.buscarPorIdParaActualizar(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "No existe la solicitud de reserva indicada"));
 
+        validarGestion(solicitud, usuarioAutenticadoId);
         EstadoSolicitud estadoAprobado = SolicitudReservaStates.desde(solicitud.getEstado()).aprobar();
 
         if (reservaRepository.existePorSolicitudId(id)) {
@@ -389,6 +454,7 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
                     "La solicitud ya tiene una reserva asociada");
         }
 
+        agendaMutex.bloquear(solicitud.getLaboratorioId(), solicitud.getFechaReserva());
         validarDisponibilidad(
                 solicitud.getLaboratorioId(),
                 solicitud.getFechaReserva(),
@@ -399,6 +465,7 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
         Reserva reserva = BeanUtils.instantiateClass(Reserva.class);
         reserva.setSolicitudId(solicitud.getId());
         reserva.setLaboratorioId(solicitud.getLaboratorioId());
+        reserva.setPisoId(solicitud.getPisoId());
         reserva.setResponsableId(usuarioAutenticadoId);
         reserva.setFechaReserva(solicitud.getFechaReserva());
         reserva.setHoraInicio(solicitud.getHoraInicio());
@@ -439,6 +506,7 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
         SolicitudReserva solicitud = solicitudReservaRepository.buscarPorIdParaActualizar(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "No existe la solicitud de reserva indicada"));
+        validarGestion(solicitud, usuarioAutenticadoId);
         solicitud.setEstado(SolicitudReservaStates.desde(solicitud.getEstado()).rechazar());
         SolicitudReserva guardada = solicitudReservaRepository.guardar(solicitud);
 
@@ -456,38 +524,130 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
 
     @Override
     @Transactional(isolation = Isolation.SERIALIZABLE)
-    @Retryable(retryFor = {PessimisticLockingFailureException.class, ObjectOptimisticLockingFailureException.class},
+    @Retryable(retryFor = {CannotAcquireLockException.class, PessimisticLockingFailureException.class, ObjectOptimisticLockingFailureException.class},
             maxAttempts = 3, backoff = @Backoff(delay = 25, multiplier = 2, maxDelay = 100))
     public SolicitudReservaResponse cancelar(
             UUID id, CancelarSolicitudRequest request, UUID usuarioAutenticadoId) {
         SolicitudReserva solicitud = solicitudReservaRepository.buscarPorIdParaActualizar(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "No existe la solicitud de reserva indicada"));
-        EstadoSolicitud estadoCancelado = SolicitudReservaStates.desde(solicitud.getEstado()).cancelar();
+        boolean propietario = solicitud.getSolicitanteId().equals(usuarioAutenticadoId);
+        if (!propietario) validarGestion(solicitud, usuarioAutenticadoId);
+        EstadoSolicitud anterior = solicitud.getEstado();
+        EstadoSolicitud estadoCancelado = SolicitudReservaStates.desde(anterior).cancelar();
 
-        Reserva reservaAsociada = reservaRepository.buscarPorSolicitudId(id)
-                .orElseThrow(() -> new IllegalStateException(
-                        "La solicitud aprobada no tiene una reserva asociada"));
-        Reserva reserva = reservaRepository.buscarPorIdParaActualizar(reservaAsociada.getId())
-                .orElseThrow(() -> new IllegalStateException(
-                        "La solicitud aprobada no tiene una reserva asociada"));
-        reserva.setEstado(ReservaStates.desde(reserva.getEstado()).cancelar());
-        reservaRepository.guardar(reserva);
+        if (anterior == EstadoSolicitud.APROBADA) {
+            Reserva reservaAsociada = reservaRepository.buscarPorSolicitudId(id)
+                    .orElseThrow(() -> new IllegalStateException(
+                            "La solicitud aprobada no tiene una reserva asociada"));
+            Reserva reserva = reservaRepository.buscarPorIdParaActualizar(reservaAsociada.getId())
+                    .orElseThrow(() -> new IllegalStateException(
+                            "La solicitud aprobada no tiene una reserva asociada"));
+            reserva.setEstado(ReservaStates.desde(reserva.getEstado()).cancelar());
+            reservaRepository.guardar(reserva);
+            businessEventMetrics.reservaCancelada();
+        }
 
         solicitud.setEstado(estadoCancelado);
         SolicitudReserva guardada = solicitudReservaRepository.guardar(solicitud);
 
         HistorialSolicitud historial = BeanUtils.instantiateClass(HistorialSolicitud.class);
         historial.setSolicitudId(guardada.getId());
-        historial.setEstadoAnterior(EstadoSolicitud.APROBADA);
+        historial.setEstadoAnterior(anterior);
         historial.setEstadoNuevo(EstadoSolicitud.CANCELADA);
         historial.setComentario(request.comentario());
         historial.setUsuarioAccionId(usuarioAutenticadoId);
         historialSolicitudRepository.guardar(historial);
 
         businessEventMetrics.solicitudCancelada();
-        businessEventMetrics.reservaCancelada();
         return solicitudReservaMapper.toResponse(guardada);
+    }
+
+    @Override
+    @Transactional(isolation = Isolation.SERIALIZABLE)
+    public SolicitudReservaResponse proponerAlternativa(
+            UUID id, ProponerAlternativaRequest request, UUID actorId) {
+        SolicitudReserva solicitud = solicitudReservaRepository.buscarPorIdParaActualizar(id)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "No existe la solicitud de reserva indicada"));
+        validarGestion(solicitud, actorId);
+        politicaAmbito.validarGestion(request.laboratorioId());
+        validarLaboratorio(request.laboratorioId());
+        validarDisponibilidad(request.laboratorioId(), request.fecha(),
+                request.horaInicio(), request.horaFin());
+
+        solicitud.setEstado(SolicitudReservaStates.desde(solicitud.getEstado())
+                .proponerAlternativa());
+        solicitud.setPropuestaFecha(request.fecha());
+        solicitud.setPropuestaHoraInicio(request.horaInicio());
+        solicitud.setPropuestaHoraFin(request.horaFin());
+        solicitud.setPropuestaLaboratorioId(request.laboratorioId());
+        solicitud.setPropuestaObservacion(request.observacion());
+        SolicitudReserva guardada = solicitudReservaRepository.guardar(solicitud);
+        guardarHistorial(id, EstadoSolicitud.EN_REVISION, EstadoSolicitud.PROPUESTA,
+                request.observacion(), actorId);
+        return solicitudReservaMapper.toResponse(guardada);
+    }
+
+    @Override
+    @Transactional(isolation = Isolation.SERIALIZABLE)
+    public SolicitudReservaResponse aceptarPropuesta(
+            UUID id, ResponderPropuestaRequest request, UUID actorId) {
+        SolicitudReserva solicitud = solicitudReservaRepository.buscarPorIdParaActualizar(id)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "No existe la solicitud de reserva indicada"));
+        validarPropietario(solicitud, actorId);
+        EstadoSolicitud nuevoEstado = SolicitudReservaStates.desde(solicitud.getEstado())
+                .aceptarPropuesta();
+        validarDisponibilidad(solicitud.getPropuestaLaboratorioId(), solicitud.getPropuestaFecha(),
+                solicitud.getPropuestaHoraInicio(), solicitud.getPropuestaHoraFin());
+        solicitud.setLaboratorioId(solicitud.getPropuestaLaboratorioId());
+        solicitud.setPisoId(politicaAmbito.obtenerPiso(solicitud.getPropuestaLaboratorioId()));
+        solicitud.setFechaReserva(solicitud.getPropuestaFecha());
+        solicitud.setHoraInicio(solicitud.getPropuestaHoraInicio());
+        solicitud.setHoraFin(solicitud.getPropuestaHoraFin());
+        solicitud.setEstado(nuevoEstado);
+        limpiarPropuesta(solicitud);
+        SolicitudReserva guardada = solicitudReservaRepository.guardar(solicitud);
+        guardarHistorial(id, EstadoSolicitud.PROPUESTA, EstadoSolicitud.EN_REVISION,
+                request.comentario(), actorId);
+        return solicitudReservaMapper.toResponse(guardada);
+    }
+
+    @Override
+    @Transactional
+    public SolicitudReservaResponse rechazarPropuesta(
+            UUID id, ResponderPropuestaRequest request, UUID actorId) {
+        SolicitudReserva solicitud = solicitudReservaRepository.buscarPorIdParaActualizar(id)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "No existe la solicitud de reserva indicada"));
+        validarPropietario(solicitud, actorId);
+        solicitud.setEstado(SolicitudReservaStates.desde(solicitud.getEstado())
+                .rechazarPropuesta());
+        limpiarPropuesta(solicitud);
+        SolicitudReserva guardada = solicitudReservaRepository.guardar(solicitud);
+        guardarHistorial(id, EstadoSolicitud.PROPUESTA, EstadoSolicitud.EN_REVISION,
+                request.comentario(), actorId);
+        return solicitudReservaMapper.toResponse(guardada);
+    }
+
+    private void limpiarPropuesta(SolicitudReserva solicitud) {
+        solicitud.setPropuestaFecha(null);
+        solicitud.setPropuestaHoraInicio(null);
+        solicitud.setPropuestaHoraFin(null);
+        solicitud.setPropuestaLaboratorioId(null);
+        solicitud.setPropuestaObservacion(null);
+    }
+
+    private void guardarHistorial(UUID solicitudId, EstadoSolicitud anterior,
+                                  EstadoSolicitud nuevo, String comentario, UUID actorId) {
+        HistorialSolicitud historial = BeanUtils.instantiateClass(HistorialSolicitud.class);
+        historial.setSolicitudId(solicitudId);
+        historial.setEstadoAnterior(anterior);
+        historial.setEstadoNuevo(nuevo);
+        historial.setComentario(comentario);
+        historial.setUsuarioAccionId(actorId);
+        historialSolicitudRepository.guardar(historial);
     }
 
     @Override

@@ -14,6 +14,8 @@ public record LaboratorioDisponibilidadBaseResponse(
 
         UUID laboratorioId,
 
+        UUID pisoId,
+
         boolean existe,
 
         boolean activo,

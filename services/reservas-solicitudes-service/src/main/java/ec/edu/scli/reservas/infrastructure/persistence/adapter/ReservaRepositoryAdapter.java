@@ -22,8 +22,11 @@ public class ReservaRepositoryAdapter implements ReservaRepositoryPort {
 
     public Pagina<Reserva> buscar(FiltroReserva f, int p, int t) {
         Specification<ReservaJpaEntity> s = Specification.allOf(igual("estado", f.estado()), igual("laboratorioId", f.laboratorioId()),
-                igual("responsableId", f.responsableId()), desde(f.fechaDesde()), hasta(f.fechaHasta()));
-        boolean vacio = f.estado()==null && f.laboratorioId()==null && f.responsableId()==null && f.fechaDesde()==null && f.fechaHasta()==null;
+                igual("responsableId", f.responsableId()), igual("pisoId", f.pisoId()),
+                solicitante(f.solicitanteId()), desde(f.fechaDesde()), hasta(f.fechaHasta()));
+        boolean vacio = f.estado()==null && f.laboratorioId()==null && f.responsableId()==null
+                && f.pisoId()==null && f.solicitanteId()==null
+                && f.fechaDesde()==null && f.fechaHasta()==null;
         return pagina(vacio ? repository.findAll(PageRequest.of(p,t)) : repository.findAll(s, PageRequest.of(p,t)));
     }
     public List<Reserva> buscarParaAgenda(UUID l, LocalDate d, LocalDate h) {
@@ -52,6 +55,9 @@ public class ReservaRepositoryAdapter implements ReservaRepositoryPort {
         return mapper.toDomain(repository.save(e));
     }
     private <T> Specification<ReservaJpaEntity> igual(String a,T v){return v==null?null:(r,q,b)->b.equal(r.get(a),v);}
+    private Specification<ReservaJpaEntity> solicitante(UUID v){
+        return v==null?null:(r,q,b)->b.equal(r.get("solicitud").get("solicitanteId"),v);
+    }
     private Specification<ReservaJpaEntity> desde(LocalDate v){return v==null?null:(r,q,b)->b.greaterThanOrEqualTo(r.get("fechaReserva"),v);}
     private Specification<ReservaJpaEntity> hasta(LocalDate v){return v==null?null:(r,q,b)->b.lessThanOrEqualTo(r.get("fechaReserva"),v);}
     private Pagina<Reserva> pagina(Page<ReservaJpaEntity> p){return new Pagina<>(p.stream().map(mapper::toDomain).toList(),p.getNumber(),p.getSize(),p.getTotalElements(),p.getTotalPages(),p.isFirst(),p.isLast());}

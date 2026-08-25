@@ -3,6 +3,7 @@ package ec.edu.scli.usuarios.presentation.controller;
 import ec.edu.scli.usuarios.application.usecase.DocenteService;
 import ec.edu.scli.usuarios.presentation.dto.docente.DocenteRequest;
 import ec.edu.scli.usuarios.presentation.dto.docente.DocenteResponse;
+import ec.edu.scli.usuarios.security.JwtPrincipal;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -13,6 +14,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -27,6 +29,9 @@ class DocenteControllerTest {
 
     @Mock
     private DocenteService docenteService;
+
+    @Mock
+    private Authentication authentication;
 
     private DocenteController controller;
 
@@ -104,9 +109,12 @@ class DocenteControllerTest {
     @Test
     void obtenerPorPerfilId_deberiaRetornar200ConDocente() {
         when(docenteService.obtenerPorPerfilId(perfilId)).thenReturn(response);
+        when(authentication.getAuthorities()).thenReturn(List.of());
+        when(authentication.getPrincipal()).thenReturn(
+                new JwtPrincipal(UUID.randomUUID(), perfilId, "docente"));
 
         ResponseEntity<DocenteResponse> resultado =
-                controller.obtenerPorPerfilId(perfilId);
+                controller.obtenerPorPerfilId(perfilId, authentication);
 
         assertThat(resultado.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(resultado.getBody()).isEqualTo(response);

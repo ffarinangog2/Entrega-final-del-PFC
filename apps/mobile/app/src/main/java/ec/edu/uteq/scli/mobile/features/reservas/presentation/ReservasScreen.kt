@@ -18,9 +18,14 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -31,6 +36,8 @@ fun ReservasScreen(
     viewModel: ReservasViewModel,
     onReservaClick: (String) -> Unit,
     onNuevaReserva: () -> Unit,
+    onSolicitudClick: (String) -> Unit = {},
+    puedeCrear: Boolean = true,
 ) {
     val state by viewModel.uiState.collectAsState()
     ReservasContent(
@@ -39,6 +46,8 @@ fun ReservasScreen(
         onRetry = { viewModel.cargarReservas() },
         onReservaClick = onReservaClick,
         onNuevaReserva = onNuevaReserva,
+        onSolicitudClick = onSolicitudClick,
+        puedeCrear = puedeCrear,
     )
 }
 
@@ -50,14 +59,17 @@ internal fun ReservasContent(
     onRetry: () -> Unit,
     onReservaClick: (String) -> Unit,
     onNuevaReserva: () -> Unit,
+    onSolicitudClick: (String) -> Unit = {},
+    puedeCrear: Boolean = true,
 ) {
+    var tab by remember { mutableStateOf(0) }
     val pullRefreshState = rememberPullRefreshState(state.refrescando, onRefresh)
     Scaffold(
-        floatingActionButton = {
+        floatingActionButton = { if (puedeCrear) {
             FloatingActionButton(onClick = onNuevaReserva, modifier = Modifier.testTag("nueva_reserva")) {
                 Text("+")
             }
-        },
+        } },
     ) { padding ->
         Box(
             modifier = Modifier
@@ -66,7 +78,12 @@ internal fun ReservasContent(
                 .pullRefresh(pullRefreshState)
                 .testTag("reservas_listado"),
         ) {
-            when {
+            Column(Modifier.fillMaxSize()) {
+            TabRow(tab) {
+                Tab(tab == 0, { tab = 0 }, text = { Text("Solicitudes") })
+                Tab(tab == 1, { tab = 1 }, text = { Text("Reservas") })
+            }
+            Box(Modifier.fillMaxSize()) { when {
                 state.cargando && state.reservas.isEmpty() -> CircularProgressIndicator(
                     modifier = Modifier.align(Alignment.Center).testTag("reservas_loading"),
                 )
@@ -77,10 +94,19 @@ internal fun ReservasContent(
                     Text(requireNotNull(state.error))
                     Button(onClick = onRetry) { Text("Reintentar") }
                 }
-                state.reservas.isEmpty() -> Text(
-                    "No hay reservas",
+                tab == 0 && state.solicitudes.isEmpty() -> Text(
+                    "No hay solicitudes",
                     modifier = Modifier.align(Alignment.Center).testTag("reservas_empty"),
                 )
+                tab == 0 -> LazyColumn(Modifier.fillMaxSize()) {
+                    items(state.solicitudes, key = { it.id }) { solicitud ->
+                        Column(Modifier.fillMaxWidth().clickable { onSolicitudClick(solicitud.id) }.padding(16.dp).testTag("solicitud_${solicitud.id}")) {
+                            Text("Solicitud — ${solicitud.estado.replace('_', ' ')}")
+                            Text(solicitud.fechaReserva)
+                            Text("${solicitud.horaInicio} - ${solicitud.horaFin}")
+                        }
+                    }
+                }
                 else -> LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -106,12 +132,13 @@ internal fun ReservasContent(
                         }
                     }
                 }
-            }
+            } }
             PullRefreshIndicator(
                 refreshing = state.refrescando,
                 state = pullRefreshState,
-                modifier = Modifier.align(Alignment.TopCenter),
+                modifier = Modifier,
             )
+            }
         }
     }
 }

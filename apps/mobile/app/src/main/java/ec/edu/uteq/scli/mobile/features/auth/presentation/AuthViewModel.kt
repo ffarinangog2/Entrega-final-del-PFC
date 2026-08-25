@@ -24,7 +24,17 @@ class AuthViewModel(
     val uiState: StateFlow<AuthUiState> = _uiState.asStateFlow()
 
     init {
-        _uiState.value = AuthUiState(restaurando = false, sesion = repository.restoreSession())
+        repository.onSessionExpired {
+            _uiState.value = AuthUiState(restaurando = false, error = "Tu sesión expiró.")
+        }
+        val restored = repository.restoreSession()
+        if (restored != null) {
+            _uiState.value = AuthUiState(restaurando = false, sesion = restored)
+        } else {
+            viewModelScope.launch {
+                _uiState.value = AuthUiState(restaurando = false, sesion = repository.refreshSession())
+            }
+        }
     }
 
     fun login(username: String, password: String) {

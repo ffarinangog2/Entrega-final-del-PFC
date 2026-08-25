@@ -30,7 +30,8 @@ class DisponibilidadServiceImplTest {
         service = new DisponibilidadServiceImpl(
                 reservas, bloqueos, cliente, new DisponibilidadSinConflictosStrategy());
         when(cliente.obtenerLaboratorio(laboratorioId))
-                .thenReturn(new LaboratorioExternoResponse(laboratorioId, true, true, "DISPONIBLE", 30));
+                .thenReturn(new LaboratorioExternoResponse(
+                        laboratorioId, UUID.randomUUID(), true, true, "DISPONIBLE", 30));
     }
 
     @Test
@@ -54,7 +55,8 @@ class DisponibilidadServiceImplTest {
     @Test
     void informaEstadoExternoNoDisponible() {
         when(cliente.obtenerLaboratorio(laboratorioId))
-                .thenReturn(new LaboratorioExternoResponse(laboratorioId, true, true, "MANTENIMIENTO", 30));
+                .thenReturn(new LaboratorioExternoResponse(
+                        laboratorioId, UUID.randomUUID(), true, true, "MANTENIMIENTO", 30));
         assertFalse(consultar().disponible());
         verifyNoInteractions(reservas, bloqueos);
     }
