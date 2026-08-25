@@ -35,7 +35,7 @@ Microservicio & Cobertura & Tests \\
 \midrule
 academico-laboratorios-service & $\geq$ 70\,\% & 254 \\
 usuarios-service & Por confirmar & --- \\
-reservas-solicitudes-service & Por confirmar & --- \\
+reservas-solicitudes-service & $>80\,\%$ líneas; $>48\,\%$ ramas & 110 \\
 auth-service & Por confirmar & --- \\
 api-gateway & Por confirmar & --- \\
 \bottomrule
@@ -49,6 +49,24 @@ hexagonal: 11 servicios de aplicación, 12 controladores de
 presentación, la fachada de coordinación (\texttt{LaboratorioDetalleFacadeImpl})
 y los 11 adaptadores de persistencia que implementan el patrón
 Repository sobre Spring Data JPA.
+
+Para \texttt{reservas-solicitudes-service}, la verificación final del
+módulo ejecutó 110 pruebas sin fallos, errores ni pruebas omitidas. La
+suite cubre ownership del docente, ámbito del administrador de piso,
+transiciones y propuestas, cancelación transaccional, idempotencia de
+creación y aprobación, migraciones Flyway y concurrencia sobre
+CockroachDB. JaCoCo registró más del 80\,\% de líneas y más del
+48\,\% de ramas; el umbral se comprueba durante \texttt{mvn verify} para
+detectar regresiones futuras.
+
+En la web, las pruebas unitarias, ESLint y la construcción de producción
+finalizaron correctamente. El flujo E2E de reservas obtuvo dos ejecuciones
+consecutivas de 2/2 casos aprobados, sin reintentos automáticos, y la suite
+E2E preexistente completó 6/6 casos. En Android se ejecutaron 76 pruebas
+sin fallos ni omisiones, Android Lint terminó con cero errores y se generó
+el APK de depuración. La validación visual en dispositivo quedó fuera de
+la evidencia automatizada por no existir emulador o dispositivo disponible
+en el entorno de ejecución.
 
 \subsection{Pipeline de integración continua}
 

@@ -1,0 +1,28 @@
+\section{Observabilidad del módulo de reservas}
+\label{sec:observabilidad-reservas}
+
+El microservicio \texttt{reservas-solicitudes-service} expone mediante
+Spring Boot Actuator los puntos de salud y métricas requeridos por la
+plataforma. Micrometer publica tanto métricas HTTP como eventos propios del
+dominio, lo que permite observar solicitudes creadas, transiciones,
+aprobaciones, rechazos, cancelaciones, propuestas e intentos conflictivos
+sin introducir lógica de monitoreo en los controladores.
+
+Las métricas de negocio se registran después de confirmar la transacción.
+Esta decisión es especialmente importante en aprobación y cancelación: un
+rollback no debe contabilizar como exitoso un evento que no quedó
+persistido. Los replays idempotentes tampoco vuelven a ejecutar la
+transición ni producen duplicados de reserva, historial o métricas.
+
+Prometheus dispone de una configuración de \emph{scrape} para Reservas y
+las reglas asociadas permiten vigilar tasa de peticiones, respuestas
+\texttt{5xx} y eventos de negocio. El tablero de Grafana del módulo reúne
+latencia HTTP, percentiles p50, p95 y p99, errores internos y contadores de
+operaciones relevantes. cAdvisor complementa estas señales con consumo de
+CPU, memoria y red de los contenedores.
+
+Los archivos de configuración y el cableado del servicio constituyen la
+base reproducible de observabilidad. Las capturas definitivas y los valores
+de una campaña de carga deben incorporarse únicamente después de ejecutar
+el protocolo experimental completo; esta sección no presenta como medida
+una serie que todavía no haya sido obtenida.

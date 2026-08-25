@@ -64,9 +64,45 @@ el mensaje correspondiente del \emph{gateway}.
 \end{figure}
 
 \subsection{Módulo de reservas móvil}
-% [PENDIENTE -- FREDDY] Describir CalendarioScreen, NuevaReservaScreen,
-% ReservasScreen, SolicitudDetalleScreen, con cache local Room para
-% modo sin conexion.
+
+El módulo móvil de reservas conserva la arquitectura MVVM y consume
+exclusivamente las rutas públicas del \emph{gateway}. La navegación y las
+acciones visibles se derivan de los permisos almacenados en la sesión:
+\texttt{SOLICITUD\_CREAR} habilita ``Nueva solicitud'' y los permisos de
+lectura o gestión habilitan listas, detalle, calendario y operaciones
+administrativas. De este modo, un estudiante, coordinador o decano no ve
+acciones operativas que no le corresponden, sin trasladar al cliente la
+responsabilidad de autorizar.
+
+La antigua reserva rápida se presenta como una solicitud institucional y
+ya no solicita UUID al usuario. A partir del \texttt{perfilId} de la
+sesión se obtiene el identificador real de docente y se cargan materias,
+período vigente, laboratorios y horarios. El formulario muestra valores
+humanos, permite comprobar disponibilidad y conserva la misma
+\texttt{Idempotency-Key} cuando una petición se reintenta por renovación de
+sesión o por un fallo transitorio de red.
+
+\texttt{ReservasScreen} separa solicitudes y reservas; el alcance de los
+datos procede siempre del backend. \texttt{SolicitudDetalleScreen}
+presenta el historial y, en estado \texttt{PROPUESTA}, los datos de la
+alternativa. El docente propietario puede aceptar, rechazar o retirar lo
+que le corresponde, mientras el administrador de piso dispone de revisión,
+propuesta, aprobación, rechazo y cancelación únicamente cuando sus permisos
+y adscripción lo autorizan. La vista de calendario ofrece una relación
+sencilla de fecha, franja, laboratorio y estado.
+
+El interceptor añade el \emph{access token} y coordina las renovaciones
+concurrentes para que varias respuestas \texttt{401} provoquen una sola
+petición de \emph{refresh}. La petición original se repite como máximo una
+vez; un \texttt{403} nunca inicia este proceso. Los tokens rotados continúan
+almacenándose mediante el almacenamiento cifrado existente y, si la
+renovación falla, la sesión se elimina y la navegación retorna al ingreso.
+
+Room actúa únicamente como caché de lectura frente a
+\texttt{IOException} o ausencia de red. Una respuesta \texttt{401} o
+\texttt{403} no se sustituye con datos locales y las escrituras no simulan
+éxito fuera de línea. Esta separación evita mostrar información almacenada
+como si acabara de ser autorizada por el servidor.
 
 \subsection{Capacidades del dispositivo utilizadas}
 

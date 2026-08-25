@@ -50,7 +50,64 @@ Compatibilidad móvil (Android) & minSdk 26+ & API 26+ \\
 % [PENDIENTE -- ISAIAS]
 
 \subsection{Fiabilidad}
-% [PENDIENTE -- FREDDY]
+
+La fiabilidad del módulo de reservas se sustenta en cuatro mecanismos
+verificados automáticamente. Primero, la creación y la aprobación guardan
+el resultado asociado a una \texttt{Idempotency-Key}; repetir una operación
+equivalente devuelve el resultado previo sin duplicar solicitudes,
+reservas, historial ni eventos. El uso de una clave con otro actor,
+solicitud o carga útil produce un conflicto explícito.
+
+Segundo, la aprobación serializa el acceso al intervalo de agenda mediante
+una escritura conflictiva determinista compatible con CockroachDB. La
+prueba concurrente con dos solicitudes distintas para el mismo laboratorio
+y franja demuestra que se persiste como máximo una reserva. Tercero, la
+cancelación de una solicitud aprobada actualiza en una sola transacción la
+solicitud y la reserva programada. Finalmente, las pruebas con
+Testcontainers validan el esquema y el comportamiento transaccional sobre
+una base real, no únicamente mediante repositorios simulados.
+
+La topología E3 configura tres nodos y factor de replicación tres. La
+tolerancia efectiva ante la caída controlada de un nodo pertenece al
+protocolo experimental del clúster; sus resultados deben citarse desde la
+evidencia de ejecución y no inferirse solamente de la configuración.
+
+\begin{table}[htbp]
+\centering
+\caption{Evidencia de fiabilidad del módulo de reservas}
+\label{tab:iso-fiabilidad-reservas}
+\begin{tabular}{lll}
+\toprule
+Propiedad & Evidencia & Resultado \\
+\midrule
+Idempotencia de creación & Replay con misma clave y carga & Sin duplicado \\
+Idempotencia de aprobación & Replay de la misma solicitud & Una reserva \\
+Concurrencia & Dos aprobaciones sobre la misma franja & Máximo una reserva \\
+Consistencia de cancelación & Solicitud aprobada y reserva programada & Ambas canceladas \\
+Regresión automatizada & Suite de Reservas & 110/110 \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \subsection{Eficiencia de desempeño}
-% [PENDIENTE -- FREDDY]
+
+La evaluación de eficiencia está preparada para ejecutarse siempre a
+través del \emph{gateway} y no contra el puerto interno de Reservas. El
+protocolo contempla lecturas de disponibilidad, solicitudes, reservas y
+agenda, además de escrituras controladas para evitar contaminar la base con
+operaciones artificiales masivas.
+
+Para cada corrida se deben conservar el total de peticiones, rendimiento en
+peticiones por segundo, tasa de fallos, media, mediana o p50, p95, p99,
+mínimo y máximo. Las repeticiones previstas permiten calcular media,
+desviación estándar e intervalo de confianza del 95\,\%, y generar
+diagramas de caja sin selección manual de resultados. Los errores
+\texttt{4xx} esperados por autorización o conflicto se separan de los
+\texttt{5xx}, que representan fallos internos.
+
+No se fija un SLA arbitrario: los percentiles y el \emph{throughput} deben
+reportarse como valores observados. Al no existir en esta versión del
+documento una campaña final completa y reproducible asociada a sus CSV, no
+se consignan cifras de rendimiento. Esta distinción evita presentar como
+evidencia definitiva una configuración, una ejecución aislada o datos de
+otra versión del sistema.

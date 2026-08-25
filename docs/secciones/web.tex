@@ -89,9 +89,48 @@ estados de carga, éxito, error y lista vacía.
 \end{figure}
 
 \subsection{Módulo de reservas}
-% [PENDIENTE -- FREDDY] Describir NuevaSolicitudPage, ReservasListPage,
-% CalendarioReservasPage, ReservaDetailPage. Incluir figura del
-% calendario o del listado.
+
+El módulo de reservas implementa el flujo institucional desde el
+\emph{gateway}, sin conexiones directas desde el navegador hacia los
+microservicios internos. La autorización visual reutiliza los permisos
+incluidos en la sesión: \texttt{SOLICITUD\_CREAR} habilita la nueva
+solicitud, mientras \texttt{SOLICITUD\_LEER},
+\texttt{RESERVA\_LEER} y \texttt{AGENDA\_GESTIONAR} controlan los
+listados y el calendario. Estas comprobaciones mejoran la experiencia de
+usuario, pero la decisión definitiva de acceso permanece en el backend.
+
+\texttt{NuevaSolicitudPage} elimina la introducción manual de UUID. Para
+un docente, la página resuelve primero su registro institucional a partir
+del \texttt{perfilId} autenticado y carga mediante rutas canónicas las
+materias, el período lectivo actual, los laboratorios y sus horarios. El
+usuario selecciona opciones mediante nombres y códigos legibles, comprueba
+la disponibilidad del laboratorio y envía la solicitud con una
+\texttt{Idempotency-Key} estable durante los reintentos del mismo intento
+lógico. La identidad del solicitante vuelve a ser validada y derivada por
+el servicio de reservas.
+
+La vista de reservas agrupa solicitudes y reservas respetando el ámbito
+devuelto por el backend. Un docente observa sus propios registros; un
+\texttt{ADMINISTRADOR\_PISO}, únicamente los laboratorios adscritos a su
+piso; y \texttt{ADMINISTRADOR} conserva el alcance global. El detalle
+muestra estado, fecha, horario, laboratorio, motivo, observación e
+historial. Cuando existe una propuesta alternativa, el docente propietario
+puede aceptarla o rechazarla, mientras el gestor autorizado puede poner la
+solicitud en revisión, proponer otra franja, aprobarla o rechazarla.
+
+La cancelación solo se presenta para estados admitidos por la máquina de
+estados. En una solicitud aprobada, el backend cancela transaccionalmente
+la solicitud y su reserva programada, evitando estados divergentes. El
+calendario reutiliza el mismo alcance institucional y representa fecha,
+hora, laboratorio y estado sin reconstruir reglas de seguridad en el
+cliente.
+
+Todas las llamadas utilizan un cliente HTTP centralizado con Bearer. Ante
+un \texttt{401} se intenta una única renovación y se reintenta una vez la
+petición original; un \texttt{403} no activa la renovación. Si la sesión
+no puede renovarse, se limpian las credenciales de sesión y se redirige al
+inicio de sesión. Los conflictos de estado o disponibilidad se presentan
+como mensajes funcionales y no como excepciones internas.
 
 \subsection{Empaquetado y despliegue}
 
