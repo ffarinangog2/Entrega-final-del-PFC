@@ -1,5 +1,5 @@
 % ============================================================================
-% Informe Entrega 3 (E3) - SCLI - Aplicaciones Distribuidas (ISR-701)
+% Informe acumulativo Entrega 4 (E4) - SCLI - Aplicaciones Distribuidas
 % UTEQ - Facultad de Ciencias de la Computación - Ingeniería de Software
 % Equipo PFC: ForáCode
 % Compilar con: pdflatex (dos pasadas). Ver README.md.
@@ -34,7 +34,7 @@
 \usepackage{listings}
 \usepackage{xcolor}
 \usepackage{hyperref}
-\hypersetup{colorlinks=true,linkcolor=blue!50!black,citecolor=blue!50!black,urlcolor=blue!50!black,pdftitle={SCLI - Entrega 3},pdfauthor={Equipo ForáCode}}
+\hypersetup{colorlinks=true,linkcolor=blue!50!black,citecolor=blue!50!black,urlcolor=blue!50!black,pdftitle={SCLI - Entrega 4},pdfauthor={Equipo ForáCode}}
 \usepackage{titlesec}
 \usepackage{enumitem}
 \usepackage{abstract}
@@ -91,11 +91,11 @@
 % ---------------------------------------------------------------------------
 \twocolumn[
 \begin{center}
-{\LARGE\bfseries Capa de datos distribuida y pipeline analítico paralelo
-para el Sistema de Control de Laboratorios e Informática (SCLI)}
+{\LARGE\bfseries Sistema de Control de Laboratorios e Informática (SCLI):
+integración distribuida, aplicaciones cliente y evaluación de calidad}
 
 \vspace{6pt}
-{\large Entrega 3 del Proyecto Fin de Curso}
+{\large Entrega 4 del Proyecto Fin de Curso}
 
 \vspace{10pt}
 {\normalsize
@@ -115,45 +115,34 @@ Universidad Técnica Estatal de Quevedo (UTEQ), Ecuador
 ]
 
 \begin{abstract}
-Este informe documenta la Entrega 3 (E3) del Proyecto Fin de Curso del
-sistema SCLI (Sistema de Control de Laboratorios e Informática), centrada en
-la capa de persistencia distribuida y el pipeline analítico paralelo que
-completan la arquitectura de microservicios construida en entregas previas.
-Se diseñó e implementó un esquema de fragmentación horizontal temporal y
-replicación triple sobre un clúster CockroachDB de tres nodos dedicado al
-microservicio de reservas y solicitudes, documentado mediante dos registros
-de decisión arquitectónica (ADR). Se verificó experimentalmente la
-tolerancia a fallos del clúster ante la caída de uno y de dos nodos,
-observando disponibilidad continua con quórum de dos réplicas y pérdida de
-disponibilidad al perder el quórum, consistente con las garantías teóricas
-del algoritmo de consenso Raft. Se implementó además un pipeline de
-procesamiento paralelo en PySpark con cinco transformaciones sobre el
-esquema de reservas y una línea base equivalente en pandas, ambos
-funcionalmente completos pero, a la fecha de este informe, sin ejecuciones
-registradas del protocolo comparativo. El informe documenta con honestidad
-tanto lo alcanzado como lo pendiente, y traza la ruta de integración con la
-Entrega 4.
+Este informe acumulativo documenta la Entrega 4 (E4) del Proyecto Fin de
+Curso del sistema SCLI (Sistema de Control de Laboratorios e Informática).
+Se conserva como antecedente verificable el diseño distribuido desarrollado
+en la E3: el clúster CockroachDB de tres nodos, la replicación, la
+tolerancia a fallos y el pipeline analítico. Sobre esa base, la E4 integra
+la aplicación web, la aplicación móvil, la seguridad institucional, las
+pruebas automatizadas, la observabilidad y la evaluación guiada por
+ISO/IEC 25010:2023. El módulo de reservas y solicitudes incorpora
+idempotencia, control de concurrencia, ownership del docente, ámbito del
+administrador de piso, propuestas alternativas y cancelación transaccional.
+El documento distingue los resultados efectivamente verificados de los
+protocolos y evidencias experimentales que aún deban ejecutarse, evitando
+presentar configuraciones o estimaciones como mediciones finales.
 \end{abstract}
 
 \begin{abstract}
-\textbf{Abstract.} This report documents the third deliverable (E3) of the
-capstone project for SCLI (Laboratory and Computing Resources Control
-System), focused on the distributed persistence layer and the parallel
-analytics pipeline that complete the microservice architecture built in
-previous deliverables. A temporal horizontal-fragmentation and
-triple-replication schema was designed and implemented over a
-three-node CockroachDB cluster dedicated to the reservations microservice,
-documented through two architectural decision records (ADR). Cluster fault
-tolerance was experimentally verified under single- and double-node
-failures, observing continued availability with a two-replica quorum and
-unavailability upon quorum loss, consistent with the theoretical guarantees
-of the Raft consensus algorithm. A parallel processing pipeline with five
-transformations was additionally implemented in PySpark over the
-reservations schema, along with a functionally equivalent pandas baseline;
-both are complete but, as of this report, without recorded executions of
-the comparative protocol. The report documents both achievements and
-pending work honestly, and outlines the integration path with the fourth
-deliverable.
+\textbf{Abstract.} This cumulative report documents the fourth deliverable
+(E4) of the SCLI capstone project. It preserves the distributed-data work
+from E3 as a technical baseline, including the three-node CockroachDB
+cluster, replication, fault-tolerance verification, and the analytical
+pipeline. E4 extends that baseline with web and mobile clients,
+institutional authorization, automated testing, observability, and an
+ISO/IEC 25010:2023-oriented quality assessment. The reservations module
+adds idempotency, concurrency control, teacher ownership, floor-scoped
+administration, alternative proposals, and transactional cancellation.
+Measured evidence is explicitly separated from experimental procedures
+that remain to be executed, so configuration and estimated values are not
+reported as final results.
 \end{abstract}
 
 \vspace{6pt}
@@ -179,7 +168,8 @@ Fielding~\cite{li2021microservices} en su caracterización del estilo REST, y lo
 límites de servicio se trazaron siguiendo las heurísticas de descomposición
 por dominio de Newman~\cite{li2021microservices}.
 
-La Entrega 3 (E3) añade las dos capas que hacían falta para que el sistema
+Como antecedente directo, la Entrega 3 (E3) añadió las dos capas que hacían
+falta para que el sistema
 sea distribuido en sentido pleno: una capa de persistencia distribuida real,
 con fragmentación, replicación y consenso, sustituyendo las bases mono-nodo
 utilizadas hasta ahora, y un pipeline de procesamiento paralelo que
@@ -202,12 +192,12 @@ Concretamente, este informe documenta:
   el esquema de reservas, y su línea base equivalente en pandas.
 \end{itemize}
 
-Un principio explícito de esta entrega, enunciado en la guía docente, es
-la complementariedad con la Entrega 4: cada artefacto producido aquí
+Un principio explícito de la E3, enunciado en la guía docente, fue
+la complementariedad con la Entrega 4: cada artefacto producido allí
 --esquema, clúster, pipeline y protocolo experimental-- se plantea como
 una pieza reutilizable, no como un ejercicio desechable, condición
-necesaria para que la E4 aborde en el siguiente ciclo la calidad, la
-interfaz web, la interfaz móvil y la observabilidad de manera integral.
+necesaria para que la E4 aborde la calidad, la interfaz web, la interfaz
+móvil y la observabilidad de manera integral.
 Por esa misma razón, este informe distingue con
 cuidado entre lo que el equipo verificó empíricamente y lo que quedó
 diseñado o codificado pero todavía sin ejecutar, en lugar de presentar
@@ -219,7 +209,10 @@ Secciones~\ref{sec:esquema} a~\ref{sec:pipeline} documentan lo construido;
 la Sección~\ref{sec:protocolo} documenta el protocolo de medición diseñado
 y su estado de ejecución; y las
 Secciones~\ref{sec:discusion} y~\ref{sec:conclusiones} interpretan los
-resultados y trazan la ruta hacia la siguiente entrega.
+resultados históricos. A continuación, las secciones específicas de E4
+documentan la aplicación web, la aplicación móvil, las pruebas y CI/CD, la
+observabilidad y la evaluación ISO/IEC 25010:2023, conservando así la
+trazabilidad entre entregas sin confundir su estado temporal.
 
 \section{Trabajos relacionados}
 \label{sec:relacionados}
@@ -1406,6 +1399,17 @@ G. Métricas Prometheus & No iniciado en este ciclo. \\
 \end{tabular}
 \end{table}
 
+\section{Continuidad e integración de la Entrega 4}
+\label{sec:integracion-e4}
+
+Las secciones anteriores se conservan como línea base y evidencia histórica
+de la Entrega 3; no representan por sí solas el estado final del sistema.
+La Entrega 4 continúa ese trabajo mediante los componentes cliente, la
+automatización de calidad y la observabilidad que se presentan a
+continuación. Cada sección modular se mantiene en
+\texttt{docs/secciones/} para facilitar que los responsables actualicen su
+parte sin reescribir ni eliminar los antecedentes del proyecto.
+
 \input{secciones/web}
 \input{secciones/movil}
 \input{secciones/pruebas-cicd}
@@ -1526,10 +1530,10 @@ clúster bajo carga transaccional concurrente durante la caída de un nodo
 --que es plausiblemente distinto del caso de una sola conexión de
 lectura-- no fue evaluado.
 
-\section{Conclusiones e integración con la Entrega 4}
+\section{Conclusiones de la base distribuida y continuidad en la Entrega 4}
 \label{sec:conclusiones}
 
-Esta entrega consolidó la capa de persistencia distribuida del sistema
+La Entrega 3 consolidó la capa de persistencia distribuida del sistema
 SCLI: el clúster CockroachDB de tres nodos está desplegado, verificado y
 demuestra tolerancia a la caída de un nodo con el comportamiento exacto que
 predice la teoría de consenso Raft, y la estrategia de fragmentación y
@@ -1561,7 +1565,7 @@ comparativo con las diez repeticiones especificadas, y extender el
 definidos en el Módulo G, sobre los cuales se construirá el panel de
 observabilidad consolidado de la siguiente entrega.
 
-\subsection{Ruta concreta hacia la Entrega 4}
+\subsection{Ruta histórica planteada hacia la Entrega 4}
 
 En orden de prioridad, el equipo propone la siguiente secuencia de trabajo
 para el inicio del próximo ciclo, cada paso condicionado a la finalización
@@ -1581,6 +1585,24 @@ lugar de la observación puntual reportada en este informe; y
 (v)~instrumentar los tres contadores e histogramas Prometheus del Módulo G
 sobre el microservicio de reservas, como base directa del panel de
 observabilidad que la E4 exige para el sistema completo.
+
+\subsection{Continuidad materializada en la Entrega 4}
+
+La E4 reutiliza la base distribuida anterior y la integra con clientes web
+y móvil que acceden exclusivamente mediante el \texttt{api-gateway}. Las
+secciones modulares de este informe documentan el control de acceso por
+permisos, el flujo institucional de solicitudes y reservas, las pruebas de
+regresión y contrato, y la instrumentación de observabilidad. En el dominio
+de reservas se verificaron la idempotencia de creación y aprobación, la
+exclusión de reservas solapadas bajo concurrencia, el ownership del docente,
+el ámbito operativo por piso y la coherencia transaccional de las
+cancelaciones.
+
+La evaluación de calidad mantiene una separación explícita entre evidencia
+automatizada disponible y mediciones finales pendientes. Esta distinción
+permite que el documento continúe creciendo con resultados reproducibles
+sin eliminar la fundamentación y las decisiones técnicas heredadas de la
+entrega anterior.
 
 \bibliographystyle{ieeetr}
 \bibliography{Referencias}
