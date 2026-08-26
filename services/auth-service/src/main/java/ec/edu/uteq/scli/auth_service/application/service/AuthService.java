@@ -28,29 +28,42 @@ public class AuthService {
         private final JwtService jwtService;
         private final UsuariosClient usuariosClient;
         private final CustomUserDetailsService customUserDetailsService;
+        private final LoginProtectionService loginProtectionService;
 
         public AuthService(
                         AuthenticationManager authenticationManager,
                         JwtService jwtService,
                         UsuariosClient usuariosClient,
-                        CustomUserDetailsService customUserDetailsService) {
+                        CustomUserDetailsService customUserDetailsService,
+                        LoginProtectionService loginProtectionService) {
 
                 this.authenticationManager = authenticationManager;
                 this.jwtService = jwtService;
                 this.usuariosClient = usuariosClient;
                 this.customUserDetailsService = customUserDetailsService;
+                this.loginProtectionService = loginProtectionService;
         }
 
         public LoginResponse login(LoginRequest request) {
+                return login(request, LoginProtectionService.LoginMetadata.unknown());
+        }
+
+        public LoginResponse login(LoginRequest request, LoginProtectionService.LoginMetadata metadata) {
+
+                String identifier = request.username().trim();
+                if (loginProtectionService.prepareLogin(identifier)) {
+                        throw new AccountBlockedException();
+                }
 
                 try {
 
                         Authentication authentication = authenticationManager.authenticate(
                                         new UsernamePasswordAuthenticationToken(
-                                                        request.username().trim(),
+                                                        identifier,
                                                         request.password()));
 
                         CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+                        loginProtectionService.recordSuccess(userDetails.getUsuarioId(), identifier, metadata);
 
                         PerfilAuthResponse perfil = usuariosClient.obtenerPerfil(
                                         userDetails.getPerfilId());
@@ -105,6 +118,9 @@ public class AuthService {
                         throw new AccountDisabledException();
 
                 } catch (BadCredentialsException exception) {
+                        if (loginProtectionService.recordFailure(identifier, metadata)) {
+                                throw new AccountBlockedException();
+                        }
                         throw new InvalidCredentialsException();
                 }
         }
@@ -117,6 +133,13 @@ public class AuthService {
 
                 CustomUserDetails userDetails = customUserDetailsService.loadUserById(
                                 jwtService.extraerUsuarioId(refreshToken));
+
+                if (loginProtectionService.ensureNotLocked(userDetails.getUsuarioId())) {
+                        throw new AccountBlockedException();
+                }
+                if (!userDetails.isEnabled()) {
+                        throw new AccountDisabledException();
+                }
 
                 PerfilAuthResponse perfil = usuariosClient.obtenerPerfil(
                                 userDetails.getPerfilId());

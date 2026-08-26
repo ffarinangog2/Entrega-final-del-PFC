@@ -40,6 +40,7 @@ class RemoteAuthRepository(
             }
             response.code() == 401 || response.code() == 403 ->
                 NetworkResult.Failure(response.code(), "credenciales_invalidas")
+            response.code() == 423 -> NetworkResult.Failure(423, "cuenta_bloqueada")
             else -> NetworkResult.Failure(response.code(), "servicio_no_disponible")
         }
     } catch (_: IOException) {

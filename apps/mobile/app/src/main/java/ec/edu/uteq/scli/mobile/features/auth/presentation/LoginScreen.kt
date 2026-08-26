@@ -300,6 +300,7 @@ private fun LoginSubmitButton(loading: Boolean, onClick: () -> Unit) {
 
 private fun mapLoginError(error: String): String = when (error) {
     "credenciales_invalidas" -> "Credenciales inválidas"
+    "cuenta_bloqueada" -> "Cuenta temporalmente bloqueada. Intente nuevamente más tarde"
     "error_red" -> "No se pudo conectar con el servicio"
     else -> "El servicio no está disponible"
 }

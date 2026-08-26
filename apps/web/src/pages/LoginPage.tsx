@@ -1,5 +1,6 @@
 import { FormEvent, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { AuthApiError } from '../services/authApi'
 import { useAuth } from '../auth'
 import './LoginPage.css'
@@ -8,6 +9,7 @@ function getErrorMessage(error: unknown) {
   if (!(error instanceof AuthApiError)) return 'No se pudo iniciar sesión.'
   if (error.status === 401) return 'Credenciales inválidas.'
   if (error.status === 403) return 'No tienes permisos para acceder.'
+  if (error.status === 423) return 'Cuenta temporalmente bloqueada por varios intentos fallidos. Intente nuevamente más tarde.'
   if (error.status === 503) return 'El servicio de autenticación no está disponible.'
   return 'No se pudo iniciar sesión. Inténtalo de nuevo.'
 }
@@ -87,6 +89,7 @@ export function LoginPage() {
             {isLoading && <span className="login-form__spinner" aria-hidden="true" />}
             {isLoading ? 'Iniciando sesión...' : 'Iniciar sesión'}
           </button>
+          <Link to="/recuperar-contrasena">¿Olvidaste tu contraseña?</Link>
         </form>
         <p className="login-card__footer">UTEQ · Aplicaciones Distribuidas</p>
       </section>

@@ -5,6 +5,7 @@ import ec.edu.uteq.scli.auth_service.domain.service.AccountBlockedException;
 import ec.edu.uteq.scli.auth_service.domain.service.AccountDisabledException;
 import ec.edu.uteq.scli.auth_service.domain.service.InvalidCredentialsException;
 import ec.edu.uteq.scli.auth_service.domain.service.UsuarioServiceUnavailableException;
+import ec.edu.uteq.scli.auth_service.domain.service.InvalidPasswordResetTokenException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -75,6 +76,11 @@ public class GlobalExceptionHandler {
                                 HttpStatus.BAD_REQUEST,
                                 message,
                                 request.getRequestURI());
+        }
+
+        @ExceptionHandler({InvalidPasswordResetTokenException.class, IllegalArgumentException.class})
+        public ResponseEntity<ErrorResponse> handlePasswordReset(RuntimeException exception, HttpServletRequest request) {
+                return buildResponse(HttpStatus.BAD_REQUEST, exception.getMessage(), request.getRequestURI());
         }
 
         private ResponseEntity<ErrorResponse> buildResponse(

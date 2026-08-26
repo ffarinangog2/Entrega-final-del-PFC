@@ -63,3 +63,15 @@ export function refresh(refreshToken: string) {
     body: JSON.stringify(body),
   })
 }
+
+export function forgotPassword(identifier: string) {
+  return request<{ message: string }>('/api/v1/auth/forgot-password', {
+    method: 'POST', body: JSON.stringify({ identifier }),
+  })
+}
+
+export function resetPassword(token: string, newPassword: string, confirmPassword: string) {
+  return request<{ message: string }>('/api/v1/auth/reset-password', {
+    method: 'POST', body: JSON.stringify({ token, newPassword, confirmPassword }),
+  })
+}

@@ -8,6 +8,7 @@ import ec.edu.uteq.scli.auth_service.infrastructure.security.CustomUserDetails;
 import ec.edu.uteq.scli.auth_service.infrastructure.security.CustomUserDetailsService;
 // AGREGAR
 import ec.edu.uteq.scli.auth_service.application.service.AuthService;
+import ec.edu.uteq.scli.auth_service.application.service.LoginProtectionService;
 import ec.edu.uteq.scli.auth_service.infrastructure.security.JwtService;
 import ec.edu.uteq.scli.auth_service.presentation.dto.LoginRequest;
 import ec.edu.uteq.scli.auth_service.presentation.dto.LoginResponse;
@@ -50,6 +51,8 @@ class AuthServiceTest {
 
         @Mock
         private CustomUserDetailsService customUserDetailsService;
+        @Mock
+        private LoginProtectionService loginProtectionService;
 
         @Mock
         private Authentication authentication;

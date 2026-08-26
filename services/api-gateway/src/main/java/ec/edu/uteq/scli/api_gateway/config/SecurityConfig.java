@@ -43,8 +43,12 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST,
                                 "/api/v1/auth/login",
                                 "/api/v1/auth/refresh",
+                                "/api/v1/auth/forgot-password",
+                                "/api/v1/auth/reset-password",
                                 "/auth-service/api/v1/auth/login",
-                                "/auth-service/api/v1/auth/refresh")
+                                "/auth-service/api/v1/auth/refresh",
+                                "/auth-service/api/v1/auth/forgot-password",
+                                "/auth-service/api/v1/auth/reset-password")
                         .permitAll()
                         .requestMatchers(HttpMethod.GET,
                                 "/actuator/health",

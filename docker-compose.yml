@@ -80,6 +80,15 @@ services:
       INTERNAL_API_KEY: clave-interna-desarrollo
       USUARIOS_SERVICE_URL: http://usuarios-service:8082
       JWT_SECRET: ${JWT_SECRET}
+      MAIL_HOST: ${MAIL_HOST:-localhost}
+      MAIL_PORT: ${MAIL_PORT:-1025}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_FROM: ${MAIL_FROM:-no-reply@scli.local}
+      MAIL_SMTP_AUTH: ${MAIL_SMTP_AUTH:-false}
+      MAIL_STARTTLS_ENABLE: ${MAIL_STARTTLS_ENABLE:-false}
+      PASSWORD_RESET_BASE_URL: ${PASSWORD_RESET_BASE_URL:-http://localhost:3000/restablecer-contrasena}
+      PASSWORD_RESET_EXPIRATION_MINUTES: ${PASSWORD_RESET_EXPIRATION_MINUTES:-20}
 
     depends_on:
       cockroach-auth:

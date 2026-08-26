@@ -2,6 +2,8 @@ package ec.edu.uteq.scli.auth_service.infrastructure.persistence;
 
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import jakarta.persistence.LockModeType;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -12,6 +14,15 @@ public interface UsuarioAuthRepository
         Optional<UsuarioAuth> findByUsernameIgnoreCase(String username);
 
         Optional<UsuarioAuth> findByEmailIgnoreCase(String email);
+
+        @Lock(LockModeType.PESSIMISTIC_WRITE)
+        Optional<UsuarioAuth> findLockedByUsernameIgnoreCase(String username);
+
+        @Lock(LockModeType.PESSIMISTIC_WRITE)
+        Optional<UsuarioAuth> findLockedByEmailIgnoreCase(String email);
+
+        @Lock(LockModeType.PESSIMISTIC_WRITE)
+        Optional<UsuarioAuth> findLockedById(UUID id);
 
         Optional<UsuarioAuth> findByPerfilId(UUID perfilId);
 

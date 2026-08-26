@@ -1,9 +1,12 @@
 package ec.edu.uteq.scli.auth_service.presentation.controller;
 
 import ec.edu.uteq.scli.auth_service.application.service.AuthService;
+import ec.edu.uteq.scli.auth_service.application.service.PasswordRecoveryService;
+import jakarta.servlet.http.HttpServletRequest;
 import ec.edu.uteq.scli.auth_service.presentation.dto.LoginRequest;
 import ec.edu.uteq.scli.auth_service.presentation.dto.LoginResponse;
 import ec.edu.uteq.scli.auth_service.presentation.dto.RefreshTokenRequest;
+import ec.edu.uteq.scli.auth_service.presentation.dto.ForgotPasswordRequest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -25,24 +28,27 @@ class AuthControllerTest {
 
     @Mock
     private LoginResponse loginResponse;
+    @Mock private PasswordRecoveryService passwordRecoveryService;
+    @Mock private HttpServletRequest httpRequest;
 
     private final LoginRequest loginRequest = new LoginRequest("admin", "password");
     private AuthController controller;
 
     @BeforeEach
     void setUp() {
-        controller = new AuthController(authService);
+        controller = new AuthController(authService, passwordRecoveryService);
     }
 
     @Test
     void delegaLoginYDevuelveRespuestaOk() {
-        when(authService.login(loginRequest)).thenReturn(loginResponse);
+        when(httpRequest.getRemoteAddr()).thenReturn("127.0.0.1");
+        when(authService.login(org.mockito.ArgumentMatchers.eq(loginRequest), org.mockito.ArgumentMatchers.any())).thenReturn(loginResponse);
 
-        var response = controller.login(loginRequest);
+        var response = controller.login(loginRequest, httpRequest);
 
         assertEquals(200, response.getStatusCode().value());
         assertSame(loginResponse, response.getBody());
-        verify(authService).login(loginRequest);
+        verify(authService).login(org.mockito.ArgumentMatchers.eq(loginRequest), org.mockito.ArgumentMatchers.any());
     }
 
     @Test
@@ -55,5 +61,13 @@ class AuthControllerTest {
         assertEquals(200, response.getStatusCode().value());
         assertSame(loginResponse, response.getBody());
         verify(authService).refrescar("refresh-token");
+    }
+
+    @Test
+    void forgotPasswordSiempreDevuelveMensajeNeutro() {
+        when(httpRequest.getRemoteAddr()).thenReturn("127.0.0.1");
+        var response=controller.forgotPassword(new ForgotPasswordRequest("cualquier-identificador"),httpRequest);
+        assertEquals(200,response.getStatusCode().value());
+        assertEquals(PasswordRecoveryService.NEUTRAL_MESSAGE,response.getBody().message());
     }
 }

@@ -52,6 +52,17 @@ class GatewaySecurityIntegrationTests {
     }
 
     @Test
+    void recuperacionPostSinTokenEstaPermitida() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/forgot-password")).andExpect(status().isNotFound());
+        mockMvc.perform(post("/api/v1/auth/reset-password")).andExpect(status().isNotFound());
+    }
+
+    @Test
+    void recuperacionGetSigueProtegida() throws Exception {
+        mockMvc.perform(get("/api/v1/auth/forgot-password")).andExpect(status().isUnauthorized());
+    }
+
+    @Test
     void preflightEstaPermitido() throws Exception {
         mockMvc.perform(options("/api/v1/usuarios/prueba")
                         .header(HttpHeaders.ORIGIN, "http://localhost:5173")

@@ -1,6 +1,8 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { AboutPage } from '../pages/AboutPage'
 import { LoginPage } from '../pages/LoginPage'
+import { ForgotPasswordPage } from '../pages/ForgotPasswordPage'
+import { ResetPasswordPage } from '../pages/ResetPasswordPage'
 import { MainPage } from '../pages/MainPage'
 import { SettingsPage } from '../pages/SettingsPage'
 import { UsuariosPage } from '../pages/UsuariosPage'
@@ -15,6 +17,8 @@ export function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/recuperar-contrasena" element={<ForgotPasswordPage />} />
+      <Route path="/restablecer-contrasena" element={<ResetPasswordPage />} />
       <Route element={<ProtectedRoute />}>
         <Route path="/main" element={<MainPage />} />
         <Route path="/settings" element={<SettingsPage />} />
