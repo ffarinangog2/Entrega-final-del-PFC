@@ -617,6 +617,28 @@ services:
     volumes:
       - ./ops/otel-collector/config.yaml:/etc/otelcol/config.yaml:ro
 
+    depends_on:
+      - loki
+
+    restart: unless-stopped
+
+    networks:
+      - scli-network
+
+
+  # =========================================================
+  # OBSERVABILIDAD - LOKI (auditoria/SIEM, Isaías Urbina)
+  # =========================================================
+  loki:
+    image: grafana/loki:3.3.0
+    container_name: scli-loki
+
+    ports:
+      - "3100:3100"
+
+    volumes:
+      - loki-data:/loki
+
     restart: unless-stopped
 
     networks:
@@ -636,6 +658,8 @@ volumes:
   crdb-e3-2-data:
 
   crdb-e3-3-data:
+
+  loki-data:
 
 
 networks:

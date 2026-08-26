@@ -49,6 +49,11 @@ management:
   endpoint:
     health:
       show-details: always
+  opentelemetry:
+    logging:
+      export:
+        otlp:
+          endpoint: ${OTEL_EXPORTER_OTLP_LOGS_ENDPOINT:http://otel-collector:4318/v1/logs}
 
 security:
   jwt:
