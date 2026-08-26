@@ -9,6 +9,7 @@ import ec.edu.scli.usuarios.infrastructure.persistence.jpa.PerfilRepository;
 import ec.edu.scli.usuarios.infrastructure.persistence.mapper.PageMapper;
 import ec.edu.scli.usuarios.infrastructure.persistence.mapper.PerfilPersistenceMapper;
 import ec.edu.scli.usuarios.infrastructure.persistence.specification.PerfilSpecification;
+import ec.edu.scli.usuarios.infrastructure.security.HmacIdentificacionService;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 
@@ -20,18 +21,23 @@ public class PerfilRepositoryAdapter implements PerfilRepositoryPort {
 
     private final PerfilRepository repository;
     private final PerfilPersistenceMapper mapper;
+    private final HmacIdentificacionService hmacService;
 
     public PerfilRepositoryAdapter(
             PerfilRepository repository,
-            PerfilPersistenceMapper mapper
+            PerfilPersistenceMapper mapper,
+            HmacIdentificacionService hmacService
     ) {
         this.repository = repository;
         this.mapper = mapper;
+        this.hmacService = hmacService;
     }
 
     @Override
     public Perfil save(Perfil perfil) {
-        return mapper.toDomain(repository.save(mapper.toEntity(perfil)));
+        ec.edu.scli.usuarios.infrastructure.persistence.entity.Perfil entity = mapper.toEntity(perfil);
+        entity.setIdentificacionHash(hmacService.calcularHash(perfil.getIdentificacion()));
+        return mapper.toDomain(repository.save(entity));
     }
 
     @Override
@@ -41,7 +47,8 @@ public class PerfilRepositoryAdapter implements PerfilRepositoryPort {
 
     @Override
     public Optional<Perfil> findByIdentificacion(String identificacion) {
-        return repository.findByIdentificacion(identificacion).map(mapper::toDomain);
+        return repository.findByIdentificacionHash(hmacService.calcularHash(identificacion))
+                .map(mapper::toDomain);
     }
 
     @Override
@@ -51,7 +58,7 @@ public class PerfilRepositoryAdapter implements PerfilRepositoryPort {
 
     @Override
     public boolean existsByIdentificacion(String identificacion) {
-        return repository.existsByIdentificacion(identificacion);
+        return repository.existsByIdentificacionHash(hmacService.calcularHash(identificacion));
     }
 
     @Override
@@ -68,10 +75,14 @@ public class PerfilRepositoryAdapter implements PerfilRepositoryPort {
             Boolean activo,
             PageCriteria pageCriteria
     ) {
+        String identificacionHash = (identificacion == null || identificacion.isBlank())
+                ? null
+                : hmacService.calcularHash(identificacion);
+
         Specification<ec.edu.scli.usuarios.infrastructure.persistence.entity.Perfil> specification =
-                PerfilSpecification.identificacionContiene(identificacion)
+                PerfilSpecification.identificacionHashIgual(identificacionHash)
                         .and(PerfilSpecification.nombreContiene(nombre))
-                        .and(PerfilSpecification.emailContiene(email))
+                        .and(PerfilSpecification.emailInstitucionalContiene(email))
                         .and(PerfilSpecification.tieneTipoPerfil(tipoPerfil))
                         .and(PerfilSpecification.tieneEstado(activo));
 

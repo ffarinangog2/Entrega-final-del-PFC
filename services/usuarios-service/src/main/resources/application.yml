@@ -64,6 +64,9 @@ security:
 
 app:
   internal-api-key: ${INTERNAL_API_KEY:clave-interna-desarrollo}
+  security:
+    data-encryption-key: ${DATA_ENCRYPTION_KEY}
+    data-hash-key: ${DATA_HASH_KEY}
 
 logging:
   structured:

@@ -1,6 +1,7 @@
 package ec.edu.scli.usuarios.infrastructure.persistence.entity;
 
 import jakarta.persistence.*;
+import ec.edu.scli.usuarios.infrastructure.persistence.converter.CampoCifradoConverter;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -13,9 +14,19 @@ public class Perfil {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
-
-    @Column(name = "identificacion", length = 20, unique = true)
+    // Anterior
+    //@Column(name = "identificacion", length = 20, unique = true)
+    //private String identificacion;
+    
+    //Nuevo
+        @Column(name = "identificacion", columnDefinition = "TEXT")
+    @Convert(converter = CampoCifradoConverter.class)
     private String identificacion;
+
+    @Column(name = "identificacion_hash", length = 64)
+    private String identificacionHash;
+
+    //
 
     @Column(name = "nombres", nullable = false, length = 100)
     private String nombres;
@@ -26,6 +37,7 @@ public class Perfil {
     @Column(name = "email_institucional", nullable = false, unique = true, length = 150)
     private String emailInstitucional;
 
+    /* Anterior
     @Column(name = "email_personal", length = 150)
     private String emailPersonal;
 
@@ -33,7 +45,24 @@ public class Perfil {
     private String telefono;
 
     @Column(name = "direccion", length = 255)
+    private String direccion;*/
+
+    //Nuevo
+
+    @Column(name = "email_personal", columnDefinition = "TEXT")
+    @Convert(converter = CampoCifradoConverter.class)
+    private String emailPersonal;
+
+    @Column(name = "telefono", columnDefinition = "TEXT")
+    @Convert(converter = CampoCifradoConverter.class)
+    private String telefono;
+
+    @Column(name = "direccion", columnDefinition = "TEXT")
+    @Convert(converter = CampoCifradoConverter.class)
     private String direccion;
+
+    //
+
 
     @Column(name = "fecha_nacimiento")
     private LocalDate fechaNacimiento;
@@ -90,6 +119,17 @@ public class Perfil {
     public void setIdentificacion(String identificacion) {
         this.identificacion = identificacion;
     }
+
+    //Nuevo
+        public String getIdentificacionHash() {
+        return identificacionHash;
+    }
+
+    public void setIdentificacionHash(String identificacionHash) {
+        this.identificacionHash = identificacionHash;
+    }
+    //
+
 
     public String getNombres() {
         return nombres;

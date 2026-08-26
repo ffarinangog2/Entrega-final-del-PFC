@@ -16,6 +16,7 @@ public final class PerfilSpecification {
     private PerfilSpecification() {
     }
 
+    /* Antes
     public static Specification<Perfil> identificacionContiene(
             String identificacion
     ) {
@@ -30,7 +31,25 @@ public final class PerfilSpecification {
                     "%" + identificacion.toLowerCase() + "%"
             );
         };
-    }
+    }*/
+
+        //Nuevo
+        public static Specification<Perfil> identificacionHashIgual(
+                String identificacionHash
+        ) {
+                return (root, query, criteriaBuilder) -> {
+
+                if (identificacionHash == null || identificacionHash.isBlank()) {
+                        return criteriaBuilder.conjunction();
+                }
+
+                return criteriaBuilder.equal(
+                        root.get("identificacionHash"),
+                        identificacionHash
+                );
+                };
+        }
+        //Fin Nuevo
 
     public static Specification<Perfil> nombreContiene(
             String nombre
@@ -56,6 +75,8 @@ public final class PerfilSpecification {
         };
     }
 
+
+    /* Antes
     public static Specification<Perfil> emailContiene(
             String email
     ) {
@@ -83,6 +104,27 @@ public final class PerfilSpecification {
             );
         };
     }
+*/
+
+        //Nuevo
+        public static Specification<Perfil> emailInstitucionalContiene(
+            String email
+        ) {
+                return (root, query, criteriaBuilder) -> {
+
+                if (email == null || email.isBlank()) {
+                        return criteriaBuilder.conjunction();
+                }
+
+                return criteriaBuilder.like(
+                        criteriaBuilder.lower(root.get("emailInstitucional")),
+                        "%" + email.toLowerCase() + "%"
+                );
+                };
+        }
+        //Fin Nuevo
+
+
 
     public static Specification<Perfil> tieneEstado(
             Boolean activo

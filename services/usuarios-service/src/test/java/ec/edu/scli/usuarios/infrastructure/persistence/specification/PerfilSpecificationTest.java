@@ -40,6 +40,8 @@ class PerfilSpecificationTest {
         predicado = mock(Predicate.class);
     }
 
+
+    /*  Antes
     // ---------------------------------------------------------------
     // identificacionContiene
     // ---------------------------------------------------------------
@@ -79,6 +81,49 @@ class PerfilSpecificationTest {
         assertThat(resultado).isEqualTo(predicado);
         verify(cb).like(eq(path), eq("%0102%"));
     }
+fin */ 
+
+
+        // ---------------------------------------------------------------
+    // identificacionHashIgual
+    // ---------------------------------------------------------------
+
+    @Test
+    void identificacionHashIgual_conValorNulo_retornaConjuncion() {
+        when(cb.conjunction()).thenReturn(conjuncion);
+
+        Predicate resultado = PerfilSpecification
+                .identificacionHashIgual(null)
+                .toPredicate(root, query, cb);
+
+        assertThat(resultado).isEqualTo(conjuncion);
+    }
+
+    @Test
+    void identificacionHashIgual_conValorEnBlanco_retornaConjuncion() {
+        when(cb.conjunction()).thenReturn(conjuncion);
+
+        Predicate resultado = PerfilSpecification
+                .identificacionHashIgual("   ")
+                .toPredicate(root, query, cb);
+
+        assertThat(resultado).isEqualTo(conjuncion);
+    }
+
+    @Test
+    void identificacionHashIgual_conValor_retornaEqual() {
+        when(root.get("identificacionHash")).thenReturn(path);
+        when(cb.equal(eq(path), eq("abc123hash"))).thenReturn(predicado);
+
+        Predicate resultado = PerfilSpecification
+                .identificacionHashIgual("abc123hash")
+                .toPredicate(root, query, cb);
+
+        assertThat(resultado).isEqualTo(predicado);
+        verify(cb).equal(path, "abc123hash");
+    }
+
+
 
     // ---------------------------------------------------------------
     // nombreContiene
@@ -110,6 +155,8 @@ class PerfilSpecificationTest {
         verify(cb).or(predicado, predicado);
     }
 
+
+    /*Anterior
     // ---------------------------------------------------------------
     // emailContiene
     // ---------------------------------------------------------------
@@ -138,6 +185,38 @@ class PerfilSpecificationTest {
 
         assertThat(resultado).isEqualTo(predicado);
     }
+fin */
+
+
+        // ---------------------------------------------------------------
+    // emailInstitucionalContiene
+    // ---------------------------------------------------------------
+
+    @Test
+    void emailInstitucionalContiene_conValorNulo_retornaConjuncion() {
+        when(cb.conjunction()).thenReturn(conjuncion);
+
+        Predicate resultado = PerfilSpecification
+                .emailInstitucionalContiene(null)
+                .toPredicate(root, query, cb);
+
+        assertThat(resultado).isEqualTo(conjuncion);
+    }
+
+    @Test
+    void emailInstitucionalContiene_conValor_retornaLike() {
+        when(root.get("emailInstitucional")).thenReturn(path);
+        when(cb.lower(any())).thenReturn(path);
+        when(cb.like(any(), anyString())).thenReturn(predicado);
+
+        Predicate resultado = PerfilSpecification
+                .emailInstitucionalContiene("uteq.edu.ec")
+                .toPredicate(root, query, cb);
+
+        assertThat(resultado).isEqualTo(predicado);
+        verify(cb).like(eq(path), eq("%uteq.edu.ec%"));
+    }
+
 
     // ---------------------------------------------------------------
     // tieneEstado
