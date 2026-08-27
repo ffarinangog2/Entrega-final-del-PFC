@@ -276,10 +276,15 @@ jobs:
         with:
           node-version: "22.22.2"
 
+      - name: Prepare integration environment
+        shell: bash
+        run: |
+          echo "JWT_SECRET=$(openssl rand -base64 48)" >> "$GITHUB_ENV"
+          echo "INTERNAL_API_KEY=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
+
       - name: Start stack and run integration checks
         shell: bash
         env:
-          JWT_SECRET: ${{ secrets.JWT_SECRET || 'ci-integration-secret-change-me' }}
           DATA_ENCRYPTION_KEY: ${{ secrets.DATA_ENCRYPTION_KEY || 'KwDuK6XBqOlQoHHizYNnUk6YTmD8zxiiqkjOlC8exIs=' }}
           DATA_HASH_KEY: ${{ secrets.DATA_HASH_KEY || '2KHYNo4a7kZmBuZmJ2sTLNUjHFXpzDG6rk6Z/1rQ6lI=' }}
         run: |
