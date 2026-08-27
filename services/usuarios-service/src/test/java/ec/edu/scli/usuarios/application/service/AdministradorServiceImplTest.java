@@ -8,6 +8,7 @@ import ec.edu.scli.usuarios.domain.model.Perfil;
 import ec.edu.scli.usuarios.domain.pagination.PageResult;
 import ec.edu.scli.usuarios.domain.port.AdministradorRepositoryPort;
 import ec.edu.scli.usuarios.domain.port.PerfilRepositoryPort;
+import ec.edu.scli.usuarios.infrastructure.audit.AuditLogger;
 import ec.edu.scli.usuarios.presentation.dto.administrador.AdministradorRequest;
 import ec.edu.scli.usuarios.presentation.dto.administrador.AdministradorResponse;
 import org.junit.jupiter.api.BeforeEach;
@@ -25,6 +26,8 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.contains;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -37,6 +40,9 @@ class AdministradorServiceImplTest {
 
     @Mock
     private PerfilRepositoryPort perfilRepository;
+
+    @Mock
+    private AuditLogger auditLogger;
 
     private AdministradorServiceImpl administradorService;
 
@@ -61,7 +67,7 @@ class AdministradorServiceImplTest {
         administrador.setActivo(true);
 
         administradorService = new AdministradorServiceImpl(
-                administradorRepository, perfilRepository
+                administradorRepository, perfilRepository, auditLogger
         );
     }
 
@@ -249,5 +255,93 @@ class AdministradorServiceImplTest {
                 .hasMessageContaining("ADM-002");
 
         verify(administradorRepository, never()).save(any(Administrador.class));
+    }
+
+    // ---------------------------------------------------------------
+    // auditoría
+    // ---------------------------------------------------------------
+
+    @Test
+    void crear_deberiaAuditarUsuarioCreado_cuandoDatosSonValidos() {
+        AdministradorRequest request = new AdministradorRequest(
+                perfilId, "ADM-001", "Coordinador", null, null
+        );
+
+        when(perfilRepository.findById(perfilId)).thenReturn(Optional.of(perfil));
+        when(administradorRepository.existsByPerfilId(perfilId)).thenReturn(false);
+        when(administradorRepository.existsByCodigoAdministrador("ADM-001")).thenReturn(false);
+        when(administradorRepository.save(any(Administrador.class))).thenReturn(administrador);
+
+        administradorService.crear(request);
+
+        verify(auditLogger).registrarEvento(
+                eq("usuario_creado"),
+                any(),
+                any(),
+                contains("id=" + administradorId)
+        );
+    }
+
+    @Test
+    void actualizar_deberiaAuditarUsuarioDesactivado_cuandoActivoCambiaATrueAFalse() {
+        AdministradorRequest request = new AdministradorRequest(
+                perfilId, "ADM-001", "Coordinador", null, false
+        );
+
+        when(administradorRepository.findById(administradorId))
+                .thenReturn(Optional.of(administrador));
+        when(administradorRepository.findAll()).thenReturn(List.of(administrador));
+        when(administradorRepository.save(any(Administrador.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        administradorService.actualizar(administradorId, request);
+
+        verify(auditLogger).registrarEvento(
+                eq("usuario_desactivado"),
+                any(),
+                any(),
+                contains("id=" + administradorId)
+        );
+    }
+
+    @Test
+    void actualizar_deberiaAuditarUsuarioReactivado_cuandoActivoCambiaDeFalseATrue() {
+        administrador.setActivo(false);
+
+        AdministradorRequest request = new AdministradorRequest(
+                perfilId, "ADM-001", "Coordinador", null, true
+        );
+
+        when(administradorRepository.findById(administradorId))
+                .thenReturn(Optional.of(administrador));
+        when(administradorRepository.findAll()).thenReturn(List.of(administrador));
+        when(administradorRepository.save(any(Administrador.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        administradorService.actualizar(administradorId, request);
+
+        verify(auditLogger).registrarEvento(
+                eq("usuario_reactivado"),
+                any(),
+                any(),
+                contains("id=" + administradorId)
+        );
+    }
+
+    @Test
+    void actualizar_noDeberiaAuditar_cuandoActivoNoCambia() {
+        AdministradorRequest request = new AdministradorRequest(
+                perfilId, "ADM-001", "Coordinador", null, true
+        );
+
+        when(administradorRepository.findById(administradorId))
+                .thenReturn(Optional.of(administrador));
+        when(administradorRepository.findAll()).thenReturn(List.of(administrador));
+        when(administradorRepository.save(any(Administrador.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        administradorService.actualizar(administradorId, request);
+
+        verify(auditLogger, never()).registrarEvento(any(), any(), any(), any());
     }
 }

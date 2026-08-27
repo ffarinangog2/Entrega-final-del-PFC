@@ -8,6 +8,7 @@ import ec.edu.scli.usuarios.domain.model.Perfil;
 import ec.edu.scli.usuarios.domain.pagination.PageResult;
 import ec.edu.scli.usuarios.domain.port.EstudianteRepositoryPort;
 import ec.edu.scli.usuarios.domain.port.PerfilRepositoryPort;
+import ec.edu.scli.usuarios.infrastructure.audit.AuditLogger;
 import ec.edu.scli.usuarios.presentation.dto.estudiante.EstudianteRequest;
 import ec.edu.scli.usuarios.presentation.dto.estudiante.EstudianteResponse;
 import org.junit.jupiter.api.BeforeEach;
@@ -25,6 +26,8 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.contains;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -37,6 +40,9 @@ class EstudianteServiceImplTest {
 
     @Mock
     private PerfilRepositoryPort perfilRepository;
+
+    @Mock
+    private AuditLogger auditLogger;
 
     private EstudianteServiceImpl estudianteService;
 
@@ -63,7 +69,8 @@ class EstudianteServiceImplTest {
 
         estudianteService = new EstudianteServiceImpl(
                 estudianteRepository,
-                perfilRepository
+                perfilRepository,
+                auditLogger
         );
     }
 
@@ -277,5 +284,93 @@ class EstudianteServiceImplTest {
                 .hasMessageContaining("MAT-002");
 
         verify(estudianteRepository, never()).save(any(Estudiante.class));
+    }
+
+    // ---------------------------------------------------------------
+    // auditoría
+    // ---------------------------------------------------------------
+
+    @Test
+    void crear_deberiaAuditarUsuarioCreado_cuandoDatosSonValidos() {
+        EstudianteRequest request = new EstudianteRequest(
+                perfilId, "MAT-001", null, 3, null
+        );
+
+        when(perfilRepository.findById(perfilId)).thenReturn(Optional.of(perfil));
+        when(estudianteRepository.existsByPerfilId(perfilId)).thenReturn(false);
+        when(estudianteRepository.existsByMatricula("MAT-001")).thenReturn(false);
+        when(estudianteRepository.save(any(Estudiante.class))).thenReturn(estudiante);
+
+        estudianteService.crear(request);
+
+        verify(auditLogger).registrarEvento(
+                eq("usuario_creado"),
+                any(),
+                any(),
+                contains("id=" + estudianteId)
+        );
+    }
+
+    @Test
+    void actualizar_deberiaAuditarUsuarioDesactivado_cuandoActivoCambiaATrueAFalse() {
+        EstudianteRequest request = new EstudianteRequest(
+                perfilId, "MAT-001", null, 3, false
+        );
+
+        when(estudianteRepository.findById(estudianteId))
+                .thenReturn(Optional.of(estudiante));
+        when(estudianteRepository.findAll()).thenReturn(List.of(estudiante));
+        when(estudianteRepository.save(any(Estudiante.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        estudianteService.actualizar(estudianteId, request);
+
+        verify(auditLogger).registrarEvento(
+                eq("usuario_desactivado"),
+                any(),
+                any(),
+                contains("id=" + estudianteId)
+        );
+    }
+
+    @Test
+    void actualizar_deberiaAuditarUsuarioReactivado_cuandoActivoCambiaDeFalseATrue() {
+        estudiante.setActivo(false);
+
+        EstudianteRequest request = new EstudianteRequest(
+                perfilId, "MAT-001", null, 3, true
+        );
+
+        when(estudianteRepository.findById(estudianteId))
+                .thenReturn(Optional.of(estudiante));
+        when(estudianteRepository.findAll()).thenReturn(List.of(estudiante));
+        when(estudianteRepository.save(any(Estudiante.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        estudianteService.actualizar(estudianteId, request);
+
+        verify(auditLogger).registrarEvento(
+                eq("usuario_reactivado"),
+                any(),
+                any(),
+                contains("id=" + estudianteId)
+        );
+    }
+
+    @Test
+    void actualizar_noDeberiaAuditar_cuandoActivoNoCambia() {
+        EstudianteRequest request = new EstudianteRequest(
+                perfilId, "MAT-001", null, 3, true
+        );
+
+        when(estudianteRepository.findById(estudianteId))
+                .thenReturn(Optional.of(estudiante));
+        when(estudianteRepository.findAll()).thenReturn(List.of(estudiante));
+        when(estudianteRepository.save(any(Estudiante.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        estudianteService.actualizar(estudianteId, request);
+
+        verify(auditLogger, never()).registrarEvento(any(), any(), any(), any());
     }
 }

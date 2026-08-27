@@ -8,6 +8,7 @@ import ec.edu.scli.usuarios.domain.model.Tecnico;
 import ec.edu.scli.usuarios.domain.pagination.PageResult;
 import ec.edu.scli.usuarios.domain.port.PerfilRepositoryPort;
 import ec.edu.scli.usuarios.domain.port.TecnicoRepositoryPort;
+import ec.edu.scli.usuarios.infrastructure.audit.AuditLogger;
 import ec.edu.scli.usuarios.presentation.dto.tecnico.TecnicoRequest;
 import ec.edu.scli.usuarios.presentation.dto.tecnico.TecnicoResponse;
 import org.junit.jupiter.api.BeforeEach;
@@ -25,6 +26,8 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.contains;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -37,6 +40,9 @@ class TecnicoServiceImplTest {
 
     @Mock
     private PerfilRepositoryPort perfilRepository;
+
+    @Mock
+    private AuditLogger auditLogger;
 
     private TecnicoServiceImpl tecnicoService;
 
@@ -60,7 +66,7 @@ class TecnicoServiceImplTest {
         tecnico.setCodigoTecnico("TEC-001");
         tecnico.setActivo(true);
 
-        tecnicoService = new TecnicoServiceImpl(tecnicoRepository, perfilRepository);
+        tecnicoService = new TecnicoServiceImpl(tecnicoRepository, perfilRepository, auditLogger);
     }
 
     // ---------------------------------------------------------------
@@ -224,5 +230,84 @@ class TecnicoServiceImplTest {
                 .hasMessageContaining("TEC-002");
 
         verify(tecnicoRepository, never()).save(any(Tecnico.class));
+    }
+
+    // ---------------------------------------------------------------
+    // auditoría
+    // ---------------------------------------------------------------
+
+    @Test
+    void crear_deberiaAuditarUsuarioCreado_cuandoDatosSonValidos() {
+        TecnicoRequest request = new TecnicoRequest(
+                perfilId, "TEC-001", "Redes", null
+        );
+
+        when(perfilRepository.findById(perfilId)).thenReturn(Optional.of(perfil));
+        when(tecnicoRepository.existsByPerfilId(perfilId)).thenReturn(false);
+        when(tecnicoRepository.existsByCodigoTecnico("TEC-001")).thenReturn(false);
+        when(tecnicoRepository.save(any(Tecnico.class))).thenReturn(tecnico);
+
+        tecnicoService.crear(request);
+
+        verify(auditLogger).registrarEvento(
+                eq("usuario_creado"),
+                any(),
+                any(),
+                contains("id=" + tecnicoId)
+        );
+    }
+
+    @Test
+    void actualizar_deberiaAuditarUsuarioDesactivado_cuandoActivoCambiaATrueAFalse() {
+        TecnicoRequest request = new TecnicoRequest(perfilId, "TEC-001", "Redes", false);
+
+        when(tecnicoRepository.findById(tecnicoId)).thenReturn(Optional.of(tecnico));
+        when(tecnicoRepository.findAll()).thenReturn(List.of(tecnico));
+        when(tecnicoRepository.save(any(Tecnico.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        tecnicoService.actualizar(tecnicoId, request);
+
+        verify(auditLogger).registrarEvento(
+                eq("usuario_desactivado"),
+                any(),
+                any(),
+                contains("id=" + tecnicoId)
+        );
+    }
+
+    @Test
+    void actualizar_deberiaAuditarUsuarioReactivado_cuandoActivoCambiaDeFalseATrue() {
+        tecnico.setActivo(false);
+
+        TecnicoRequest request = new TecnicoRequest(perfilId, "TEC-001", "Redes", true);
+
+        when(tecnicoRepository.findById(tecnicoId)).thenReturn(Optional.of(tecnico));
+        when(tecnicoRepository.findAll()).thenReturn(List.of(tecnico));
+        when(tecnicoRepository.save(any(Tecnico.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        tecnicoService.actualizar(tecnicoId, request);
+
+        verify(auditLogger).registrarEvento(
+                eq("usuario_reactivado"),
+                any(),
+                any(),
+                contains("id=" + tecnicoId)
+        );
+    }
+
+    @Test
+    void actualizar_noDeberiaAuditar_cuandoActivoNoCambia() {
+        TecnicoRequest request = new TecnicoRequest(perfilId, "TEC-001", "Redes", true);
+
+        when(tecnicoRepository.findById(tecnicoId)).thenReturn(Optional.of(tecnico));
+        when(tecnicoRepository.findAll()).thenReturn(List.of(tecnico));
+        when(tecnicoRepository.save(any(Tecnico.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        tecnicoService.actualizar(tecnicoId, request);
+
+        verify(auditLogger, never()).registrarEvento(any(), any(), any(), any());
     }
 }

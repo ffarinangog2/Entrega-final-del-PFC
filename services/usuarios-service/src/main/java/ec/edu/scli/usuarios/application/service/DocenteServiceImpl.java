@@ -10,11 +10,17 @@ import ec.edu.scli.usuarios.domain.exception.ResourceNotFoundException;
 import ec.edu.scli.usuarios.domain.port.DocenteRepositoryPort;
 import ec.edu.scli.usuarios.domain.port.PerfilRepositoryPort;
 import ec.edu.scli.usuarios.application.usecase.DocenteService;
+import ec.edu.scli.usuarios.infrastructure.audit.AuditLogger;
 
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.util.UUID;
 
@@ -23,13 +29,16 @@ public class DocenteServiceImpl implements DocenteService {
 
     private final DocenteRepositoryPort docenteRepository;
     private final PerfilRepositoryPort perfilRepository;
+    private final AuditLogger auditLogger;
 
     public DocenteServiceImpl(
             DocenteRepositoryPort docenteRepository,
-            PerfilRepositoryPort perfilRepository
+            PerfilRepositoryPort perfilRepository,
+            AuditLogger auditLogger
     ) {
         this.docenteRepository = docenteRepository;
         this.perfilRepository = perfilRepository;
+        this.auditLogger = auditLogger;
     }
 
     @Override
@@ -69,6 +78,13 @@ public class DocenteServiceImpl implements DocenteService {
 
         Docente docenteGuardado =
                 docenteRepository.save(docente);
+
+        auditLogger.registrarEvento(
+                "usuario_creado",
+                usuarioActual(),
+                ipCliente(),
+                "tipo=docente, id=" + docenteGuardado.getId()
+        );
 
         return convertirAResponse(docenteGuardado);
     }
@@ -119,12 +135,27 @@ public class DocenteServiceImpl implements DocenteService {
         docente.setTipoContrato(request.tipoContrato());
         docente.setDedicacion(request.dedicacion());
 
+        Boolean activoAnterior = docente.getActivo();
+
         if (request.activo() != null) {
             docente.setActivo(request.activo());
         }
 
         Docente docenteActualizado =
                 docenteRepository.save(docente);
+
+        if (request.activo() != null
+                && !request.activo().equals(activoAnterior)) {
+
+            auditLogger.registrarEvento(
+                    request.activo()
+                            ? "usuario_reactivado"
+                            : "usuario_desactivado",
+                    usuarioActual(),
+                    ipCliente(),
+                    "tipo=docente, id=" + id
+            );
+        }
 
         return convertirAResponse(docenteActualizado);
     }
@@ -225,5 +256,39 @@ public class DocenteServiceImpl implements DocenteService {
                 docente.getCreadoEn(),
                 docente.getActualizadoEn()
         );
+    }
+
+    private String usuarioActual() {
+
+        Authentication authentication =
+                SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null || authentication.getName() == null) {
+
+            return "sistema";
+        }
+
+        return authentication.getName();
+    }
+
+    private String ipCliente() {
+
+        var attributes = RequestContextHolder.getRequestAttributes();
+
+        if (!(attributes instanceof ServletRequestAttributes servletAttributes)) {
+
+            return "desconocida";
+        }
+
+        HttpServletRequest request = servletAttributes.getRequest();
+
+        String forwardedFor = request.getHeader("X-Forwarded-For");
+
+        if (forwardedFor != null && !forwardedFor.isBlank()) {
+
+            return forwardedFor.split(",")[0].trim();
+        }
+
+        return request.getRemoteAddr();
     }
 }

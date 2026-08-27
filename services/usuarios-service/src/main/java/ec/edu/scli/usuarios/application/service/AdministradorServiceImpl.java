@@ -10,11 +10,17 @@ import ec.edu.scli.usuarios.domain.exception.ResourceNotFoundException;
 import ec.edu.scli.usuarios.domain.port.AdministradorRepositoryPort;
 import ec.edu.scli.usuarios.domain.port.PerfilRepositoryPort;
 import ec.edu.scli.usuarios.application.usecase.AdministradorService;
+import ec.edu.scli.usuarios.infrastructure.audit.AuditLogger;
 
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.util.UUID;
 
@@ -26,12 +32,16 @@ public class AdministradorServiceImpl
 
     private final PerfilRepositoryPort perfilRepository;
 
+    private final AuditLogger auditLogger;
+
     public AdministradorServiceImpl(
             AdministradorRepositoryPort administradorRepository,
-            PerfilRepositoryPort perfilRepository
+            PerfilRepositoryPort perfilRepository,
+            AuditLogger auditLogger
     ) {
         this.administradorRepository = administradorRepository;
         this.perfilRepository = perfilRepository;
+        this.auditLogger = auditLogger;
     }
 
     @Override
@@ -94,6 +104,13 @@ public class AdministradorServiceImpl
         Administrador administradorGuardado =
                 administradorRepository.save(administrador);
 
+        auditLogger.registrarEvento(
+                "usuario_creado",
+                usuarioActual(),
+                ipCliente(),
+                "tipo=administrador, id=" + administradorGuardado.getId()
+        );
+
         return convertirAResponse(administradorGuardado);
     }
 
@@ -150,6 +167,8 @@ public class AdministradorServiceImpl
 
         administrador.setPisoId(request.pisoId());
 
+        Boolean activoAnterior = administrador.getActivo();
+
         if (request.activo() != null) {
 
             administrador.setActivo(request.activo());
@@ -157,6 +176,19 @@ public class AdministradorServiceImpl
 
         Administrador administradorActualizado =
                 administradorRepository.save(administrador);
+
+        if (request.activo() != null
+                && !request.activo().equals(activoAnterior)) {
+
+            auditLogger.registrarEvento(
+                    request.activo()
+                            ? "usuario_reactivado"
+                            : "usuario_desactivado",
+                    usuarioActual(),
+                    ipCliente(),
+                    "tipo=administrador, id=" + id
+            );
+        }
 
         return convertirAResponse(administradorActualizado);
     }
@@ -227,5 +259,39 @@ public class AdministradorServiceImpl
                 administrador.getCreadoEn(),
                 administrador.getActualizadoEn()
         );
+    }
+
+    private String usuarioActual() {
+
+        Authentication authentication =
+                SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null || authentication.getName() == null) {
+
+            return "sistema";
+        }
+
+        return authentication.getName();
+    }
+
+    private String ipCliente() {
+
+        var attributes = RequestContextHolder.getRequestAttributes();
+
+        if (!(attributes instanceof ServletRequestAttributes servletAttributes)) {
+
+            return "desconocida";
+        }
+
+        HttpServletRequest request = servletAttributes.getRequest();
+
+        String forwardedFor = request.getHeader("X-Forwarded-For");
+
+        if (forwardedFor != null && !forwardedFor.isBlank()) {
+
+            return forwardedFor.split(",")[0].trim();
+        }
+
+        return request.getRemoteAddr();
     }
 }

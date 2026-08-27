@@ -10,11 +10,17 @@ import ec.edu.scli.usuarios.domain.exception.ResourceNotFoundException;
 import ec.edu.scli.usuarios.domain.port.EstudianteRepositoryPort;
 import ec.edu.scli.usuarios.domain.port.PerfilRepositoryPort;
 import ec.edu.scli.usuarios.application.usecase.EstudianteService;
+import ec.edu.scli.usuarios.infrastructure.audit.AuditLogger;
 
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.util.UUID;
 
@@ -23,13 +29,16 @@ public class EstudianteServiceImpl implements EstudianteService {
 
     private final EstudianteRepositoryPort estudianteRepository;
     private final PerfilRepositoryPort perfilRepository;
+    private final AuditLogger auditLogger;
 
     public EstudianteServiceImpl(
             EstudianteRepositoryPort estudianteRepository,
-            PerfilRepositoryPort perfilRepository
+            PerfilRepositoryPort perfilRepository,
+            AuditLogger auditLogger
     ) {
         this.estudianteRepository = estudianteRepository;
         this.perfilRepository = perfilRepository;
+        this.auditLogger = auditLogger;
     }
 
     @Override
@@ -72,6 +81,13 @@ public class EstudianteServiceImpl implements EstudianteService {
 
         Estudiante estudianteGuardado =
                 estudianteRepository.save(estudiante);
+
+        auditLogger.registrarEvento(
+                "usuario_creado",
+                usuarioActual(),
+                ipCliente(),
+                "tipo=estudiante, id=" + estudianteGuardado.getId()
+        );
 
         return convertirAResponse(estudianteGuardado);
     }
@@ -120,12 +136,27 @@ public class EstudianteServiceImpl implements EstudianteService {
         estudiante.setCarreraId(request.carreraId());
         estudiante.setSemestre(request.semestre());
 
+        Boolean activoAnterior = estudiante.getActivo();
+
         if (request.activo() != null) {
             estudiante.setActivo(request.activo());
         }
 
         Estudiante estudianteActualizado =
                 estudianteRepository.save(estudiante);
+
+        if (request.activo() != null
+                && !request.activo().equals(activoAnterior)) {
+
+            auditLogger.registrarEvento(
+                    request.activo()
+                            ? "usuario_reactivado"
+                            : "usuario_desactivado",
+                    usuarioActual(),
+                    ipCliente(),
+                    "tipo=estudiante, id=" + id
+            );
+        }
 
         return convertirAResponse(estudianteActualizado);
     }
@@ -195,5 +226,39 @@ public class EstudianteServiceImpl implements EstudianteService {
                 estudiante.getCreadoEn(),
                 estudiante.getActualizadoEn()
         );
+    }
+
+    private String usuarioActual() {
+
+        Authentication authentication =
+                SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null || authentication.getName() == null) {
+
+            return "sistema";
+        }
+
+        return authentication.getName();
+    }
+
+    private String ipCliente() {
+
+        var attributes = RequestContextHolder.getRequestAttributes();
+
+        if (!(attributes instanceof ServletRequestAttributes servletAttributes)) {
+
+            return "desconocida";
+        }
+
+        HttpServletRequest request = servletAttributes.getRequest();
+
+        String forwardedFor = request.getHeader("X-Forwarded-For");
+
+        if (forwardedFor != null && !forwardedFor.isBlank()) {
+
+            return forwardedFor.split(",")[0].trim();
+        }
+
+        return request.getRemoteAddr();
     }
 }

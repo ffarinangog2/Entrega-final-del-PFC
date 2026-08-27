@@ -10,11 +10,17 @@ import ec.edu.scli.usuarios.domain.exception.ResourceNotFoundException;
 import ec.edu.scli.usuarios.domain.port.PerfilRepositoryPort;
 import ec.edu.scli.usuarios.domain.port.TecnicoRepositoryPort;
 import ec.edu.scli.usuarios.application.usecase.TecnicoService;
+import ec.edu.scli.usuarios.infrastructure.audit.AuditLogger;
 
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.util.UUID;
 
@@ -23,13 +29,16 @@ public class TecnicoServiceImpl implements TecnicoService {
 
     private final TecnicoRepositoryPort tecnicoRepository;
     private final PerfilRepositoryPort perfilRepository;
+    private final AuditLogger auditLogger;
 
     public TecnicoServiceImpl(
             TecnicoRepositoryPort tecnicoRepository,
-            PerfilRepositoryPort perfilRepository
+            PerfilRepositoryPort perfilRepository,
+            AuditLogger auditLogger
     ) {
         this.tecnicoRepository = tecnicoRepository;
         this.perfilRepository = perfilRepository;
+        this.auditLogger = auditLogger;
     }
 
     @Override
@@ -73,6 +82,13 @@ public class TecnicoServiceImpl implements TecnicoService {
 
         Tecnico tecnicoGuardado =
                 tecnicoRepository.save(tecnico);
+
+        auditLogger.registrarEvento(
+                "usuario_creado",
+                usuarioActual(),
+                ipCliente(),
+                "tipo=tecnico, id=" + tecnicoGuardado.getId()
+        );
 
         return convertirAResponse(tecnicoGuardado);
     }
@@ -120,12 +136,27 @@ public class TecnicoServiceImpl implements TecnicoService {
         tecnico.setCodigoTecnico(request.codigoTecnico());
         tecnico.setEspecialidad(request.especialidad());
 
+        Boolean activoAnterior = tecnico.getActivo();
+
         if (request.activo() != null) {
             tecnico.setActivo(request.activo());
         }
 
         Tecnico tecnicoActualizado =
                 tecnicoRepository.save(tecnico);
+
+        if (request.activo() != null
+                && !request.activo().equals(activoAnterior)) {
+
+            auditLogger.registrarEvento(
+                    request.activo()
+                            ? "usuario_reactivado"
+                            : "usuario_desactivado",
+                    usuarioActual(),
+                    ipCliente(),
+                    "tipo=tecnico, id=" + id
+            );
+        }
 
         return convertirAResponse(tecnicoActualizado);
     }
@@ -192,5 +223,39 @@ public class TecnicoServiceImpl implements TecnicoService {
                 tecnico.getCreadoEn(),
                 tecnico.getActualizadoEn()
         );
+    }
+
+    private String usuarioActual() {
+
+        Authentication authentication =
+                SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null || authentication.getName() == null) {
+
+            return "sistema";
+        }
+
+        return authentication.getName();
+    }
+
+    private String ipCliente() {
+
+        var attributes = RequestContextHolder.getRequestAttributes();
+
+        if (!(attributes instanceof ServletRequestAttributes servletAttributes)) {
+
+            return "desconocida";
+        }
+
+        HttpServletRequest request = servletAttributes.getRequest();
+
+        String forwardedFor = request.getHeader("X-Forwarded-For");
+
+        if (forwardedFor != null && !forwardedFor.isBlank()) {
+
+            return forwardedFor.split(",")[0].trim();
+        }
+
+        return request.getRemoteAddr();
     }
 }
