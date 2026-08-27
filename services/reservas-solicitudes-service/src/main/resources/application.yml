@@ -74,7 +74,7 @@ security:
     secret: ${JWT_SECRET}
 
 app:
-  internal-api-key: ${INTERNAL_API_KEY:clave-interna-desarrollo}
+  internal-api-key: ${INTERNAL_API_KEY}
 
   services:
     usuarios:
