@@ -95,7 +95,7 @@ services:
         cockroach sql \
           --certs-dir=/cockroach/cockroach-certs \
           --host=cockroach-auth:26257 \
-          --execute="CREATE DATABASE IF NOT EXISTS auth_db; CREATE USER IF NOT EXISTS \"$${DB_USERNAME}\"; ALTER USER \"$${DB_USERNAME}\" WITH PASSWORD '$${DB_PASSWORD}'; GRANT ALL ON DATABASE auth_db TO \"$${DB_USERNAME}\"; GRANT ALL ON TABLE auth_db.public.* TO \"$${DB_USERNAME}\";"
+          --execute="CREATE DATABASE IF NOT EXISTS auth_db; CREATE USER IF NOT EXISTS \"$${DB_USERNAME}\"; ALTER USER \"$${DB_USERNAME}\" WITH PASSWORD '$${DB_PASSWORD}'; GRANT ALL ON DATABASE auth_db TO \"$${DB_USERNAME}\";"
 
     restart: "no"
 
@@ -225,7 +225,7 @@ services:
         cockroach sql \
           --certs-dir=/cockroach/cockroach-certs \
           --host=cockroach-usuarios:26257 \
-          --execute="CREATE DATABASE IF NOT EXISTS usuarios_db; CREATE USER IF NOT EXISTS \"$${DB_USERNAME}\"; ALTER USER \"$${DB_USERNAME}\" WITH PASSWORD '$${DB_PASSWORD}'; GRANT ALL ON DATABASE usuarios_db TO \"$${DB_USERNAME}\"; GRANT ALL ON TABLE usuarios_db.public.* TO \"$${DB_USERNAME}\";"
+          --execute="CREATE DATABASE IF NOT EXISTS usuarios_db; CREATE USER IF NOT EXISTS \"$${DB_USERNAME}\"; ALTER USER \"$${DB_USERNAME}\" WITH PASSWORD '$${DB_PASSWORD}'; GRANT ALL ON DATABASE usuarios_db TO \"$${DB_USERNAME}\";"
 
     restart: "no"
 
@@ -344,7 +344,7 @@ services:
         cockroach sql \
           --certs-dir=/cockroach/cockroach-certs \
           --host=cockroach-academico:26257 \
-          --execute="CREATE DATABASE IF NOT EXISTS academico_db; CREATE USER IF NOT EXISTS \"$${DB_USERNAME}\"; ALTER USER \"$${DB_USERNAME}\" WITH PASSWORD '$${DB_PASSWORD}'; GRANT ALL ON DATABASE academico_db TO \"$${DB_USERNAME}\"; GRANT ALL ON TABLE academico_db.public.* TO \"$${DB_USERNAME}\";"
+          --execute="CREATE DATABASE IF NOT EXISTS academico_db; CREATE USER IF NOT EXISTS \"$${DB_USERNAME}\"; ALTER USER \"$${DB_USERNAME}\" WITH PASSWORD '$${DB_PASSWORD}'; GRANT ALL ON DATABASE academico_db TO \"$${DB_USERNAME}\";"
 
     restart: "no"
 
@@ -600,11 +600,11 @@ services:
     container_name: reservas-db-init
     depends_on:
       crdb-e3-1:
-        condition: service_healthy
+        condition: service_started
       crdb-e3-2:
-        condition: service_healthy
+        condition: service_started
       crdb-e3-3:
-        condition: service_healthy
+        condition: service_started
     environment:
       DB_USERNAME: ${RESERVAS_DB_USERNAME:?RESERVAS_DB_USERNAME is required}
       DB_PASSWORD: ${RESERVAS_DB_PASSWORD:?RESERVAS_DB_PASSWORD is required}
@@ -640,7 +640,7 @@ services:
         cockroach sql \
           --certs-dir=/cockroach/cockroach-certs \
           --host=crdb-e3-1:26257 \
-          --execute="CREATE DATABASE IF NOT EXISTS reservas_db; CREATE USER IF NOT EXISTS \"$${DB_USERNAME}\"; ALTER USER \"$${DB_USERNAME}\" WITH PASSWORD '$${DB_PASSWORD}'; GRANT ALL ON DATABASE reservas_db TO \"$${DB_USERNAME}\"; GRANT ALL ON TABLE reservas_db.public.* TO \"$${DB_USERNAME}\"; ALTER RANGE default CONFIGURE ZONE USING num_replicas = 3"
+          --execute="CREATE DATABASE IF NOT EXISTS reservas_db; CREATE USER IF NOT EXISTS \"$${DB_USERNAME}\"; ALTER USER \"$${DB_USERNAME}\" WITH PASSWORD '$${DB_PASSWORD}'; GRANT ALL ON DATABASE reservas_db TO \"$${DB_USERNAME}\"; ALTER RANGE default CONFIGURE ZONE USING num_replicas = 3"
 
         if ! cockroach sql \
           --certs-dir=/cockroach/cockroach-certs \
