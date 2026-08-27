@@ -98,6 +98,8 @@ jobs:
         shell: bash
         run: |
           echo "JWT_SECRET=$(openssl rand -base64 48)" >> "$GITHUB_ENV"
+          echo "DATA_ENCRYPTION_KEY=$(openssl rand -base64 32)" >> "$GITHUB_ENV"
+          echo "DATA_HASH_KEY=$(openssl rand -base64 32)" >> "$GITHUB_ENV"
 
       - name: Generate consumer Pacts
         if: ${{ matrix.service == 'services/reservas-solicitudes-service' || matrix.service == 'services/usuarios-service' }}
@@ -278,6 +280,8 @@ jobs:
         shell: bash
         env:
           JWT_SECRET: ${{ secrets.JWT_SECRET || 'ci-integration-secret-change-me' }}
+          DATA_ENCRYPTION_KEY: ${{ secrets.DATA_ENCRYPTION_KEY || 'KwDuK6XBqOlQoHHizYNnUk6YTmD8zxiiqkjOlC8exIs=' }}
+          DATA_HASH_KEY: ${{ secrets.DATA_HASH_KEY || '2KHYNo4a7kZmBuZmJ2sTLNUjHFXpzDG6rk6Z/1rQ6lI=' }}
         run: |
           set -Eeuo pipefail
 
