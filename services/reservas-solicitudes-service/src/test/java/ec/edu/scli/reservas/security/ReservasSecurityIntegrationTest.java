@@ -2,6 +2,7 @@ package ec.edu.scli.reservas.security;
 
 import ec.edu.scli.reservas.application.service.DisponibilidadService;
 import ec.edu.scli.reservas.config.SecurityConfig;
+import ec.edu.scli.reservas.infrastructure.audit.AuditLogger;
 import ec.edu.scli.reservas.presentation.controller.DisponibilidadController;
 import ec.edu.scli.reservas.presentation.controller.SolicitudReservaController;
 import ec.edu.scli.reservas.application.service.SolicitudReservaService;
@@ -25,6 +26,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import org.springframework.security.access.AccessDeniedException;
 
@@ -38,6 +40,7 @@ class ReservasSecurityIntegrationTest {
     @Autowired private MockMvc mockMvc;
     @MockitoBean private DisponibilidadService disponibilidadService;
     @MockitoBean private SolicitudReservaService solicitudService;
+    @MockitoBean private AuditLogger auditLogger;
 
     @Test
     void sinTokenResponde401() throws Exception {
@@ -60,6 +63,15 @@ class ReservasSecurityIntegrationTest {
     void accessTokenSinPermisoResponde403() throws Exception {
         mockMvc.perform(consulta().header("Authorization", "Bearer " + token("access", List.of("RESERVA_LEER"))))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void accessTokenSinPermisoAuditaAccesoDenegado() throws Exception {
+        mockMvc.perform(consulta().header("Authorization", "Bearer " + token("access", List.of("RESERVA_LEER"))))
+                .andExpect(status().isForbidden());
+
+        verify(auditLogger).registrarEvento(
+                eq("acceso_denegado"), any(), any(), org.mockito.ArgumentMatchers.contains("/api/v1/disponibilidad/laboratorios/"));
     }
 
     @Test

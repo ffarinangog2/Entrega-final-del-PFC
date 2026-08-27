@@ -6,6 +6,7 @@ import ec.edu.scli.academico.application.service.PeriodoLectivoService;
 import ec.edu.scli.academico.config.SecurityConfig;
 import ec.edu.scli.academico.dto.internal.ExisteResponse;
 import ec.edu.scli.academico.enums.EstadoPeriodo;
+import ec.edu.scli.academico.infrastructure.audit.AuditLogger;
 import ec.edu.scli.academico.infrastructure.observability.HttpMetricsFilter;
 import ec.edu.scli.academico.presentation.controller.InternalController;
 import ec.edu.scli.academico.presentation.controller.PeriodoLectivoController;
@@ -30,6 +31,8 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -60,6 +63,9 @@ class AcademicoSecurityIntegrationTest {
 
     @MockitoBean
     private MateriaService materiaService;
+
+    @MockitoBean
+    private AuditLogger auditLogger;
 
     @Test
     void lecturaAcademicaSinJwtDevuelve401() throws Exception {
@@ -120,6 +126,18 @@ class AcademicoSecurityIntegrationTest {
                         .contentType("application/json")
                         .content(periodoJson()))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void docenteSinPermisoAuditaAccesoDenegado() throws Exception {
+        mockMvc.perform(post("/api/v1/periodos-lectivos")
+                        .header("Authorization", bearer(List.of("DOCENTE"), List.of("ACADEMICO_LEER")))
+                        .contentType("application/json")
+                        .content(periodoJson()))
+                .andExpect(status().isForbidden());
+
+        verify(auditLogger).registrarEvento(
+                eq("acceso_denegado"), any(), any(), eq("POST /api/v1/periodos-lectivos"));
     }
 
     private String bearer(List<String> roles, List<String> permissions) {

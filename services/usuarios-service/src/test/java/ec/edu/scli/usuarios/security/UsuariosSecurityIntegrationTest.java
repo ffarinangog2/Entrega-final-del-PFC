@@ -2,6 +2,7 @@ package ec.edu.scli.usuarios.security;
 
 import ec.edu.scli.usuarios.application.usecase.DocenteService;
 import ec.edu.scli.usuarios.config.SecurityConfig;
+import ec.edu.scli.usuarios.infrastructure.audit.AuditLogger;
 import ec.edu.scli.usuarios.presentation.controller.DocenteController;
 import ec.edu.scli.usuarios.presentation.dto.docente.DocenteResponse;
 import ec.edu.scli.usuarios.infrastructure.observability.HttpRequestsMetricsRegistry;
@@ -25,6 +26,9 @@ import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -55,6 +59,9 @@ class UsuariosSecurityIntegrationTest {
 
     @MockitoBean
     private DocenteService docenteService;
+
+    @MockitoBean
+    private AuditLogger auditLogger;
 
     private UUID perfilId;
 
@@ -111,6 +118,17 @@ class UsuariosSecurityIntegrationTest {
                         .header("Authorization", "Bearer " + token(
                                 perfilId, "access", List.of("ACADEMICO_LEER"))))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void listadoSinPermisoAuditaAccesoDenegado() throws Exception {
+        mockMvc.perform(get("/api/v1/docentes")
+                        .header("Authorization", "Bearer " + token(
+                                perfilId, "access", List.of("ACADEMICO_LEER"))))
+                .andExpect(status().isForbidden());
+
+        verify(auditLogger).registrarEvento(
+                eq("acceso_denegado"), any(), any(), eq("GET /api/v1/docentes"));
     }
 
     private String token(UUID perfil, String type, List<String> permissions) {
