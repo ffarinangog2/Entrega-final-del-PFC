@@ -7,6 +7,7 @@ import ec.edu.scli.reservas.client.UsuariosClient;
 import ec.edu.scli.reservas.client.dto.*;
 import ec.edu.scli.reservas.domain.model.*;
 import ec.edu.scli.reservas.domain.port.out.*;
+import ec.edu.scli.reservas.infrastructure.audit.AuditLogger;
 import ec.edu.scli.reservas.mapper.*;
 import ec.edu.scli.reservas.observability.BusinessEventMetrics;
 import ec.edu.scli.reservas.presentation.dto.request.*;
@@ -37,6 +38,7 @@ class SolicitudReservaServiceImplTest {
     private BusinessEventMetrics metrics;
     private PoliticaAmbitoLaboratorio politica;
     private AgendaMutexPort agendaMutex;
+    private AuditLogger auditLogger;
 
     private final UUID solicitanteId = UUID.randomUUID();
     private final UUID docenteId = UUID.randomUUID();
@@ -58,10 +60,11 @@ class SolicitudReservaServiceImplTest {
         metrics = mock(BusinessEventMetrics.class);
         politica = mock(PoliticaAmbitoLaboratorio.class);
         agendaMutex = mock(AgendaMutexPort.class);
+        auditLogger = mock(AuditLogger.class);
         service = new SolicitudReservaServiceImpl(
                 solicitudes, reservas, historiales, idempotenciaAprobaciones, idempotenciaCreaciones,
                 new SolicitudReservaMapper(), new ReservaMapper(), new HistorialSolicitudMapper(),
-                docentes, academico, disponibilidad, metrics, politica, agendaMutex);
+                docentes, academico, disponibilidad, metrics, politica, agendaMutex, auditLogger);
 
         when(politica.actor()).thenReturn(new ActorAutenticado(
                 usuarioId, java.util.Set.of("ROLE_ADMINISTRADOR")));
@@ -437,6 +440,59 @@ class SolicitudReservaServiceImplTest {
         assertEquals(1, service.listarPorEstado(EstadoSolicitud.PENDIENTE, 0, 10).totalElementos());
         assertEquals(solicitud.getId(), service.buscarPorId(solicitud.getId()).id());
         assertEquals(1, service.obtenerHistorial(solicitud.getId(), 0, 10).totalElementos());
+    }
+
+    @Test
+    void creaSolicitudAuditaSolicitudCreada() {
+        var respuesta = service.crear(crearRequest(), "clave", usuarioId);
+        verify(auditLogger).registrarEvento(
+                eq("solicitud_creada"), any(), any(), contains("id=" + respuesta.id()));
+    }
+
+    @Test
+    void devuelveSolicitudExistentePorIdempotenciaNoAuditaDeNuevo() {
+        SolicitudReserva existente = solicitud(EstadoSolicitud.PENDIENTE);
+        when(idempotenciaCreaciones.buscarParaActualizar("clave")).thenReturn(Optional.of(
+                new IdempotenciaCreacionSolicitud("clave", "CREAR_SOLICITUD",
+                        usuarioId, service.hashCreacion(crearRequest()), existente.getId())));
+        when(solicitudes.buscarPorId(existente.getId())).thenReturn(Optional.of(existente));
+        service.crear(crearRequest(), "clave", usuarioId);
+        verify(auditLogger, never()).registrarEvento(eq("solicitud_creada"), any(), any(), any());
+    }
+
+    @Test
+    void apruebaSolicitudAuditaSolicitudAprobada() {
+        SolicitudReserva solicitud = solicitud(EstadoSolicitud.EN_REVISION);
+        prepararBloqueo(solicitud);
+        prepararIdempotenciaPendiente("clave", solicitud.getId());
+        when(reservas.existePorSolicitudId(solicitud.getId())).thenReturn(false);
+        service.aprobar(
+                solicitud.getId(), new AprobarSolicitudRequest(usuarioId, "aprobada"), "clave", usuarioId);
+        verify(auditLogger).registrarEvento(
+                eq("solicitud_aprobada"), any(), any(), contains("id=" + solicitud.getId()));
+    }
+
+    @Test
+    void rechazaSolicitudAuditaSolicitudRechazada() {
+        SolicitudReserva solicitud = solicitud(EstadoSolicitud.EN_REVISION);
+        prepararBloqueo(solicitud);
+        var respuesta = service.rechazar(
+                solicitud.getId(), new RechazarSolicitudRequest("no cumple"), usuarioId);
+        verify(auditLogger).registrarEvento(
+                eq("solicitud_rechazada"), any(), any(), contains("id=" + respuesta.id()));
+    }
+
+    @Test
+    void cancelaSolicitudAuditaSolicitudCancelada() {
+        SolicitudReserva solicitud = solicitud(EstadoSolicitud.APROBADA);
+        Reserva reserva = reserva(EstadoReserva.PROGRAMADA, solicitud.getId());
+        prepararBloqueo(solicitud);
+        when(reservas.buscarPorSolicitudId(solicitud.getId())).thenReturn(Optional.of(reserva));
+        when(reservas.buscarPorIdParaActualizar(reserva.getId())).thenReturn(Optional.of(reserva));
+        var respuesta = service.cancelar(
+                solicitud.getId(), new CancelarSolicitudRequest("cancelada"), usuarioId);
+        verify(auditLogger).registrarEvento(
+                eq("solicitud_cancelada"), any(), any(), contains("id=" + respuesta.id()));
     }
 
     private void prepararBloqueo(SolicitudReserva solicitud) {

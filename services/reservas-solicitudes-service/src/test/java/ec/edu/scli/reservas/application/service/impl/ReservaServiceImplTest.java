@@ -4,6 +4,7 @@ import ec.edu.scli.reservas.domain.model.*;
 import ec.edu.scli.reservas.application.service.PoliticaAmbitoLaboratorio;
 import ec.edu.scli.reservas.domain.port.out.ReservaRepositoryPort;
 import ec.edu.scli.reservas.domain.port.out.SolicitudReservaRepositoryPort;
+import ec.edu.scli.reservas.infrastructure.audit.AuditLogger;
 import ec.edu.scli.reservas.mapper.ReservaMapper;
 import ec.edu.scli.reservas.observability.BusinessEventMetrics;
 import ec.edu.scli.reservas.presentation.dto.request.CancelarReservaRequest;
@@ -26,6 +27,7 @@ class ReservaServiceImplTest {
     private BusinessEventMetrics metrics;
     private PoliticaAmbitoLaboratorio politica;
     private SolicitudReservaRepositoryPort solicitudes;
+    private AuditLogger auditLogger;
 
     @BeforeEach
     void setUp() {
@@ -33,11 +35,12 @@ class ReservaServiceImplTest {
         metrics = mock(BusinessEventMetrics.class);
         politica = mock(PoliticaAmbitoLaboratorio.class);
         solicitudes = mock(SolicitudReservaRepositoryPort.class);
+        auditLogger = mock(AuditLogger.class);
         when(politica.actor()).thenReturn(new ActorAutenticado(
                 UUID.randomUUID(), java.util.Set.of("ROLE_ADMINISTRADOR")));
         when(repository.guardar(any())).thenAnswer(i -> i.getArgument(0));
         service = new ReservaServiceImpl(
-                repository, new ReservaMapper(), metrics, politica, solicitudes);
+                repository, new ReservaMapper(), metrics, politica, solicitudes, auditLogger);
     }
 
     @Test
@@ -87,6 +90,15 @@ class ReservaServiceImplTest {
         assertEquals(EstadoReserva.CANCELADA,
                 service.cancelar(reserva.getId(), new CancelarReservaRequest("motivo"), UUID.randomUUID()).estado());
         verify(metrics).reservaCancelada();
+    }
+
+    @Test
+    void cancelaReservaAuditaReservaCancelada() {
+        Reserva reserva = reserva(EstadoReserva.PROGRAMADA);
+        prepararActualizacion(reserva);
+        service.cancelar(reserva.getId(), new CancelarReservaRequest("motivo"), UUID.randomUUID());
+        verify(auditLogger).registrarEvento(
+                eq("reserva_cancelada"), any(), any(), contains("id=" + reserva.getId()));
     }
 
     @Test

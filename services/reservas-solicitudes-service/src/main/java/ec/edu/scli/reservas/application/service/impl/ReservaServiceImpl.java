@@ -8,9 +8,11 @@ import ec.edu.scli.reservas.domain.port.out.SolicitudReservaRepositoryPort;
 import ec.edu.scli.reservas.domain.state.reserva.ReservaStates;
 import ec.edu.scli.reservas.mapper.ReservaMapper;
 import ec.edu.scli.reservas.observability.BusinessEventMetrics;
+import ec.edu.scli.reservas.infrastructure.audit.AuditLogger;
 import ec.edu.scli.reservas.presentation.dto.request.CancelarReservaRequest;
 import ec.edu.scli.reservas.presentation.dto.response.*;
 import ec.edu.scli.reservas.presentation.exception.ResourceNotFoundException;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.dao.PessimisticLockingFailureException;
 import org.springframework.dao.CannotAcquireLockException;
@@ -19,6 +21,10 @@ import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.transaction.annotation.*;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 import java.time.*;
 import java.util.UUID;
 
@@ -31,15 +37,18 @@ public class ReservaServiceImpl implements ReservaService {
     private final BusinessEventMetrics businessEventMetrics;
     private final PoliticaAmbitoLaboratorio politicaAmbito;
     private final SolicitudReservaRepositoryPort solicitudRepository;
+    private final AuditLogger auditLogger;
     public ReservaServiceImpl(
             ReservaRepositoryPort r, ReservaMapper m, BusinessEventMetrics metrics,
             PoliticaAmbitoLaboratorio politicaAmbito,
-            SolicitudReservaRepositoryPort solicitudRepository) {
+            SolicitudReservaRepositoryPort solicitudRepository,
+            AuditLogger auditLogger) {
         reservaRepository = r;
         reservaMapper = m;
         businessEventMetrics = metrics;
         this.politicaAmbito = politicaAmbito;
         this.solicitudRepository = solicitudRepository;
+        this.auditLogger = auditLogger;
     }
     @Override @Transactional(readOnly=true)
     public PaginaResponse<ReservaResponse> listar(EstadoReserva e,UUID l,UUID r,LocalDate d,LocalDate h,int p,int t){
@@ -59,7 +68,7 @@ public class ReservaServiceImpl implements ReservaService {
     @Override @Transactional(readOnly=true)
     public PaginaResponse<ReservaResponse> obtenerCalendario(UUID id,LocalDate d,LocalDate h,int p,int t){return listar(null,id,null,d,h,p,t);}
     @Override @Transactional(isolation=Isolation.SERIALIZABLE)
-    public ReservaResponse cancelar(UUID id,CancelarReservaRequest request,UUID usuario){Reserva r=obtenerReservaParaActualizar(id);politicaAmbito.validarGestion(r.getLaboratorioId());r.setEstado(ReservaStates.desde(r.getEstado()).cancelar());ReservaResponse response=reservaMapper.toResponse(reservaRepository.guardar(r));businessEventMetrics.reservaCancelada();return response;}
+    public ReservaResponse cancelar(UUID id,CancelarReservaRequest request,UUID usuario){Reserva r=obtenerReservaParaActualizar(id);politicaAmbito.validarGestion(r.getLaboratorioId());r.setEstado(ReservaStates.desde(r.getEstado()).cancelar());ReservaResponse response=reservaMapper.toResponse(reservaRepository.guardar(r));businessEventMetrics.reservaCancelada();auditLogger.registrarEvento("reserva_cancelada",usuarioActual(),ipCliente(),"id="+id);return response;}
     @Override @Transactional(isolation=Isolation.SERIALIZABLE)
     public ReservaResponse iniciar(UUID id,UUID usuario){Reserva r=obtenerReservaParaActualizar(id);politicaAmbito.validarGestion(r.getLaboratorioId());r.setEstado(ReservaStates.desde(r.getEstado()).iniciar(r,LocalDateTime.now()));return reservaMapper.toResponse(reservaRepository.guardar(r));}
     @Override @Transactional(isolation=Isolation.SERIALIZABLE)
@@ -82,4 +91,38 @@ public class ReservaServiceImpl implements ReservaService {
         return actor.tiene("ROLE_ADMINISTRADOR") || actor.tiene("ROLE_TECNICO");
     }
     private PaginaResponse<ReservaResponse> mapearPagina(Pagina<Reserva> p){return new PaginaResponse<>(p.contenido().stream().map(reservaMapper::toResponse).toList(),p.numero(),p.tamanio(),p.totalElementos(),p.totalPaginas(),p.primera(),p.ultima());}
+
+    private String usuarioActual() {
+
+        Authentication authentication =
+                SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null || authentication.getName() == null) {
+
+            return "sistema";
+        }
+
+        return authentication.getName();
+    }
+
+    private String ipCliente() {
+
+        var attributes = RequestContextHolder.getRequestAttributes();
+
+        if (!(attributes instanceof ServletRequestAttributes servletAttributes)) {
+
+            return "desconocida";
+        }
+
+        HttpServletRequest request = servletAttributes.getRequest();
+
+        String forwardedFor = request.getHeader("X-Forwarded-For");
+
+        if (forwardedFor != null && !forwardedFor.isBlank()) {
+
+            return forwardedFor.split(",")[0].trim();
+        }
+
+        return request.getRemoteAddr();
+    }
 }

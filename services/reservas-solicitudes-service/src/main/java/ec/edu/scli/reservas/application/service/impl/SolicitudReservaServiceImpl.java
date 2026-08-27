@@ -39,8 +39,12 @@ import ec.edu.scli.reservas.application.service.SolicitudReservaService;
 import ec.edu.scli.reservas.application.service.PoliticaAmbitoLaboratorio;
 import ec.edu.scli.reservas.domain.port.out.AgendaMutexPort;
 import ec.edu.scli.reservas.domain.port.out.DocenteInstitucionalPort;
+import ec.edu.scli.reservas.infrastructure.audit.AuditLogger;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.beans.BeanUtils;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
@@ -49,6 +53,8 @@ import org.springframework.dao.CannotAcquireLockException;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -76,6 +82,7 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
     private final BusinessEventMetrics businessEventMetrics;
     private final PoliticaAmbitoLaboratorio politicaAmbito;
     private final AgendaMutexPort agendaMutex;
+    private final AuditLogger auditLogger;
 
     public SolicitudReservaServiceImpl(
             SolicitudReservaRepositoryPort solicitudReservaRepository,
@@ -91,7 +98,8 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
             DisponibilidadService disponibilidadService,
             BusinessEventMetrics businessEventMetrics,
             PoliticaAmbitoLaboratorio politicaAmbito,
-            AgendaMutexPort agendaMutex) {
+            AgendaMutexPort agendaMutex,
+            AuditLogger auditLogger) {
         this.solicitudReservaRepository = solicitudReservaRepository;
         this.reservaRepository = reservaRepository;
         this.historialSolicitudRepository = historialSolicitudRepository;
@@ -106,6 +114,7 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
         this.businessEventMetrics = businessEventMetrics;
         this.politicaAmbito = politicaAmbito;
         this.agendaMutex = agendaMutex;
+        this.auditLogger = auditLogger;
     }
 
     @Override
@@ -202,6 +211,13 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
         historialSolicitudRepository.guardar(historial);
 
         businessEventMetrics.solicitudCreada();
+
+        auditLogger.registrarEvento(
+                "solicitud_creada",
+                usuarioActual(),
+                ipCliente(),
+                "id=" + guardada.getId());
+
         return solicitudReservaMapper.toResponse(guardada);
     }
 
@@ -491,6 +507,13 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
 
         businessEventMetrics.solicitudAprobada();
         businessEventMetrics.reservaCreada();
+
+        auditLogger.registrarEvento(
+                "solicitud_aprobada",
+                usuarioActual(),
+                ipCliente(),
+                "id=" + solicitud.getId());
+
         return reservaMapper.toResponse(guardada);
     }
 
@@ -519,6 +542,13 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
         historialSolicitudRepository.guardar(historial);
 
         businessEventMetrics.solicitudRechazada();
+
+        auditLogger.registrarEvento(
+                "solicitud_rechazada",
+                usuarioActual(),
+                ipCliente(),
+                "id=" + guardada.getId());
+
         return solicitudReservaMapper.toResponse(guardada);
     }
 
@@ -560,6 +590,13 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
         historialSolicitudRepository.guardar(historial);
 
         businessEventMetrics.solicitudCancelada();
+
+        auditLogger.registrarEvento(
+                "solicitud_cancelada",
+                usuarioActual(),
+                ipCliente(),
+                "id=" + guardada.getId());
+
         return solicitudReservaMapper.toResponse(guardada);
     }
 
@@ -668,5 +705,39 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
         return new PaginaResponse<>(pagina.contenido().stream().map(solicitudReservaMapper::toResponse).toList(),
                 pagina.numero(), pagina.tamanio(), pagina.totalElementos(), pagina.totalPaginas(),
                 pagina.primera(), pagina.ultima());
+    }
+
+    private String usuarioActual() {
+
+        Authentication authentication =
+                SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null || authentication.getName() == null) {
+
+            return "sistema";
+        }
+
+        return authentication.getName();
+    }
+
+    private String ipCliente() {
+
+        var attributes = RequestContextHolder.getRequestAttributes();
+
+        if (!(attributes instanceof ServletRequestAttributes servletAttributes)) {
+
+            return "desconocida";
+        }
+
+        HttpServletRequest request = servletAttributes.getRequest();
+
+        String forwardedFor = request.getHeader("X-Forwarded-For");
+
+        if (forwardedFor != null && !forwardedFor.isBlank()) {
+
+            return forwardedFor.split(",")[0].trim();
+        }
+
+        return request.getRemoteAddr();
     }
 }
