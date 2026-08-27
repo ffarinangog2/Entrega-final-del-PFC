@@ -6,9 +6,9 @@ spring:
     name: academico-laboratorios-service
 
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:26259/academico_db?sslmode=disable&options=-c%20allow_unsafe_internals%3Dtrue}
-    username: ${DB_USERNAME:root}
-    password: ${DB_PASSWORD:}
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
   jpa:

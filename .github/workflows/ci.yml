@@ -67,15 +67,41 @@ jobs:
           cache-dependency-path: ${{ matrix.service }}/pom.xml
 
       - name: Start CockroachDB for tests
+        shell: bash
         run: |
+          set -Eeuo pipefail
+          certs_dir="$RUNNER_TEMP/cockroach-certs"
+          ca_dir="$RUNNER_TEMP/cockroach-ca"
+          mkdir -p "$certs_dir" "$ca_dir"
+
+          docker run --rm --user "$(id -u):$(id -g)" \
+            --volume "$certs_dir:/certs" \
+            --volume "$ca_dir:/ca" \
+            cockroachdb/cockroach:v26.2.0 \
+            cert create-ca --certs-dir=/certs --ca-key=/ca/ca.key
+
+          docker run --rm --user "$(id -u):$(id -g)" \
+            --volume "$certs_dir:/certs" \
+            --volume "$ca_dir:/ca" \
+            cockroachdb/cockroach:v26.2.0 \
+            cert create-node localhost 127.0.0.1 ci-cockroach \
+            --certs-dir=/certs --ca-key=/ca/ca.key
+
+          docker run --rm --user "$(id -u):$(id -g)" \
+            --volume "$certs_dir:/certs" \
+            --volume "$ca_dir:/ca" \
+            cockroachdb/cockroach:v26.2.0 \
+            cert create-client root --certs-dir=/certs --ca-key=/ca/ca.key
+
           docker run --name ci-cockroach --detach \
             --publish 26257:26257 \
+            --volume "$certs_dir:/cockroach/certs:ro" \
             cockroachdb/cockroach:v26.2.0 \
-            start-single-node --insecure
+            start-single-node --certs-dir=/cockroach/certs
 
           for attempt in {1..30}; do
             if docker exec ci-cockroach cockroach sql \
-              --insecure \
+              --certs-dir=/cockroach/certs \
               --host=localhost:26257 \
               --execute="SELECT 1"; then
               break
@@ -89,10 +115,16 @@ jobs:
             sleep 2
           done
 
+          db_username="ci_app"
+          db_password="$(openssl rand -hex 32)"
           docker exec ci-cockroach cockroach sql \
-            --insecure \
+            --certs-dir=/cockroach/certs \
             --host=localhost:26257 \
-            --execute="CREATE DATABASE IF NOT EXISTS ${{ matrix.database }};"
+            --execute="CREATE DATABASE IF NOT EXISTS ${{ matrix.database }}; CREATE USER IF NOT EXISTS $db_username; ALTER USER $db_username WITH PASSWORD '$db_password'; GRANT ALL ON DATABASE ${{ matrix.database }} TO $db_username;"
+
+          echo "DB_URL=jdbc:postgresql://localhost:26257/${{ matrix.database }}?sslmode=verify-full&sslrootcert=$certs_dir/ca.crt&options=-c%20allow_unsafe_internals%3Dtrue" >> "$GITHUB_ENV"
+          echo "DB_USERNAME=$db_username" >> "$GITHUB_ENV"
+          echo "DB_PASSWORD=$db_password" >> "$GITHUB_ENV"
 
       - name: Prepare test environment
         shell: bash
@@ -112,10 +144,6 @@ jobs:
 
       - name: Build and test
         working-directory: ${{ matrix.service }}
-        env:
-          DB_URL: jdbc:postgresql://localhost:26257/${{ matrix.database }}?sslmode=disable&options=-c%20allow_unsafe_internals%3Dtrue
-          DB_USERNAME: root
-          DB_PASSWORD: ""
         run: mvn --batch-mode verify
 
   crdb-tests:
@@ -282,12 +310,19 @@ jobs:
         run: |
           echo "JWT_SECRET=$(openssl rand -base64 48)" >> "$GITHUB_ENV"
           echo "INTERNAL_API_KEY=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
+          echo "DATA_ENCRYPTION_KEY=$(openssl rand -base64 32)" >> "$GITHUB_ENV"
+          echo "DATA_HASH_KEY=$(openssl rand -base64 32)" >> "$GITHUB_ENV"
+          echo "AUTH_DB_USERNAME=ci_auth_app" >> "$GITHUB_ENV"
+          echo "AUTH_DB_PASSWORD=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
+          echo "USUARIOS_DB_USERNAME=ci_usuarios_app" >> "$GITHUB_ENV"
+          echo "USUARIOS_DB_PASSWORD=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
+          echo "ACADEMICO_DB_USERNAME=ci_academico_app" >> "$GITHUB_ENV"
+          echo "ACADEMICO_DB_PASSWORD=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
+          echo "RESERVAS_DB_USERNAME=ci_reservas_app" >> "$GITHUB_ENV"
+          echo "RESERVAS_DB_PASSWORD=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
 
       - name: Start stack and run integration checks
         shell: bash
-        env:
-          DATA_ENCRYPTION_KEY: ${{ secrets.DATA_ENCRYPTION_KEY || 'KwDuK6XBqOlQoHHizYNnUk6YTmD8zxiiqkjOlC8exIs=' }}
-          DATA_HASH_KEY: ${{ secrets.DATA_HASH_KEY || '2KHYNo4a7kZmBuZmJ2sTLNUjHFXpzDG6rk6Z/1rQ6lI=' }}
         run: |
           set -Eeuo pipefail
 

@@ -766,7 +766,7 @@ crdb-e3-1:
   image: cockroachdb/cockroach:v26.2.0
   command:
     - start
-    - --insecure
+    - --certs-dir=/cockroach/cockroach-certs
     - --join=crdb-e3-1,crdb-e3-2,
       crdb-e3-3
   ports:
@@ -878,7 +878,7 @@ datos en ejecuciones futuras.
 \subsection{Verificación de estado y del esquema aplicado}
 \label{sec:verificacion}
 
-El comando \texttt{cockroach node status --insecure}, ejecutado sobre el
+El comando \texttt{cockroach node status --certs-dir=/cockroach/cockroach-certs}, ejecutado sobre el
 nodo \texttt{crdb-e3-1}, confirma que los tres nodos se reconocen
 mutuamente y reportan \texttt{is\_live=true} e \texttt{is\_available=true}
 (Figura~\ref{fig:status}). El esquema aplicado en la base de datos

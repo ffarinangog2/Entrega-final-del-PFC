@@ -23,7 +23,7 @@ function Invoke-DemoSql {
         [Parameter(Mandatory)] [string] $File
     )
     $sql = Get-Content -LiteralPath (Join-Path $scriptDirectory $File) -Raw
-    & docker compose exec -T $Service cockroach sql --insecure --database $Database --execute $sql
+    & docker compose exec -T $Service cockroach sql --certs-dir=/cockroach/cockroach-certs --database $Database --execute $sql
     if ($LASTEXITCODE -ne 0) {
         throw "Falló el seed DEMO de $Database."
     }
@@ -35,7 +35,7 @@ Invoke-DemoSql -Service 'cockroach-usuarios' -Database 'usuarios_db' -File 'usua
 $authSql = Get-Content -LiteralPath (Join-Path $scriptDirectory 'auth-demo.sql') -Raw
 $authSql = $authSql.Replace('__DOCENTE_PASSWORD_HASH__', $env:DEMO_DOCENTE_PASSWORD_HASH)
 $authSql = $authSql.Replace('__ADMIN_PISO_PASSWORD_HASH__', $env:DEMO_ADMIN_PISO_PASSWORD_HASH)
-& docker compose exec -T cockroach-auth cockroach sql --insecure --database auth_db --execute $authSql
+& docker compose exec -T cockroach-auth cockroach sql --certs-dir=/cockroach/cockroach-certs --database auth_db --execute $authSql
 if ($LASTEXITCODE -ne 0) {
     throw 'Falló el seed DEMO de auth_db.'
 }

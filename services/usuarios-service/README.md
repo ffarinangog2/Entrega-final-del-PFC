@@ -102,7 +102,7 @@ entorno `INTERNAL_API_KEY`).
 | Variable | Descripción | Valor por defecto |
 |---|---|---|
 | `SERVER_PORT` | Puerto del microservicio | `8082` |
-| `DB_URL` | URL JDBC de conexión a CockroachDB | `jdbc:postgresql://localhost:26258/usuarios_db?sslmode=disable` |
+| `DB_URL` | URL JDBC TLS de conexión a CockroachDB | Requerida; use `sslmode=verify-full` y `sslrootcert` |
 | `DB_USERNAME` | Usuario de la base de datos | `root` |
 | `DB_PASSWORD` | Contraseña de la base de datos | *(vacía)* |
 | `INTERNAL_API_KEY` | Clave para autorizar llamadas entre microservicios | `clave-interna-desarrollo` |

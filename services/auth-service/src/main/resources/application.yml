@@ -12,9 +12,9 @@ spring:
       force: true
 
   datasource:
-    url: ${DB_URL:jdbc:postgresql://127.0.0.1:26257/auth_db?sslmode=disable&options=-c%20allow_unsafe_internals%3Dtrue}
-    username: ${DB_USERNAME:root}
-    password: ${DB_PASSWORD:}
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
   jpa:

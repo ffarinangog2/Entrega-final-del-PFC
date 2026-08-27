@@ -1,5 +1,34 @@
 services:
 
+  # Certificados TLS compartidos por los nodos CockroachDB de este entorno.
+  # La clave de la CA permanece en un volumen separado y no se monta en los nodos.
+  cockroach-cert-init:
+    image: cockroachdb/cockroach:v26.2.0
+    container_name: scli-cockroach-cert-init
+    user: "0"
+    entrypoint: ["/bin/sh", "-ec"]
+    command:
+      - |
+        if [ ! -s /certs/ca.crt ]; then
+          cockroach cert create-ca --certs-dir=/certs --ca-key=/ca/ca.key
+        fi
+        if [ ! -s /certs/node.crt ] || [ ! -s /certs/node.key ]; then
+          cockroach cert create-node \
+            localhost 127.0.0.1 \
+            cockroach-auth cockroach-usuarios cockroach-academico \
+            crdb-e3-1 crdb-e3-2 crdb-e3-3 \
+            --certs-dir=/certs --ca-key=/ca/ca.key
+        fi
+        if [ ! -s /certs/client.root.crt ] || [ ! -s /certs/client.root.key ]; then
+          cockroach cert create-client root --certs-dir=/certs --ca-key=/ca/ca.key
+        fi
+        chmod 0644 /certs/ca.crt /certs/node.crt /certs/client.root.crt
+        chmod 0600 /certs/node.key /certs/client.root.key /ca/ca.key
+    volumes:
+      - cockroach-certs:/certs
+      - cockroach-ca-private:/ca
+    restart: "no"
+
   # =========================================================
   # BASE DE DATOS DEL AUTH SERVICE
   # =========================================================
@@ -9,8 +38,12 @@ services:
 
     command:
       - start-single-node
-      - --insecure
+      - --certs-dir=/cockroach/cockroach-certs
       - --store=/cockroach/cockroach-data
+
+    depends_on:
+      cockroach-cert-init:
+        condition: service_completed_successfully
 
     ports:
       - "26257:26257"
@@ -18,6 +51,7 @@ services:
 
     volumes:
       - cockroach-auth-data:/cockroach/cockroach-data
+      - cockroach-certs:/cockroach/cockroach-certs:ro
 
     healthcheck:
       test:
@@ -25,7 +59,7 @@ services:
           "CMD",
           "cockroach",
           "sql",
-          "--insecure",
+          "--certs-dir=/cockroach/cockroach-certs",
           "--host=localhost:26257",
           "--execute=SELECT 1"
         ]
@@ -47,16 +81,26 @@ services:
       cockroach-auth:
         condition: service_healthy
 
+    environment:
+      DB_USERNAME: ${AUTH_DB_USERNAME:?AUTH_DB_USERNAME is required}
+      DB_PASSWORD: ${AUTH_DB_PASSWORD:?AUTH_DB_PASSWORD is required}
+
     entrypoint:
       - /bin/sh
       - -c
       - |
+        case "$${DB_USERNAME}" in ''|*[!a-z0-9_]*) echo "AUTH_DB_USERNAME invalido" >&2; exit 1;; esac
+        case "$${DB_PASSWORD}" in ''|*[!0-9a-f]*) echo "AUTH_DB_PASSWORD debe ser hexadecimal" >&2; exit 1;; esac
+        [ "$${#DB_PASSWORD}" -ge 48 ] || { echo "AUTH_DB_PASSWORD demasiado corto" >&2; exit 1; }
         cockroach sql \
-          --insecure \
+          --certs-dir=/cockroach/cockroach-certs \
           --host=cockroach-auth:26257 \
-          --execute="CREATE DATABASE IF NOT EXISTS auth_db;"
+          --execute="CREATE DATABASE IF NOT EXISTS auth_db; CREATE USER IF NOT EXISTS \"$${DB_USERNAME}\"; ALTER USER \"$${DB_USERNAME}\" WITH PASSWORD '$${DB_PASSWORD}'; GRANT ALL ON DATABASE auth_db TO \"$${DB_USERNAME}\"; GRANT ALL ON TABLE auth_db.public.* TO \"$${DB_USERNAME}\";"
 
     restart: "no"
+
+    volumes:
+      - cockroach-certs:/cockroach/cockroach-certs:ro
 
     networks:
       - scli-network
@@ -74,9 +118,9 @@ services:
 
     environment:
       SERVER_PORT: 8081
-      DB_URL: jdbc:postgresql://cockroach-auth:26257/auth_db?sslmode=disable&options=-c%20allow_unsafe_internals%3Dtrue
-      DB_USERNAME: root
-      DB_PASSWORD: ""
+      DB_URL: jdbc:postgresql://cockroach-auth:26257/auth_db?sslmode=verify-full&sslrootcert=/cockroach/cockroach-certs/ca.crt&options=-c%20allow_unsafe_internals%3Dtrue
+      DB_USERNAME: ${AUTH_DB_USERNAME:?AUTH_DB_USERNAME is required}
+      DB_PASSWORD: ${AUTH_DB_PASSWORD:?AUTH_DB_PASSWORD is required}
       INTERNAL_API_KEY: ${INTERNAL_API_KEY}
       USUARIOS_SERVICE_URL: http://usuarios-service:8082
       JWT_SECRET: ${JWT_SECRET}
@@ -108,6 +152,9 @@ services:
 
     restart: unless-stopped
 
+    volumes:
+      - cockroach-certs:/cockroach/cockroach-certs:ro
+
     networks:
       - scli-network
 
@@ -121,8 +168,12 @@ services:
 
     command:
       - start-single-node
-      - --insecure
+      - --certs-dir=/cockroach/cockroach-certs
       - --store=/cockroach/cockroach-data
+
+    depends_on:
+      cockroach-cert-init:
+        condition: service_completed_successfully
 
     ports:
       - "26258:26257"
@@ -130,6 +181,7 @@ services:
 
     volumes:
       - cockroach-usuarios-data:/cockroach/cockroach-data
+      - cockroach-certs:/cockroach/cockroach-certs:ro
 
     healthcheck:
       test:
@@ -137,7 +189,7 @@ services:
           "CMD",
           "cockroach",
           "sql",
-          "--insecure",
+          "--certs-dir=/cockroach/cockroach-certs",
           "--host=localhost:26257",
           "--execute=SELECT 1"
         ]
@@ -159,16 +211,26 @@ services:
       cockroach-usuarios:
         condition: service_healthy
 
+    environment:
+      DB_USERNAME: ${USUARIOS_DB_USERNAME:?USUARIOS_DB_USERNAME is required}
+      DB_PASSWORD: ${USUARIOS_DB_PASSWORD:?USUARIOS_DB_PASSWORD is required}
+
     entrypoint:
       - /bin/sh
       - -c
       - |
+        case "$${DB_USERNAME}" in ''|*[!a-z0-9_]*) echo "USUARIOS_DB_USERNAME invalido" >&2; exit 1;; esac
+        case "$${DB_PASSWORD}" in ''|*[!0-9a-f]*) echo "USUARIOS_DB_PASSWORD debe ser hexadecimal" >&2; exit 1;; esac
+        [ "$${#DB_PASSWORD}" -ge 48 ] || { echo "USUARIOS_DB_PASSWORD demasiado corto" >&2; exit 1; }
         cockroach sql \
-          --insecure \
+          --certs-dir=/cockroach/cockroach-certs \
           --host=cockroach-usuarios:26257 \
-          --execute="CREATE DATABASE IF NOT EXISTS usuarios_db;"
+          --execute="CREATE DATABASE IF NOT EXISTS usuarios_db; CREATE USER IF NOT EXISTS \"$${DB_USERNAME}\"; ALTER USER \"$${DB_USERNAME}\" WITH PASSWORD '$${DB_PASSWORD}'; GRANT ALL ON DATABASE usuarios_db TO \"$${DB_USERNAME}\"; GRANT ALL ON TABLE usuarios_db.public.* TO \"$${DB_USERNAME}\";"
 
     restart: "no"
+
+    volumes:
+      - cockroach-certs:/cockroach/cockroach-certs:ro
 
     networks:
       - scli-network
@@ -186,9 +248,9 @@ services:
 
     environment:
       SERVER_PORT: 8082
-      DB_URL: jdbc:postgresql://cockroach-usuarios:26257/usuarios_db?sslmode=disable
-      DB_USERNAME: root
-      DB_PASSWORD: ""
+      DB_URL: jdbc:postgresql://cockroach-usuarios:26257/usuarios_db?sslmode=verify-full&sslrootcert=/cockroach/cockroach-certs/ca.crt
+      DB_USERNAME: ${USUARIOS_DB_USERNAME:?USUARIOS_DB_USERNAME is required}
+      DB_PASSWORD: ${USUARIOS_DB_PASSWORD:?USUARIOS_DB_PASSWORD is required}
       INTERNAL_API_KEY: ${INTERNAL_API_KEY}
       JWT_SECRET: ${JWT_SECRET}
       DATA_ENCRYPTION_KEY: ${DATA_ENCRYPTION_KEY}
@@ -209,6 +271,9 @@ services:
 
     restart: unless-stopped
 
+    volumes:
+      - cockroach-certs:/cockroach/cockroach-certs:ro
+
     networks:
       - scli-network
 
@@ -222,8 +287,12 @@ services:
 
     command:
       - start-single-node
-      - --insecure
+      - --certs-dir=/cockroach/cockroach-certs
       - --store=/cockroach/cockroach-data
+
+    depends_on:
+      cockroach-cert-init:
+        condition: service_completed_successfully
 
     ports:
       - "26259:26257"
@@ -231,6 +300,7 @@ services:
 
     volumes:
       - cockroach-academico-data:/cockroach/cockroach-data
+      - cockroach-certs:/cockroach/cockroach-certs:ro
 
     healthcheck:
       test:
@@ -238,7 +308,7 @@ services:
           "CMD",
           "cockroach",
           "sql",
-          "--insecure",
+          "--certs-dir=/cockroach/cockroach-certs",
           "--host=localhost:26257",
           "--execute=SELECT 1"
         ]
@@ -260,16 +330,26 @@ services:
       cockroach-academico:
         condition: service_healthy
 
+    environment:
+      DB_USERNAME: ${ACADEMICO_DB_USERNAME:?ACADEMICO_DB_USERNAME is required}
+      DB_PASSWORD: ${ACADEMICO_DB_PASSWORD:?ACADEMICO_DB_PASSWORD is required}
+
     entrypoint:
       - /bin/sh
       - -c
       - |
+        case "$${DB_USERNAME}" in ''|*[!a-z0-9_]*) echo "ACADEMICO_DB_USERNAME invalido" >&2; exit 1;; esac
+        case "$${DB_PASSWORD}" in ''|*[!0-9a-f]*) echo "ACADEMICO_DB_PASSWORD debe ser hexadecimal" >&2; exit 1;; esac
+        [ "$${#DB_PASSWORD}" -ge 48 ] || { echo "ACADEMICO_DB_PASSWORD demasiado corto" >&2; exit 1; }
         cockroach sql \
-          --insecure \
+          --certs-dir=/cockroach/cockroach-certs \
           --host=cockroach-academico:26257 \
-          --execute="CREATE DATABASE IF NOT EXISTS academico_db;"
+          --execute="CREATE DATABASE IF NOT EXISTS academico_db; CREATE USER IF NOT EXISTS \"$${DB_USERNAME}\"; ALTER USER \"$${DB_USERNAME}\" WITH PASSWORD '$${DB_PASSWORD}'; GRANT ALL ON DATABASE academico_db TO \"$${DB_USERNAME}\"; GRANT ALL ON TABLE academico_db.public.* TO \"$${DB_USERNAME}\";"
 
     restart: "no"
+
+    volumes:
+      - cockroach-certs:/cockroach/cockroach-certs:ro
 
     networks:
       - scli-network
@@ -292,9 +372,9 @@ services:
         condition: service_completed_successfully
 
     environment:
-      DB_URL: jdbc:postgresql://cockroach-academico:26257/academico_db?sslmode=disable&options=-c%20allow_unsafe_internals%3Dtrue
-      DB_USERNAME: root
-      DB_PASSWORD: ""
+      DB_URL: jdbc:postgresql://cockroach-academico:26257/academico_db?sslmode=verify-full&sslrootcert=/cockroach/cockroach-certs/ca.crt&options=-c%20allow_unsafe_internals%3Dtrue
+      DB_USERNAME: ${ACADEMICO_DB_USERNAME:?ACADEMICO_DB_USERNAME is required}
+      DB_PASSWORD: ${ACADEMICO_DB_PASSWORD:?ACADEMICO_DB_PASSWORD is required}
       SERVER_PORT: 8083
       INTERNAL_API_KEY: ${INTERNAL_API_KEY}
       JWT_SECRET: ${JWT_SECRET}
@@ -310,6 +390,9 @@ services:
 
     networks:
       - scli-network
+
+    volumes:
+      - cockroach-certs:/cockroach/cockroach-certs:ro
 
 
   # =========================================================
@@ -328,9 +411,9 @@ services:
 
     environment:
       SERVER_PORT: 8084
-      DB_URL: jdbc:postgresql://crdb-e3-1:26257,crdb-e3-2:26257,crdb-e3-3:26257/reservas_db?sslmode=disable&options=-c%20allow_unsafe_internals%3Dtrue
-      DB_USERNAME: root
-      DB_PASSWORD: ""
+      DB_URL: jdbc:postgresql://crdb-e3-1:26257,crdb-e3-2:26257,crdb-e3-3:26257/reservas_db?sslmode=verify-full&sslrootcert=/cockroach/cockroach-certs/ca.crt&options=-c%20allow_unsafe_internals%3Dtrue
+      DB_USERNAME: ${RESERVAS_DB_USERNAME:?RESERVAS_DB_USERNAME is required}
+      DB_PASSWORD: ${RESERVAS_DB_PASSWORD:?RESERVAS_DB_PASSWORD is required}
       SPRING_FLYWAY_BASELINE_ON_MIGRATE: "true"
       SPRING_FLYWAY_BASELINE_VERSION: "1"
       INTERNAL_API_KEY: ${INTERNAL_API_KEY}
@@ -353,6 +436,9 @@ services:
 
     networks:
       - scli-network
+
+    volumes:
+      - cockroach-certs:/cockroach/cockroach-certs:ro
 
   # =========================================================
   # API GATEWAY
@@ -427,7 +513,7 @@ services:
     container_name: reservas-db-node-1
     command:
       - start
-      - --insecure
+      - --certs-dir=/cockroach/cockroach-certs
       - --advertise-addr=crdb-e3-1
       - --join=crdb-e3-1,crdb-e3-2,crdb-e3-3
       - --http-addr=0.0.0.0:8080
@@ -437,6 +523,16 @@ services:
       - "${CRDB_E3_1_HTTP_PORT:-8092}:8080"
     volumes:
       - crdb-e3-1-data:/cockroach/cockroach-data
+      - cockroach-certs:/cockroach/cockroach-certs:ro
+    depends_on:
+      cockroach-cert-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "cockroach", "sql", "--certs-dir=/cockroach/cockroach-certs", "--host=localhost:26257", "--execute=SELECT 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 12
+      start_period: 60s
     restart: unless-stopped
     networks:
       - scli-network
@@ -446,7 +542,7 @@ services:
     container_name: reservas-db-node-2
     command:
       - start
-      - --insecure
+      - --certs-dir=/cockroach/cockroach-certs
       - --advertise-addr=crdb-e3-2
       - --join=crdb-e3-1,crdb-e3-2,crdb-e3-3
       - --http-addr=0.0.0.0:8080
@@ -456,6 +552,16 @@ services:
       - "${CRDB_E3_2_HTTP_PORT:-8093}:8080"
     volumes:
       - crdb-e3-2-data:/cockroach/cockroach-data
+      - cockroach-certs:/cockroach/cockroach-certs:ro
+    depends_on:
+      cockroach-cert-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "cockroach", "sql", "--certs-dir=/cockroach/cockroach-certs", "--host=localhost:26257", "--execute=SELECT 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 12
+      start_period: 60s
     restart: unless-stopped
     networks:
       - scli-network
@@ -465,7 +571,7 @@ services:
     container_name: reservas-db-node-3
     command:
       - start
-      - --insecure
+      - --certs-dir=/cockroach/cockroach-certs
       - --advertise-addr=crdb-e3-3
       - --join=crdb-e3-1,crdb-e3-2,crdb-e3-3
       - --http-addr=0.0.0.0:8080
@@ -475,6 +581,16 @@ services:
       - "${CRDB_E3_3_HTTP_PORT:-8094}:8080"
     volumes:
       - crdb-e3-3-data:/cockroach/cockroach-data
+      - cockroach-certs:/cockroach/cockroach-certs:ro
+    depends_on:
+      cockroach-cert-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "cockroach", "sql", "--certs-dir=/cockroach/cockroach-certs", "--host=localhost:26257", "--execute=SELECT 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 12
+      start_period: 60s
     restart: unless-stopped
     networks:
       - scli-network
@@ -484,21 +600,27 @@ services:
     container_name: reservas-db-init
     depends_on:
       crdb-e3-1:
-        condition: service_started
+        condition: service_healthy
       crdb-e3-2:
-        condition: service_started
+        condition: service_healthy
       crdb-e3-3:
-        condition: service_started
+        condition: service_healthy
+    environment:
+      DB_USERNAME: ${RESERVAS_DB_USERNAME:?RESERVAS_DB_USERNAME is required}
+      DB_PASSWORD: ${RESERVAS_DB_PASSWORD:?RESERVAS_DB_PASSWORD is required}
     entrypoint:
       - /bin/sh
       - -ec
       - |
+        case "$${DB_USERNAME}" in ''|*[!a-z0-9_]*) echo "RESERVAS_DB_USERNAME invalido" >&2; exit 1;; esac
+        case "$${DB_PASSWORD}" in ''|*[!0-9a-f]*) echo "RESERVAS_DB_PASSWORD debe ser hexadecimal" >&2; exit 1;; esac
+        [ "$${#DB_PASSWORD}" -ge 48 ] || { echo "RESERVAS_DB_PASSWORD demasiado corto" >&2; exit 1; }
         until cockroach init \
-          --insecure \
+          --certs-dir=/cockroach/cockroach-certs \
           --host=crdb-e3-1:26257
         do
           if cockroach sql \
-            --insecure \
+            --certs-dir=/cockroach/cockroach-certs \
             --host=crdb-e3-1:26257 \
             --execute="SELECT 1"
           then
@@ -508,7 +630,7 @@ services:
         done
 
         until cockroach sql \
-          --insecure \
+          --certs-dir=/cockroach/cockroach-certs \
           --host=crdb-e3-1:26257 \
           --execute="SELECT 1"
         do
@@ -516,24 +638,25 @@ services:
         done
 
         cockroach sql \
-          --insecure \
+          --certs-dir=/cockroach/cockroach-certs \
           --host=crdb-e3-1:26257 \
-          --execute="CREATE DATABASE IF NOT EXISTS reservas_db; ALTER RANGE default CONFIGURE ZONE USING num_replicas = 3"
+          --execute="CREATE DATABASE IF NOT EXISTS reservas_db; CREATE USER IF NOT EXISTS \"$${DB_USERNAME}\"; ALTER USER \"$${DB_USERNAME}\" WITH PASSWORD '$${DB_PASSWORD}'; GRANT ALL ON DATABASE reservas_db TO \"$${DB_USERNAME}\"; GRANT ALL ON TABLE reservas_db.public.* TO \"$${DB_USERNAME}\"; ALTER RANGE default CONFIGURE ZONE USING num_replicas = 3"
 
         if ! cockroach sql \
-          --insecure \
+          --certs-dir=/cockroach/cockroach-certs \
           --host=crdb-e3-1:26257 \
           --database=reservas_db \
           --execute="SELECT 1 FROM configuraciones_reserva LIMIT 0"
         then
           cockroach sql \
-            --insecure \
+            --certs-dir=/cockroach/cockroach-certs \
             --host=crdb-e3-1:26257 \
             --database=reservas_db \
             --file=/flyway/V1__crear_esquema_inicial.sql
         fi
     volumes:
       - ./services/reservas-solicitudes-service/src/main/resources/db/migration:/flyway:ro
+      - cockroach-certs:/cockroach/cockroach-certs:ro
     restart: "no"
     networks:
       - scli-network
@@ -647,6 +770,10 @@ services:
 
 
 volumes:
+
+  cockroach-certs:
+
+  cockroach-ca-private:
 
   cockroach-auth-data:
 

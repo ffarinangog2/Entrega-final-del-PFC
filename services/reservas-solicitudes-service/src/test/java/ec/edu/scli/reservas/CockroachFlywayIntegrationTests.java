@@ -39,6 +39,8 @@ import static org.mockito.Mockito.when;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.UUID;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -50,6 +52,12 @@ import java.util.function.Supplier;
 @SpringBootTest
 class CockroachFlywayIntegrationTests {
 
+    private static final String DB_USERNAME = "reservas_test_app";
+    private static final String DB_PASSWORD = (UUID.randomUUID().toString()
+            + UUID.randomUUID()).replace("-", "");
+    private static final String INTERNAL_API_KEY = (UUID.randomUUID().toString()
+            + UUID.randomUUID()).replace("-", "");
+
     private final UUID actorId = UUID.randomUUID();
 
     @MockitoBean
@@ -60,17 +68,48 @@ class CockroachFlywayIntegrationTests {
     @Container
     static final GenericContainer<?> COCKROACH =
             new GenericContainer<>(DockerImageName.parse("cockroachdb/cockroach:v24.3.5"))
-                    .withCommand("start-single-node", "--insecure")
+                    .withCreateContainerCmdModifier(command ->
+                            command.withEntrypoint("/bin/sh"))
+                    .withCommand("-ec", """
+                            mkdir -p /certs /ca
+                            cockroach cert create-ca --certs-dir=/certs --ca-key=/ca/ca.key
+                            cockroach cert create-node localhost 127.0.0.1 host.docker.internal \
+                              --certs-dir=/certs --ca-key=/ca/ca.key
+                            cockroach cert create-client root \
+                              --certs-dir=/certs --ca-key=/ca/ca.key
+                            exec cockroach start-single-node \
+                              --certs-dir=/certs --listen-addr=0.0.0.0:26257
+                            """)
                     .withExposedPorts(26257);
 
     @DynamicPropertySource
     static void configurarAplicacion(DynamicPropertyRegistry registry) {
+        Path caCert;
+        try {
+            caCert = Files.createTempFile("cockroach-test-ca-", ".crt");
+            COCKROACH.copyFileFromContainer("/certs/ca.crt", caCert.toString());
+            var resultado = COCKROACH.execInContainer(
+                    "cockroach", "sql",
+                    "--certs-dir=/certs",
+                    "--host=localhost:26257",
+                    "--execute=CREATE USER IF NOT EXISTS " + DB_USERNAME
+                            + "; ALTER USER " + DB_USERNAME + " WITH PASSWORD '"
+                            + DB_PASSWORD + "'; GRANT ALL ON DATABASE defaultdb TO "
+                            + DB_USERNAME + ";");
+            if (resultado.getExitCode() != 0) {
+                throw new IllegalStateException(resultado.getStderr());
+            }
+        } catch (Exception exception) {
+            throw new IllegalStateException("No se pudo preparar CockroachDB TLS", exception);
+        }
+        String caPath = caCert.toAbsolutePath().toString().replace('\\', '/');
         registry.add("spring.datasource.url", () ->
                 "jdbc:postgresql://" + COCKROACH.getHost() + ":"
                         + COCKROACH.getMappedPort(26257)
-                        + "/defaultdb?sslmode=disable");
-        registry.add("spring.datasource.username", () -> "root");
-        registry.add("spring.datasource.password", () -> "");
+                        + "/defaultdb?sslmode=verify-full&sslrootcert=" + caPath);
+        registry.add("spring.datasource.username", () -> DB_USERNAME);
+        registry.add("spring.datasource.password", () -> DB_PASSWORD);
+        registry.add("app.internal-api-key", () -> INTERNAL_API_KEY);
         registry.add("security.jwt.secret", () ->
                 "MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=");
     }

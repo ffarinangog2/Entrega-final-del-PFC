@@ -82,7 +82,7 @@ cd academico-laboratorios-service
 | Variable | Por defecto | Descripción |
 |---|---|---|
 | `SERVER_PORT` | `8083` | Puerto del servicio |
-| `DB_URL` | `jdbc:postgresql://localhost:26259/academico_db?sslmode=disable&options=-c%20allow_unsafe_internals%3Dtrue` | URL de conexión |
+| `DB_URL` | Requerida; use `sslmode=verify-full` y `sslrootcert` | URL de conexión TLS |
 | `DB_USERNAME` | `root` | Usuario de la base de datos |
 | `DB_PASSWORD` | (vacío) | Contraseña |
 | `INTERNAL_API_KEY` | `clave-interna-desarrollo` | Clave para autenticar los endpoints `/api/v1/internal/**` |
