@@ -22,7 +22,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.dao.CannotAcquireLockException;
+import org.springframework.dao.TransientDataAccessException;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -372,13 +372,20 @@ class CockroachFlywayIntegrationTests {
     }
 
     private <T> T ejecutarConRetrySerializable(Supplier<T> operacion) {
-        CannotAcquireLockException ultimo = null;
-        for (int intento = 1; intento <= 3; intento++) {
+        TransientDataAccessException ultimo = null;
+        for (int intento = 1; intento <= 5; intento++) {
             try {
                 return operacion.get();
-            } catch (CannotAcquireLockException exception) {
+            } catch (TransientDataAccessException exception) {
                 ultimo = exception;
-                Thread.yield();
+                if (intento < 5) {
+                    try {
+                        TimeUnit.MILLISECONDS.sleep(25L << (intento - 1));
+                    } catch (InterruptedException interrupted) {
+                        Thread.currentThread().interrupt();
+                        throw new IllegalStateException(interrupted);
+                    }
+                }
             }
         }
         throw ultimo;
