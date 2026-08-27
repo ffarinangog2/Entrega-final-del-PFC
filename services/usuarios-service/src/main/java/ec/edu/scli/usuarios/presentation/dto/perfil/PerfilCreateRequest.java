@@ -3,14 +3,21 @@ package ec.edu.scli.usuarios.presentation.dto.perfil;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Past;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 import java.time.LocalDate;
 
 public record PerfilCreateRequest(
 
+        /* Antes
         @Size(max = 20, message = "La identificación no puede superar 20 caracteres")
+        String identificacion,*/
+
+        //nuevo
+        @Pattern(regexp = "^$|^[0-9]{10}$", message = "La identificación debe tener 10 dígitos numéricos")
         String identificacion,
+
 
         @NotBlank(message = "Los nombres son obligatorios")
         @Size(max = 100, message = "Los nombres no pueden superar 100 caracteres")

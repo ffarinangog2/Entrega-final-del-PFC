@@ -2,6 +2,7 @@ package ec.edu.scli.academico.presentation.dto.equipo;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 import java.util.UUID;
@@ -36,10 +37,20 @@ public record EquipoRequest(
         @Size(max = 30)
         String almacenamiento,
 
+        /*Antes
         @Size(max = 45)
         String direccionIp,
 
         @Size(max = 17)
+        String direccionMac,*/
+
+        //Nuevo
+        @Pattern(regexp = "^$|^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$",
+        message = "La dirección IP no tiene un formato válido")
+        String direccionIp,
+
+        @Pattern(regexp = "^$|^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$",
+                message = "La dirección MAC no tiene un formato válido")
         String direccionMac,
 
         @Size(max = 2000)
