@@ -11,10 +11,16 @@ import ec.edu.scli.academico.domain.exception.ConflictException;
 import ec.edu.scli.academico.domain.exception.ResourceNotFoundException;
 import ec.edu.scli.academico.presentation.dto.equipo.EquipoRequest;
 import ec.edu.scli.academico.presentation.dto.equipo.EquipoResponse;
+import ec.edu.scli.academico.infrastructure.audit.AuditLogger;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.util.List;
 import java.util.UUID;
@@ -25,15 +31,18 @@ public class EquipoServiceImpl implements EquipoService {
     private final EquipoRepositoryPort equipoRepositoryPort;
     private final LaboratorioRepositoryPort laboratorioRepositoryPort;
     private final TipoEquipoRepositoryPort tipoEquipoRepositoryPort;
+    private final AuditLogger auditLogger;
 
     public EquipoServiceImpl(
             EquipoRepositoryPort equipoRepositoryPort,
             LaboratorioRepositoryPort laboratorioRepositoryPort,
-            TipoEquipoRepositoryPort tipoEquipoRepositoryPort
+            TipoEquipoRepositoryPort tipoEquipoRepositoryPort,
+            AuditLogger auditLogger
     ) {
         this.equipoRepositoryPort = equipoRepositoryPort;
         this.laboratorioRepositoryPort = laboratorioRepositoryPort;
         this.tipoEquipoRepositoryPort = tipoEquipoRepositoryPort;
+        this.auditLogger = auditLogger;
     }
 
     @Override
@@ -61,6 +70,12 @@ public class EquipoServiceImpl implements EquipoService {
         );
 
         Equipo guardado = equipoRepositoryPort.guardar(equipo);
+
+        auditLogger.registrarEvento(
+                "equipo_creado",
+                usuarioActual(),
+                ipCliente(),
+                "id=" + guardado.getId());
 
         return convertirAResponse(guardado);
     }
@@ -126,9 +141,16 @@ public class EquipoServiceImpl implements EquipoService {
     public EquipoResponse cambiarEstado(UUID id, EstadoEquipo estado) {
 
         Equipo equipo = buscarEquipo(id);
+        EstadoEquipo estadoAnterior = equipo.getEstado();
         equipo.cambiarEstado(estado);
 
         Equipo actualizado = equipoRepositoryPort.guardar(equipo);
+
+        auditLogger.registrarEvento(
+                "equipo_estado_cambiado",
+                usuarioActual(),
+                ipCliente(),
+                "id=" + id + ", estadoAnterior=" + estadoAnterior + ", estadoNuevo=" + estado);
 
         return convertirAResponse(actualizado);
     }
@@ -201,5 +223,39 @@ public class EquipoServiceImpl implements EquipoService {
                 equipo.getCreadoEn(),
                 equipo.getActualizadoEn()
         );
+    }
+
+    private String usuarioActual() {
+
+        Authentication authentication =
+                SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null || authentication.getName() == null) {
+
+            return "sistema";
+        }
+
+        return authentication.getName();
+    }
+
+    private String ipCliente() {
+
+        var attributes = RequestContextHolder.getRequestAttributes();
+
+        if (!(attributes instanceof ServletRequestAttributes servletAttributes)) {
+
+            return "desconocida";
+        }
+
+        HttpServletRequest request = servletAttributes.getRequest();
+
+        String forwardedFor = request.getHeader("X-Forwarded-For");
+
+        if (forwardedFor != null && !forwardedFor.isBlank()) {
+
+            return forwardedFor.split(",")[0].trim();
+        }
+
+        return request.getRemoteAddr();
     }
 }
