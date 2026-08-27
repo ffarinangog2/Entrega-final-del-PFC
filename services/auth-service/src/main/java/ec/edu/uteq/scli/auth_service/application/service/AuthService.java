@@ -11,6 +11,7 @@ import ec.edu.uteq.scli.auth_service.domain.service.InvalidCredentialsException;
 import ec.edu.uteq.scli.auth_service.infrastructure.security.CustomUserDetails;
 import ec.edu.uteq.scli.auth_service.infrastructure.security.CustomUserDetailsService;
 import ec.edu.uteq.scli.auth_service.infrastructure.security.JwtService;
+import ec.edu.uteq.scli.auth_service.infrastructure.metrics.AuthenticationMetrics;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
@@ -29,19 +30,25 @@ public class AuthService {
         private final UsuariosClient usuariosClient;
         private final CustomUserDetailsService customUserDetailsService;
         private final LoginProtectionService loginProtectionService;
+        private final RefreshSessionService refreshSessionService;
+        private final AuthenticationMetrics metrics;
 
         public AuthService(
                         AuthenticationManager authenticationManager,
                         JwtService jwtService,
                         UsuariosClient usuariosClient,
                         CustomUserDetailsService customUserDetailsService,
-                        LoginProtectionService loginProtectionService) {
+                        LoginProtectionService loginProtectionService,
+                        RefreshSessionService refreshSessionService,
+                        AuthenticationMetrics metrics) {
 
                 this.authenticationManager = authenticationManager;
                 this.jwtService = jwtService;
                 this.usuariosClient = usuariosClient;
                 this.customUserDetailsService = customUserDetailsService;
                 this.loginProtectionService = loginProtectionService;
+                this.refreshSessionService = refreshSessionService;
+                this.metrics = metrics;
         }
 
         public LoginResponse login(LoginRequest request) {
@@ -75,6 +82,9 @@ public class AuthService {
                         String accessToken = jwtService.generarAccessToken(userDetails);
 
                         String refreshToken = jwtService.generarRefreshToken(userDetails);
+                        JwtService.RefreshTokenInfo refreshInfo = jwtService.extraerInfoRefreshToken(refreshToken);
+                        refreshSessionService.registrar(userDetails.getUsuarioId(), refreshToken,
+                                        refreshInfo.emitidoEn(), refreshInfo.expiraEn());
 
                         List<String> roles = userDetails
                                         .getAuthorities()
@@ -104,20 +114,25 @@ public class AuthService {
                                         permisos,
                                         perfil.tiposPerfil());
 
-                        return new LoginResponse(
+                        LoginResponse response = new LoginResponse(
                                         "Bearer",
                                         accessToken,
                                         refreshToken,
                                         jwtService.obtenerExpiracionAccessTokenSegundos(),
                                         usuario);
+                        metrics.authenticationSuccess();
+                        return response;
 
                 } catch (LockedException exception) {
+                        metrics.authenticationFailure();
                         throw new AccountBlockedException();
 
                 } catch (DisabledException exception) {
+                        metrics.authenticationFailure();
                         throw new AccountDisabledException();
 
                 } catch (BadCredentialsException exception) {
+                        metrics.authenticationFailure();
                         if (loginProtectionService.recordFailure(identifier, metadata)) {
                                 throw new AccountBlockedException();
                         }
@@ -126,13 +141,11 @@ public class AuthService {
         }
 
         public LoginResponse refrescar(String refreshToken) {
-
-                if (!jwtService.esRefreshTokenValido(refreshToken)) {
-                        throw new InvalidCredentialsException();
-                }
+                JwtService.RefreshTokenInfo refreshInfo = validarRefreshToken(refreshToken);
+                var sessionAnterior = refreshSessionService.validarActiva(refreshInfo.usuarioId(), refreshToken);
 
                 CustomUserDetails userDetails = customUserDetailsService.loadUserById(
-                                jwtService.extraerUsuarioId(refreshToken));
+                                refreshInfo.usuarioId());
 
                 if (loginProtectionService.ensureNotLocked(userDetails.getUsuarioId())) {
                         throw new AccountBlockedException();
@@ -151,6 +164,9 @@ public class AuthService {
                 String nuevoAccessToken = jwtService.generarAccessToken(userDetails);
 
                 String nuevoRefreshToken = jwtService.generarRefreshToken(userDetails);
+                JwtService.RefreshTokenInfo nuevaInfo = jwtService.extraerInfoRefreshToken(nuevoRefreshToken);
+                refreshSessionService.rotar(sessionAnterior, refreshToken, nuevoRefreshToken,
+                                nuevaInfo.emitidoEn(), nuevaInfo.expiraEn());
 
                 List<String> roles = userDetails
                                 .getAuthorities()
@@ -180,11 +196,27 @@ public class AuthService {
                                 permisos,
                                 perfil.tiposPerfil());
 
-                return new LoginResponse(
+                LoginResponse response = new LoginResponse(
                                 "Bearer",
                                 nuevoAccessToken,
                                 nuevoRefreshToken,
                                 jwtService.obtenerExpiracionAccessTokenSegundos(),
                                 usuario);
+                metrics.tokenRefresh();
+                return response;
+        }
+
+        public void logout(String refreshToken) {
+                validarRefreshToken(refreshToken);
+                refreshSessionService.revocarIdempotente(refreshToken);
+                metrics.logout();
+        }
+
+        private JwtService.RefreshTokenInfo validarRefreshToken(String token) {
+                try {
+                        return jwtService.extraerInfoRefreshToken(token);
+                } catch (RuntimeException exception) {
+                        throw new InvalidCredentialsException();
+                }
         }
 }

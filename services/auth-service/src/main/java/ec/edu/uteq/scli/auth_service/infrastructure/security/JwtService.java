@@ -156,6 +156,22 @@ public class JwtService {
                 }
         }
 
+        public RefreshTokenInfo extraerInfoRefreshToken(String token) {
+                Claims claims = extraerClaims(token);
+                if (!"refresh".equals(claims.get("type", String.class))
+                                || !claims.getExpiration().after(new Date())) {
+                        throw new IllegalArgumentException("Refresh token inválido");
+                }
+                return new RefreshTokenInfo(
+                                UUID.fromString(claims.getSubject()),
+                                claims.getId(),
+                                claims.getIssuedAt().toInstant(),
+                                claims.getExpiration().toInstant());
+        }
+
+        public record RefreshTokenInfo(UUID usuarioId, String jti, Instant emitidoEn, Instant expiraEn) {
+        }
+
         public long obtenerExpiracionAccessTokenSegundos() {
                 return jwtProperties.accessTokenExpirationMs() / 1000;
         }

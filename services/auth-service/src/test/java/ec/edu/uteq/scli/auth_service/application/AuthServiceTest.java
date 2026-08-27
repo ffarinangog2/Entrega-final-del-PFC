@@ -10,6 +10,9 @@ import ec.edu.uteq.scli.auth_service.infrastructure.security.CustomUserDetailsSe
 import ec.edu.uteq.scli.auth_service.application.service.AuthService;
 import ec.edu.uteq.scli.auth_service.application.service.LoginProtectionService;
 import ec.edu.uteq.scli.auth_service.infrastructure.security.JwtService;
+import ec.edu.uteq.scli.auth_service.infrastructure.metrics.AuthenticationMetrics;
+import ec.edu.uteq.scli.auth_service.application.service.RefreshSessionService;
+import ec.edu.uteq.scli.auth_service.domain.model.RefreshSession;
 import ec.edu.uteq.scli.auth_service.presentation.dto.LoginRequest;
 import ec.edu.uteq.scli.auth_service.presentation.dto.LoginResponse;
 import ec.edu.uteq.scli.auth_service.presentation.dto.PerfilAuthResponse;
@@ -32,6 +35,8 @@ import org.springframework.security.core.Authentication;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.time.Instant;
+import java.time.OffsetDateTime;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -53,6 +58,10 @@ class AuthServiceTest {
         private CustomUserDetailsService customUserDetailsService;
         @Mock
         private LoginProtectionService loginProtectionService;
+        @Mock
+        private RefreshSessionService refreshSessionService;
+        @Mock
+        private AuthenticationMetrics metrics;
 
         @Mock
         private Authentication authentication;
@@ -112,6 +121,9 @@ class AuthServiceTest {
 
                 when(jwtService.generarRefreshToken(userDetails))
                                 .thenReturn("refresh-token");
+                var now = Instant.now();
+                when(jwtService.extraerInfoRefreshToken("refresh-token"))
+                                .thenReturn(new JwtService.RefreshTokenInfo(usuarioId, "jti", now, now.plusSeconds(3600)));
 
                 when(jwtService.obtenerExpiracionAccessTokenSegundos())
                                 .thenReturn(900L);
@@ -129,6 +141,8 @@ class AuthServiceTest {
 
                 verify(jwtService).generarAccessToken(userDetails);
                 verify(jwtService).generarRefreshToken(userDetails);
+                verify(refreshSessionService).registrar(eq(usuarioId), eq("refresh-token"), any(), any());
+                verify(metrics).authenticationSuccess();
         }
 
         @Test
@@ -211,14 +225,66 @@ class AuthServiceTest {
 
         @Test
         void refreshTokenInvalidoDebeLanzarExcepcion() {
-
-                when(jwtService.esRefreshTokenValido("refresh-invalido"))
-                                .thenReturn(false);
+                when(jwtService.extraerInfoRefreshToken("refresh-invalido"))
+                                .thenThrow(new IllegalArgumentException("inválido"));
 
                 assertThrows(
                                 InvalidCredentialsException.class,
                                 () -> authService.refrescar("refresh-invalido"));
 
                 verify(customUserDetailsService, never()).loadUserById(any());
+        }
+
+        @Test
+        void refreshValidoDebeRotarSesion() {
+                PerfilAuthResponse perfil = new PerfilAuthResponse(perfilId, "Ivan", "Villamarin",
+                                "ivan@uteq.edu.ec", true, List.of());
+                Instant now = Instant.now();
+                var infoAnterior = new JwtService.RefreshTokenInfo(usuarioId, "jti-1", now, now.plusSeconds(3600));
+                var infoNueva = new JwtService.RefreshTokenInfo(usuarioId, "jti-2", now, now.plusSeconds(3600));
+                RefreshSession anterior = new RefreshSession(UUID.randomUUID(), usuarioId, "hash", UUID.randomUUID(),
+                                OffsetDateTime.now(), OffsetDateTime.now().plusHours(1), false, null, null);
+
+                when(jwtService.extraerInfoRefreshToken("refresh-anterior")).thenReturn(infoAnterior);
+                when(refreshSessionService.validarActiva(usuarioId, "refresh-anterior")).thenReturn(anterior);
+                when(customUserDetailsService.loadUserById(usuarioId)).thenReturn(userDetails);
+                when(usuariosClient.obtenerPerfil(perfilId)).thenReturn(perfil);
+                when(jwtService.generarAccessToken(userDetails)).thenReturn("access-nuevo");
+                when(jwtService.generarRefreshToken(userDetails)).thenReturn("refresh-nuevo");
+                when(jwtService.extraerInfoRefreshToken("refresh-nuevo")).thenReturn(infoNueva);
+                when(jwtService.obtenerExpiracionAccessTokenSegundos()).thenReturn(900L);
+
+                LoginResponse response = authService.refrescar("refresh-anterior");
+
+                assertEquals("refresh-nuevo", response.refreshToken());
+                verify(refreshSessionService).rotar(anterior, "refresh-anterior", "refresh-nuevo",
+                                infoNueva.emitidoEn(), infoNueva.expiraEn());
+                verify(metrics).tokenRefresh();
+        }
+
+        @Test
+        void refreshDesconocidoORevocadoDebeFallar() {
+                Instant now = Instant.now();
+                when(jwtService.extraerInfoRefreshToken("refresh-desconocido"))
+                                .thenReturn(new JwtService.RefreshTokenInfo(usuarioId, "jti", now, now.plusSeconds(60)));
+                when(refreshSessionService.validarActiva(usuarioId, "refresh-desconocido"))
+                                .thenThrow(new InvalidCredentialsException());
+
+                assertThrows(InvalidCredentialsException.class,
+                                () -> authService.refrescar("refresh-desconocido"));
+                verify(customUserDetailsService, never()).loadUserById(any());
+        }
+
+        @Test
+        void logoutDebeRevocarSesionYPermitirRepeticion() {
+                Instant now = Instant.now();
+                when(jwtService.extraerInfoRefreshToken("refresh-token"))
+                                .thenReturn(new JwtService.RefreshTokenInfo(usuarioId, "jti", now, now.plusSeconds(60)));
+
+                authService.logout("refresh-token");
+                authService.logout("refresh-token");
+
+                verify(refreshSessionService, times(2)).revocarIdempotente("refresh-token");
+                verify(metrics, times(2)).logout();
         }
 }

@@ -62,6 +62,7 @@ class JwtServiceTest {
                 assertTrue(jwtService.esRefreshTokenValido(token));
                 assertFalse(jwtService.esTokenValido(token));
                 assertEquals(604800L, jwtService.obtenerExpiracionRefreshTokenSegundos());
+                assertEquals(userDetails.getUsuarioId(), jwtService.extraerInfoRefreshToken(token).usuarioId());
         }
 
         @Test

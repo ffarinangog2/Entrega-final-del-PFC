@@ -64,6 +64,16 @@ class AuthControllerTest {
     }
 
     @Test
+    void delegaLogoutYDevuelveNoContent() {
+        RefreshTokenRequest request = new RefreshTokenRequest("refresh-token");
+
+        var response = controller.logout(request);
+
+        assertEquals(204, response.getStatusCode().value());
+        verify(authService).logout("refresh-token");
+    }
+
+    @Test
     void forgotPasswordSiempreDevuelveMensajeNeutro() {
         when(httpRequest.getRemoteAddr()).thenReturn("127.0.0.1");
         var response=controller.forgotPassword(new ForgotPasswordRequest("cualquier-identificador"),httpRequest);
