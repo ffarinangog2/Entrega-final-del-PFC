@@ -414,8 +414,6 @@ services:
       DB_URL: jdbc:postgresql://crdb-e3-1:26257,crdb-e3-2:26257,crdb-e3-3:26257/reservas_db?sslmode=verify-full&sslrootcert=/cockroach/cockroach-certs/ca.crt&options=-c%20allow_unsafe_internals%3Dtrue
       DB_USERNAME: ${RESERVAS_DB_USERNAME:?RESERVAS_DB_USERNAME is required}
       DB_PASSWORD: ${RESERVAS_DB_PASSWORD:?RESERVAS_DB_PASSWORD is required}
-      SPRING_FLYWAY_BASELINE_ON_MIGRATE: "true"
-      SPRING_FLYWAY_BASELINE_VERSION: "1"
       INTERNAL_API_KEY: ${INTERNAL_API_KEY}
       JWT_SECRET: ${JWT_SECRET}
       USUARIOS_SERVICE_URL: http://usuarios-service:8082
@@ -641,21 +639,7 @@ services:
           --certs-dir=/cockroach/cockroach-certs \
           --host=crdb-e3-1:26257 \
           --execute="CREATE DATABASE IF NOT EXISTS reservas_db; CREATE USER IF NOT EXISTS \"$${DB_USERNAME}\"; ALTER USER \"$${DB_USERNAME}\" WITH PASSWORD '$${DB_PASSWORD}'; GRANT ALL ON DATABASE reservas_db TO \"$${DB_USERNAME}\"; ALTER RANGE default CONFIGURE ZONE USING num_replicas = 3"
-
-        if ! cockroach sql \
-          --certs-dir=/cockroach/cockroach-certs \
-          --host=crdb-e3-1:26257 \
-          --database=reservas_db \
-          --execute="SELECT 1 FROM configuraciones_reserva LIMIT 0"
-        then
-          cockroach sql \
-            --certs-dir=/cockroach/cockroach-certs \
-            --host=crdb-e3-1:26257 \
-            --database=reservas_db \
-            --file=/flyway/V1__crear_esquema_inicial.sql
-        fi
     volumes:
-      - ./services/reservas-solicitudes-service/src/main/resources/db/migration:/flyway:ro
       - cockroach-certs:/cockroach/cockroach-certs:ro
     restart: "no"
     networks:
