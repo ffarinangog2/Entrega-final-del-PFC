@@ -77,3 +77,9 @@ nombre del técnico y el toggle de notificaciones habilitadas.
 - Instrumentados (`src/androidTest`): `IncidentesFlowTest` — Room en memoria +
   Compose UI test (`createComposeRule`), completa el formulario y verifica que
   el incidente aparece en el listado.
+
+En CI se ejecutan `./gradlew test` y `./gradlew lint` como gates obligatorios. Las
+pruebas de `src/androidTest` se conservan, pero todavía no forman parte del gate:
+requieren un emulador Android con aceleración KVM, descarga de una imagen de sistema
+y administración adicional de snapshots/timeouts. Se incorporarán cuando exista un
+runner de emulador estable para evitar falsos fallos en el pipeline principal.

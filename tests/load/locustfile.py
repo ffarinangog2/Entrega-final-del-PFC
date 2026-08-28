@@ -1,8 +1,10 @@
-"""Carga de solo lectura para Reservas/Solicitudes."""
+"""Carga autenticada de solo lectura para Reservas/Solicitudes."""
 
+import os
 from uuid import UUID
 
 from locust import HttpUser, between, task
+from locust.exception import StopUser
 
 
 class ReservasUser(HttpUser):
@@ -12,6 +14,32 @@ class ReservasUser(HttpUser):
 
     def on_start(self) -> None:
         self.reserva_ids: list[str] = []
+        username = os.environ.get("LOCUST_USERNAME")
+        password = os.environ.get("LOCUST_PASSWORD")
+        if not username or not password:
+            raise RuntimeError(
+                "LOCUST_USERNAME and LOCUST_PASSWORD are required for authenticated load tests"
+            )
+
+        with self.client.post(
+            "/api/v1/auth/login",
+            json={"username": username, "password": password},
+            name="POST /api/v1/auth/login",
+            catch_response=True,
+        ) as response:
+            if response.status_code != 200:
+                response.failure(f"Login falló con HTTP {response.status_code}")
+                raise StopUser()
+            try:
+                access_token = response.json().get("accessToken")
+            except ValueError:
+                response.failure("Login no devolvió JSON válido")
+                raise StopUser() from None
+            if not access_token:
+                response.failure("Login no devolvió accessToken")
+                raise StopUser()
+
+        self.client.headers.update({"Authorization": f"Bearer {access_token}"})
 
     @task(3)
     def listar_reservas(self) -> None:

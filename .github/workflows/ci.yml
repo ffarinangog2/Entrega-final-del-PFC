@@ -125,17 +125,21 @@ jobs:
             --host=localhost:26257 \
             --execute="CREATE DATABASE IF NOT EXISTS ${{ matrix.database }}; CREATE USER IF NOT EXISTS $db_username; ALTER USER $db_username WITH PASSWORD '$db_password'; GRANT ALL ON DATABASE ${{ matrix.database }} TO $db_username;"
 
-          echo "DB_URL=jdbc:postgresql://localhost:26257/${{ matrix.database }}?sslmode=verify-full&sslrootcert=$certs_dir/ca.crt&options=-c%20allow_unsafe_internals%3Dtrue" >> "$GITHUB_ENV"
-          echo "DB_USERNAME=$db_username" >> "$GITHUB_ENV"
-          echo "DB_PASSWORD=$db_password" >> "$GITHUB_ENV"
+          {
+            echo "DB_URL=jdbc:postgresql://localhost:26257/${{ matrix.database }}?sslmode=verify-full&sslrootcert=$certs_dir/ca.crt&options=-c%20allow_unsafe_internals%3Dtrue"
+            echo "DB_USERNAME=$db_username"
+            echo "DB_PASSWORD=$db_password"
+          } >> "$GITHUB_ENV"
 
       - name: Prepare test environment
         shell: bash
         run: |
-          echo "JWT_SECRET=$(openssl rand -base64 48)" >> "$GITHUB_ENV"
-          echo "INTERNAL_API_KEY=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
-          echo "DATA_ENCRYPTION_KEY=$(openssl rand -base64 32)" >> "$GITHUB_ENV"
-          echo "DATA_HASH_KEY=$(openssl rand -base64 32)" >> "$GITHUB_ENV"
+          {
+            echo "JWT_SECRET=$(openssl rand -base64 48)"
+            echo "INTERNAL_API_KEY=$(openssl rand -hex 32)"
+            echo "DATA_ENCRYPTION_KEY=$(openssl rand -base64 32)"
+            echo "DATA_HASH_KEY=$(openssl rand -base64 32)"
+          } >> "$GITHUB_ENV"
 
       - name: Generate consumer Pacts
         if: ${{ matrix.service == 'services/reservas-solicitudes-service' || matrix.service == 'services/usuarios-service' }}
@@ -150,18 +154,39 @@ jobs:
         run: mvn --batch-mode verify
 
   crdb-tests:
-    name: CockroachDB E3 tests (pending implementation)
+    name: CockroachDB E3 cluster tests
     runs-on: ubuntu-latest
-    needs: test-backend
-    if: ${{ vars.CRDB_E3_TESTS_ENABLED == 'true' }}
+    needs: [test-backend, test-web, test-mobile]
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Pending Paso 2
+      - name: Prepare CockroachDB test environment
+        shell: bash
         run: |
-          echo "TODO(Paso 2 - Freddy): habilitar las pruebas cuando exista db/schema.sql y crdb-e3-init esté completo."
+          {
+            echo "JWT_SECRET=$(openssl rand -base64 48)"
+            echo "INTERNAL_API_KEY=$(openssl rand -hex 32)"
+            echo "AUTH_DB_USERNAME=ci_auth_app"
+            echo "AUTH_DB_PASSWORD=$(openssl rand -hex 32)"
+            echo "USUARIOS_DB_USERNAME=ci_usuarios_app"
+            echo "USUARIOS_DB_PASSWORD=$(openssl rand -hex 32)"
+            echo "ACADEMICO_DB_USERNAME=ci_academico_app"
+            echo "ACADEMICO_DB_PASSWORD=$(openssl rand -hex 32)"
+            echo "RESERVAS_DB_USERNAME=ci_reservas_app"
+            echo "RESERVAS_DB_PASSWORD=$(openssl rand -hex 32)"
+          } >> "$GITHUB_ENV"
+
+      - name: Validate CockroachDB E3 cluster
+        shell: bash
+        run: bash scripts/ci/verify-crdb-e3.sh
+
+      - name: Cleanup CockroachDB E3 stack
+        if: always()
+        run: |
+          docker compose logs crdb-e3-1 crdb-e3-2 crdb-e3-3 crdb-e3-init reservas-solicitudes-service || true
+          docker compose down -v || true
 
   test-web:
     name: Test web
@@ -218,6 +243,10 @@ jobs:
           chmod +x gradlew
           ./gradlew test
 
+      - name: Run Android lint
+        working-directory: apps/mobile
+        run: ./gradlew lint
+
   build-mobile-apk:
     name: Build mobile APK
     runs-on: ubuntu-latest
@@ -254,7 +283,7 @@ jobs:
   integration:
     name: Compose integration tests
     runs-on: ubuntu-latest
-    needs: [test-backend, test-web, test-mobile]
+    needs: crdb-tests
     env:
       VITE_API_URL: http://127.0.0.1:8080
       VITE_API_BASE_URL: http://127.0.0.1:8080
@@ -271,18 +300,20 @@ jobs:
       - name: Prepare integration environment
         shell: bash
         run: |
-          echo "JWT_SECRET=$(openssl rand -base64 48)" >> "$GITHUB_ENV"
-          echo "INTERNAL_API_KEY=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
-          echo "DATA_ENCRYPTION_KEY=$(openssl rand -base64 32)" >> "$GITHUB_ENV"
-          echo "DATA_HASH_KEY=$(openssl rand -base64 32)" >> "$GITHUB_ENV"
-          echo "AUTH_DB_USERNAME=ci_auth_app" >> "$GITHUB_ENV"
-          echo "AUTH_DB_PASSWORD=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
-          echo "USUARIOS_DB_USERNAME=ci_usuarios_app" >> "$GITHUB_ENV"
-          echo "USUARIOS_DB_PASSWORD=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
-          echo "ACADEMICO_DB_USERNAME=ci_academico_app" >> "$GITHUB_ENV"
-          echo "ACADEMICO_DB_PASSWORD=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
-          echo "RESERVAS_DB_USERNAME=ci_reservas_app" >> "$GITHUB_ENV"
-          echo "RESERVAS_DB_PASSWORD=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
+          {
+            echo "JWT_SECRET=$(openssl rand -base64 48)"
+            echo "INTERNAL_API_KEY=$(openssl rand -hex 32)"
+            echo "DATA_ENCRYPTION_KEY=$(openssl rand -base64 32)"
+            echo "DATA_HASH_KEY=$(openssl rand -base64 32)"
+            echo "AUTH_DB_USERNAME=ci_auth_app"
+            echo "AUTH_DB_PASSWORD=$(openssl rand -hex 32)"
+            echo "USUARIOS_DB_USERNAME=ci_usuarios_app"
+            echo "USUARIOS_DB_PASSWORD=$(openssl rand -hex 32)"
+            echo "ACADEMICO_DB_USERNAME=ci_academico_app"
+            echo "ACADEMICO_DB_PASSWORD=$(openssl rand -hex 32)"
+            echo "RESERVAS_DB_USERNAME=ci_reservas_app"
+            echo "RESERVAS_DB_PASSWORD=$(openssl rand -hex 32)"
+          } >> "$GITHUB_ENV"
 
       - name: Start stack and run integration checks
         shell: bash
@@ -375,6 +406,24 @@ jobs:
         working-directory: apps/web
         run: npm run test:e2e -- --project=chromium
 
+      - name: Install Locust
+        run: python -m pip install --requirement tests/load/requirements.txt
+
+      - name: Run controlled load smoke test
+        env:
+          LOCUST_USERNAME: admin
+          LOCUST_PASSWORD: Admin123!
+        run: >-
+          python -m locust
+          -f tests/load/locustfile.py
+          --headless
+          --host http://127.0.0.1:8080
+          --users 2
+          --spawn-rate 1
+          --run-time 10s
+          --only-summary
+          --exit-code-on-error 1
+
       - name: Cleanup integration stack
         if: always()
         run: |
@@ -384,7 +433,7 @@ jobs:
   build-images:
     name: Build and publish image - ${{ matrix.name }}
     runs-on: ubuntu-latest
-    needs: [lint, test-backend, test-web, test-mobile, integration]
+    needs: [lint, test-backend, test-web, test-mobile, crdb-tests, integration]
     if: ${{ github.event_name == 'push' }}
     permissions:
       contents: read

@@ -147,15 +147,15 @@ class CockroachFlywayIntegrationTests {
                 SELECT count(*)
                 FROM information_schema.tables
                 WHERE table_schema = 'public'
-                  AND table_name IN (
-                    'solicitudes_reserva',
-                    'reservas',
-                    'historial_solicitudes',
-                    'bloqueos_agenda',
-                    'configuraciones_reserva',
-                    'idempotencia_aprobaciones',
-                    'idempotencia_creacion_solicitudes',
-                    'mutex_agenda'
+                  AND table_name IN (\
+                    'solicitudes_reserva',\
+                    'reservas',\
+                    'historial_solicitudes',\
+                    'bloqueos_agenda',\
+                    'configuraciones_reserva',\
+                    'idempotencia_aprobaciones',\
+                    'idempotencia_creacion_solicitudes',\
+                    'mutex_agenda'\
                   )
                 """,
                 Integer.class);
@@ -168,9 +168,9 @@ class CockroachFlywayIntegrationTests {
                 FROM information_schema.table_constraints
                 WHERE constraint_schema = 'public'
                   AND constraint_type = 'FOREIGN KEY'
-                  AND constraint_name IN (
-                    'fk_reservas_solicitud',
-                    'fk_historial_solicitudes_solicitud'
+                  AND constraint_name IN (\
+                    'fk_reservas_solicitud',\
+                    'fk_historial_solicitudes_solicitud'\
                   )
                 """,
                 Integer.class);
@@ -313,13 +313,13 @@ class CockroachFlywayIntegrationTests {
             var tarea = (java.util.concurrent.Callable<UUID>) () -> {
                 preparados.countDown();
                 assertThat(iniciar.await(10, TimeUnit.SECONDS)).isTrue();
-                return transactionTemplate.execute(status -> {
+                return ejecutarConRetrySerializable(() -> transactionTemplate.execute(status -> {
                     idempotenciaAprobacionRepository.registrarSiAusente(
                             clave, solicitud.getId());
                     return idempotenciaAprobacionRepository.buscarParaActualizar(clave)
                             .orElseThrow()
                             .solicitudId();
-                });
+                }));
             };
 
             var primera = executor.submit(tarea);

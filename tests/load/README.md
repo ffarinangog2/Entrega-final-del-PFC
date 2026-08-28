@@ -12,10 +12,14 @@ python -m pip install -r tests/load/requirements.txt
 ```
 
 El host no está codificado en `locustfile.py`. Debe proporcionarse mediante `--host`
-o la variable de entorno nativa `LOCUST_HOST`. Por ejemplo, para una instancia local:
+o la variable de entorno nativa `LOCUST_HOST`. La prueba también requiere una cuenta
+de pruebas con permiso `RESERVA_LEER`, configurada mediante `LOCUST_USERNAME` y
+`LOCUST_PASSWORD`. Por ejemplo, para una instancia local:
 
 ```powershell
 $env:LOCUST_HOST = "http://localhost:8080"
+$env:LOCUST_USERNAME = "<USUARIO_PRUEBAS>"
+$env:LOCUST_PASSWORD = "<CONTRASENA_PRUEBAS>"
 ```
 
 ## Escenario nominal
@@ -47,3 +51,7 @@ Las métricas se agrupan con los nombres `GET /api/v1/reservas` y
 `GET /api/v1/reservas/{id}`. El detalle solo utiliza identificadores UUID descubiertos
 en respuestas válidas del listado; si no hay reservas, se continúa consultando el
 listado sin fabricar IDs ni crear datos.
+
+En CI se ejecuta un smoke de carga obligatorio y controlado contra el stack temporal
+del job `integration`: 2 usuarios, incorporación de 1 usuario/s y duración de 10
+segundos. Nunca se dirige automáticamente a un ambiente externo.
