@@ -1,4 +1,4 @@
-const GATEWAY_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080').replace(/\/$/, '')
+const GATEWAY_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '')
 const USUARIOS_BASE_URL = `${GATEWAY_BASE_URL}/usuarios-service`
 
 export interface Perfil {

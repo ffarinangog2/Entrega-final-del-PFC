@@ -16,6 +16,10 @@ Desde la raíz del repositorio:
 docker compose up -d
 ```
 
+La preparación del despliegue por SHA a una VM Linux se documenta en
+[`docs/deployment-vm.md`](docs/deployment-vm.md). El deployment permanece
+deshabilitado hasta configurar la VM y establecer `CD_ENABLED=true`.
+
 ## Estructura general
 
 - `auth-service`: autenticación.

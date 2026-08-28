@@ -1,0 +1,237 @@
+name: scli-prod
+
+services:
+  cockroach-cert-init:
+    extends:
+      file: docker-compose.yml
+      service: cockroach-cert-init
+
+  cockroach-auth:
+    extends:
+      file: docker-compose.yml
+      service: cockroach-auth
+    ports: !override []
+
+  cockroach-auth-init:
+    extends:
+      file: docker-compose.yml
+      service: cockroach-auth-init
+
+  cockroach-usuarios:
+    extends:
+      file: docker-compose.yml
+      service: cockroach-usuarios
+    ports: !override []
+
+  cockroach-usuarios-init:
+    extends:
+      file: docker-compose.yml
+      service: cockroach-usuarios-init
+
+  cockroach-academico:
+    extends:
+      file: docker-compose.yml
+      service: cockroach-academico
+    ports: !override []
+
+  cockroach-academico-init:
+    extends:
+      file: docker-compose.yml
+      service: cockroach-academico-init
+
+  crdb-e3-1:
+    extends:
+      file: docker-compose.yml
+      service: crdb-e3-1
+    ports: !override []
+
+  crdb-e3-2:
+    extends:
+      file: docker-compose.yml
+      service: crdb-e3-2
+    ports: !override []
+
+  crdb-e3-3:
+    extends:
+      file: docker-compose.yml
+      service: crdb-e3-3
+    ports: !override []
+
+  crdb-e3-init:
+    extends:
+      file: docker-compose.yml
+      service: crdb-e3-init
+
+  auth-service:
+    image: ghcr.io/ffarinangog2/scli-auth-service:${IMAGE_TAG:?IMAGE_TAG is required}
+    environment:
+      SERVER_PORT: 8081
+      DB_URL: jdbc:postgresql://cockroach-auth:26257/auth_db?sslmode=verify-full&sslrootcert=/cockroach/cockroach-certs/ca.crt&options=-c%20allow_unsafe_internals%3Dtrue
+      DB_USERNAME: ${AUTH_DB_USERNAME:?AUTH_DB_USERNAME is required}
+      DB_PASSWORD: ${AUTH_DB_PASSWORD:?AUTH_DB_PASSWORD is required}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:?INTERNAL_API_KEY is required}
+      USUARIOS_SERVICE_URL: http://usuarios-service:8082
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      MAIL_HOST: ${MAIL_HOST:-localhost}
+      MAIL_PORT: ${MAIL_PORT:-1025}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_FROM: ${MAIL_FROM:-no-reply@scli.local}
+      MAIL_SMTP_AUTH: ${MAIL_SMTP_AUTH:-false}
+      MAIL_STARTTLS_ENABLE: ${MAIL_STARTTLS_ENABLE:-false}
+      MANAGEMENT_HEALTH_MAIL_ENABLED: "false"
+      PASSWORD_RESET_BASE_URL: ${PASSWORD_RESET_BASE_URL:-http://localhost:3000/restablecer-contrasena}
+      PASSWORD_RESET_EXPIRATION_MINUTES: ${PASSWORD_RESET_EXPIRATION_MINUTES:-20}
+    depends_on:
+      cockroach-auth:
+        condition: service_healthy
+      cockroach-auth-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:8081/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    restart: unless-stopped
+    volumes:
+      - cockroach-certs:/cockroach/cockroach-certs:ro
+    networks: [scli-network]
+
+  usuarios-service:
+    image: ghcr.io/ffarinangog2/scli-usuarios-service:${IMAGE_TAG:?IMAGE_TAG is required}
+    environment:
+      SERVER_PORT: 8082
+      DB_URL: jdbc:postgresql://cockroach-usuarios:26257/usuarios_db?sslmode=verify-full&sslrootcert=/cockroach/cockroach-certs/ca.crt
+      DB_USERNAME: ${USUARIOS_DB_USERNAME:?USUARIOS_DB_USERNAME is required}
+      DB_PASSWORD: ${USUARIOS_DB_PASSWORD:?USUARIOS_DB_PASSWORD is required}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:?INTERNAL_API_KEY is required}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      DATA_ENCRYPTION_KEY: ${DATA_ENCRYPTION_KEY:?DATA_ENCRYPTION_KEY is required}
+      DATA_HASH_KEY: ${DATA_HASH_KEY:?DATA_HASH_KEY is required}
+    depends_on:
+      cockroach-usuarios:
+        condition: service_healthy
+      cockroach-usuarios-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:8082/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    restart: unless-stopped
+    volumes:
+      - cockroach-certs:/cockroach/cockroach-certs:ro
+    networks: [scli-network]
+
+  academico-laboratorios-service:
+    image: ghcr.io/ffarinangog2/scli-academico-laboratorios-service:${IMAGE_TAG:?IMAGE_TAG is required}
+    environment:
+      SERVER_PORT: 8083
+      DB_URL: jdbc:postgresql://cockroach-academico:26257/academico_db?sslmode=verify-full&sslrootcert=/cockroach/cockroach-certs/ca.crt&options=-c%20allow_unsafe_internals%3Dtrue
+      DB_USERNAME: ${ACADEMICO_DB_USERNAME:?ACADEMICO_DB_USERNAME is required}
+      DB_PASSWORD: ${ACADEMICO_DB_PASSWORD:?ACADEMICO_DB_PASSWORD is required}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:?INTERNAL_API_KEY is required}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      SPRING_FLYWAY_BASELINE_ON_MIGRATE: "true"
+      SPRING_FLYWAY_BASELINE_VERSION: "1"
+    depends_on:
+      cockroach-academico:
+        condition: service_healthy
+      cockroach-academico-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:8083/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    restart: unless-stopped
+    volumes:
+      - cockroach-certs:/cockroach/cockroach-certs:ro
+    networks: [scli-network]
+
+  reservas-solicitudes-service:
+    image: ghcr.io/ffarinangog2/scli-reservas-solicitudes-service:${IMAGE_TAG:?IMAGE_TAG is required}
+    environment:
+      SERVER_PORT: 8084
+      DB_URL: jdbc:postgresql://crdb-e3-1:26257,crdb-e3-2:26257,crdb-e3-3:26257/reservas_db?sslmode=verify-full&sslrootcert=/cockroach/cockroach-certs/ca.crt&options=-c%20allow_unsafe_internals%3Dtrue
+      DB_USERNAME: ${RESERVAS_DB_USERNAME:?RESERVAS_DB_USERNAME is required}
+      DB_PASSWORD: ${RESERVAS_DB_PASSWORD:?RESERVAS_DB_PASSWORD is required}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:?INTERNAL_API_KEY is required}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      USUARIOS_SERVICE_URL: http://usuarios-service:8082
+      ACADEMICO_LABORATORIOS_SERVICE_URL: http://academico-laboratorios-service:8083
+    depends_on:
+      crdb-e3-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:8084/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    restart: unless-stopped
+    volumes:
+      - cockroach-certs:/cockroach/cockroach-certs:ro
+    networks: [scli-network]
+
+  api-gateway:
+    image: ghcr.io/ffarinangog2/scli-api-gateway:${IMAGE_TAG:?IMAGE_TAG is required}
+    ports:
+      - "${API_GATEWAY_PORT:-8080}:8080"
+    environment:
+      SERVER_PORT: 8080
+      AUTH_SERVICE_URL: http://auth-service:8081
+      USUARIOS_SERVICE_URL: http://usuarios-service:8082
+      ACADEMICO_SERVICE_URL: http://academico-laboratorios-service:8083
+      RESERVAS_SOLICITUDES_SERVICE_URL: http://reservas-solicitudes-service:8084
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+    depends_on:
+      auth-service:
+        condition: service_healthy
+      usuarios-service:
+        condition: service_healthy
+      academico-laboratorios-service:
+        condition: service_healthy
+      reservas-solicitudes-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:8080/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    restart: unless-stopped
+    networks: [scli-network]
+
+  web:
+    image: ghcr.io/ffarinangog2/scli-web:${IMAGE_TAG:?IMAGE_TAG is required}
+    ports:
+      - "${WEB_PORT:-3000}:80"
+    depends_on:
+      api-gateway:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+    networks: [scli-network]
+
+volumes:
+  cockroach-certs:
+  cockroach-ca-private:
+  cockroach-auth-data:
+  cockroach-usuarios-data:
+  cockroach-academico-data:
+  crdb-e3-1-data:
+  crdb-e3-2-data:
+  crdb-e3-3-data:
+
+networks:
+  scli-network:
+    driver: bridge
