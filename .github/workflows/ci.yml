@@ -41,6 +41,7 @@ jobs:
   test-backend:
     name: Build and test - ${{ matrix.service }}
     runs-on: ubuntu-latest
+    needs: lint
     strategy:
       fail-fast: false
       matrix:
@@ -53,6 +54,8 @@ jobs:
             database: academico_db
           - service: services/reservas-solicitudes-service
             database: reservas_db
+          - service: services/api-gateway
+            database: gateway_db
 
     steps:
       - name: Checkout
@@ -147,7 +150,7 @@ jobs:
         run: mvn --batch-mode verify
 
   crdb-tests:
-    name: CockroachDB E3 tests
+    name: CockroachDB E3 tests (pending implementation)
     runs-on: ubuntu-latest
     needs: test-backend
     if: ${{ vars.CRDB_E3_TESTS_ENABLED == 'true' }}
@@ -163,6 +166,7 @@ jobs:
   test-web:
     name: Test web
     runs-on: ubuntu-latest
+    needs: lint
 
     steps:
       - name: Checkout
@@ -190,6 +194,7 @@ jobs:
   test-mobile:
     name: Test mobile
     runs-on: ubuntu-latest
+    needs: lint
 
     steps:
       - name: Checkout
@@ -246,52 +251,10 @@ jobs:
           name: scli-mobile-debug-${{ github.sha }}
           path: apps/mobile/app/build/outputs/apk/debug/app-debug.apk
 
-  build-images:
-    name: Build and publish image - ${{ matrix.name }}
-    runs-on: ubuntu-latest
-    needs: test-backend
-    permissions:
-      contents: read
-      packages: write
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - name: auth-service
-            context: services/auth-service
-          - name: usuarios-service
-            context: services/usuarios-service
-          - name: academico-laboratorios-service
-            context: services/academico-laboratorios-service
-          - name: reservas-solicitudes-service
-            context: services/reservas-solicitudes-service
-          - name: api-gateway
-            context: services/api-gateway
-          - name: web
-            context: apps/web
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Log in to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and publish image
-        uses: docker/build-push-action@v6
-        with:
-          context: ${{ matrix.context }}
-          push: true
-          tags: ghcr.io/${{ github.repository_owner }}/scli-${{ matrix.name }}:${{ github.sha }}
-
   integration:
     name: Compose integration tests
     runs-on: ubuntu-latest
-    needs: build-images
+    needs: [test-backend, test-web, test-mobile]
     env:
       VITE_API_URL: http://127.0.0.1:8080
       VITE_API_BASE_URL: http://127.0.0.1:8080
@@ -417,3 +380,46 @@ jobs:
         run: |
           docker compose logs || true
           docker compose down -v || true
+
+  build-images:
+    name: Build and publish image - ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    needs: [lint, test-backend, test-web, test-mobile, integration]
+    if: ${{ github.event_name == 'push' }}
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: auth-service
+            context: services/auth-service
+          - name: usuarios-service
+            context: services/usuarios-service
+          - name: academico-laboratorios-service
+            context: services/academico-laboratorios-service
+          - name: reservas-solicitudes-service
+            context: services/reservas-solicitudes-service
+          - name: api-gateway
+            context: services/api-gateway
+          - name: web
+            context: apps/web
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and publish image
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/scli-${{ matrix.name }}:${{ github.sha }}
