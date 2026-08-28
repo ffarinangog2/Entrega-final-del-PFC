@@ -83,7 +83,7 @@ public class GatewayRoutes {
     static boolean esRutaUsuarios(String path) {
         return coincideAlguna(path,
                 "/api/v1/perfiles", "/api/v1/docentes", "/api/v1/estudiantes",
-                "/api/v1/tecnicos", "/api/v1/administradores");
+                "/api/v1/administradores");
     }
 
     static boolean esRutaUsuariosLegacy(String path) {

@@ -27,7 +27,7 @@ public class PoliticaAmbitoLaboratorio {
 
     public UUID pisoGestionado() {
         ActorAutenticado actor = actor();
-        if (actor.tiene("ROLE_ADMINISTRADOR") || actor.tiene("ROLE_TECNICO")) return null;
+        if (actor.tiene("ROLE_ADMINISTRADOR")) return null;
         if (!actor.tiene("ROLE_ADMINISTRADOR_PISO")) {
             throw new AccessDeniedException("El actor no posee gestión operativa");
         }

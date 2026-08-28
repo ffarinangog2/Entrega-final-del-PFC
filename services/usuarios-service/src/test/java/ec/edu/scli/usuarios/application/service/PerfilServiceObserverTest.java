@@ -7,7 +7,6 @@ import ec.edu.scli.usuarios.domain.port.AdministradorRepositoryPort;
 import ec.edu.scli.usuarios.domain.port.DocenteRepositoryPort;
 import ec.edu.scli.usuarios.domain.port.EstudianteRepositoryPort;
 import ec.edu.scli.usuarios.domain.port.PerfilRepositoryPort;
-import ec.edu.scli.usuarios.domain.port.TecnicoRepositoryPort;
 import ec.edu.scli.usuarios.presentation.dto.perfil.PerfilCreateRequest;
 import org.junit.jupiter.api.Test;
 
@@ -41,7 +40,6 @@ class PerfilServiceObserverTest {
                 perfilRepository,
                 mock(DocenteRepositoryPort.class),
                 mock(EstudianteRepositoryPort.class),
-                mock(TecnicoRepositoryPort.class),
                 mock(AdministradorRepositoryPort.class),
                 List.of(listener)
         );

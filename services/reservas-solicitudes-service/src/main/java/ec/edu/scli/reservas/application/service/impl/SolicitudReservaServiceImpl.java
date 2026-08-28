@@ -244,7 +244,7 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
         UUID pisoId = null;
         if (actor.tiene("ROLE_DOCENTE")) solicitanteId = actorId;
         else if (actor.tiene("ROLE_ADMINISTRADOR_PISO")) pisoId = politicaAmbito.pisoGestionado();
-        else if (!actor.tiene("ROLE_ADMINISTRADOR") && !actor.tiene("ROLE_TECNICO")) {
+        else if (!actor.tiene("ROLE_ADMINISTRADOR")) {
             solicitanteId = actorId;
         }
         return mapearPagina(solicitudReservaRepository.buscar(
@@ -348,7 +348,7 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
         var actor = politicaAmbito.actor();
         if (!actor.perfilId().equals(actorId)) throw new AccessDeniedException("Actor inconsistente");
         if (solicitud.getSolicitanteId().equals(actorId)) return;
-        if (actor.tiene("ROLE_ADMINISTRADOR") || actor.tiene("ROLE_TECNICO")) return;
+        if (actor.tiene("ROLE_ADMINISTRADOR")) return;
         if (actor.tiene("ROLE_ADMINISTRADOR_PISO")) {
             politicaAmbito.validarGestion(solicitud.getLaboratorioId());
             return;

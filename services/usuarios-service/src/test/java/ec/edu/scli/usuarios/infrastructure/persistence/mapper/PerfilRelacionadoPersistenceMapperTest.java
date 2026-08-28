@@ -142,53 +142,6 @@ class PerfilRelacionadoPersistenceMapperTest {
     }
 
     // ---------------------------------------------------------------
-    // Tecnico
-    // ---------------------------------------------------------------
-
-    @Test
-    void tecnico_toDomain_deberiaMapearTodosLosCampos() {
-        ec.edu.scli.usuarios.infrastructure.persistence.entity.Tecnico entity =
-                new ec.edu.scli.usuarios.infrastructure.persistence.entity.Tecnico();
-        entity.setId(UUID.randomUUID());
-        entity.setPerfil(perfilEntity);
-        entity.setCodigoTecnico("TEC-001");
-        entity.setEspecialidad("Redes");
-        entity.setActivo(true);
-        entity.setCreadoEn(OffsetDateTime.now());
-        entity.setActualizadoEn(OffsetDateTime.now());
-
-        ec.edu.scli.usuarios.domain.model.Tecnico domain = mapper.toDomain(entity);
-
-        assertThat(domain.getId()).isEqualTo(entity.getId());
-        assertThat(domain.getPerfil().getId()).isEqualTo(perfilEntity.getId());
-        assertThat(domain.getCodigoTecnico()).isEqualTo("TEC-001");
-        assertThat(domain.getEspecialidad()).isEqualTo("Redes");
-        assertThat(domain.getActivo()).isTrue();
-    }
-
-    @Test
-    void tecnico_toEntity_deberiaMapearTodosLosCampos() {
-        ec.edu.scli.usuarios.domain.model.Tecnico domain =
-                new ec.edu.scli.usuarios.domain.model.Tecnico();
-        domain.setId(UUID.randomUUID());
-        domain.setPerfil(perfilDomain);
-        domain.setCodigoTecnico("TEC-001");
-        domain.setEspecialidad("Redes");
-        domain.setActivo(true);
-        domain.setCreadoEn(OffsetDateTime.now());
-        domain.setActualizadoEn(OffsetDateTime.now());
-
-        ec.edu.scli.usuarios.infrastructure.persistence.entity.Tecnico entity =
-                mapper.toEntity(domain);
-
-        assertThat(entity.getId()).isEqualTo(domain.getId());
-        assertThat(entity.getPerfil().getId()).isEqualTo(perfilDomain.getId());
-        assertThat(entity.getCodigoTecnico()).isEqualTo("TEC-001");
-        assertThat(entity.getEspecialidad()).isEqualTo("Redes");
-        assertThat(entity.getActivo()).isTrue();
-    }
-
-    // ---------------------------------------------------------------
     // Administrador
     // ---------------------------------------------------------------
 

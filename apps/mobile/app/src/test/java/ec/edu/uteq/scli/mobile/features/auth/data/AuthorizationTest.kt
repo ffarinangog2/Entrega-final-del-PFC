@@ -8,12 +8,10 @@ class AuthorizationTest {
         val docente = user(listOf("DOCENTE"), listOf("SOLICITUD_CREAR", "RESERVA_LEER"))
         val estudiante = user(listOf("ESTUDIANTE"), listOf("RESERVA_LEER"))
         val adminPiso = user(listOf("ADMINISTRADOR_PISO"), listOf("SOLICITUD_APROBAR", "SOLICITUD_RECHAZAR"))
-        val decano = user(listOf("DECANO"), listOf("RESERVA_LEER"))
         val coordinador = user(listOf("COORDINADOR"), listOf("PLANIFICACION_GESTIONAR"))
         assertTrue(docente.hasPermission("SOLICITUD_CREAR"))
         assertFalse(estudiante.hasPermission("SOLICITUD_CREAR"))
         assertTrue(adminPiso.hasAnyPermission("SOLICITUD_APROBAR", "SOLICITUD_RECHAZAR"))
-        assertFalse(decano.hasPermission("SOLICITUD_APROBAR"))
         assertFalse(coordinador.hasPermission("SOLICITUD_APROBAR"))
     }
 

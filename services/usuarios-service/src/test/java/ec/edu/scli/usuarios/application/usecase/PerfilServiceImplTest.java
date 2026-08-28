@@ -11,7 +11,6 @@ import ec.edu.scli.usuarios.domain.port.AdministradorRepositoryPort;
 import ec.edu.scli.usuarios.domain.port.DocenteRepositoryPort;
 import ec.edu.scli.usuarios.domain.port.EstudianteRepositoryPort;
 import ec.edu.scli.usuarios.domain.port.PerfilRepositoryPort;
-import ec.edu.scli.usuarios.domain.port.TecnicoRepositoryPort;
 import ec.edu.scli.usuarios.application.service.PerfilServiceImpl;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -53,9 +52,6 @@ class PerfilServiceImplTest {
     private EstudianteRepositoryPort estudianteRepository;
 
     @Mock
-    private TecnicoRepositoryPort tecnicoRepository;
-
-    @Mock
     private AdministradorRepositoryPort administradorRepository;
 
     private PerfilServiceImpl perfilService;
@@ -79,7 +75,6 @@ class PerfilServiceImplTest {
                 perfilRepository,
                 docenteRepository,
                 estudianteRepository,
-                tecnicoRepository,
                 administradorRepository,
                 List.<PerfilEventListener>of()
         );
@@ -195,8 +190,6 @@ class PerfilServiceImplTest {
         when(docenteRepository.existsByPerfilId(perfilId))
                 .thenReturn(true);
         when(estudianteRepository.existsByPerfilId(perfilId))
-                .thenReturn(false);
-        when(tecnicoRepository.existsByPerfilId(perfilId))
                 .thenReturn(false);
         when(administradorRepository.existsByPerfilId(perfilId))
                 .thenReturn(false);

@@ -4,7 +4,6 @@ public enum TipoPerfil {
 
     DOCENTE,
     ESTUDIANTE,
-    TECNICO,
     ADMINISTRADOR
 
 }

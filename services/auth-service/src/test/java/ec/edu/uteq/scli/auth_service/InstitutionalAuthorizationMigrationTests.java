@@ -4,29 +4,45 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
+import org.testcontainers.cockroachdb.CockroachContainer;
 
 import java.util.List;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest
+@SpringBootTest(properties = "security.jwt.secret=MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=")
 class InstitutionalAuthorizationMigrationTests {
+
+    private static final CockroachContainer COCKROACH =
+            new CockroachContainer("cockroachdb/cockroach:v24.3.5");
+
+    static {
+        COCKROACH.start();
+    }
+
+    @DynamicPropertySource
+    static void configureDatasource(DynamicPropertyRegistry registry) {
+        registry.add("spring.datasource.url", COCKROACH::getJdbcUrl);
+        registry.add("spring.datasource.username", COCKROACH::getUsername);
+        registry.add("spring.datasource.password", COCKROACH::getPassword);
+        registry.add("spring.flyway.enabled", () -> true);
+    }
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
     @Test
-    void flywayCreatesTheSevenInstitutionalRoles() {
+    void flywayCreatesTheInstitutionalRoles() {
         assertThat(codes("SELECT codigo FROM roles ORDER BY codigo"))
                 .containsExactlyInAnyOrder(
                         "ADMINISTRADOR",
                         "DOCENTE",
-                        "TECNICO",
                         "ESTUDIANTE",
                         "COORDINADOR",
-                        "ADMINISTRADOR_PISO",
-                        "DECANO");
+                        "ADMINISTRADOR_PISO");
     }
 
     @Test
@@ -74,22 +90,6 @@ class InstitutionalAuthorizationMigrationTests {
                         "SOLICITUD_RECHAZAR",
                         "RESERVA_CANCELAR",
                         "AGENDA_GESTIONAR");
-    }
-
-    @Test
-    void deanHasReadOnlySupervisionPermissions() {
-        assertThat(permissions("DECANO"))
-                .containsExactlyInAnyOrder(
-                        "ACADEMICO_LEER",
-                        "LABORATORIO_LEER",
-                        "RESERVA_LEER",
-                        "REPORTE_LEER")
-                .doesNotContain(
-                        "SOLICITUD_APROBAR",
-                        "SOLICITUD_RECHAZAR",
-                        "RESERVA_CANCELAR",
-                        "AGENDA_GESTIONAR",
-                        "PLANIFICACION_GESTIONAR");
     }
 
     private Set<String> permissions(String roleCode) {

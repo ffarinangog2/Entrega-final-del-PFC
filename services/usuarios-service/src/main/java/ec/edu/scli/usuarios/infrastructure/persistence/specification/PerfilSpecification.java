@@ -5,7 +5,6 @@ import org.springframework.data.jpa.domain.Specification;
 import ec.edu.scli.usuarios.infrastructure.persistence.entity.Administrador;
 import ec.edu.scli.usuarios.infrastructure.persistence.entity.Docente;
 import ec.edu.scli.usuarios.infrastructure.persistence.entity.Estudiante;
-import ec.edu.scli.usuarios.infrastructure.persistence.entity.Tecnico;
 import ec.edu.scli.usuarios.domain.model.TipoPerfil;
 import java.util.UUID;
 import jakarta.persistence.criteria.Root;
@@ -16,40 +15,21 @@ public final class PerfilSpecification {
     private PerfilSpecification() {
     }
 
-    /* Antes
-    public static Specification<Perfil> identificacionContiene(
-            String identificacion
+    public static Specification<Perfil> identificacionHashIgual(
+            String identificacionHash
     ) {
         return (root, query, criteriaBuilder) -> {
 
-            if (identificacion == null || identificacion.isBlank()) {
+            if (identificacionHash == null || identificacionHash.isBlank()) {
                 return criteriaBuilder.conjunction();
             }
 
-            return criteriaBuilder.like(
-                    criteriaBuilder.lower(root.get("identificacion")),
-                    "%" + identificacion.toLowerCase() + "%"
+            return criteriaBuilder.equal(
+                    root.get("identificacionHash"),
+                    identificacionHash
             );
         };
-    }*/
-
-        //Nuevo
-        public static Specification<Perfil> identificacionHashIgual(
-                String identificacionHash
-        ) {
-                return (root, query, criteriaBuilder) -> {
-
-                if (identificacionHash == null || identificacionHash.isBlank()) {
-                        return criteriaBuilder.conjunction();
-                }
-
-                return criteriaBuilder.equal(
-                        root.get("identificacionHash"),
-                        identificacionHash
-                );
-                };
-        }
-        //Fin Nuevo
+    }
 
     public static Specification<Perfil> nombreContiene(
             String nombre
@@ -75,9 +55,7 @@ public final class PerfilSpecification {
         };
     }
 
-
-    /* Antes
-    public static Specification<Perfil> emailContiene(
+    public static Specification<Perfil> emailInstitucionalContiene(
             String email
     ) {
         return (root, query, criteriaBuilder) -> {
@@ -86,45 +64,12 @@ public final class PerfilSpecification {
                 return criteriaBuilder.conjunction();
             }
 
-            String patron = "%" + email.toLowerCase() + "%";
-
-            return criteriaBuilder.or(
-                    criteriaBuilder.like(
-                            criteriaBuilder.lower(
-                                    root.get("emailInstitucional")
-                            ),
-                            patron
-                    ),
-                    criteriaBuilder.like(
-                            criteriaBuilder.lower(
-                                    root.get("emailPersonal")
-                            ),
-                            patron
-                    )
+            return criteriaBuilder.like(
+                    criteriaBuilder.lower(root.get("emailInstitucional")),
+                    "%" + email.toLowerCase() + "%"
             );
         };
     }
-*/
-
-        //Nuevo
-        public static Specification<Perfil> emailInstitucionalContiene(
-            String email
-        ) {
-                return (root, query, criteriaBuilder) -> {
-
-                if (email == null || email.isBlank()) {
-                        return criteriaBuilder.conjunction();
-                }
-
-                return criteriaBuilder.like(
-                        criteriaBuilder.lower(root.get("emailInstitucional")),
-                        "%" + email.toLowerCase() + "%"
-                );
-                };
-        }
-        //Fin Nuevo
-
-
 
     public static Specification<Perfil> tieneEstado(
             Boolean activo
@@ -141,6 +86,7 @@ public final class PerfilSpecification {
             );
         };
     }
+
     public static Specification<Perfil> tieneTipoPerfil(
             TipoPerfil tipoPerfil
     ) {
@@ -190,28 +136,6 @@ public final class PerfilSpecification {
                     subquery.where(
                             criteriaBuilder.equal(
                                     estudiante.get("perfil").get("id"),
-                                    root.get("id")
-                            )
-                    );
-
-                    yield criteriaBuilder.exists(subquery);
-                }
-
-                case TECNICO -> {
-
-                    Subquery<UUID> subquery =
-                            query.subquery(UUID.class);
-
-                    Root<Tecnico> tecnico =
-                            subquery.from(Tecnico.class);
-
-                    subquery.select(
-                            tecnico.get("perfil").get("id")
-                    );
-
-                    subquery.where(
-                            criteriaBuilder.equal(
-                                    tecnico.get("perfil").get("id"),
                                     root.get("id")
                             )
                     );

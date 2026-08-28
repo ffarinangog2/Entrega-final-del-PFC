@@ -15,11 +15,6 @@ VALUES
         'Puede solicitar y consultar reservas'
     ),
     (
-        'TECNICO',
-        'Técnico',
-        'Gestiona laboratorios, equipos y solicitudes'
-    ),
-    (
         'ESTUDIANTE',
         'Estudiante',
         'Puede consultar información autorizada'
@@ -153,31 +148,6 @@ JOIN permisos p
         'LABORATORIO_LEER'
     )
 WHERE r.codigo = 'DOCENTE'
-ON CONFLICT (rol_id, permiso_id) DO NOTHING;
-
-INSERT INTO roles_permisos (
-    rol_id,
-    permiso_id
-)
-SELECT
-    r.id,
-    p.id
-FROM roles r
-JOIN permisos p
-    ON p.codigo IN (
-        'SOLICITUD_LEER',
-        'SOLICITUD_APROBAR',
-        'SOLICITUD_RECHAZAR',
-        'RESERVA_LEER',
-        'RESERVA_CANCELAR',
-        'LABORATORIO_LEER',
-        'LABORATORIO_GESTIONAR',
-        'EQUIPO_LEER',
-        'EQUIPO_GESTIONAR',
-        'REPORTE_LEER',
-        'AGENDA_GESTIONAR'
-    )
-WHERE r.codigo = 'TECNICO'
 ON CONFLICT (rol_id, permiso_id) DO NOTHING;
 
 INSERT INTO roles_permisos (

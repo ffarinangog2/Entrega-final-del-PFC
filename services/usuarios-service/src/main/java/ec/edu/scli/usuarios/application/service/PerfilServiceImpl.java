@@ -14,7 +14,6 @@ import ec.edu.scli.usuarios.domain.port.AdministradorRepositoryPort;
 import ec.edu.scli.usuarios.domain.port.DocenteRepositoryPort;
 import ec.edu.scli.usuarios.domain.port.EstudianteRepositoryPort;
 import ec.edu.scli.usuarios.domain.port.PerfilRepositoryPort;
-import ec.edu.scli.usuarios.domain.port.TecnicoRepositoryPort;
 import ec.edu.scli.usuarios.application.usecase.PerfilService;
 import ec.edu.scli.usuarios.domain.model.TipoPerfil;
 
@@ -33,7 +32,6 @@ public class PerfilServiceImpl implements PerfilService {
         private final PerfilRepositoryPort perfilRepository;
         private final DocenteRepositoryPort docenteRepository;
         private final EstudianteRepositoryPort estudianteRepository;
-        private final TecnicoRepositoryPort tecnicoRepository;
         private final AdministradorRepositoryPort administradorRepository;
         private final List<PerfilEventListener> eventListeners;
 
@@ -41,13 +39,11 @@ public class PerfilServiceImpl implements PerfilService {
                         PerfilRepositoryPort perfilRepository,
                         DocenteRepositoryPort docenteRepository,
                         EstudianteRepositoryPort estudianteRepository,
-                        TecnicoRepositoryPort tecnicoRepository,
                         AdministradorRepositoryPort administradorRepository,
                         List<PerfilEventListener> eventListeners) {
                 this.perfilRepository = perfilRepository;
                 this.docenteRepository = docenteRepository;
                 this.estudianteRepository = estudianteRepository;
-                this.tecnicoRepository = tecnicoRepository;
                 this.administradorRepository = administradorRepository;
                 this.eventListeners = eventListeners;
         }
@@ -294,10 +290,6 @@ public class PerfilServiceImpl implements PerfilService {
 
                 if (estudianteRepository.existsByPerfilId(perfilId)) {
                         tipos.add("ESTUDIANTE");
-                }
-
-                if (tecnicoRepository.existsByPerfilId(perfilId)) {
-                        tipos.add("TECNICO");
                 }
 
                 if (administradorRepository.existsByPerfilId(perfilId)) {

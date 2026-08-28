@@ -79,36 +79,6 @@ public class PerfilRelacionadoPersistenceMapper {
         return entity;
     }
 
-    public ec.edu.scli.usuarios.domain.model.Tecnico toDomain(
-            ec.edu.scli.usuarios.infrastructure.persistence.entity.Tecnico entity
-    ) {
-        ec.edu.scli.usuarios.domain.model.Tecnico domain =
-                new ec.edu.scli.usuarios.domain.model.Tecnico();
-        domain.setId(entity.getId());
-        domain.setPerfil(perfilMapper.toDomain(entity.getPerfil()));
-        domain.setCodigoTecnico(entity.getCodigoTecnico());
-        domain.setEspecialidad(entity.getEspecialidad());
-        domain.setActivo(entity.getActivo());
-        domain.setCreadoEn(entity.getCreadoEn());
-        domain.setActualizadoEn(entity.getActualizadoEn());
-        return domain;
-    }
-
-    public ec.edu.scli.usuarios.infrastructure.persistence.entity.Tecnico toEntity(
-            ec.edu.scli.usuarios.domain.model.Tecnico domain
-    ) {
-        ec.edu.scli.usuarios.infrastructure.persistence.entity.Tecnico entity =
-                new ec.edu.scli.usuarios.infrastructure.persistence.entity.Tecnico();
-        entity.setId(domain.getId());
-        entity.setPerfil(perfilMapper.toEntity(domain.getPerfil()));
-        entity.setCodigoTecnico(domain.getCodigoTecnico());
-        entity.setEspecialidad(domain.getEspecialidad());
-        entity.setActivo(domain.getActivo());
-        entity.setCreadoEn(domain.getCreadoEn());
-        entity.setActualizadoEn(domain.getActualizadoEn());
-        return entity;
-    }
-
     public ec.edu.scli.usuarios.domain.model.Administrador toDomain(
             ec.edu.scli.usuarios.infrastructure.persistence.entity.Administrador entity
     ) {

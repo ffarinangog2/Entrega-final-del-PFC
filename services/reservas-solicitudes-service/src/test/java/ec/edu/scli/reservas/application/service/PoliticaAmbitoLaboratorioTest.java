@@ -96,10 +96,8 @@ class PoliticaAmbitoLaboratorioTest {
     }
 
     @Test
-    void administradorGlobalYTecnicoConservanGestionGlobal() {
+    void administradorGlobalConservaGestionGlobal() {
         actor("ROLE_ADMINISTRADOR", "SOLICITUD_APROBAR");
-        assertEquals(piso, politica.validarGestion(laboratorio));
-        actor("ROLE_TECNICO", "SOLICITUD_APROBAR");
         assertEquals(piso, politica.validarGestion(laboratorio));
         verifyNoInteractions(contextos);
     }

@@ -83,27 +83,6 @@ CREATE TABLE estudiantes (
 );
 
 
-CREATE TABLE tecnicos (
-                          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-
-                          perfil_id UUID NOT NULL UNIQUE,
-
-                          codigo_tecnico VARCHAR(30) NOT NULL UNIQUE,
-
-                          especialidad VARCHAR(100),
-
-                          activo BOOLEAN NOT NULL DEFAULT TRUE,
-
-                          creado_en TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-                          actualizado_en TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-                          CONSTRAINT fk_tecnicos_perfil
-                              FOREIGN KEY (perfil_id)
-                                  REFERENCES perfiles(id)
-);
-
-
 CREATE TABLE administradores (
                                  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 

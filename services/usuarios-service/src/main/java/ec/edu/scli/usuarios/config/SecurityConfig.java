@@ -59,15 +59,15 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/perfiles/**").hasAuthority("USUARIO_DESACTIVAR")
                         .requestMatchers(HttpMethod.GET,
                                 "/api/v1/docentes/**", "/api/v1/estudiantes/**",
-                                "/api/v1/tecnicos/**", "/api/v1/administradores/**")
+                                "/api/v1/administradores/**")
                         .hasAuthority("USUARIO_LEER")
                         .requestMatchers(HttpMethod.POST,
                                 "/api/v1/docentes", "/api/v1/estudiantes",
-                                "/api/v1/tecnicos", "/api/v1/administradores")
+                                "/api/v1/administradores")
                         .hasAuthority("USUARIO_CREAR")
                         .requestMatchers(HttpMethod.PUT,
                                 "/api/v1/docentes/**", "/api/v1/estudiantes/**",
-                                "/api/v1/tecnicos/**", "/api/v1/administradores/**")
+                                "/api/v1/administradores/**")
                         .hasAuthority("USUARIO_EDITAR")
                         .anyRequest().authenticated())
                 .addFilterBefore(

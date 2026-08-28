@@ -9,7 +9,6 @@ import ec.edu.scli.usuarios.domain.port.AdscripcionInstitucionalRepositoryPort;
 import ec.edu.scli.usuarios.domain.port.DocenteRepositoryPort;
 import ec.edu.scli.usuarios.domain.port.EstudianteRepositoryPort;
 import ec.edu.scli.usuarios.domain.port.PerfilRepositoryPort;
-import ec.edu.scli.usuarios.domain.port.TecnicoRepositoryPort;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -29,7 +28,6 @@ class ContextoInstitucionalServiceImplTest {
     @Mock PerfilRepositoryPort perfiles;
     @Mock DocenteRepositoryPort docentes;
     @Mock EstudianteRepositoryPort estudiantes;
-    @Mock TecnicoRepositoryPort tecnicos;
     @Mock AdministradorRepositoryPort administradores;
     @Mock AdscripcionInstitucionalRepositoryPort adscripciones;
 
@@ -39,7 +37,7 @@ class ContextoInstitucionalServiceImplTest {
     @BeforeEach
     void setUp() {
         service = new ContextoInstitucionalServiceImpl(
-                perfiles, docentes, estudiantes, tecnicos, administradores, adscripciones);
+                perfiles, docentes, estudiantes, administradores, adscripciones);
         perfilId = UUID.randomUUID();
     }
 

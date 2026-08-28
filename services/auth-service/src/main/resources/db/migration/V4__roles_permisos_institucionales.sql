@@ -9,11 +9,6 @@ VALUES
         'ADMINISTRADOR_PISO',
         'Administrador de Piso',
         'Gestiona la operacion de los laboratorios de un piso'
-    ),
-    (
-        'DECANO',
-        'Decano',
-        'Supervisa informacion academica, reservas y reportes institucionales'
     )
 ON CONFLICT (codigo) DO NOTHING;
 
@@ -44,7 +39,7 @@ INSERT INTO roles_permisos (rol_id, permiso_id)
 SELECT r.id, p.id
 FROM roles r
 JOIN permisos p ON p.codigo = 'ACADEMICO_LEER'
-WHERE r.codigo IN ('DOCENTE', 'ESTUDIANTE', 'TECNICO')
+WHERE r.codigo IN ('DOCENTE', 'ESTUDIANTE')
 ON CONFLICT (rol_id, permiso_id) DO NOTHING;
 
 INSERT INTO roles_permisos (rol_id, permiso_id)
@@ -74,16 +69,4 @@ JOIN permisos p ON p.codigo IN (
     'LABORATORIO_LEER'
 )
 WHERE r.codigo = 'COORDINADOR'
-ON CONFLICT (rol_id, permiso_id) DO NOTHING;
-
-INSERT INTO roles_permisos (rol_id, permiso_id)
-SELECT r.id, p.id
-FROM roles r
-JOIN permisos p ON p.codigo IN (
-    'ACADEMICO_LEER',
-    'LABORATORIO_LEER',
-    'RESERVA_LEER',
-    'REPORTE_LEER'
-)
-WHERE r.codigo = 'DECANO'
 ON CONFLICT (rol_id, permiso_id) DO NOTHING;

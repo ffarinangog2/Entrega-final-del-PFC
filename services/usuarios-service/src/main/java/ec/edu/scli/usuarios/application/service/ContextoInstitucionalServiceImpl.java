@@ -10,7 +10,6 @@ import ec.edu.scli.usuarios.domain.port.AdscripcionInstitucionalRepositoryPort;
 import ec.edu.scli.usuarios.domain.port.DocenteRepositoryPort;
 import ec.edu.scli.usuarios.domain.port.EstudianteRepositoryPort;
 import ec.edu.scli.usuarios.domain.port.PerfilRepositoryPort;
-import ec.edu.scli.usuarios.domain.port.TecnicoRepositoryPort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,7 +23,6 @@ public class ContextoInstitucionalServiceImpl implements ContextoInstitucionalSe
     private final PerfilRepositoryPort perfiles;
     private final DocenteRepositoryPort docentes;
     private final EstudianteRepositoryPort estudiantes;
-    private final TecnicoRepositoryPort tecnicos;
     private final AdministradorRepositoryPort administradores;
     private final AdscripcionInstitucionalRepositoryPort adscripciones;
 
@@ -32,13 +30,11 @@ public class ContextoInstitucionalServiceImpl implements ContextoInstitucionalSe
             PerfilRepositoryPort perfiles,
             DocenteRepositoryPort docentes,
             EstudianteRepositoryPort estudiantes,
-            TecnicoRepositoryPort tecnicos,
             AdministradorRepositoryPort administradores,
             AdscripcionInstitucionalRepositoryPort adscripciones) {
         this.perfiles = perfiles;
         this.docentes = docentes;
         this.estudiantes = estudiantes;
-        this.tecnicos = tecnicos;
         this.administradores = administradores;
         this.adscripciones = adscripciones;
     }
@@ -55,7 +51,6 @@ public class ContextoInstitucionalServiceImpl implements ContextoInstitucionalSe
         List<TipoPerfil> tipos = new ArrayList<>();
         if (docentes.existsByPerfilId(perfilId)) tipos.add(TipoPerfil.DOCENTE);
         if (estudiantes.existsByPerfilId(perfilId)) tipos.add(TipoPerfil.ESTUDIANTE);
-        if (tecnicos.existsByPerfilId(perfilId)) tipos.add(TipoPerfil.TECNICO);
 
         Administrador administrador = administradores.findByPerfilId(perfilId).orElse(null);
         if (administrador != null) tipos.add(TipoPerfil.ADMINISTRADOR);

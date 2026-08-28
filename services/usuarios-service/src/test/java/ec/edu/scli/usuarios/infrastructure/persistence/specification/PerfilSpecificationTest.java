@@ -40,51 +40,7 @@ class PerfilSpecificationTest {
         predicado = mock(Predicate.class);
     }
 
-
-    /*  Antes
     // ---------------------------------------------------------------
-    // identificacionContiene
-    // ---------------------------------------------------------------
-
-    @Test
-    void identificacionContiene_conValorNulo_retornaConjuncion() {
-        when(cb.conjunction()).thenReturn(conjuncion);
-
-        Predicate resultado = PerfilSpecification
-                .identificacionContiene(null)
-                .toPredicate(root, query, cb);
-
-        assertThat(resultado).isEqualTo(conjuncion);
-    }
-
-    @Test
-    void identificacionContiene_conValorEnBlanco_retornaConjuncion() {
-        when(cb.conjunction()).thenReturn(conjuncion);
-
-        Predicate resultado = PerfilSpecification
-                .identificacionContiene("   ")
-                .toPredicate(root, query, cb);
-
-        assertThat(resultado).isEqualTo(conjuncion);
-    }
-
-    @Test
-    void identificacionContiene_conValor_retornaLike() {
-        when(root.get("identificacion")).thenReturn(path);
-        when(cb.lower(any())).thenReturn(path);
-        when(cb.like(any(), anyString())).thenReturn(predicado);
-
-        Predicate resultado = PerfilSpecification
-                .identificacionContiene("0102")
-                .toPredicate(root, query, cb);
-
-        assertThat(resultado).isEqualTo(predicado);
-        verify(cb).like(eq(path), eq("%0102%"));
-    }
-fin */ 
-
-
-        // ---------------------------------------------------------------
     // identificacionHashIgual
     // ---------------------------------------------------------------
 
@@ -123,8 +79,6 @@ fin */
         verify(cb).equal(path, "abc123hash");
     }
 
-
-
     // ---------------------------------------------------------------
     // nombreContiene
     // ---------------------------------------------------------------
@@ -155,40 +109,7 @@ fin */
         verify(cb).or(predicado, predicado);
     }
 
-
-    /*Anterior
     // ---------------------------------------------------------------
-    // emailContiene
-    // ---------------------------------------------------------------
-
-    @Test
-    void emailContiene_conValorNulo_retornaConjuncion() {
-        when(cb.conjunction()).thenReturn(conjuncion);
-
-        Predicate resultado = PerfilSpecification
-                .emailContiene(null)
-                .toPredicate(root, query, cb);
-
-        assertThat(resultado).isEqualTo(conjuncion);
-    }
-
-    @Test
-    void emailContiene_conValor_retornaOrDeLikes() {
-        when(root.get(anyString())).thenReturn(path);
-        when(cb.lower(any())).thenReturn(path);
-        when(cb.like(any(), anyString())).thenReturn(predicado);
-        when(cb.or(any(), any())).thenReturn(predicado);
-
-        Predicate resultado = PerfilSpecification
-                .emailContiene("uteq.edu.ec")
-                .toPredicate(root, query, cb);
-
-        assertThat(resultado).isEqualTo(predicado);
-    }
-fin */
-
-
-        // ---------------------------------------------------------------
     // emailInstitucionalContiene
     // ---------------------------------------------------------------
 
@@ -216,7 +137,6 @@ fin */
         assertThat(resultado).isEqualTo(predicado);
         verify(cb).like(eq(path), eq("%uteq.edu.ec%"));
     }
-
 
     // ---------------------------------------------------------------
     // tieneEstado
@@ -293,17 +213,6 @@ fin */
 
         Predicate resultado = PerfilSpecification
                 .tieneTipoPerfil(TipoPerfil.ESTUDIANTE)
-                .toPredicate(root, query, cb);
-
-        assertThat(resultado).isEqualTo(predicado);
-    }
-
-    @Test
-    void tieneTipoPerfil_tecnico_retornaExists() {
-        stubSubquery();
-
-        Predicate resultado = PerfilSpecification
-                .tieneTipoPerfil(TipoPerfil.TECNICO)
                 .toPredicate(root, query, cb);
 
         assertThat(resultado).isEqualTo(predicado);

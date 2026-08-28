@@ -15,5 +15,5 @@ describe('DashboardLayout por permisos', () => {
   it('DOCENTE ve Nueva solicitud', () => { menu(['DOCENTE'], ['ACADEMICO_LEER', 'SOLICITUD_CREAR', 'SOLICITUD_LEER', 'RESERVA_LEER']); expect(screen.getByRole('link', { name: /Nueva solicitud/ })).toBeInTheDocument() })
   it('ESTUDIANTE no ve Nueva solicitud', () => { menu(['ESTUDIANTE'], ['ACADEMICO_LEER']); expect(screen.queryByRole('link', { name: /Nueva solicitud/ })).not.toBeInTheDocument() })
   it('ADMINISTRADOR_PISO ve gestión y calendario', () => { menu(['ADMINISTRADOR_PISO'], ['SOLICITUD_LEER', 'SOLICITUD_APROBAR', 'RESERVA_LEER', 'AGENDA_GESTIONAR']); expect(screen.getByRole('link', { name: /Reservas/ })).toBeInTheDocument(); expect(screen.getByRole('link', { name: /Calendario/ })).toBeInTheDocument() })
-  it.each(['DECANO', 'COORDINADOR'])('%s no ve operaciones diarias sin permiso', (rol) => { menu([rol], ['ACADEMICO_LEER']); expect(screen.queryByRole('link', { name: /Reservas/ })).not.toBeInTheDocument(); expect(screen.queryByRole('link', { name: /Nueva solicitud/ })).not.toBeInTheDocument() })
+  it.each(['COORDINADOR'])('%s no ve operaciones diarias sin permiso', (rol) => { menu([rol], ['ACADEMICO_LEER']); expect(screen.queryByRole('link', { name: /Reservas/ })).not.toBeInTheDocument(); expect(screen.queryByRole('link', { name: /Nueva solicitud/ })).not.toBeInTheDocument() })
 })
