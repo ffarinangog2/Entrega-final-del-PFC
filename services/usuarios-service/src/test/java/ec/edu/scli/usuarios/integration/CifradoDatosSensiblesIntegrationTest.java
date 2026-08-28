@@ -6,7 +6,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.transaction.annotation.Transactional;
+import org.testcontainers.cockroachdb.CockroachContainer;
 
 import java.util.Map;
 import java.util.Optional;
@@ -17,20 +20,24 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * Verifica que identificacion, telefono, direccion y emailPersonal se
- * guarden cifrados (AES-256-GCM) en la base de datos y que el sistema
- * pueda descifrarlos de vuelta de forma transparente al leerlos.
- *
- * Se ejecuta contra la base de datos ya levantada por docker-compose
- * (cockroach-usuarios en localhost:26258), no crea un contenedor nuevo.
- *
- * @Transactional hace rollback automático al final: no deja datos de
- * prueba residuales en la base de desarrollo.
- */
 @SpringBootTest
 @Transactional
 class CifradoDatosSensiblesIntegrationTest {
+
+    private static final CockroachContainer COCKROACH =
+            new CockroachContainer("cockroachdb/cockroach:v24.3.5");
+
+    static {
+        COCKROACH.start();
+    }
+
+    @DynamicPropertySource
+    static void configurarDatasource(DynamicPropertyRegistry registry) {
+        registry.add("spring.datasource.url", COCKROACH::getJdbcUrl);
+        registry.add("spring.datasource.username", COCKROACH::getUsername);
+        registry.add("spring.datasource.password", COCKROACH::getPassword);
+        registry.add("spring.flyway.enabled", () -> true);
+    }
 
     private static final String IDENTIFICACION_PLANA = "1234567890";
     private static final String TELEFONO_PLANO = "0991234567";
