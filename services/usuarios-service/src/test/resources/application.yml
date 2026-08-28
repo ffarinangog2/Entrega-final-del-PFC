@@ -29,5 +29,5 @@ security:
 app:
   internal-api-key: test-internal-api-key
   security:
-    data-encryption-key: dGVzdC1lbmNyeXB0aW9uLWtleS0zMi1ieXRlcyExMjM0
-    data-hash-key: dGVzdC1oYXNoLWtleS0zMi1ieXRlcy1mb3ItaG1hYzEyMzQ=
+    data-encryption-key: MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=
+    data-hash-key: MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=
