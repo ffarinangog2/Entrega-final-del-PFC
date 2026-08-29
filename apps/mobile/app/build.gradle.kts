@@ -65,6 +65,10 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+
+    testOptions {
+        unitTests.isIncludeAndroidResources = true
+    }
 }
 
 jacoco {
@@ -148,6 +152,9 @@ dependencies {
     testImplementation("io.mockk:mockk:1.13.11")
     testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
     testImplementation("org.json:json:20231013")
+    testImplementation("org.robolectric:robolectric:4.13")
+    testImplementation("androidx.test.ext:junit:1.2.1")
+    testImplementation("androidx.compose.ui:ui-test-junit4")
 
     // Tests instrumentados
     androidTestImplementation("androidx.test:core:1.6.1")
