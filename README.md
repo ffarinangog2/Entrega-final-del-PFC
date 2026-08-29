@@ -28,7 +28,7 @@ deshabilitado hasta configurar la VM y establecer `CD_ENABLED=true`.
 - `services/reservas-solicitudes-service`: solicitudes y reservas.
 - `frontend`: interfaz de usuario.
 - `docker-compose.yml`: servicios y clúster CockroachDB E3.
-- `.github/workflows/ci.yml`: trabajos `build-test` y `crdb-tests`.
+- `.github/workflows/ci-cd.yml`: integración continua y publicación de artefactos; invoca el CD reusable cuando corresponde.
 - `db/schema.sql`: esquema de `reservas_db` aplicado por `crdb-e3-init`.
 
 ## Clúster CockroachDB E3
