@@ -60,9 +60,7 @@ jobs:
             : "${GHCR_USERNAME:?GHCR_USERNAME is required}"
             : "${GHCR_READ_TOKEN:?GHCR_READ_TOKEN is required}"
             cd "$SERVER_DEPLOY_PATH"
-            git diff --quiet
-            git diff --cached --quiet
             git fetch origin "$IMAGE_TAG"
-            git checkout --detach FETCH_HEAD
+            git checkout --force --detach FETCH_HEAD
             printf '%s' "$GHCR_READ_TOKEN" | docker login ghcr.io --username "$GHCR_USERNAME" --password-stdin
             IMAGE_TAG="$IMAGE_TAG" bash scripts/deploy/deploy-vm.sh
