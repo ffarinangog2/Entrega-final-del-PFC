@@ -183,6 +183,7 @@ jobs:
             echo "ACADEMICO_DB_PASSWORD=$(openssl rand -hex 32)"
             echo "RESERVAS_DB_USERNAME=ci_reservas_app"
             echo "RESERVAS_DB_PASSWORD=$(openssl rand -hex 32)"
+            echo "GF_SECURITY_ADMIN_PASSWORD=$(openssl rand -hex 32)"
           } >> "$GITHUB_ENV"
 
       - name: Validate CockroachDB E3 cluster
@@ -379,6 +380,7 @@ jobs:
             echo "ACADEMICO_DB_PASSWORD=$(openssl rand -hex 32)"
             echo "RESERVAS_DB_USERNAME=ci_reservas_app"
             echo "RESERVAS_DB_PASSWORD=$(openssl rand -hex 32)"
+            echo "GF_SECURITY_ADMIN_PASSWORD=$(openssl rand -hex 32)"
           } >> "$GITHUB_ENV"
 
       - name: Start stack and run integration checks

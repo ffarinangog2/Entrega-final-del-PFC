@@ -99,6 +99,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 || path.equals("/api/v1/auth/reset-password")
                 || path.equals("/actuator/health")
                 || path.equals("/actuator/info")
+                || path.equals("/actuator/prometheus")
                 || path.startsWith("/swagger-ui")
                 || path.startsWith("/v3/api-docs");
     }

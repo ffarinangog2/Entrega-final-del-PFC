@@ -45,7 +45,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,prometheus
   endpoint:
     health:
       show-details: always
@@ -54,6 +54,20 @@ management:
       export:
         otlp:
           endpoint: ${OTEL_EXPORTER_OTLP_LOGS_ENDPOINT:http://otel-collector:4318/v1/logs}
+  tracing:
+    sampling:
+      probability: ${MANAGEMENT_TRACING_SAMPLING_PROBABILITY:1.0}
+
+logging:
+  structured:
+    format:
+      console: logstash
+    json:
+      add:
+        service: auth-service
+      rename:
+        traceId: trace_id
+        spanId: span_id
 
 security:
   jwt:

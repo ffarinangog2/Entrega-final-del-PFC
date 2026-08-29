@@ -40,6 +40,15 @@ springdoc:
     path: /swagger-ui.html
 
 logging:
+  structured:
+    format:
+      console: logstash
+    json:
+      add:
+        service: reservas-solicitudes-service
+      rename:
+        traceId: trace_id
+        spanId: span_id
   level:
     root: ${LOG_LEVEL_ROOT:INFO}
     ec.edu.scli.reservas: ${LOG_LEVEL_APP:INFO}
@@ -56,8 +65,14 @@ management:
       show-details: always
 
   otlp:
+    tracing:
+      endpoint: ${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:http://localhost:4318/v1/traces}
     logging:
       endpoint: ${OTEL_EXPORTER_OTLP_LOGS_ENDPOINT:http://otel-collector:4318/v1/logs}
+
+  tracing:
+    sampling:
+      probability: ${MANAGEMENT_TRACING_SAMPLING_PROBABILITY:1.0}
 
   health:
     db:

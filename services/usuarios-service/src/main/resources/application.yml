@@ -51,7 +51,7 @@ management:
 
   otlp:
     tracing:
-      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4318/v1/traces}
+      endpoint: ${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:http://localhost:4318/v1/traces}
     logging:
       endpoint: ${OTEL_EXPORTER_OTLP_LOGS_ENDPOINT:http://otel-collector:4318/v1/logs}
 
@@ -74,3 +74,9 @@ logging:
   structured:
     format:
       console: logstash
+    json:
+      add:
+        service: usuarios-service
+      rename:
+        traceId: trace_id
+        spanId: span_id

@@ -28,8 +28,24 @@ management:
       export:
         otlp:
           endpoint: ${OTEL_EXPORTER_OTLP_LOGS_ENDPOINT:http://otel-collector:4318/v1/logs}
+  tracing:
+    sampling:
+      probability: ${MANAGEMENT_TRACING_SAMPLING_PROBABILITY:1.0}
+  metrics:
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
 
 logging:
+  structured:
+    format:
+      console: logstash
+    json:
+      add:
+        service: api-gateway
+      rename:
+        traceId: trace_id
+        spanId: span_id
   level:
     root: INFO
     org.springframework.cloud.gateway: TRACE

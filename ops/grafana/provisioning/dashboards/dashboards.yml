@@ -5,3 +5,8 @@ providers:
     type: file
     options:
       path: /var/lib/grafana/dashboards
+  - name: SCLI consolidado
+    folder: SCLI
+    type: file
+    options:
+      path: /var/lib/grafana/canonical

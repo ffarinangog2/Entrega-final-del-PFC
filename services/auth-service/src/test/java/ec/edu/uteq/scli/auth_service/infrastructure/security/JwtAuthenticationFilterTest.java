@@ -98,6 +98,7 @@ class JwtAuthenticationFilterTest {
         assertTrue(filter.shouldNotFilter(request("/api/v1/auth/login")));
         assertTrue(filter.shouldNotFilter(request("/api/v1/auth/refresh")));
         assertTrue(filter.shouldNotFilter(request("/actuator/health")));
+        assertTrue(filter.shouldNotFilter(request("/actuator/prometheus")));
         assertTrue(filter.shouldNotFilter(request("/swagger-ui/index.html")));
         assertFalse(filter.shouldNotFilter(request("/api/v1/private")));
     }
