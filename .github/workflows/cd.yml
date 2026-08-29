@@ -1,0 +1,62 @@
+name: CD
+
+on:
+  workflow_call:
+    inputs:
+      image_tag:
+        description: Full Git SHA approved by CI and published to GHCR
+        required: true
+        type: string
+    secrets:
+      SERVER_HOST:
+        required: true
+      SERVER_USER:
+        required: true
+      SERVER_SSH_KEY:
+        required: true
+      SERVER_SSH_PORT:
+        required: true
+      SERVER_SSH_FINGERPRINT:
+        required: true
+      GHCR_USERNAME:
+        required: true
+      GHCR_READ_TOKEN:
+        required: true
+
+jobs:
+  deploy:
+    name: Deploy approved SHA to production VM
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      IMAGE_TAG: ${{ inputs.image_tag }}
+      SERVER_DEPLOY_PATH: ${{ vars.SERVER_DEPLOY_PATH }}
+      GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
+      GHCR_READ_TOKEN: ${{ secrets.GHCR_READ_TOKEN }}
+
+    steps:
+      - name: Deploy over SSH
+        # appleboy/ssh-action v1.2.5, pinned to its verified release commit.
+        uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.SERVER_SSH_PORT }}
+          fingerprint: ${{ secrets.SERVER_SSH_FINGERPRINT }}
+          command_timeout: 20m
+          envs: IMAGE_TAG,SERVER_DEPLOY_PATH,GHCR_USERNAME,GHCR_READ_TOKEN
+          script: |
+            set -Eeuo pipefail
+            : "${IMAGE_TAG:?IMAGE_TAG is required}"
+            : "${SERVER_DEPLOY_PATH:?SERVER_DEPLOY_PATH is required}"
+            : "${GHCR_USERNAME:?GHCR_USERNAME is required}"
+            : "${GHCR_READ_TOKEN:?GHCR_READ_TOKEN is required}"
+            cd "$SERVER_DEPLOY_PATH"
+            git diff --quiet
+            git diff --cached --quiet
+            git fetch origin main
+            git checkout --detach "$IMAGE_TAG"
+            printf '%s' "$GHCR_READ_TOKEN" | docker login ghcr.io --username "$GHCR_USERNAME" --password-stdin
+            IMAGE_TAG="$IMAGE_TAG" bash scripts/deploy/deploy-vm.sh
