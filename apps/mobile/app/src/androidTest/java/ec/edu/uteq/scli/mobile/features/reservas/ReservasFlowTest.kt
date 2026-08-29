@@ -3,6 +3,7 @@ package ec.edu.uteq.scli.mobile.features.reservas
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import ec.edu.uteq.scli.mobile.features.reservas.domain.Reserva
 import ec.edu.uteq.scli.mobile.features.reservas.presentation.ReservasContent
@@ -28,6 +29,7 @@ class ReservasFlowTest {
             )
         }
 
+        composeRule.onNodeWithText("Reservas").performClick()
         composeRule.onNodeWithTag("reserva_${RESERVA.id}").assertIsDisplayed().performClick()
         composeRule.runOnIdle { assertEquals(RESERVA.id, reservaSeleccionada) }
     }
