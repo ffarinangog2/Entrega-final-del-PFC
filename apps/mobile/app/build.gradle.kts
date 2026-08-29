@@ -1,7 +1,10 @@
+import org.gradle.testing.jacoco.tasks.JacocoReport
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("com.google.devtools.ksp")
+    jacoco
 }
 
 val apiBaseUrl = providers.gradleProperty("SCLI_API_BASE_URL")
@@ -64,6 +67,38 @@ android {
     }
 }
 
+jacoco {
+    toolVersion = "0.8.12"
+}
+
+val coverageExclusions = listOf(
+    "**/R.class",
+    "**/R$*.class",
+    "**/BuildConfig.*",
+    "**/Manifest*.*",
+    "**/*_Factory*.*",
+    "**/*_Impl*.*"
+)
+
+val debugClasses = fileTree(layout.buildDirectory.dir("tmp/kotlin-classes/debug")) {
+    exclude(coverageExclusions)
+}
+val mainSources = files("src/main/java", "src/main/kotlin")
+val debugExecutionData = fileTree(layout.buildDirectory) {
+    include("jacoco/testDebugUnitTest.exec")
+}
+
+tasks.register<JacocoReport>("jacocoTestReport") {
+    dependsOn("testDebugUnitTest")
+    classDirectories.setFrom(debugClasses)
+    sourceDirectories.setFrom(mainSources)
+    executionData.setFrom(debugExecutionData)
+    reports {
+        xml.required.set(true)
+        html.required.set(true)
+    }
+}
+
 dependencies {
     implementation("androidx.core:core-ktx:1.13.1")
     implementation("androidx.activity:activity-compose:1.9.0")
@@ -112,6 +147,7 @@ dependencies {
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
     testImplementation("io.mockk:mockk:1.13.11")
     testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
+    testImplementation("org.json:json:20231013")
 
     // Tests instrumentados
     androidTestImplementation("androidx.test:core:1.6.1")

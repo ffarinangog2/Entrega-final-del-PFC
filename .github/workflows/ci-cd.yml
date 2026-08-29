@@ -156,7 +156,7 @@ jobs:
   crdb-tests:
     name: CockroachDB E3 cluster tests
     runs-on: ubuntu-latest
-    needs: [test-backend, test-web, test-mobile]
+    needs: [test-backend, test-web, test-mobile, test-mobile-instrumented]
 
     steps:
       - name: Checkout
@@ -247,20 +247,69 @@ jobs:
       - name: Install Android SDK packages
         run: sdkmanager "platforms;android-34" "build-tools;34.0.0"
 
-      - name: Run mobile unit tests
+      - name: Run mobile unit tests and coverage
         working-directory: apps/mobile
         run: |
           chmod +x gradlew
-          ./gradlew test
+          ./gradlew testDebugUnitTest jacocoTestReport
 
       - name: Run Android lint
         working-directory: apps/mobile
         run: ./gradlew lint
 
+      - name: Upload mobile coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: mobile-coverage-${{ github.sha }}
+          path: apps/mobile/app/build/reports/jacoco/jacocoTestReport/
+
+  test-mobile-instrumented:
+    name: Test mobile instrumented
+    runs-on: ubuntu-latest
+    needs: test-mobile
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Run instrumented tests on emulator
+        uses: ReactiveCircus/android-emulator-runner@c9c93e6ba9c4194322e114c40970d5983d9a07cc
+        with:
+          api-level: 29
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: cd apps/mobile && ./gradlew connectedDebugAndroidTest
+
+      - name: Upload instrumented test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mobile-instrumented-results-${{ github.sha }}
+          path: apps/mobile/app/build/reports/androidTests/connected/
+          if-no-files-found: warn
+
   build-mobile-apk:
     name: Build mobile APK
     runs-on: ubuntu-latest
-    needs: test-mobile
+    needs: [test-mobile, test-mobile-instrumented]
 
     steps:
       - name: Checkout
@@ -287,7 +336,7 @@ jobs:
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: scli-mobile-debug-${{ github.sha }}
+          name: pfc-debug-apk-${{ github.sha }}
           path: apps/mobile/app/build/outputs/apk/debug/app-debug.apk
 
   integration:

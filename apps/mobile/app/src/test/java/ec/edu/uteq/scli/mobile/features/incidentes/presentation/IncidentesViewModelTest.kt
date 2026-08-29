@@ -2,6 +2,7 @@ package ec.edu.uteq.scli.mobile.features.incidentes.presentation
 
 import ec.edu.uteq.scli.mobile.features.incidentes.domain.Incidente
 import ec.edu.uteq.scli.mobile.features.incidentes.domain.IncidenteRepository
+import ec.edu.uteq.scli.mobile.features.incidentes.domain.Prioridad
 import ec.edu.uteq.scli.mobile.features.notifications.NotificationHelper
 import io.mockk.mockk
 import io.mockk.verify
@@ -87,5 +88,23 @@ class IncidentesViewModelTest {
         assertTrue(actual.incidentes.isEmpty())
         assertEquals("campos_incompletos", actual.error)
         verify(exactly = 0) { notificationHelper.mostrar(any(), any()) }
+    }
+
+    @Test
+    fun `cambiar prioridad y fecha actualiza el formulario`() = runTest {
+        val repository = FakeIncidenteRepository()
+        val notificationHelper = mockk<NotificationHelper>(relaxed = true)
+        val viewModel = IncidentesViewModel(repository, notificationHelper)
+
+        backgroundScope.launch { viewModel.uiState.collect {} }
+        runCurrent()
+
+        viewModel.onPrioridadChange(Prioridad.ALTA)
+        viewModel.onFechaChange(123_456L)
+        runCurrent()
+
+        val actual = viewModel.uiState.value
+        assertEquals(Prioridad.ALTA, actual.prioridad)
+        assertEquals(123_456L, actual.fechaMillis)
     }
 }
