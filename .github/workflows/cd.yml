@@ -7,6 +7,10 @@ on:
         description: Full Git SHA approved by CI and published to GHCR
         required: true
         type: string
+      deploy_ref:
+        description: Git ref or branch name to fetch on the deployment server
+        required: true
+        type: string
     secrets:
       SERVER_HOST:
         required: true
@@ -31,6 +35,7 @@ jobs:
       contents: read
     env:
       IMAGE_TAG: ${{ inputs.image_tag }}
+      DEPLOY_REF: ${{ inputs.deploy_ref }}
       SERVER_DEPLOY_PATH: ${{ vars.SERVER_DEPLOY_PATH }}
       GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
       GHCR_READ_TOKEN: ${{ secrets.GHCR_READ_TOKEN }}
@@ -46,17 +51,18 @@ jobs:
           port: ${{ secrets.SERVER_SSH_PORT }}
           fingerprint: ${{ secrets.SERVER_SSH_FINGERPRINT }}
           command_timeout: 20m
-          envs: IMAGE_TAG,SERVER_DEPLOY_PATH,GHCR_USERNAME,GHCR_READ_TOKEN
+          envs: IMAGE_TAG,DEPLOY_REF,SERVER_DEPLOY_PATH,GHCR_USERNAME,GHCR_READ_TOKEN
           script: |
             set -Eeuo pipefail
             : "${IMAGE_TAG:?IMAGE_TAG is required}"
+            : "${DEPLOY_REF:?DEPLOY_REF is required}"
             : "${SERVER_DEPLOY_PATH:?SERVER_DEPLOY_PATH is required}"
             : "${GHCR_USERNAME:?GHCR_USERNAME is required}"
             : "${GHCR_READ_TOKEN:?GHCR_READ_TOKEN is required}"
             cd "$SERVER_DEPLOY_PATH"
             git diff --quiet
             git diff --cached --quiet
-            git fetch origin main
+            git fetch origin "$DEPLOY_REF"
             git checkout --detach "$IMAGE_TAG"
             printf '%s' "$GHCR_READ_TOKEN" | docker login ghcr.io --username "$GHCR_USERNAME" --password-stdin
             IMAGE_TAG="$IMAGE_TAG" bash scripts/deploy/deploy-vm.sh

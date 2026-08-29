@@ -553,11 +553,14 @@ jobs:
     needs: build-images
     if: >-
       github.event_name == 'push' &&
-      github.ref == 'refs/heads/main' &&
-      vars.CD_ENABLED == 'true'
+      (
+        (github.ref == 'refs/heads/main' && vars.CD_ENABLED == 'true') ||
+        (github.ref == 'refs/heads/feature/entrega-4' && vars.CD_FEATURE_ENABLED == 'true')
+      )
     uses: ./.github/workflows/cd.yml
     with:
       image_tag: ${{ github.sha }}
+      deploy_ref: ${{ github.ref_name }}
     secrets:
       SERVER_HOST: ${{ secrets.SERVER_HOST }}
       SERVER_USER: ${{ secrets.SERVER_USER }}
