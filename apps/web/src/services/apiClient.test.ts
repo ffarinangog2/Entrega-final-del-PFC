@@ -28,4 +28,43 @@ describe('apiClient central', () => {
     await expect(apiRequest('/api/v1/reservas')).rejects.toMatchObject({ status: 403 })
     expect(refresh).not.toHaveBeenCalled(); expect(fetch).toHaveBeenCalledTimes(1)
   })
+
+  it.each([
+    [404, { message: 'No encontrado' }, 'No encontrado'],
+    [409, {}, 'Existe un conflicto de disponibilidad o estado.'],
+    [500, { message: 'detalle interno' }, 'Se produjo un error al procesar la solicitud.'],
+    [400, {}, 'No se pudo completar la solicitud.'],
+  ])('traduce el error HTTP %s de forma segura', async (status, body, message) => {
+    vi.mocked(fetch).mockResolvedValue(new Response(JSON.stringify(body), {
+      status,
+      headers: { 'Content-Type': 'application/json' },
+    }))
+    await expect(apiRequest('/api/error')).rejects.toMatchObject({ status, message })
+  })
+
+  it('tolera errores sin body JSON y respuestas 204', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(new Response('no-json', { status: 404 }))
+      .mockResolvedValueOnce(new Response(null, { status: 204 }))
+    await expect(apiRequest('/missing')).rejects.toMatchObject({
+      message: 'El recurso solicitado no existe.',
+    })
+    await expect(apiRequest('/empty')).resolves.toBeUndefined()
+  })
+
+  it('reporta indisponibilidad en el primer intento y después de refresh', async () => {
+    vi.mocked(fetch).mockRejectedValueOnce(new Error('offline'))
+    await expect(apiRequest('/offline')).rejects.toMatchObject({ status: 503 })
+
+    configureUnauthorizedHandler(vi.fn(async () => true))
+    vi.mocked(fetch).mockResolvedValueOnce(new Response(null, { status: 401 }))
+      .mockRejectedValueOnce(new Error('offline again'))
+    await expect(apiRequest('/retry-offline')).rejects.toMatchObject({ status: 503 })
+  })
+
+  it('conserva el 401 cuando el refresh no recupera la sesión', async () => {
+    configureUnauthorizedHandler(vi.fn(async () => false))
+    vi.mocked(fetch).mockResolvedValue(new Response(null, { status: 401 }))
+    await expect(apiRequest('/expired')).rejects.toMatchObject({ status: 401 })
+    expect(fetch).toHaveBeenCalledTimes(1)
+  })
 })

@@ -210,11 +210,21 @@ jobs:
 
       - name: Run web unit tests
         working-directory: apps/web
-        run: npm test -- --run
+        run: npm run test:coverage
 
       - name: Build web
         working-directory: apps/web
         run: npm run build
+
+      - name: Package web distribution
+        working-directory: apps/web
+        run: tar -czf dist.tar.gz -C dist .
+
+      - name: Upload web distribution
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-dist-${{ github.sha }}
+          path: apps/web/dist.tar.gz
 
   test-mobile:
     name: Test mobile
@@ -398,13 +408,13 @@ jobs:
         working-directory: apps/web
         run: npm ci
 
-      - name: Install Playwright Chromium
+      - name: Install Playwright browsers
         working-directory: apps/web
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install --with-deps chromium firefox webkit
 
       - name: Run web E2E tests
         working-directory: apps/web
-        run: npm run test:e2e -- --project=chromium
+        run: npm run test:e2e
 
       - name: Set up Python for Locust
         uses: actions/setup-python@v5
