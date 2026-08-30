@@ -2,9 +2,9 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { AuthProvider } from './AuthContext'
 import { useAuth } from './useAuth'
-import { login, refresh } from '../services/authApi'
+import { login, logout, refresh } from '../services/authApi'
 
-vi.mock('../services/authApi', () => ({ login: vi.fn(), refresh: vi.fn() }))
+vi.mock('../services/authApi', () => ({ login: vi.fn(), logout: vi.fn(), refresh: vi.fn() }))
 
 const user = {
   id: 'u1', perfilId: 'p1', username: 'admin', nombres: 'Admin',
@@ -38,8 +38,9 @@ describe('AuthProvider', () => {
     vi.clearAllMocks()
   })
 
-  it('inicia anónimo, permite login y logout, y persiste la sesión', async () => {
+  it('revoca remotamente al cerrar sesión y después limpia la sesión local', async () => {
     vi.mocked(login).mockResolvedValue(response)
+    vi.mocked(logout).mockResolvedValue(undefined)
     renderProvider()
     await screen.findByText('anonymous')
     fireEvent.click(screen.getByText('login'))
@@ -49,6 +50,23 @@ describe('AuthProvider', () => {
     expect(sessionStorage.getItem('usuario')).toContain('"username":"admin"')
     fireEvent.click(screen.getByText('logout'))
     await screen.findByText('anonymous')
+    expect(logout).toHaveBeenCalledWith('refresh')
+    expect(sessionStorage.length).toBe(0)
+  })
+
+  it('limpia la sesión local aunque falle la revocación remota', async () => {
+    sessionStorage.setItem('usuario', JSON.stringify(user))
+    sessionStorage.setItem('expiresAt', String(Date.now() + 60_000))
+    sessionStorage.setItem('accessToken', 'access')
+    sessionStorage.setItem('refreshToken', 'refresh')
+    vi.mocked(logout).mockRejectedValue(new Error('offline'))
+    renderProvider()
+    await screen.findByText('admin')
+
+    fireEvent.click(screen.getByText('logout'))
+
+    await screen.findByText('anonymous')
+    expect(logout).toHaveBeenCalledWith('refresh')
     expect(sessionStorage.length).toBe(0)
   })
 

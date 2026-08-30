@@ -9,16 +9,9 @@ App Android (Kotlin + Jetpack Compose), arquitectura MVVM + repositorio por feat
 
 ## Wrapper de Gradle
 
-Este scaffold se creó sin `gradle-wrapper.jar` (no había un entorno con Gradle
-disponible al generarlo). `gradlew` / `gradlew.bat` y
-`gradle/wrapper/gradle-wrapper.properties` ya están, pero antes de compilar hay
-que generar el jar una vez, desde esta carpeta:
-
-```
-gradle wrapper --gradle-version 8.7
-```
-
-o abriendo el proyecto en Android Studio, que lo completa automáticamente.
+El repositorio incluye `gradlew`, `gradlew.bat`,
+`gradle/wrapper/gradle-wrapper.properties` y `gradle-wrapper.jar` (Gradle 8.13).
+No es necesario disponer de una instalación global de Gradle.
 
 ## Estructura
 
@@ -71,15 +64,11 @@ nombre del técnico y el toggle de notificaciones habilitadas.
 
 ## Tests
 
-- Unitarios (`src/test`): `IncidentesViewModelTest` — JUnit4 +
-  `kotlinx-coroutines-test` + MockK, con un `FakeIncidenteRepository` en
-  memoria.
-- Instrumentados (`src/androidTest`): `IncidentesFlowTest` — Room en memoria +
-  Compose UI test (`createComposeRule`), completa el formulario y verifica que
-  el incidente aparece en el listado.
+- Unitarios/Robolectric (`src/test` y `src/testDebug`): ViewModels, repositorios,
+  autenticación/refresh, mapeos, notificaciones y UI Compose.
+- Instrumentados (`src/androidTest`): flujos de reservas, incidentes y QR, Room en
+  memoria y migración de la base local.
 
-En CI se ejecutan `./gradlew test` y `./gradlew lint` como gates obligatorios. Las
-pruebas de `src/androidTest` se conservan, pero todavía no forman parte del gate:
-requieren un emulador Android con aceleración KVM, descarga de una imagen de sistema
-y administración adicional de snapshots/timeouts. Se incorporarán cuando exista un
-runner de emulador estable para evitar falsos fallos en el pipeline principal.
+CI ejecuta `testDebugUnitTest`, el reporte JaCoCo, Android lint y
+`connectedDebugAndroidTest` en un emulador API 29. El APK debug se publica como
+artefacto únicamente después de superar esos gates.

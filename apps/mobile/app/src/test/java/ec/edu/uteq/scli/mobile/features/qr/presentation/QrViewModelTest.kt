@@ -63,6 +63,35 @@ class QrViewModelTest {
     }
 
     @Test
+    fun `valor vacio se ignora sin alterar estado`() = runTest {
+        val repository = FakeQrRepository()
+        val viewModel = QrViewModel(repository)
+
+        viewModel.procesarQr("  ")
+        runCurrent()
+
+        assertEquals(0, repository.consultas)
+        assertEquals(QrUiState(), viewModel.uiState.value)
+    }
+
+    @Test
+    fun `fallo de red se diferencia de error HTTP`() = runTest {
+        val repository = FakeQrRepository().apply {
+            result = NetworkResult.Failure(null, "sin conexión")
+        }
+        val viewModel = QrViewModel(repository)
+        viewModel.procesarQr(LABORATORIO_ID)
+        runCurrent()
+        assertEquals(QrError.RED, viewModel.uiState.value.error)
+
+        viewModel.reintentar()
+        repository.result = NetworkResult.Failure(503, "servicio no disponible")
+        viewModel.procesarQr(LABORATORIO_ID)
+        runCurrent()
+        assertEquals(QrError.SERVICIO, viewModel.uiState.value.error)
+    }
+
+    @Test
     fun `reintentar permite escanear nuevamente`() = runTest {
         val repository = FakeQrRepository()
         val viewModel = QrViewModel(repository)
@@ -80,11 +109,12 @@ class QrViewModelTest {
     private class FakeQrRepository : QrRepository {
         var ultimoId: String? = null
         var consultas = 0
+        var result: NetworkResult<LaboratorioDetalle> = NetworkResult.Success(DETALLE)
 
         override suspend fun obtenerDetalle(laboratorioId: String): NetworkResult<LaboratorioDetalle> {
             ultimoId = laboratorioId
             consultas++
-            return NetworkResult.Success(DETALLE)
+            return result
         }
     }
 

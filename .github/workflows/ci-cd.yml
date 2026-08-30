@@ -508,7 +508,7 @@ jobs:
   build-images:
     name: Build and publish image - ${{ matrix.name }}
     runs-on: ubuntu-latest
-    needs: [lint, test-backend, test-web, test-mobile, crdb-tests, integration]
+    needs: [lint, test-backend, test-web, test-mobile, test-mobile-instrumented, build-mobile-apk, crdb-tests, integration]
     if: ${{ github.event_name == 'push' }}
     permissions:
       contents: read

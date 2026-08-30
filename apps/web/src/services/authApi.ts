@@ -45,6 +45,7 @@ async function request<T>(path: string, init: RequestInit): Promise<T> {
     throw new AuthApiError(response.status, message)
   }
 
+  if (response.status === 204) return undefined as T
   return (await response.json()) as T
 }
 
@@ -59,6 +60,14 @@ export function login(username: string, password: string) {
 export function refresh(refreshToken: string) {
   const body: RefreshTokenRequest = { refreshToken }
   return request<LoginResponse>('/api/v1/auth/refresh', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  })
+}
+
+export function logout(refreshToken: string) {
+  const body: RefreshTokenRequest = { refreshToken }
+  return request<void>('/api/v1/auth/logout', {
     method: 'POST',
     body: JSON.stringify(body),
   })

@@ -31,8 +31,11 @@ Locust genera `locust_stats.csv`, historial, fallos, excepciones, HTML y log. El
 comando y tiempos UTC. También se guardan las consultas Prometheus de p95, conteo 5xx
 y porcentaje 5xx.
 
-Los archivos de `raw/` están excluidos de Git porque pueden ser grandes. Deben
-preservarse en el repositorio de evidencias autorizado para la entrega.
+`raw/.gitignore` permite exclusivamente los artefactos canónicos seleccionados de
+Entrega 4. Los HTML y los historiales completos de Locust permanecen en la VM porque
+son derivados voluminosos. La procedencia, resultados y alcance de la selección se
+documentan en `resultados/RESUMEN-ISO25010-E4.md`; `resultados/SHA256SUMS` permite
+verificar su integridad.
 
 ## Obtener métricas reales
 

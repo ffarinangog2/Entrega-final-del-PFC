@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { AuthApiError, forgotPassword, login, refresh, resetPassword } from './authApi'
+import { AuthApiError, forgotPassword, login, logout, refresh, resetPassword } from './authApi'
 
 describe('authApi', () => {
   afterEach(() => vi.unstubAllGlobals())
@@ -26,6 +26,20 @@ describe('authApi', () => {
     await expect(login('user', 'bad')).rejects.toEqual(
       expect.objectContaining({ name: 'AuthApiError', status: 401, message: 'Credenciales inválidas' }),
     )
+  })
+
+  it('revoca la sesión enviando únicamente el refresh token y acepta 204', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 204 })
+    vi.stubGlobal('fetch', fetchMock)
+
+    await logout('refresh-token')
+
+    expect(fetchMock).toHaveBeenCalledOnce()
+    expect(fetchMock.mock.calls[0][0]).toBe('/api/v1/auth/logout')
+    expect(fetchMock.mock.calls[0][1]).toEqual(expect.objectContaining({
+      method: 'POST',
+      body: JSON.stringify({ refreshToken: 'refresh-token' }),
+    }))
   })
 
   it('usa mensajes seguros ante body inválido o red no disponible', async () => {

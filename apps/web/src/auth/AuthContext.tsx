@@ -5,7 +5,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import { login as loginRequest, refresh } from '../services/authApi'
+import { login as loginRequest, logout as logoutRequest, refresh } from '../services/authApi'
 import type { AuthUser, LoginResponse } from '../types/auth'
 import { AuthContext } from './context'
 import { configureUnauthorizedHandler } from '../services/apiClient'
@@ -57,15 +57,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUsuario(response.usuario)
   }, [])
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
+    const refreshToken = sessionStorage.getItem(REFRESH_TOKEN_KEY)
+    const revocation = refreshToken ? logoutRequest(refreshToken) : Promise.resolve()
     clearStoredSession()
     setUsuario(null)
+    try {
+      await revocation
+    } catch {
+      // La sesión local debe cerrarse aunque la revocación remota no esté disponible.
+    }
   }, [])
 
   const refreshSession = useCallback(async () => {
     const refreshToken = sessionStorage.getItem(REFRESH_TOKEN_KEY)
     if (!refreshToken) {
-      logout()
+      void logout()
       return false
     }
 
@@ -75,7 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUsuario(response.usuario)
       return true
     } catch {
-      logout()
+      void logout()
       return false
     }
   }, [logout])

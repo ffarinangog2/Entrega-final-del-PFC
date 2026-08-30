@@ -65,6 +65,51 @@ class AuthViewModelTest {
     }
 
     @Test
+    fun `login vacio se rechaza sin llamar al repositorio`() = runTest {
+        val repository = FakeAuthRepository()
+        val viewModel = AuthViewModel(repository)
+        runCurrent()
+
+        viewModel.login(" ", "")
+
+        assertEquals("Completa usuario y contraseña", viewModel.uiState.value.error)
+        assertEquals(0, repository.loginCalls)
+    }
+
+    @Test
+    fun `sesion persistida se restaura sin refresh`() = runTest {
+        val repository = FakeAuthRepository().apply { restored = SESSION }
+
+        val viewModel = AuthViewModel(repository)
+        runCurrent()
+
+        assertEquals(SESSION, viewModel.uiState.value.sesion)
+        assertEquals(0, repository.refreshCalls)
+    }
+
+    @Test
+    fun `sin sesion persistida intenta refresh`() = runTest {
+        val repository = FakeAuthRepository().apply { refreshed = SESSION }
+
+        val viewModel = AuthViewModel(repository)
+        runCurrent()
+
+        assertEquals(SESSION, viewModel.uiState.value.sesion)
+        assertEquals(1, repository.refreshCalls)
+    }
+
+    @Test
+    fun `expiracion notificada elimina sesion y muestra error`() = runTest {
+        val repository = FakeAuthRepository().apply { restored = SESSION }
+        val viewModel = AuthViewModel(repository)
+
+        repository.expireSession()
+
+        assertEquals(null, viewModel.uiState.value.sesion)
+        assertEquals("Tu sesión expiró.", viewModel.uiState.value.error)
+    }
+
+    @Test
     fun `logout elimina la sesion`() = runTest {
         val repository = FakeAuthRepository().apply { restored = SESSION }
         val viewModel = AuthViewModel(repository)
@@ -78,12 +123,24 @@ class AuthViewModelTest {
     private class FakeAuthRepository : AuthRepository {
         var loginResult: NetworkResult<AuthSession> = NetworkResult.Success(SESSION)
         var restored: AuthSession? = null
+        var refreshed: AuthSession? = null
         var loggedOut = false
+        var loginCalls = 0
+        var refreshCalls = 0
+        private var expirationHandler: (() -> Unit)? = null
 
-        override suspend fun login(username: String, password: String) = loginResult
+        override suspend fun login(username: String, password: String): NetworkResult<AuthSession> {
+            loginCalls++
+            return loginResult
+        }
         override fun restoreSession() = restored
-        override suspend fun refreshSession() = restored
+        override suspend fun refreshSession(): AuthSession? {
+            refreshCalls++
+            return refreshed
+        }
         override fun logout() { loggedOut = true }
+        override fun onSessionExpired(listener: () -> Unit) { expirationHandler = listener }
+        fun expireSession() = expirationHandler?.invoke()
     }
 
     private companion object {

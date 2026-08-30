@@ -163,12 +163,12 @@ configuración FCM y emisor backend; no está completamente operativo.
 | Testcontainers/CockroachDB/Flyway | Implementado y automatizado; incluye gate real E3 |
 | Web unitarias/build | Implementado y automatizado |
 | Android unitarias/lint | Implementado y automatizado |
-| Android instrumentadas | Implementado, no automatizado |
+| Android instrumentadas | Implementado y automatizado en emulador (API 29) |
 | Pact | Implementado; generación/verificación automatizada en matrices relacionadas |
 | Integración Compose | Automatizado: health, login y petición autenticada |
 | Playwright | Implementado y gate obligatorio |
 | Locust | Gate controlado: 2 usuarios, 10 segundos, solo contra CI |
-| Cobertura con umbral global | Pendiente |
+| Cobertura con umbral global | Web y backend tienen gates; Android reporta 45,69 % de líneas, pero no aplica todavía un umbral global de 70 % |
 
 Verificación manual del contrato de Reservas en Windows:
 
@@ -199,20 +199,23 @@ push a main + CI/GHCR exitosos + CD_ENABLED=true
  → scripts/deploy/deploy-vm.sh → healthcheck
 ```
 
-Los PR y `feature/entrega-4` nunca despliegan; `CD_ENABLED=false` omite CD. Véanse
+Los PR nunca despliegan. `feature/entrega-4` despliega solo con
+`CD_FEATURE_ENABLED=true`; `main`, solo con `CD_ENABLED=true`. Véanse
 la configuración y el rollback por SHA en [deployment VM](docs/deployment-vm.md).
 
 ## Observabilidad e ISO 25010
 
 Compose incluye Prometheus, Grafana, OpenTelemetry Collector, Loki y cAdvisor.
-Grafana provisiona Prometheus y Loki, y hay dashboards separados para clúster/Raft,
-Reservas, Académico y Usuarios en `ops/grafana/dashboards/`. El dashboard consolidado
-`ops/grafana/pfc-dashboard.json` todavía falta y queda pendiente.
+Grafana provisiona Prometheus, Loki y Tempo, y hay dashboards separados para
+clúster/Raft, Reservas, Académico y Usuarios en `ops/grafana/dashboards/`. El dashboard
+consolidado `ops/grafana/pfc-dashboard.json` contiene seis paneles; la latencia móvil
+es un proxy de endpoints del Gateway y no una medición exclusiva del cliente Android.
 
 El [protocolo E4](experimentos/protocolo-e4.md), scripts y
-[resultados](experimentos/resultados/) están en `experimentos/`. La presencia de
-resultados no prueba su validación definitiva; este README no publica cifras ISO
-25010 como concluyentes.
+[resultados](experimentos/resultados/) están en `experimentos/`. El
+[resumen verificable](experimentos/resultados/RESUMEN-ISO25010-E4.md) identifica
+el SHA probado, la evidencia preservada y su manifiesto SHA-256. La eficiencia fue
+medida; la fiabilidad formal no fue ejecutada (`0/10`) y no se afirma disponibilidad.
 
 ## Semillas reproducibles
 
@@ -250,9 +253,9 @@ El rollback usa un SHA anterior y preserva volúmenes CockroachDB.
 
 ## Pendientes conocidos
 
-- Automatizar pruebas Android instrumentadas con un emulador estable.
 - Completar Firebase/FCM y su emisor backend.
-- Consolidar y validar `ops/grafana/pfc-dashboard.json`.
-- Validar formalmente resultados y umbrales globales de cobertura/calidad.
+- Incorporar una métrica E2E móvil identificable, en lugar del proxy por URI del Gateway.
+- Elevar y aplicar un umbral global de cobertura Android; el reporte actual alcanza 45,69 % de líneas.
+- Conservar fuera de Git los HTML e historiales Locust completos que permanecen en la VM; los artefactos canónicos seleccionados y sus hashes sí están versionados.
 - Unificar Node 20/22.22.2 en CI.
 - Incorporar wrapper Maven al servicio académico o documentar Maven localmente.

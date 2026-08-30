@@ -18,7 +18,7 @@ class ScliFirebaseMessagingService : FirebaseMessagingService() {
 
     override fun onNewToken(token: String) {
         super.onNewToken(token)
-        Timber.tag("FCM").i("Nuevo token de registro FCM: %s", token)
+        Timber.tag("FCM").i("Nuevo token de registro FCM recibido")
         // TODO: enviar el token al backend cuando exista el endpoint correspondiente.
     }
 

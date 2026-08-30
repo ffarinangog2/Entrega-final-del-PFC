@@ -1,0 +1,34 @@
+Sun Aug 30 04:19:41 UTC 2026
+servidor-proyectos
+/home/ffarinangog2/proyectos/miscli
+a47f0441f644bea5f52944b7a11216f37b2242de
+Linux servidor-proyectos 6.17.0-1022-gcp #25-Ubuntu SMP Sat Jul 25 01:12:40 UTC 2026 x86_64 x86_64 x86_64 GNU/Linux
+4
+               total        used        free      shared  buff/cache   available
+Mem:            15Gi       7.9Gi       5.3Gi       2.5Mi       2.7Gi       7.7Gi
+Swap:             0B          0B          0B
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/root        48G   17G   32G  34% /
+Docker version 29.1.3, build 29.1.3-0ubuntu3~24.04.2
+Docker Compose version 2.40.3+ds1-0ubuntu1~24.04.1
+Python 3.12.3
+locust 2.31.6 from /opt/venv/lib/python3.11/site-packages/locust (Python 3.11.10)
+NAMES                                        IMAGE                                                                                               STATUS
+scli-prod-web-1                              ghcr.io/ffarinangog2/scli-web:a47f0441f644bea5f52944b7a11216f37b2242de                              Up 22 minutes (healthy)
+scli-prod-api-gateway-1                      ghcr.io/ffarinangog2/scli-api-gateway:a47f0441f644bea5f52944b7a11216f37b2242de                      Up 22 minutes (healthy)
+scli-prod-reservas-solicitudes-service-1     ghcr.io/ffarinangog2/scli-reservas-solicitudes-service:a47f0441f644bea5f52944b7a11216f37b2242de     Up 24 minutes (healthy)
+scli-prod-usuarios-service-1                 ghcr.io/ffarinangog2/scli-usuarios-service:a47f0441f644bea5f52944b7a11216f37b2242de                 Up 25 minutes (healthy)
+scli-prod-auth-service-1                     ghcr.io/ffarinangog2/scli-auth-service:a47f0441f644bea5f52944b7a11216f37b2242de                     Up 25 minutes (healthy)
+scli-prod-academico-laboratorios-service-1   ghcr.io/ffarinangog2/scli-academico-laboratorios-service:a47f0441f644bea5f52944b7a11216f37b2242de   Up 25 minutes (healthy)
+scli-prod-grafana-1                          grafana/grafana:11.3.0                                                                              Up 4 hours
+scli-prod-otel-collector-1                   otel/opentelemetry-collector:0.110.0                                                                Up 4 hours
+scli-prod-loki-1                             grafana/loki:3.3.0                                                                                  Up 4 hours
+scli-prod-prometheus-1                       prom/prometheus:v3.0.1                                                                              Up 4 hours
+scli-prod-cadvisor-1                         gcr.io/cadvisor/cadvisor:v0.47.2                                                                    Up 4 hours (healthy)
+scli-prod-tempo-1                            grafana/tempo:2.6.1                                                                                 Up 4 hours
+scli-cockroach-academico                     cockroachdb/cockroach:v26.2.0                                                                       Up 4 hours (healthy)
+reservas-db-node-3                           cockroachdb/cockroach:v26.2.0                                                                       Up 7 hours (healthy)
+reservas-db-node-2                           cockroachdb/cockroach:v26.2.0                                                                       Up 7 hours (healthy)
+reservas-db-node-1                           cockroachdb/cockroach:v26.2.0                                                                       Up 7 hours (healthy)
+scli-cockroach-auth                          cockroachdb/cockroach:v26.2.0                                                                       Up 4 hours (healthy)
+scli-cockroach-usuarios                      cockroachdb/cockroach:v24.3.5                                                                       Up 4 hours (healthy)

@@ -6,7 +6,7 @@ export function LogoutButton() {
   const { logout } = useAuth()
 
   function handleLogout() {
-    logout()
+    void logout().catch(() => undefined)
     navigate('/login', { replace: true })
   }
 
