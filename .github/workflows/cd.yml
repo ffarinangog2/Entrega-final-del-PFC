@@ -41,6 +41,17 @@ jobs:
       GHCR_READ_TOKEN: ${{ secrets.GHCR_READ_TOKEN }}
 
     steps:
+      - name: Diagnose deployment SSH key fingerprint
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SERVER_SSH_KEY }}
+        run: |
+          set -Eeuo pipefail
+          ssh_key_file="$(mktemp)"
+          trap 'rm -f "$ssh_key_file"' EXIT
+          chmod 600 "$ssh_key_file"
+          printf '%s\n' "$SSH_PRIVATE_KEY" > "$ssh_key_file"
+          ssh-keygen -y -f "$ssh_key_file" | ssh-keygen -lf - | awk '{print $2}'
+
       - name: Deploy over SSH
         # appleboy/ssh-action v1.2.5, pinned to its verified release commit.
         uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2
