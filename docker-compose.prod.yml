@@ -127,7 +127,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 60s
+      start_period: 180s
     restart: unless-stopped
     volumes:
       - cockroach-certs:/cockroach/cockroach-certs:ro
@@ -158,7 +158,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 60s
+      start_period: 180s
     restart: unless-stopped
     volumes:
       - cockroach-certs:/cockroach/cockroach-certs:ro
@@ -187,7 +187,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 60s
+      start_period: 180s
     restart: unless-stopped
     volumes:
       - cockroach-certs:/cockroach/cockroach-certs:ro
@@ -222,7 +222,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 60s
+      start_period: 180s
     restart: unless-stopped
     networks: [scli-network]
 
