@@ -1,1 +1,290 @@
-% Parte grupal: aplicaciones web y móvil de la Entrega 4.
+\section{Aplicaciones e integración funcional}
+\label{sec:aplicaciones}
+
+La Entrega 4 incorpora dos clientes sobre un backend distribuido común. La
+aplicación web atiende la operación institucional desde navegador y la aplicación
+móvil facilita tareas de consulta y registro desde Android. Ambas reutilizan los
+mismos contratos HTTP y atraviesan el API Gateway; por ello, la autorización y
+las reglas de negocio no se duplican en cada interfaz. Esta organización concreta
+los límites descritos en la Sección~\ref{sec:arquitectura-solucion} y conserva la
+independencia entre presentación, servicios y persistencia.
+
+\subsection{Backend distribuido}
+\label{subsec:backend-funcional}
+
+El backend se compone de cinco aplicaciones Spring que cooperan mediante HTTP.
+La separación permite evolucionar capacidades de autenticación, usuarios,
+catálogos y reservas de manera acotada, aunque exige gestionar errores parciales
+y contratos entre procesos, una consecuencia característica de la comunicación
+entre microservicios \cite{aksakalli2021deployment}.
+
+\texttt{auth-service} autentica credenciales, emite y renueva JWT, mantiene
+sesiones de renovación y ejecuta recuperación de contraseña. Para construir la
+identidad presentada a los clientes consulta el perfil institucional en
+\texttt{usuarios-service}. Este último administra perfiles, estudiantes,
+docentes y administradores; expone operaciones de consulta, creación,
+actualización y cambio de estado, y persiste sus agregados en CockroachDB. Los
+cambios de perfil producen eventos consumidos actualmente por un observador de
+registro, aplicación del patrón ya analizado en la
+Sección~\ref{sec:patrones-gof}.
+
+\texttt{academico-laboratorios-service} gestiona campus, bloques, pisos,
+laboratorios, equipos y tipos de equipo, además de facultades, carreras,
+materias, periodos lectivos y horarios académicos. Sus API permiten mantener los
+catálogos, consultar laboratorios disponibles y obtener información individual.
+La operación de detalle completo coordina laboratorio, ubicación y equipos
+mediante \texttt{LaboratorioDetalleFacade}; este es el contrato que utiliza el
+flujo QR móvil después de identificar un laboratorio.
+
+\texttt{reservas-solicitudes-service} concentra solicitudes, reservas,
+disponibilidad y agenda. Permite crear y actualizar solicitudes, consultar
+listados, detalle e historial, poner una solicitud en revisión, aprobarla o
+rechazarla, cancelarla y proponer o responder una alternativa de horario y
+laboratorio. Para las reservas ofrece listado, detalle, calendario y
+transiciones de cancelación, inicio, finalización y no asistencia. Strategy
+encapsula la comprobación de disponibilidad y State controla las transiciones,
+sin trasladar esas reglas a los clientes. La creación y la aprobación emplean
+\texttt{Idempotency-Key} y registros persistentes en CockroachDB para impedir
+que una repetición equivalente produzca resultados duplicados.
+
+Finalmente, \texttt{api-gateway} es el punto de entrada de Web y Mobile.
+Encamina las familias \texttt{/api/v1/auth}, \texttt{/api/v1/perfiles},
+\texttt{/api/v1/laboratorios}, \texttt{/api/v1/solicitudes} y
+\texttt{/api/v1/reservas} hacia su servicio propietario. Valida firma, emisor,
+vigencia y tipo \emph{access} del JWT antes de admitir una ruta protegida. Los
+servicios vuelven a aplicar permisos específicos, de modo que una identidad
+ausente o inválida genera 401 y una identidad autenticada sin autoridad genera
+403. El Gateway también fija cabeceras de seguridad, integra telemetría y aplica
+CORS con una lista de orígenes configurable mediante entorno, no con una IP de
+despliegue incorporada al código. La concentración de controles en el perímetro
+reduce inconsistencias, pero no reemplaza la seguridad interservicio, como
+advierten las guías de seguridad para aplicaciones de microservicios
+\cite{chandramouli2020nist}.
+
+\subsection{Autenticación y gestión de sesión}
+\label{subsec:autenticacion-funcional}
+
+El inicio de sesión admite nombre de usuario o correo institucional y verifica
+la contraseña con BCrypt, configurado con factor de coste 12. Tras autenticar,
+\texttt{auth-service} recupera el perfil y construye una respuesta con roles,
+permisos, token de acceso de corta duración y token de renovación. Las sesiones
+de renovación se guardan en CockroachDB mediante el hash SHA-256 del token; no se
+persiste su valor en claro. Una renovación valida que la sesión continúe activa,
+revoca el token anterior y crea otro dentro de la misma familia. La rotación
+reduce la ventana de reutilización de un refresh token, práctica recomendada para
+clientes públicos \cite{lodderstedt2025rfc9700}.
+
+La protección de acceso registra intentos y aplica un bloqueo temporal de quince
+minutos al alcanzar cinco fallos consecutivos. Un acceso correcto limpia el
+contador. La recuperación de contraseña devuelve un mensaje neutral para no
+revelar si el identificador existe, limita solicitudes y utiliza tokens de
+restablecimiento con expiración e invalidación. Roles y permisos se incluyen en
+la identidad autenticada, pero la decisión final se mantiene en las reglas de
+Spring Security de cada servicio.
+
+El cierre de sesión web sigue un flujo completo y verificable:
+
+\begin{enumerate}
+  \item el cliente lee el refresh token de la sesión y envía
+        \texttt{POST /api/v1/auth/logout};
+  \item el Gateway dirige la solicitud a \texttt{auth-service};
+  \item el servicio valida el token y revoca de forma idempotente la sesión
+        persistida;
+  \item el cliente elimina access token, refresh token, expiración y usuario de
+        \texttt{sessionStorage}, actualiza el estado React y redirige a
+        \texttt{/login}.
+\end{enumerate}
+
+La limpieza local se realiza incluso si la revocación remota no puede
+completarse, para no dejar la interfaz atrapada en una sesión aparente. Esto
+prioriza el cierre en el dispositivo, aunque una interrupción de red impide
+confirmar la revocación en el servidor y debe considerarse al evaluar el riesgo
+residual.
+
+\subsection{Aplicación web}
+\label{subsec:aplicacion-web}
+
+La aplicación web es una SPA construida con React~18.3.1 y TypeScript~5.8 en
+modo \texttt{strict}. React Router separa las rutas públicas de inicio y
+recuperación de contraseña de las rutas autenticadas. Dentro del área protegida,
+\texttt{ProtectedRoute} comprueba roles o permisos antes de presentar reservas,
+solicitudes, calendario y creación de solicitudes. Esta comprobación mejora la
+experiencia al ocultar acciones no disponibles, pero el backend conserva la
+autoridad efectiva y responde 403 cuando corresponde.
+
+El contexto de autenticación guarda access token, refresh token, vencimiento y
+perfil en \texttt{sessionStorage}. No se afirma el uso de cookies
+\texttt{httpOnly}: los JWT están disponibles al código del cliente y se eliminan
+al cerrar la sesión o la pestaña. Tampoco se almacenan credenciales en
+\texttt{localStorage}. Este último se utiliza exclusivamente para preferencias
+no sensibles de idioma y tema mediante Zustand. Cada solicitud protegida añade
+el Bearer token; ante un 401, el cliente coordina una sola renovación en curso,
+actualiza ambos tokens y reintenta la operación. Si la renovación falla, limpia
+la sesión. Los mensajes distinguen sesión expirada (401) de falta de permisos
+(403).
+
+En el dominio funcional, la Web presenta laboratorios y métricas de ocupación,
+gestión administrativa de perfiles, listas de solicitudes y reservas, detalle e
+historial, calendario semanal, creación y cancelación, revisión, aprobación,
+rechazo y propuestas alternativas según permisos. Los formularios consultan
+catálogos y disponibilidad antes de enviar operaciones. Las pantallas modelan
+estados de carga, vacío y error; en listados críticos se ofrece reintento y los
+errores HTTP se traducen a mensajes comprensibles.
+
+La internacionalización utiliza i18next con recursos en español e inglés, y el
+tema permite modos claro y oscuro. En desarrollo, Vite redirige las rutas
+relativas \texttt{/api}; el artefacto de producción se sirve mediante Nginx,
+que mantiene la navegación de la SPA y actúa como proxy hacia el Gateway. Por
+ello, el navegador no necesita conocer direcciones internas de microservicios.
+
+\subsection{Flujo web de autenticación}
+\label{subsec:flujo-auth-web}
+
+La Figura~\ref{fig:flujo-auth-web} resume el recorrido comprobado en el código.
+No representa un protocolo adicional: sintetiza las llamadas HTTP y los estados
+descritos anteriormente.
+
+\begin{figure}[ht]
+  \centering
+  \begin{minipage}{0.94\linewidth}
+\begin{verbatim}
+Usuario -> Login React -> API Gateway -> auth-service
+                                   <- Access + Refresh JWT
+        -> sessionStorage -> rutas protegidas -> microservicios
+        -> 401 -> /auth/refresh -> rotacion -> reintento
+        -> logout -> /auth/logout -> revocacion -> limpieza -> /login
+\end{verbatim}
+  \end{minipage}
+  \caption{Flujo funcional de autenticación de la aplicación web.}
+  \label{fig:flujo-auth-web}
+\end{figure}
+
+\subsection{Aplicación móvil Android}
+\label{subsec:aplicacion-mobile}
+
+El cliente móvil se desarrolló en Kotlin con Jetpack Compose, Navigation
+Compose y una organización MVVM por funcionalidad. Compila contra Android
+API~34, define \texttt{targetSdk 34} y soporta desde \texttt{minSdk 26}.
+ViewModels exponen estados de carga, éxito y error mediante \texttt{StateFlow};
+repositorios separan las pantallas de Retrofit, Room y el almacenamiento de
+sesión. Esta elección sigue prácticas contemporáneas de desarrollo Android con
+Kotlin y Jetpack \cite{spath2022proandroid}.
+
+Retrofit y OkHttp consumen el mismo Gateway que la Web. Un interceptor agrega
+el access token y un \texttt{Authenticator} serializa la renovación ante 401,
+evita bucles de reintentos y reconstruye la solicitud con el token actualizado.
+\texttt{EncryptedAuthStorage} conserva access token, refresh token, expiración,
+identidad, roles y permisos mediante \texttt{EncryptedSharedPreferences}, con
+claves AES-256 respaldadas por \texttt{MasterKey}. La navegación habilita
+acciones según permisos. A diferencia de la Web, el logout móvil actual elimina
+la sesión local, pero no invoca el endpoint remoto de revocación; esta diferencia
+se registra como limitación.
+
+La aplicación permite listar solicitudes y reservas, consultar sus detalles e
+historial, crear solicitudes rápidas, verificar disponibilidad, cancelar,
+revisar, aprobar o rechazar y gestionar propuestas cuando el perfil posee los
+permisos necesarios. También presenta un calendario. Las operaciones de creación
+y aprobación envían claves de idempotencia al backend. Los fallos de red y las
+respuestas 401, 403 y otros errores HTTP se convierten en estados diferenciados
+para la interfaz.
+
+\subsubsection{Persistencia local y funcionamiento sin conexión}
+
+Room define una base local con dos conjuntos de datos. Los incidentes se guardan
+en la tabla \texttt{incidentes} y se observan como un flujo reactivo; su creación
+es enteramente local. Las reservas obtenidas remotamente se almacenan en
+\texttt{reservas\_cache}. Si el listado o el detalle fallan por conectividad, el
+repositorio devuelve los datos disponibles en esa caché e informa que la
+actualización remota no se completó.
+
+Este comportamiento proporciona lectura degradada, pero no constituye una
+sincronización offline completa. No hay cola persistente de escrituras,
+WorkManager ni resolución de conflictos; crear o modificar reservas requiere
+conectividad. Asimismo, los incidentes no tienen fuente remota ni proceso de
+sincronización. La distinción es importante porque una arquitectura
+\emph{offline-first} completa debe coordinar explícitamente fuentes locales y de
+red, así como la reconciliación posterior \cite{android2026offlinefirst}.
+
+\subsubsection{QR y capacidades del dispositivo}
+
+El flujo QR constituye una capacidad implementada. La pantalla solicita en
+tiempo de ejecución el permiso de cámara, utiliza CameraX para previsualización y
+análisis, y aplica ML Kit Barcode Scanning sobre el fotograma más reciente. El
+valor leído debe representar un UUID de laboratorio; el ViewModel evita procesar
+duplicados y, tras validarlo, consulta
+\texttt{/api/v1/laboratorios/\{id\}/detalle-completo} a través del Gateway. La
+interfaz diferencia QR inválido, fallo de red y error del servicio. Por tanto,
+la lectura de cámara y la consulta posterior están conectadas, aunque dependen de
+que el laboratorio exista y el backend esté accesible.
+
+\subsubsection{Incidentes y notificaciones}
+
+La aplicación crea y lista incidentes locales y puede producir una notificación
+del dispositivo al registrar uno. Para Android~13 o superior solicita
+\texttt{POST\_NOTIFICATIONS}; en versiones anteriores utiliza el canal de
+notificación configurado. Esta notificación local no debe confundirse con una
+comunicación de servidor.
+
+Existe una preparación para Firebase Cloud Messaging: la dependencia está
+declarada, el servicio recibe mensajes y crea notificaciones, y
+\texttt{onNewToken} reconoce una renovación del registro. Sin embargo, el plugin
+de Google Services solo se aplica cuando existe \texttt{google-services.json},
+archivo que no está versionado. Tampoco existe endpoint backend para registrar
+el dispositivo ni un emisor que produzca mensajes. En consecuencia, FCM se
+clasifica como preparado, pero no operativo de extremo a extremo. Como medida
+de protección, el valor del token FCM no se escribe en los registros; solo se
+informa que se recibió uno nuevo.
+
+\subsection{Integración de clientes y servicios}
+\label{subsec:integracion-clientes}
+
+La Figura~\ref{fig:integracion-clientes} muestra la integración compartida. Web
+y Mobile mantienen presentaciones y almacenamiento propios, pero reutilizan las
+mismas API, el esquema Bearer y las decisiones de autorización del backend.
+
+\begin{figure}[ht]
+  \centering
+  \begin{minipage}{0.88\linewidth}
+\begin{verbatim}
+WEB ------\
+           > API Gateway --> microservicios --> CockroachDB
+MOBILE ---/
+\end{verbatim}
+  \end{minipage}
+  \caption{Integración conceptual de clientes, Gateway y servicios.}
+  \label{fig:integracion-clientes}
+\end{figure}
+
+Los contratos HTTP impiden que los clientes accedan directamente a bases de
+datos o dependan de entidades de persistencia. El JWT transporta identidad y
+autoridades; el Gateway valida el token y cada servicio aplica permisos sobre
+su dominio. Las consultas internas de Auth y Reservas hacia Usuarios o
+Académico utilizan una cabecera de API interna configurable por entorno. No se
+reproducen sus valores en el informe ni se incorporan secretos al cliente.
+
+\subsection{Seguridad funcional y limitaciones}
+\label{subsec:seguridad-limitaciones-apps}
+
+La seguridad funcional combina contraseñas BCrypt, JWT de acceso, refresh tokens
+rotados, sesiones persistidas y revocables, RBAC, respuestas diferenciadas 401 y
+403, CORS configurable, cabeceras de seguridad y claves para llamadas internas.
+Web conserva credenciales exclusivamente en \texttt{sessionStorage}; Mobile las
+cifra mediante Android Security Crypto. Ningún cliente incluye tokens en URL y
+el servicio FCM no registra el valor recibido. Estos controles reducen riesgos,
+pero no justifican afirmar seguridad absoluta; la literatura identifica la
+seguridad de microservicios como un problema transversal de identidad,
+infraestructura, comunicación y ciclo de desarrollo
+\cite{berardi2022microservicesecurity}.
+
+Permanecen cuatro limitaciones funcionales. Primero, incidentes es un módulo
+local sin API ni sincronización remota. Segundo, FCM carece de configuración
+Firebase verificable, registro de dispositivo y emisor backend. Tercero, salvo
+la lectura de reservas almacenadas y las operaciones locales de incidentes, las
+funciones remotas dependen de conectividad y disponibilidad del Gateway. Cuarto,
+el logout móvil no revoca todavía la sesión de renovación en el backend. La
+calidad y cobertura de estas funciones se evalúan en el capítulo de pruebas; no
+se infiere su suficiencia a partir de la mera existencia de pantallas o clases.
+
+No se incorporaron capturas: el repositorio no contiene imágenes actuales y
+claramente atribuibles a las interfaces E4. Esta omisión evita reutilizar como
+evidencia visual las capturas históricas de infraestructura.
