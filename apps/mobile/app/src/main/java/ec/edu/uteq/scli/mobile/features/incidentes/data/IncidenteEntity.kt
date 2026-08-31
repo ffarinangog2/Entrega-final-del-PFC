@@ -12,4 +12,6 @@ data class IncidenteEntity(
     val prioridad: String,
     val fechaMillis: Long,
     val creadoEnMillis: Long,
+    val remoteId: String? = null,
+    val estado: String = "REPORTADO",
 )

@@ -12,7 +12,7 @@ class AuthRepositoryDefaultsTest {
             override suspend fun login(username: String, password: String) =
                 NetworkResult.Failure(null, "no_usado")
             override fun restoreSession(): AuthSession? = null
-            override fun logout() {}
+            override suspend fun logout() {}
         }
 
         assertNull(repository.refreshSession())

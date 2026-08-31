@@ -31,7 +31,7 @@ import ec.edu.uteq.scli.api_gateway.config.JwtAuthenticationEntryPoint;
 import ec.edu.uteq.scli.api_gateway.config.SecurityConfig;
 
 @WebMvcTest
-@Import({SecurityConfig.class, JwtAuthenticationEntryPoint.class})
+@Import({SecurityConfig.class, JwtAuthenticationEntryPoint.class, ec.edu.uteq.scli.api_gateway.config.JsonAccessDeniedHandler.class})
 class GatewaySecurityIntegrationTests {
 
     private static final byte[] TEST_KEY = "0123456789abcdef0123456789abcdef".getBytes();
@@ -48,6 +48,12 @@ class GatewaySecurityIntegrationTests {
     @Test
     void refreshSinTokenEstaPermitido() throws Exception {
         mockMvc.perform(post("/api/v1/auth/refresh"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void logoutSinAccessTokenEstaPermitidoPorqueAuthValidaElRefresh() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/logout"))
                 .andExpect(status().isNotFound());
     }
 

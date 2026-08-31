@@ -11,7 +11,7 @@ import ec.edu.uteq.scli.mobile.features.reservas.data.local.ReservaEntity
 
 @Database(
     entities = [IncidenteEntity::class, ReservaEntity::class],
-    version = 2,
+    version = 3,
     exportSchema = false,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -31,6 +31,12 @@ abstract class AppDatabase : RoomDatabase() {
                         `actualizadaEn` TEXT NOT NULL, `version` INTEGER NOT NULL,
                         PRIMARY KEY(`id`))""".trimIndent(),
                 )
+            }
+        }
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE incidentes ADD COLUMN remoteId TEXT")
+                db.execSQL("ALTER TABLE incidentes ADD COLUMN estado TEXT NOT NULL DEFAULT 'REPORTADO'")
             }
         }
     }

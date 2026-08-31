@@ -6,9 +6,11 @@ package ec.edu.uteq.scli.mobile.features.incidentes.domain
  */
 data class Incidente(
     val id: Long = 0,
+    val remoteId: String? = null,
     val laboratorioEquipo: String,
     val descripcion: String,
     val prioridad: Prioridad,
     val fechaMillis: Long,
     val creadoEnMillis: Long = System.currentTimeMillis(),
+    val estado: String = "REPORTADO",
 )

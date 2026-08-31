@@ -13,6 +13,8 @@ class GatewayRoutesTest {
         assertThat(GatewayRoutes.esRutaUsuarios("/api/v1/docentes")).isTrue();
         assertThat(GatewayRoutes.esRutaAcademica("/api/v1/laboratorios/123")).isTrue();
         assertThat(GatewayRoutes.esRutaReservasCanonica("/api/v1/solicitudes/123/aprobar")).isTrue();
+        assertThat(GatewayRoutes.esRutaReservasCanonica("/api/v1/incidentes")).isTrue();
+        assertThat(GatewayRoutes.esRutaReservasCanonica("/api/v1/notificaciones/dispositivos")).isTrue();
     }
 
     @Test

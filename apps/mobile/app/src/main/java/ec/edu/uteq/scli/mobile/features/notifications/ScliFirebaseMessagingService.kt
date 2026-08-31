@@ -3,14 +3,14 @@ package ec.edu.uteq.scli.mobile.features.notifications
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import timber.log.Timber
+import ec.edu.uteq.scli.mobile.ScliMobileApplication
+import kotlinx.coroutines.*
 
 /**
  * Recibe los mensajes push de Firebase Cloud Messaging.
  *
- * No funciona todavía: falta agregar `apps/mobile/app/google-services.json`
- * (ver apps/mobile/README.md) y habilitar Firebase Cloud Messaging API (V1)
- * en el proyecto de Firebase Console. El código queda listo para cuando eso
- * exista.
+ * El registro del dispositivo se conserva localmente hasta que exista una
+ * sesión autenticada y entonces se sincroniza con el backend.
  */
 class ScliFirebaseMessagingService : FirebaseMessagingService() {
 
@@ -18,8 +18,9 @@ class ScliFirebaseMessagingService : FirebaseMessagingService() {
 
     override fun onNewToken(token: String) {
         super.onNewToken(token)
-        Timber.tag("FCM").i("Nuevo token de registro FCM recibido")
-        // TODO: enviar el token al backend cuando exista el endpoint correspondiente.
+        val registrar = (application as ScliMobileApplication).container.deviceTokenRegistrar
+        registrar.guardarPendiente(token)
+        CoroutineScope(SupervisorJob() + Dispatchers.IO).launch { registrar.registrarPendiente() }
     }
 
     override fun onMessageReceived(message: RemoteMessage) {

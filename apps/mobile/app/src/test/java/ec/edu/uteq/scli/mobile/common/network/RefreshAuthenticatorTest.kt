@@ -59,7 +59,7 @@ class RefreshAuthenticatorTest {
         var refreshes = 0
         override suspend fun login(username: String, password: String) = NetworkResult.Success(session)
         override fun restoreSession() = session
-        override fun logout() {}
+        override suspend fun logout() {}
         override suspend fun refreshSession(): AuthSession { Thread.sleep(30); refreshes++; return SESSION.copy(accessToken = "nuevo").also { session = it } }
     }
 

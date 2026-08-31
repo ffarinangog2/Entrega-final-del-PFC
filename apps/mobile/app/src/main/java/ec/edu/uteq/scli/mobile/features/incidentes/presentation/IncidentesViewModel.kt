@@ -19,6 +19,8 @@ class IncidentesViewModel(
     private val notificationHelper: NotificationHelper,
 ) : ViewModel() {
 
+    init { viewModelScope.launch { runCatching { repository.refrescar() } } }
+
     private data class FormState(
         val laboratorioEquipo: String = "",
         val descripcion: String = "",
@@ -79,7 +81,10 @@ class IncidentesViewModel(
                 fechaMillis = form.fechaMillis,
             )
 
-            val creado = repository.crear(incidente)
+            val creado = try { repository.crear(incidente) } catch (_: RuntimeException) {
+                formState.value = form.copy(error = "servicio_no_disponible")
+                return@launch
+            }
             Timber.tag("IncidentesViewModel").i("Incidente creado id=%s prioridad=%s", creado.id, creado.prioridad)
 
             notificationHelper.mostrar(

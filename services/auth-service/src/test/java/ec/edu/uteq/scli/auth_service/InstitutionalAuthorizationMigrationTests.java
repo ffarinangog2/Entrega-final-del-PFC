@@ -68,7 +68,11 @@ class InstitutionalAuthorizationMigrationTests {
                         "LABORATORIO_LEER",
                         "LABORATORIO_GESTIONAR",
                         "EQUIPO_LEER",
-                        "AGENDA_GESTIONAR")
+                        "AGENDA_GESTIONAR",
+                        "INCIDENTE_CREAR",
+                        "INCIDENTE_LEER",
+                        "INCIDENTE_GESTIONAR",
+                        "NOTIFICACION_DISPOSITIVO")
                 .doesNotContain(
                         "USUARIO_LEER",
                         "USUARIO_CREAR",
@@ -84,7 +88,10 @@ class InstitutionalAuthorizationMigrationTests {
                 .containsExactlyInAnyOrder(
                         "ACADEMICO_LEER",
                         "PLANIFICACION_GESTIONAR",
-                        "LABORATORIO_LEER")
+                        "LABORATORIO_LEER",
+                        "INCIDENTE_CREAR",
+                        "INCIDENTE_LEER",
+                        "NOTIFICACION_DISPOSITIVO")
                 .doesNotContain(
                         "SOLICITUD_APROBAR",
                         "SOLICITUD_RECHAZAR",

@@ -55,7 +55,9 @@ class AuthViewModel(
     }
 
     fun logout() {
-        repository.logout()
-        _uiState.value = AuthUiState(restaurando = false)
+        viewModelScope.launch {
+            repository.logout()
+            _uiState.value = AuthUiState(restaurando = false)
+        }
     }
 }

@@ -125,7 +125,17 @@ class RemoteAuthRepositoryTest {
         assertTrue(expired)
     }
 
-    @Test fun `logout limpia el almacenamiento`() {
+    @Test fun `logout revoca remotamente y limpia el almacenamiento`() = runTest {
+        every { storage.read() } returns SESSION
+        coEvery { api.logout(RefreshRequest("refresh-anterior")) } returns Response.success(Unit)
+        RemoteAuthRepository(api, storage).logout()
+        coVerify { api.logout(RefreshRequest("refresh-anterior")) }
+        verify { storage.clear() }
+    }
+
+    @Test fun `logout limpia almacenamiento aunque falle la red`() = runTest {
+        every { storage.read() } returns SESSION
+        coEvery { api.logout(any()) } throws IOException("sin red")
         RemoteAuthRepository(api, storage).logout()
         verify { storage.clear() }
     }

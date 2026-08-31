@@ -7,8 +7,9 @@ interface AuthRepository {
     suspend fun login(username: String, password: String): NetworkResult<AuthSession>
     fun restoreSession(): AuthSession?
     suspend fun refreshSession(): AuthSession? = null
-    fun logout()
+    suspend fun logout()
     fun onSessionExpired(listener: () -> Unit) {}
+    fun onAuthenticated(listener: suspend () -> Unit) {}
 }
 
 interface SecureTokenStorage {
@@ -23,6 +24,7 @@ class RemoteAuthRepository(
     private val clock: () -> Long = { System.currentTimeMillis() },
 ) : AuthRepository {
     private var sessionExpiredListener: () -> Unit = {}
+    private var authenticatedListener: suspend () -> Unit = {}
     override suspend fun login(username: String, password: String): NetworkResult<AuthSession> = try {
         val response = api.login(LoginRequest(username, password))
         val body = response.body()
@@ -36,6 +38,7 @@ class RemoteAuthRepository(
                     usuario = body.usuario,
                 )
                 storage.save(session)
+                authenticatedListener()
                 NetworkResult.Success(session)
             }
             response.code() == 401 || response.code() == 403 ->
@@ -65,6 +68,7 @@ class RemoteAuthRepository(
                     body.tokenType, body.accessToken, body.refreshToken,
                     clock() + body.expiresIn * 1000, body.usuario,
                 ).also(storage::save)
+                    .also { authenticatedListener() }
             }
         } catch (_: IOException) {
             storage.clear()
@@ -77,6 +81,18 @@ class RemoteAuthRepository(
         }
     }
 
-    override fun logout() = storage.clear()
+    override suspend fun logout() {
+        val current = storage.read()
+        try {
+            if (current != null) api.logout(RefreshRequest(current.refreshToken))
+        } catch (_: IOException) {
+            // El cierre local nunca debe depender de la disponibilidad de red.
+        } catch (_: RuntimeException) {
+            // Una respuesta remota defectuosa tampoco debe bloquear el cierre local.
+        } finally {
+            storage.clear()
+        }
+    }
     override fun onSessionExpired(listener: () -> Unit) { sessionExpiredListener = listener }
+    override fun onAuthenticated(listener: suspend () -> Unit) { authenticatedListener = listener }
 }

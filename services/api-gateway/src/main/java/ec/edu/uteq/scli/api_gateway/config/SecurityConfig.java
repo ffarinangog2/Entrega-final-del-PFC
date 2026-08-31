@@ -32,7 +32,8 @@ public class SecurityConfig {
     @Bean
     SecurityFilterChain securityFilterChain(
             HttpSecurity http,
-            JwtAuthenticationEntryPoint entryPoint) throws Exception {
+            JwtAuthenticationEntryPoint entryPoint,
+            JsonAccessDeniedHandler deniedHandler) throws Exception {
         return http
                 .csrf(csrf -> csrf.disable())
                 .cors(Customizer.withDefaults())
@@ -49,16 +50,18 @@ public class SecurityConfig {
                                 .policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
                         .addHeaderWriter(new StaticHeadersWriter("Content-Security-Policy",
                                 "default-src 'self'; frame-ancestors 'none'")))
-                .exceptionHandling(exceptions -> exceptions.authenticationEntryPoint(entryPoint))
+                .exceptionHandling(exceptions -> exceptions.authenticationEntryPoint(entryPoint).accessDeniedHandler(deniedHandler))
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(HttpMethod.POST,
                                 "/api/v1/auth/login",
                                 "/api/v1/auth/refresh",
+                                "/api/v1/auth/logout",
                                 "/api/v1/auth/forgot-password",
                                 "/api/v1/auth/reset-password",
                                 "/auth-service/api/v1/auth/login",
                                 "/auth-service/api/v1/auth/refresh",
+                                "/auth-service/api/v1/auth/logout",
                                 "/auth-service/api/v1/auth/forgot-password",
                                 "/auth-service/api/v1/auth/reset-password")
                         .permitAll()

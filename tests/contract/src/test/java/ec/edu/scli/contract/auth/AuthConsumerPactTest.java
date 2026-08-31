@@ -96,4 +96,22 @@ class AuthConsumerPactTest {
         assertTrue(response.body().contains("\"permisos\""));
         assertTrue(response.body().contains("\"tiposPerfil\""));
     }
+
+    @Pact(consumer = "scli-web-mobile")
+    V4Pact cerrarSesion(PactDslWithProvider builder) {
+        return builder.given("existe una sesion refresh activa")
+                .uponReceiving("Web o Mobile revoca su refresh token")
+                .path("/api/v1/auth/logout").method("POST")
+                .headers(Map.of("Content-Type", "application/json"))
+                .body(new PactDslJsonBody().stringType("refreshToken", "refresh-token"))
+                .willRespondWith().status(204).toPact(V4Pact.class);
+    }
+
+    @Test @PactTestFor(pactMethod = "cerrarSesion")
+    void logoutUsaSoloRefreshYNoRequiereAccess(MockServer mockServer) throws Exception {
+        var request=HttpRequest.newBuilder().uri(URI.create(mockServer.getUrl()+"/api/v1/auth/logout"))
+                .header("Content-Type","application/json")
+                .POST(HttpRequest.BodyPublishers.ofString("{\"refreshToken\":\"refresh-token\"}")).build();
+        assertEquals(204,HttpClient.newHttpClient().send(request,HttpResponse.BodyHandlers.ofString()).statusCode());
+    }
 }

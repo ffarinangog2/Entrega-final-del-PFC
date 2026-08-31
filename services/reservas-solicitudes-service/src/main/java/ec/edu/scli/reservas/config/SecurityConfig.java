@@ -48,6 +48,10 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/actuator/health", "/actuator/info", "/actuator/prometheus").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/incidentes").hasAuthority("INCIDENTE_CREAR")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/incidentes/**").hasAnyAuthority("INCIDENTE_LEER", "INCIDENTE_GESTIONAR")
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/incidentes/*/estado").hasAuthority("INCIDENTE_GESTIONAR")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/notificaciones/dispositivos").hasAuthority("NOTIFICACION_DISPOSITIVO")
                         .requestMatchers(HttpMethod.POST, "/api/v1/solicitudes").hasAuthority("SOLICITUD_CREAR")
                         .requestMatchers(HttpMethod.PUT, "/api/v1/solicitudes/**").hasAuthority("SOLICITUD_CREAR")
                         .requestMatchers(HttpMethod.POST, "/api/v1/solicitudes/*/revision").hasAuthority("SOLICITUD_APROBAR")

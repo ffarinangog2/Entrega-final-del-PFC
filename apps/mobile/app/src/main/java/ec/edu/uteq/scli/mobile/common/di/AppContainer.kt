@@ -12,8 +12,12 @@ import ec.edu.uteq.scli.mobile.features.auth.data.AuthRepository
 import ec.edu.uteq.scli.mobile.features.auth.data.EncryptedAuthStorage
 import ec.edu.uteq.scli.mobile.features.auth.data.RemoteAuthRepository
 import ec.edu.uteq.scli.mobile.features.incidentes.data.IncidenteLocalRepository
+import ec.edu.uteq.scli.mobile.features.incidentes.data.IncidentesApi
+import ec.edu.uteq.scli.mobile.features.incidentes.data.RemoteIncidenteRepository
 import ec.edu.uteq.scli.mobile.features.incidentes.domain.IncidenteRepository
 import ec.edu.uteq.scli.mobile.features.notifications.NotificationHelper
+import ec.edu.uteq.scli.mobile.features.notifications.DeviceRegistrationApi
+import ec.edu.uteq.scli.mobile.features.notifications.DeviceTokenRegistrar
 import ec.edu.uteq.scli.mobile.features.profile.data.SettingsRepository
 import ec.edu.uteq.scli.mobile.features.qr.data.RemoteQrRepository
 import ec.edu.uteq.scli.mobile.features.qr.data.QrRepository
@@ -36,9 +40,7 @@ class AppContainer(context: Context) {
         context.applicationContext,
         AppDatabase::class.java,
         "scli-mobile.db",
-    ).addMigrations(AppDatabase.MIGRATION_1_2).build()
-
-    val incidenteRepository: IncidenteRepository = IncidenteLocalRepository(database.incidenteDao())
+    ).addMigrations(AppDatabase.MIGRATION_1_2, AppDatabase.MIGRATION_2_3).build()
 
     val settingsRepository: SettingsRepository = SettingsRepository(context.applicationContext)
 
@@ -59,9 +61,16 @@ class AppContainer(context: Context) {
             .authenticator(RefreshAuthenticator(authRepository))
             .build(),
     )
+    val incidenteRepository: IncidenteRepository = RemoteIncidenteRepository(
+        authenticatedGatewayRetrofit.create(IncidentesApi::class.java), database.incidenteDao(),
+    )
     private val reservasApi = authenticatedGatewayRetrofit.create(ReservasApi::class.java)
     val reservaRepository: ReservaRepository = RemoteReservaRepository(reservasApi, database.reservaDao())
     val catalogosRepository = CatalogosRepository(authenticatedGatewayRetrofit.create(CatalogosApi::class.java))
     private val qrApi = authenticatedGatewayRetrofit.create(QrApi::class.java)
     val qrRepository: QrRepository = RemoteQrRepository(qrApi)
+    val deviceTokenRegistrar = DeviceTokenRegistrar(
+        context.applicationContext, authenticatedGatewayRetrofit.create(DeviceRegistrationApi::class.java),
+    )
+    init { authRepository.onAuthenticated { deviceTokenRegistrar.registrarPendiente() } }
 }

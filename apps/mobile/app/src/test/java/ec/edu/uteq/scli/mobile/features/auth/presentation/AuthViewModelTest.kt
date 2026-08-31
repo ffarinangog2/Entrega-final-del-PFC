@@ -115,6 +115,7 @@ class AuthViewModelTest {
         val viewModel = AuthViewModel(repository)
 
         viewModel.logout()
+        runCurrent()
 
         assertTrue(viewModel.uiState.value.sesion == null)
         assertTrue(repository.loggedOut)
@@ -138,7 +139,7 @@ class AuthViewModelTest {
             refreshCalls++
             return refreshed
         }
-        override fun logout() { loggedOut = true }
+        override suspend fun logout() { loggedOut = true }
         override fun onSessionExpired(listener: () -> Unit) { expirationHandler = listener }
         fun expireSession() = expirationHandler?.invoke()
     }

@@ -37,6 +37,7 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
         Map<String, Object> error = new LinkedHashMap<>();
         error.put("timestamp", OffsetDateTime.now(ZoneOffset.UTC));
         error.put("status", HttpStatus.UNAUTHORIZED.value());
+        error.put("code", "UNAUTHORIZED");
         error.put("error", HttpStatus.UNAUTHORIZED.getReasonPhrase());
         error.put("message", "Se requiere un token de acceso Bearer válido");
         error.put("path", request.getRequestURI());

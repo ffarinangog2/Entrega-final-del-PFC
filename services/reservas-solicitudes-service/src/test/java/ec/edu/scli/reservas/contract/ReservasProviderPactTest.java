@@ -10,6 +10,14 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import ec.edu.scli.reservas.application.service.ReservaService;
 import ec.edu.scli.reservas.application.service.SolicitudReservaService;
+import ec.edu.scli.reservas.application.service.IncidenteService;
+import ec.edu.scli.reservas.application.service.NotificacionService;
+import ec.edu.scli.reservas.presentation.controller.IncidenteController;
+import ec.edu.scli.reservas.presentation.controller.NotificacionController;
+import ec.edu.scli.reservas.presentation.dto.response.IncidenteResponse;
+import ec.edu.scli.reservas.presentation.dto.response.DispositivoNotificacionResponse;
+import ec.edu.scli.reservas.domain.model.*;
+import ec.edu.scli.reservas.security.JwtPrincipal;
 import ec.edu.scli.reservas.domain.model.EstadoReserva;
 import ec.edu.scli.reservas.domain.model.EstadoSolicitud;
 import ec.edu.scli.reservas.presentation.controller.ReservaController;
@@ -55,15 +63,18 @@ class ReservasProviderPactTest {
 
     private ReservaService reservaService;
     private SolicitudReservaService solicitudService;
+    private IncidenteService incidenteService; private NotificacionService notificacionService;
 
     @BeforeEach
     void configurarTarget(PactVerificationContext context) {
         reservaService = mock(ReservaService.class);
         solicitudService = mock(SolicitudReservaService.class);
+        incidenteService=mock(IncidenteService.class);notificacionService=mock(NotificacionService.class);
+        var principal=new JwtPrincipal(UUID.randomUUID(),RESPONSABLE_ID,"pact");
         MockMvc mockMvc = MockMvcBuilders
                 .standaloneSetup(new ReservaController(reservaService),
-                        new SolicitudReservaController(solicitudService))
-                .defaultRequest(get("/").principal(() -> RESPONSABLE_ID.toString()))
+                        new SolicitudReservaController(solicitudService),new IncidenteController(incidenteService),new NotificacionController(notificacionService))
+                .defaultRequest(get("/").principal(principal))
                 .setMessageConverters(new MappingJackson2HttpMessageConverter(
                         Jackson2ObjectMapperBuilder.json()
                                 .modulesToInstall(new JavaTimeModule())
@@ -72,6 +83,12 @@ class ReservasProviderPactTest {
                 .build();
         context.setTarget(new MockMvcTestTarget(mockMvc));
     }
+
+    @State("usuario autenticado puede reportar incidentes") void puedeReportar(){var id=UUID.fromString("55555555-5555-5555-5555-555555555555");
+        when(incidenteService.crear(any(),eq(RESPONSABLE_ID))).thenReturn(new IncidenteResponse(id,RESPONSABLE_ID,"Laboratorio 1","Equipo sin red",PrioridadIncidente.ALTA,LocalDate.parse("2026-08-31"),EstadoIncidente.REPORTADO,Instant.parse("2026-08-31T10:00:00Z"),Instant.parse("2026-08-31T10:00:00Z"),0L));}
+    @State("usuario autenticado tiene incidentes") void tieneIncidentes(){var id=UUID.fromString("55555555-5555-5555-5555-555555555555");var r=new IncidenteResponse(id,RESPONSABLE_ID,"Laboratorio 1","Equipo sin red",PrioridadIncidente.ALTA,LocalDate.parse("2026-08-31"),EstadoIncidente.REPORTADO,Instant.now(),Instant.now(),0L);
+        when(incidenteService.listar(eq(RESPONSABLE_ID),eq(false),anyInt(),anyInt())).thenReturn(new PaginaResponse<>(List.of(r),0,20,1,1,true,true));}
+    @State("usuario autenticado registra dispositivo") void registraDispositivo(){when(notificacionService.registrar(any(),any(),eq(RESPONSABLE_ID))).thenReturn(new DispositivoNotificacionResponse(UUID.fromString("55555555-5555-5555-5555-555555555555"),"ANDROID",true,Instant.now(),Instant.now()));}
 
     @State("existen reservas registradas")
     void existenReservasRegistradas() {

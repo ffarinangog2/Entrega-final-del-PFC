@@ -12,4 +12,5 @@ import kotlinx.coroutines.flow.Flow
 interface IncidenteRepository {
     fun observarTodos(): Flow<List<Incidente>>
     suspend fun crear(incidente: Incidente): Incidente
+    suspend fun refrescar() { }
 }

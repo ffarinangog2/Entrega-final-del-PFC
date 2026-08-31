@@ -167,6 +167,8 @@ services:
   reservas-solicitudes-service:
     image: ghcr.io/ffarinangog2/scli-reservas-solicitudes-service:${IMAGE_TAG:?IMAGE_TAG is required}
     environment:
+      FIREBASE_ENABLED: ${FIREBASE_ENABLED:-false}
+      FIREBASE_CREDENTIALS_BASE64: ${FIREBASE_CREDENTIALS_BASE64:-}
       SERVER_PORT: 8084
       DB_URL: jdbc:postgresql://crdb-e3-1:26257,crdb-e3-2:26257,crdb-e3-3:26257/reservas_db?sslmode=verify-full&sslrootcert=/cockroach/cockroach-certs/ca.crt&options=-c%20allow_unsafe_internals%3Dtrue
       DB_USERNAME: ${RESERVAS_DB_USERNAME:?RESERVAS_DB_USERNAME is required}
