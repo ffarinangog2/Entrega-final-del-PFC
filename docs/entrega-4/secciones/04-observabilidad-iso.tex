@@ -1,1 +1,382 @@
-% Parte grupal: observabilidad y evaluación ISO/IEC 25010.
+\section{Observabilidad y evaluación ISO/IEC 25010}
+\label{sec:observabilidad-iso}
+
+La Entrega 4 incorpora observabilidad como una capacidad transversal del
+sistema distribuido y no como sustituto de las pruebas. Métricas, trazas y logs
+responden preguntas distintas: las métricas resumen comportamiento agregado,
+las trazas reconstruyen el recorrido de una solicitud y los logs conservan
+eventos discretos con contexto. Esta separación coincide con las señales
+definidas por OpenTelemetry \cite{opentelemetry2026signals}; combinarlas mejora
+el diagnóstico, pero la sola presencia de herramientas no certifica calidad ni
+garantiza correlación perfecta.
+
+\subsection{Arquitectura de observabilidad}
+\label{subsec:arquitectura-observabilidad}
+
+Los cinco servicios Spring exponen Actuator y Prometheus, y configuran
+instrumentación y exportación OTLP. El flujo implementado es el siguiente:
+
+\begin{center}
+\begin{verbatim}
+servicios -- metricas Prometheus ----------> Prometheus --\
+         \-- trazas OTLP --> Collector --> Tempo ----------> Grafana
+          \- logs OTLP ----> Collector --> Loki -----------/
+cAdvisor -- recursos de contenedores ------> Prometheus ---/
+\end{verbatim}
+\end{center}
+
+Prometheus consulta cada quince segundos los cinco endpoints
+\texttt{/actuator/prometheus}, cAdvisor, el Collector y los tres nodos
+CockroachDB. Grafana dispone de fuentes provisionadas para Prometheus, Tempo y
+Loki. Tempo conserva trazas localmente durante 24 horas; Loki almacena logs, y
+cAdvisor aporta CPU y memoria de contenedores. El Collector recibe OTLP por
+gRPC 4317 y HTTP 4318, aplica el procesador \texttt{batch} y separa tres
+pipelines: trazas hacia Tempo, métricas hacia un exporter Prometheus en 8889 y
+logs hacia Loki. OpenTelemetry funciona aquí como estándar, instrumentación y
+canal de transporte; los backends y Grafana proporcionan almacenamiento y
+consulta, pues OpenTelemetry no es por sí mismo un APM completo.
+
+\subsubsection{Métricas Prometheus}
+
+Micrometer produce la familia
+\texttt{http\_server\_requests\_seconds}: el contador permite calcular volumen y
+tasa por estado, y los buckets habilitan percentiles con
+\texttt{histogram\_quantile}. En Reservas una regla de grabación crea el alias
+\texttt{http\_request\_duration\_seconds} exigido por el protocolo a partir de
+la familia estándar. Usuarios y Académico agregan además
+\texttt{http\_requests\_total} con ruta, método y estado; Auth registra éxitos,
+fallos, refresh y logout; Reservas publica eventos de negocio de baja
+cardinalidad después del commit transaccional. Las series de CockroachDB y
+cAdvisor complementan la vista con estado de nodos, rangos no disponibles y
+consumo de recursos.
+
+La tasa se obtiene con \texttt{rate} sobre contadores y los 5xx mediante el
+filtro \texttt{status=\textasciitilde{}"5.."}. Para latencia, los buckets se
+agregan por \texttt{le} antes de calcular p50, p95 o p99. Un percentil de
+histograma es una estimación dependiente de los buckets y de la ventana elegida;
+no equivale necesariamente al percentil calculado por el cliente de carga.
+
+\subsubsection{Trazas y logs estructurados}
+
+La configuración de cada servicio asigna \texttt{OTEL\_SERVICE\_NAME}, exporta
+trazas y logs por OTLP y habilita muestreo de trazas. Los appenders Logback se
+instalan sobre el SDK autoconfigurado y el formato de consola es JSON tipo
+Logstash. La configuración añade el servicio y renombra el contexto activo como
+\texttt{trace\_id} y \texttt{span\_id}; el encoder incorpora también timestamp,
+nivel, logger y mensaje. Tempo puede enlazar una traza con Loki usando ambos
+identificadores, aunque un log emitido fuera de un span no necesariamente los
+contiene. Por esa razón se habla de correlación disponible, no universal.
+
+Los registros no deben transportar credenciales. En particular, el callback de
+FCM informa que recibió un token nuevo, pero no escribe su valor. Esta decisión
+preserva utilidad operativa sin convertir el sistema de logs en un canal de
+exposición. Los eventos estructurados y ricos en contexto facilitan consultas y
+diagnóstico de sistemas distribuidos \cite{majors2022observability}, pero su
+calidad depende de atributos consistentes y de la propagación efectiva.
+
+\subsection{Dashboard consolidado}
+\label{subsec:dashboard-grafana}
+
+\texttt{ops/grafana/pfc-dashboard.json} contiene exactamente seis paneles. Las
+consultas PromQL son sintácticamente coherentes con las familias configuradas;
+la Tabla~\ref{tab:paneles-grafana} distingue lo que mide cada una y evita
+atribuir al panel una semántica que no posee.
+
+\begin{table}[ht]
+  \centering
+  \small
+  \caption{Paneles reales del dashboard consolidado.}
+  \label{tab:paneles-grafana}
+  \begin{tabular}{|p{3.0cm}|p{2.0cm}|p{3.6cm}|p{3.8cm}|}
+    \hline
+    \textbf{Panel} & \textbf{Fuente} & \textbf{Métrica/consulta} & \textbf{Propósito} \\
+    \hline
+    Request rate & Prometheus & \texttt{rate(http\_server\_requests\_seconds\_count)} & Comparar volumen por job en cinco minutos. \\
+    \hline
+    Latencia p50/p95/p99 & Prometheus & \texttt{histogram\_quantile} sobre buckets HTTP & Observar distribución y cola de latencia. \\
+    \hline
+    Errores HTTP 5xx & Prometheus & Tasa del contador HTTP con estado 5xx & Detectar fallos de servidor por job. \\
+    \hline
+    CockroachDB & Prometheus & \texttt{liveness\_livenodes}; \texttt{ranges\_unavailable} & Vigilar nodos vivos y rangos no disponibles. \\
+    \hline
+    Recursos de contenedores & Prometheus/cAdvisor & CPU y memoria por nombre de contenedor & Identificar presión de recursos. \\
+    \hline
+    Latencia E2E móvil (proxy) & Prometheus & p95 del Gateway para URI de reservas, solicitudes, incidentes o QR & Aproximar endpoints asociados a Mobile; no mide dispositivo, red completa ni renderizado. \\
+    \hline
+  \end{tabular}
+\end{table}
+
+El sexto panel constituye la brecha principal: su nombre reconoce que es un
+proxy y su punto de medición sigue siendo el Gateway. Además, algunas URI del
+filtro no tienen backend remoto actual, como incidentes. Por tanto, el dashboard
+cubre seis finalidades solicitadas, pero la latencia Mobile no es E2E real y el
+criterio D6.2 permanece parcial. No se incorporaron capturas, porque no existe
+una imagen versionada actual del dashboard que aporte evidencia adicional al
+JSON reproducible.
+
+\subsection{Marco y protocolo ISO/IEC 25010}
+\label{subsec:marco-iso25010}
+
+La evaluación usa el modelo de calidad de producto ISO/IEC 25010:2023
+\cite{iso25010_2023}, pero no pretende cubrir todas sus características. Se
+seleccionaron eficiencia de desempeño, fiabilidad, mantenibilidad y
+compatibilidad. La disponibilidad se trata como parte de fiabilidad y exige
+observación temporal propia; no se infiere de una tasa puntual de errores.
+
+El protocolo nominal define diez repeticiones equivalentes con 50 usuarios. La
+eficiencia dura cinco minutos y exige p95 menor que 500 ms. La fiabilidad
+preveía una hora por repetición y menos de 1\% de HTTP 5xx. La regla se fijó
+antes de observar resultados: r1 y r10 se conservan, mientras r2--r9 forman las
+ocho muestras centrales. Esto trata de forma uniforme los bordes del lote y,
+sobre todo, impide elegir exclusiones después de conocer los valores; no se
+eliminaron ejecuciones desfavorables por conveniencia.
+
+Para cada métrica central se usa $n=8$, desviación estándar muestral con siete
+grados de libertad e intervalo bilateral
+$\bar{x}\pm t_{0,975;7}s/\sqrt{8}$, con $t=2,364624251$. La decisión principal
+es conservadora: el límite superior del IC95 debe ser menor que el umbral. Esta
+estructura y la conservación de resultados fallidos son coherentes con un
+proceso de prueba documentado y repetible \cite{iso29119_2_2021}.
+
+\subsubsection{Proveniencia e integridad}
+
+La evidencia se ejecutó en \texttt{servidor-proyectos} sobre el SHA
+\texttt{a47f0441f644bea5f52944b7a11216f37b2242de}, con Locust 2.31.6 y Python
+3.11.10. \texttt{iso25010.csv} contiene resultados procesados; los directorios
+\texttt{raw} conservan CSV canónicos, fallos, excepciones, logs, metadata,
+consultas y respuestas Prometheus, salud y estadísticas de contenedores. Los
+historiales completos y HTML voluminosos permanecen en la VM, circunstancia
+registrada en el resumen de evidencia.
+
+El manifiesto \texttt{SHA256SUMS} enumera 195 archivos. La verificación durante
+esta redacción confirmó 195 coincidencias, sin archivos ausentes ni hashes
+distintos. SHA-256 permite detectar alteraciones respecto del manifiesto, pero
+no constituye una firma ni prueba autenticidad por sí solo. La procedencia se
+apoya adicionalmente en metadata, timestamps, SHA probado y el documento
+\texttt{RESUMEN-ISO25010-E4.md}.
+
+\subsection{Eficiencia nominal: 50 usuarios durante cinco minutos}
+\label{subsec:eficiencia-nominal}
+
+Las diez repeticiones terminaron con código cero y registraron 0 respuestas HTTP
+5xx. La Tabla~\ref{tab:repeticiones-eficiencia} transcribe el CSV verificado; r1
+y r10 se muestran porque forman parte de la evidencia, aunque no intervienen en
+el análisis central.
+
+\begin{table}[ht]
+  \centering
+  \small
+  \caption{Diez repeticiones de eficiencia nominal medidas por Locust.}
+  \label{tab:repeticiones-eficiencia}
+  \begin{tabular}{|c|r|r|r|r|c|}
+    \hline
+    \textbf{Rep.} & \textbf{Requests} & \textbf{HTTP 5xx} & \textbf{p95 (ms)} & \textbf{p99 (ms)} & \textbf{Uso} \\
+    \hline
+    r1  & 7041 & 0 & 110 & 2200 & Conservada \\
+    r2  & 7230 & 0 & 25  & 53   & Central \\
+    r3  & 7151 & 0 & 130 & 1600 & Central \\
+    r4  & 7212 & 0 & 25  & 89   & Central \\
+    r5  & 7205 & 0 & 63  & 1400 & Central \\
+    r6  & 7259 & 0 & 34  & 150  & Central \\
+    r7  & 7214 & 0 & 69  & 570  & Central \\
+    r8  & 7209 & 0 & 29  & 270  & Central \\
+    r9  & 7161 & 0 & 85  & 860  & Central \\
+    r10 & 7281 & 0 & 25  & 150  & Conservada \\
+    \hline
+  \end{tabular}
+\end{table}
+
+Las ocho repeticiones centrales suman 57\,641 solicitudes. Para p95, los valores
+25, 130, 25, 63, 34, 69, 29 y 85 ms producen media 57,500000 ms, desviación
+muestral 37,132966 ms e IC95 [26,456064; 88,543936] ms. Como el límite superior
+88,543936 ms es menor que 500 ms, la eficiencia \textbf{cumple} para este
+escenario nominal. La conclusión no se extrapola a cargas, duraciones o entornos
+distintos.
+
+El p99 se analiza como indicador secundario. Los valores 53, 1600, 89, 1400,
+150, 570, 270 y 860 ms producen media 624,000000 ms, desviación 606,585526 ms e
+IC95 [116,881810; 1131,118190] ms. El límite superior excede el umbral secundario
+de 750 ms usado por el analizador, por lo que ese indicador no cumple. Este
+umbral no es el criterio principal p95 de la rúbrica: el resultado revela cola
+larga y alta variabilidad, pero no cambia retrospectivamente la decisión p95.
+
+Las ocho ventanas centrales contienen 0 HTTP 5xx de 57\,641 solicitudes, es
+decir, 0\%, frente al objetivo menor que 1\%. Esto demuestra ausencia de 5xx en
+el escenario observado; no demuestra disponibilidad anual, ausencia de otros
+errores ni fiabilidad absoluta.
+
+\subsubsection{Contraste con Prometheus}
+
+Las series Prometheus de r2--r9 contienen p95 de 10,004445; 30,067916;
+9,949600; 21,021640; 13,281961; 22,143963; 11,358052 y 28,439426 ms. Su media es
+18,283375 ms, la desviación 8,240924 ms y el IC95 [11,393791; 25,172960] ms;
+las diez ventanas registran cero 5xx. Locust mide extremo a extremo desde el
+generador, incluyendo red, Gateway y serialización. Prometheus mide el histograma
+interno de Reservas para su ventana. Son puntos de observación complementarios,
+no resultados intercambiables ni fuentes que deban forzarse a coincidir.
+
+\subsection{Rampa exploratoria de 0 a 200 usuarios}
+\label{subsec:rampa-exploratoria}
+
+La rampa de diez minutos produjo 29,217 solicitudes, una respuesta HTTP 500 en
+\texttt{GET /api/v1/reservas} y una tasa exacta de 0,00342266\%. Locust registró
+p95 de 180 ms, p99 de 1100 ms y máximo de 14024,163663 ms. El proceso terminó
+con estado fallido porque se configuró para devolver error ante cualquier fallo,
+no porque la mayoría de solicitudes hubiera fallado.
+
+La tasa 5xx permaneció por debajo de 1\% y el p95 fue moderado mientras la carga
+crecía, pero p99 y el máximo confirman una cola larga y picos aislados. Esta
+prueba complementa el estudio de capacidad progresiva; no pertenece al CSV
+central ni sustituye el escenario nominal ISO.
+
+\subsection{Fiabilidad y disponibilidad: alcance no concluido}
+\label{subsec:fiabilidad-disponibilidad}
+
+El protocolo de fiabilidad preveía diez repeticiones de una hora con 50
+usuarios. No se ejecutó ninguna: \textbf{NO EJECUTADA --- 0/10}. La decisión de
+detenerse antes de esta fase está registrada por el HTTP 500 de la rampa, la alta
+variabilidad p99 y el límite superior p99 mayor que 750 ms. No se simularon horas,
+no se sustituyeron datos ausentes por cero y el analizador informa 0/8 muestras
+centrales completas.
+
+La tasa HTTP 5xx y la disponibilidad no son equivalentes. Para concluir que la
+disponibilidad es al menos 99,5\% se requiere una observación temporal válida y el
+protocolo completo. En consecuencia, fiabilidad temporal y disponibilidad son
+\textbf{no concluyentes}; el informe no afirma 99,5\%, 100\% ni aprobación de
+fiabilidad.
+
+\subsection{Evaluación ISO/IEC 25010 seleccionada}
+\label{subsec:tabla-iso25010}
+
+Observabilidad apoya la eficiencia, la tasa de fallos y el diagnóstico, pero no
+certifica ISO 25010 por sí sola. La Tabla~\ref{tab:resultado-iso25010} integra
+solo características con evidencia disponible.
+
+\begin{table}[ht]
+  \centering
+  \small
+  \caption{Resultado de las características ISO/IEC 25010 seleccionadas.}
+  \label{tab:resultado-iso25010}
+  \begin{tabular}{|p{2.3cm}|p{2.5cm}|p{2.2cm}|p{4.0cm}|p{1.8cm}|}
+    \hline
+    \textbf{Característica} & \textbf{Métrica} & \textbf{Objetivo} & \textbf{Evidencia/resultado} & \textbf{Estado} \\
+    \hline
+    Eficiencia & p95 nominal, 50 usuarios & IC95 superior $<500$ ms & 88,543936 ms & CUMPLE \\
+    \hline
+    Fiabilidad acotada & HTTP 5xx nominal & $<1\%$ & 0/57\,641, 0\% en r2--r9 & CUMPLE en escenario \\
+    \hline
+    Disponibilidad & Observación temporal & $\geq99,5\%$ & Fiabilidad 0/10; sin horas válidas & NO CONCLUYENTE \\
+    \hline
+    Mantenibilidad & Cobertura por componente & $\geq70\%$ & Backend y Web superan; Mobile 45,69\% de líneas & PARCIAL \\
+    \hline
+    Mantenibilidad & Complejidad ciclomática & $<10$ & Configuración/evidencia acotada a Usuarios; sin reporte global reproducible & PARCIAL \\
+    \hline
+    Compatibilidad & Motores Web y Android & Chromium, Firefox, WebKit; API 26+ & Playwright en tres motores; minSdk 26, targetSdk 34 y emulador API 29 & CUMPLE en matriz declarada \\
+    \hline
+  \end{tabular}
+\end{table}
+
+En mantenibilidad, los cinco módulos Backend y Web superan 70\%, pero Mobile no;
+por ello no se calcula un promedio global. Checkstyle limita complejidad a diez
+en Usuarios y existe un registro puntual de media 1,16 y máximo 6, pero no se
+conserva un reporte cuantitativo equivalente para todos los módulos. La
+complejidad se considera parcialmente evaluada. En compatibilidad, Playwright
+aporta evidencia de tres motores y Android declara API 26 o superior; esto no
+implica compatibilidad con todo navegador, fabricante o dispositivo existente.
+
+\subsection{Análisis crítico}
+\label{subsec:analisis-critico-final}
+
+Las fortalezas principales son una p95 nominal con amplio margen respecto de
+500 ms, cero 5xx en las muestras centrales, instrumentación de las tres señales,
+evidencia raw trazable, pruebas multicapa y gates CI/CD ligados al SHA. La
+arquitectura permite relacionar un cambio con pruebas, imagen y despliegue, y el
+manifiesto hace detectables alteraciones en el conjunto experimental.
+
+Las limitaciones impiden una conclusión total. El p99 presenta gran dispersión y
+la rampa contiene un máximo superior a 14 segundos; Mobile permanece bajo 70\%
+de cobertura; fiabilidad 10 por 1 hora no se inició y la disponibilidad no fue
+demostrada. A ello se suman el panel Mobile proxy, falta de rollback automático,
+ausencia de Pact Broker, Testcontainers no uniforme y artefactos de calidad no
+persistidos para todos los componentes. Estas restricciones se documentan como
+amenazas a la generalización, no se ocultan mediante promedios o extrapolaciones.
+
+\subsection{Trazabilidad final de la Entrega 4}
+\label{subsec:trazabilidad-final}
+
+\begin{table}[ht]
+  \centering
+  \scriptsize
+  \caption{Matriz final de trazabilidad respecto de la rúbrica.}
+  \label{tab:trazabilidad-final}
+  \begin{tabular}{|p{1.1cm}|p{3.0cm}|p{4.1cm}|p{2.2cm}|p{1.7cm}|}
+    \hline
+    \textbf{Req.} & \textbf{Implementación} & \textbf{Evidencia} & \textbf{Sección} & \textbf{Estado} \\
+    \hline
+    D1.1 & Capas y puertos & Servicios; dependencia Spring Page/Pageable en dominio Académico & Arquitectura/SOLID & PARCIAL \\
+    \hline
+    D1.2 & Siete patrones reales & ADR-005 y clases Repository, Factory, Strategy, State, Observer, Facade, Singleton & Patrones & CUMPLE \\
+    \hline
+    D2.1 & SPA Web funcional y logout remoto & React, rutas, reservas, JWT y revocación & Aplicación Web & CUMPLE \\
+    \hline
+    D2.2 & Calidad Web & 71/71; cobertura V8 sobre 70\%; Playwright & Pruebas Web & CUMPLE \\
+    \hline
+    D3.1 & Cliente Android & Compose/MVVM, Room, QR; incidentes locales y FCM no E2E & Aplicación Mobile & PARCIAL \\
+    \hline
+    D3.2 & Calidad Mobile & 142/142 y siete instrumentadas; 45,69\% de líneas & Pruebas Mobile & PARCIAL \\
+    \hline
+    D4.1 & Contratos Pact & 15/15 consumidores; verificación Reservas/Usuarios & Pact & CUMPLE \\
+    \hline
+    D4.2 & Integración CockroachDB & Testcontainers, Flyway, cifrado e idempotencia & Testcontainers & CUMPLE \\
+    \hline
+    D5.1 & Pirámide de pruebas & Backend/Web sobre 70\%; Mobile bajo umbral & Estrategia de pruebas & PARCIAL \\
+    \hline
+    D5.2 & CI/CD con gates y SHA & Workflows, GHCR, APK, deployment; sin rollback y Actions por tag & CI/CD & PARCIAL \\
+    \hline
+    D6.1 & Métricas, trazas y logs & Prometheus, OTel, Tempo, Loki, cAdvisor y Grafana & Observabilidad & CUMPLE \\
+    \hline
+    D6.2 & Dashboard de seis paneles & JSON canónico; latencia Mobile solo proxy de Gateway & Dashboard & PARCIAL \\
+    \hline
+    D7.1 & Experimento ISO 25010 & Eficiencia completa; hashes 195/195; fiabilidad 0/10 & ISO/experimentos & PARCIAL \\
+    \hline
+  \end{tabular}
+\end{table}
+
+\subsection{Conclusiones}
+\label{subsec:conclusiones-e4}
+
+La Entrega 4 consolidó un sistema distribuido con cinco aplicaciones Backend,
+clientes Web y Android, persistencia CockroachDB y controles de seguridad
+integrados. La arquitectura por capas, los patrones aplicados y los contratos
+HTTP permiten separar responsabilidades, aunque permanece deuda puntual en el
+dominio Académico y en capacidades Mobile sin backend remoto.
+
+La calidad cuenta con evidencia reproducible: pruebas unitarias, integración
+real con CockroachDB, Pact, Playwright, Android instrumentado, Locust y un
+pipeline que condiciona imágenes y despliegue. Backend y Web superan el umbral
+de cobertura; Mobile dispone de numerosos casos, pero su 45,69\% impide afirmar
+cumplimiento global.
+
+La eficiencia nominal cumple el criterio p95, y las muestras centrales no
+registraron HTTP 5xx. Sin embargo, p99 y la rampa muestran colas largas. La fase
+de fiabilidad no se ejecutó, por lo que no existe base para afirmar
+disponibilidad de 99,5\%. La conclusión profesional es, por tanto, favorable para
+el escenario de eficiencia medido y parcial para la evaluación ISO completa.
+
+La observabilidad mejora la capacidad de diagnóstico mediante Prometheus,
+OpenTelemetry, Tempo, Loki, cAdvisor y Grafana. Su dashboard satisface la
+estructura de seis paneles, pero debe sustituir el proxy Mobile por medición E2E
+real. En conjunto, la entrega está sustentada para informe y defensa siempre que
+las limitaciones experimentales y técnicas permanezcan explícitas.
+
+\subsection{Trabajo futuro}
+\label{subsec:trabajo-futuro}
+
+Las prioridades son elevar la cobertura Mobile con casos de ramas y UI de valor,
+completar las diez horas de fiabilidad bajo un protocolo autorizado y validar
+disponibilidad, investigar y reducir la variabilidad p99, y medir latencia E2E
+desde el dispositivo. También conviene automatizar rollback, incorporar Pact
+Broker con \emph{can-i-deploy}, extender Testcontainers a Académico, persistir
+reportes Backend/Web/Playwright y fijar versiones inmutables y uniformes de las
+herramientas CI. Estas acciones cierran brechas existentes sin introducir
+tecnología ajena a los riesgos observados.
