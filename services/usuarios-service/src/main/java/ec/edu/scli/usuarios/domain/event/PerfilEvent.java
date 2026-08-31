@@ -29,4 +29,9 @@ public record PerfilEvent(
                 OffsetDateTime.now()
         );
     }
+
+    public static PerfilEvent actualizado(Perfil perfil) {
+        return new PerfilEvent(perfil.getId(), "PERFIL_ACTUALIZADO",
+                perfil.getActivo(), OffsetDateTime.now());
+    }
 }

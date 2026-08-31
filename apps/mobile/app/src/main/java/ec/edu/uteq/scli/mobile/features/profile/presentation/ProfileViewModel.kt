@@ -3,28 +3,42 @@ package ec.edu.uteq.scli.mobile.features.profile.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import ec.edu.uteq.scli.mobile.features.profile.data.SettingsRepository
+import ec.edu.uteq.scli.mobile.features.profile.data.ProfileRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
 class ProfileViewModel(
     private val settingsRepository: SettingsRepository,
+    private val profileRepository: ProfileRepository? = null,
 ) : ViewModel() {
+
+    private val nombreRemoto = MutableStateFlow<String?>(null)
+
+    init {
+        if (profileRepository != null) viewModelScope.launch {
+            runCatching { profileRepository.getOwnProfile() }
+                .onSuccess { nombreRemoto.value = "${it.nombres} ${it.apellidos}".trim() }
+        }
+    }
 
     val uiState: StateFlow<ProfileUiState> = combine(
         settingsRepository.nombreTecnico,
         settingsRepository.notificacionesHabilitadas,
         settingsRepository.temaOscuro,
         settingsRepository.idiomaApp,
-    ) { nombre, notificaciones, temaOscuro, idiomaApp ->
+        nombreRemoto,
+    ) { nombre, notificaciones, temaOscuro, idiomaApp, remoto ->
         ProfileUiState(
-            nombreTecnico = nombre,
+            nombreTecnico = remoto ?: nombre,
             notificacionesHabilitadas = notificaciones,
             temaOscuro = temaOscuro,
             idiomaApp = idiomaApp,
+            perfilRemoto = remoto != null,
         )
     }.stateIn(
         scope = viewModelScope,
@@ -33,6 +47,7 @@ class ProfileViewModel(
     )
 
     fun onNombreChange(nombre: String) {
+        if (profileRepository != null) return
         viewModelScope.launch {
             settingsRepository.setNombreTecnico(nombre)
             Timber.tag("ProfileViewModel").d("Nombre del técnico actualizado")

@@ -75,6 +75,33 @@ class UsuariosConsumerPactTest {
                 .toPact(V4Pact.class);
     }
 
+    @Pact(consumer = "scli-web-mobile")
+    V4Pact obtenerPerfilPropio(PactDslWithProvider builder) {
+        return builder.given("el usuario autenticado tiene un perfil propio")
+                .uponReceiving("Web o Mobile consulta el perfil propio")
+                .path("/api/v1/perfiles/me").method("GET")
+                .willRespondWith().status(200)
+                .headers(Map.of("Content-Type", "application/json"))
+                .body(perfilBody()).toPact(V4Pact.class);
+    }
+
+    @Pact(consumer = "scli-web-mobile")
+    V4Pact actualizarPerfilPropio(PactDslWithProvider builder) {
+        PactDslJsonBody request = new PactDslJsonBody()
+                .stringValue("emailPersonal", "ana.gomez@gmail.com")
+                .stringValue("telefono", "0999999999")
+                .stringValue("direccion", "Av. Principal 123")
+                .stringValue("fotoUrl", "https://cdn.scli.edu.ec/perfiles/ana.png");
+        return builder.given("el usuario autenticado tiene un perfil propio")
+                .uponReceiving("Web o Mobile actualiza campos personales propios")
+                .path("/api/v1/perfiles/me").method("PATCH")
+                .headers(Map.of("Content-Type", "application/json"))
+                .body(request)
+                .willRespondWith().status(200)
+                .headers(Map.of("Content-Type", "application/json"))
+                .body(perfilBody()).toPact(V4Pact.class);
+    }
+
     @Test
     @PactTestFor(pactMethod = "obtenerPerfilPorId")
     void obtienePerfilPorIdConLaEstructuraReal(MockServer mockServer) throws Exception {
@@ -111,6 +138,29 @@ class UsuariosConsumerPactTest {
         assertTrue(response.body().contains("\"content\""));
         assertTrue(response.body().contains("\"id\":\"" + PERFIL_ID + "\""));
         assertTrue(response.body().contains("\"totalElements\":1"));
+    }
+
+    @Test
+    @PactTestFor(pactMethod = "obtenerPerfilPropio")
+    void consultaPerfilPropio(MockServer mockServer) throws Exception {
+        HttpResponse<String> response = HttpClient.newHttpClient().send(
+                HttpRequest.newBuilder().uri(URI.create(mockServer.getUrl() + "/api/v1/perfiles/me"))
+                        .GET().build(), HttpResponse.BodyHandlers.ofString());
+        assertEquals(200, response.statusCode());
+        assertTrue(response.body().contains("\"id\":\"" + PERFIL_ID + "\""));
+    }
+
+    @Test
+    @PactTestFor(pactMethod = "actualizarPerfilPropio")
+    void actualizaPerfilPropio(MockServer mockServer) throws Exception {
+        String body = "{\"emailPersonal\":\"ana.gomez@gmail.com\",\"telefono\":\"0999999999\","
+                + "\"direccion\":\"Av. Principal 123\",\"fotoUrl\":\"https://cdn.scli.edu.ec/perfiles/ana.png\"}";
+        HttpResponse<String> response = HttpClient.newHttpClient().send(
+                HttpRequest.newBuilder().uri(URI.create(mockServer.getUrl() + "/api/v1/perfiles/me"))
+                        .header("Content-Type", "application/json")
+                        .method("PATCH", HttpRequest.BodyPublishers.ofString(body)).build(),
+                HttpResponse.BodyHandlers.ofString());
+        assertEquals(200, response.statusCode());
     }
 
     private PactDslJsonBody perfilBody() {

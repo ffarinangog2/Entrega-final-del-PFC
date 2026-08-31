@@ -1,5 +1,5 @@
 const GATEWAY_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '')
-const USUARIOS_BASE_URL = `${GATEWAY_BASE_URL}/usuarios-service`
+const USUARIOS_BASE_URL = GATEWAY_BASE_URL
 
 export interface Perfil {
   id: string
@@ -26,6 +26,13 @@ export interface CrearPerfilRequest {
   telefono: string
   direccion: string
   fechaNacimiento: string
+}
+
+export interface ActualizarPerfilPropioRequest {
+  emailPersonal: string | null
+  telefono: string | null
+  direccion: string | null
+  fotoUrl: string | null
 }
 
 interface PageResponse<T> {
@@ -82,6 +89,17 @@ export async function listarPerfiles(): Promise<Perfil[]> {
 export function crearPerfil(datos: CrearPerfilRequest): Promise<Perfil> {
   return request<Perfil>('/api/v1/perfiles', {
     method: 'POST',
+    body: JSON.stringify(datos),
+  })
+}
+
+export function obtenerPerfilPropio(): Promise<Perfil> {
+  return request<Perfil>('/api/v1/perfiles/me')
+}
+
+export function actualizarPerfilPropio(datos: ActualizarPerfilPropioRequest): Promise<Perfil> {
+  return request<Perfil>('/api/v1/perfiles/me', {
+    method: 'PATCH',
     body: JSON.stringify(datos),
   })
 }

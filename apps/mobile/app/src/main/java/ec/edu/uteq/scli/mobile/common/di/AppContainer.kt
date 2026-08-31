@@ -19,6 +19,8 @@ import ec.edu.uteq.scli.mobile.features.notifications.NotificationHelper
 import ec.edu.uteq.scli.mobile.features.notifications.DeviceRegistrationApi
 import ec.edu.uteq.scli.mobile.features.notifications.DeviceTokenRegistrar
 import ec.edu.uteq.scli.mobile.features.profile.data.SettingsRepository
+import ec.edu.uteq.scli.mobile.features.profile.data.ProfileApi
+import ec.edu.uteq.scli.mobile.features.profile.data.ProfileRepository
 import ec.edu.uteq.scli.mobile.features.qr.data.RemoteQrRepository
 import ec.edu.uteq.scli.mobile.features.qr.data.QrRepository
 import ec.edu.uteq.scli.mobile.features.qr.data.QrApi
@@ -43,6 +45,9 @@ class AppContainer(context: Context) {
     ).addMigrations(AppDatabase.MIGRATION_1_2, AppDatabase.MIGRATION_2_3).build()
 
     val settingsRepository: SettingsRepository = SettingsRepository(context.applicationContext)
+    val profileRepository: ProfileRepository by lazy {
+        ProfileRepository(authenticatedGatewayRetrofit.create(ProfileApi::class.java))
+    }
 
     val notificationHelper: NotificationHelper = NotificationHelper(context.applicationContext)
 

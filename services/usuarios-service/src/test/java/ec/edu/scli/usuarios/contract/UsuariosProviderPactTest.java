@@ -11,6 +11,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import ec.edu.scli.usuarios.application.usecase.PerfilService;
 import ec.edu.scli.usuarios.presentation.controller.PerfilController;
 import ec.edu.scli.usuarios.presentation.dto.perfil.PerfilResponse;
+import ec.edu.scli.usuarios.security.JwtPrincipal;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,6 +32,7 @@ import java.util.UUID;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
 @Provider("usuarios-service")
 @PactFolder("../../tests/contract/target/pacts")
@@ -46,6 +48,8 @@ class UsuariosProviderPactTest {
         perfilService = mock(PerfilService.class);
         MockMvc mockMvc = MockMvcBuilders
                 .standaloneSetup(new PerfilController(perfilService))
+                .defaultRequest(get("/").principal(new JwtPrincipal(
+                        UUID.randomUUID(), PERFIL_ID, "ana")))
                 .setCustomArgumentResolvers(new PageableHandlerMethodArgumentResolver())
                 .setMessageConverters(new MappingJackson2HttpMessageConverter(
                         Jackson2ObjectMapperBuilder.json()
@@ -67,6 +71,12 @@ class UsuariosProviderPactTest {
                 List.of(perfilDeEjemplo()), PageRequest.of(0, 20), 1);
         when(perfilService.listar(any(), any(), any(), any(), any(), any()))
                 .thenReturn(pagina);
+    }
+
+    @State("el usuario autenticado tiene un perfil propio")
+    void existePerfilPropio() {
+        when(perfilService.obtenerPorId(PERFIL_ID)).thenReturn(perfilDeEjemplo());
+        when(perfilService.actualizarPropio(any(), any())).thenReturn(perfilDeEjemplo());
     }
 
     @TestTemplate

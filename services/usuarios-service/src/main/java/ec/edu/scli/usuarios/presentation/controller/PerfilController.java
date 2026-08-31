@@ -4,7 +4,9 @@ import ec.edu.scli.usuarios.presentation.dto.perfil.PerfilCreateRequest;
 import ec.edu.scli.usuarios.presentation.dto.perfil.PerfilEstadoRequest;
 import ec.edu.scli.usuarios.presentation.dto.perfil.PerfilResponse;
 import ec.edu.scli.usuarios.presentation.dto.perfil.PerfilUpdateRequest;
+import ec.edu.scli.usuarios.presentation.dto.perfil.PerfilMeUpdateRequest;
 import ec.edu.scli.usuarios.application.usecase.PerfilService;
+import ec.edu.scli.usuarios.security.JwtPrincipal;
 
 import jakarta.validation.Valid;
 import ec.edu.scli.usuarios.domain.model.TipoPerfil;
@@ -26,6 +28,30 @@ public class PerfilController {
 
     public PerfilController(PerfilService perfilService) {
         this.perfilService = perfilService;
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<PerfilResponse> obtenerPropio(java.security.Principal principal) {
+        JwtPrincipal identidad = identidad(principal);
+        return ResponseEntity.ok(perfilService.obtenerPorId(identidad.perfilId()));
+    }
+
+    @PatchMapping("/me")
+    public ResponseEntity<PerfilResponse> actualizarPropio(
+            java.security.Principal principal,
+            @Valid @RequestBody PerfilMeUpdateRequest request) {
+        JwtPrincipal identidad = identidad(principal);
+        return ResponseEntity.ok(perfilService.actualizarPropio(identidad.perfilId(), request));
+    }
+
+    private JwtPrincipal identidad(java.security.Principal principal) {
+        if (principal instanceof JwtPrincipal jwtPrincipal) return jwtPrincipal;
+        if (principal instanceof org.springframework.security.core.Authentication authentication
+                && authentication.getPrincipal() instanceof JwtPrincipal jwtPrincipal) {
+            return jwtPrincipal;
+        }
+        throw new org.springframework.security.access.AccessDeniedException(
+                "No se pudo resolver la identidad autenticada");
     }
 
     @PostMapping

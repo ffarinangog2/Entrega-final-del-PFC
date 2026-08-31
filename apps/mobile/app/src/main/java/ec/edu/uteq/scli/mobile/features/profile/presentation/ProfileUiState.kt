@@ -5,4 +5,5 @@ data class ProfileUiState(
     val notificacionesHabilitadas: Boolean = true,
     val temaOscuro: Boolean? = null,
     val idiomaApp: String? = null,
+    val perfilRemoto: Boolean = false,
 )

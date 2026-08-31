@@ -148,7 +148,7 @@ fun AppNavHost(application: ScliMobileApplication) {
                 val viewModel: ProfileViewModel = viewModel(
                     factory = viewModelFactory {
                         initializer {
-                            ProfileViewModel(container.settingsRepository)
+                            ProfileViewModel(container.settingsRepository, container.profileRepository)
                         }
                     },
                 )

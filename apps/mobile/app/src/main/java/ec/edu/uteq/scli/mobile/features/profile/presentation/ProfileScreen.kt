@@ -39,6 +39,7 @@ fun ProfileScreen(viewModel: ProfileViewModel, onLogout: () -> Unit) {
             value = uiState.nombreTecnico,
             onValueChange = viewModel::onNombreChange,
             label = { Text(stringResource(R.string.perfil_nombre_label)) },
+            readOnly = uiState.perfilRemoto,
             modifier = Modifier.fillMaxWidth(),
         )
 

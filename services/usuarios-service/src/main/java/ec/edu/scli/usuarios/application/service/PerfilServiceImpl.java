@@ -5,6 +5,7 @@ import ec.edu.scli.usuarios.presentation.dto.perfil.PerfilCreateRequest;
 import ec.edu.scli.usuarios.presentation.dto.perfil.PerfilExistsResponse;
 import ec.edu.scli.usuarios.presentation.dto.perfil.PerfilResponse;
 import ec.edu.scli.usuarios.presentation.dto.perfil.PerfilUpdateRequest;
+import ec.edu.scli.usuarios.presentation.dto.perfil.PerfilMeUpdateRequest;
 import ec.edu.scli.usuarios.domain.model.Perfil;
 import ec.edu.scli.usuarios.domain.exception.ConflictException;
 import ec.edu.scli.usuarios.domain.exception.ResourceNotFoundException;
@@ -140,6 +141,19 @@ public class PerfilServiceImpl implements PerfilService {
                 publicarEvento(PerfilEvent.estadoCambiado(perfilActualizado));
 
                 return convertirAResponse(perfilActualizado);
+        }
+
+        @Override
+        @Transactional
+        public PerfilResponse actualizarPropio(UUID id, PerfilMeUpdateRequest request) {
+                Perfil perfil = buscarPerfil(id);
+                perfil.setEmailPersonal(normalizarEmail(request.emailPersonal()));
+                perfil.setTelefono(request.telefono());
+                perfil.setDireccion(request.direccion());
+                perfil.setFotoUrl(request.fotoUrl());
+                Perfil actualizado = perfilRepository.save(perfil);
+                publicarEvento(PerfilEvent.actualizado(actualizado));
+                return convertirAResponse(actualizado);
         }
 
         @Override

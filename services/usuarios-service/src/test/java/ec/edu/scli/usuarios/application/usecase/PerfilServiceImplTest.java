@@ -3,6 +3,7 @@ package ec.edu.scli.usuarios.application.usecase;
 import ec.edu.scli.usuarios.presentation.dto.perfil.PerfilCreateRequest;
 import ec.edu.scli.usuarios.presentation.dto.perfil.PerfilExistsResponse;
 import ec.edu.scli.usuarios.presentation.dto.perfil.PerfilResponse;
+import ec.edu.scli.usuarios.presentation.dto.perfil.PerfilMeUpdateRequest;
 import ec.edu.scli.usuarios.domain.model.Perfil;
 import ec.edu.scli.usuarios.domain.exception.ConflictException;
 import ec.edu.scli.usuarios.domain.exception.ResourceNotFoundException;
@@ -177,6 +178,22 @@ class PerfilServiceImplTest {
         assertThatThrownBy(() -> perfilService.obtenerPorId(perfilId))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining(perfilId.toString());
+    }
+
+    @Test
+    void actualizarPropioSoloModificaCamposPersonales() {
+        when(perfilRepository.findById(perfilId)).thenReturn(Optional.of(perfil));
+        when(perfilRepository.save(perfil)).thenReturn(perfil);
+
+        PerfilResponse response = perfilService.actualizarPropio(perfilId,
+                new PerfilMeUpdateRequest("ANA@PERSONAL.COM", "0999999999",
+                        "Nueva dirección", "https://cdn.example/foto.png"));
+
+        assertThat(response.emailPersonal()).isEqualTo("ana@personal.com");
+        assertThat(response.telefono()).isEqualTo("0999999999");
+        assertThat(response.nombres()).isEqualTo("Ana");
+        assertThat(response.emailInstitucional()).isEqualTo("ana.torres@uteq.edu.ec");
+        assertThat(response.activo()).isTrue();
     }
 
     // ---------------------------------------------------------------
