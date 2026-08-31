@@ -18,4 +18,13 @@ class NotificacionServiceTest {
   when(repository.findByPerfilIdAndActivoTrue(profile)).thenReturn(List.of(e));doThrow(new IllegalStateException()).when(sender).enviar(any(),any(),any(),any());
   assertDoesNotThrow(()->service.notificarPerfil(profile,"t","c",Map.of()));
  }
+ @Test void desregistrarSoloDesactivaTokenDelPerfilAutenticado(){UUID profile=UUID.randomUUID();var e=new DispositivoNotificacionJpaEntity();e.setActivo(true);
+  when(repository.findByTokenAndPerfilId("token",profile)).thenReturn(Optional.of(e));
+  service.desregistrar("token",profile);
+  assertFalse(e.isActivo());verify(repository).save(e);
+ }
+ @Test void desregistrarEsIdempotenteYNoAfectaTokenAjeno(){UUID profile=UUID.randomUUID();
+  when(repository.findByTokenAndPerfilId("token",profile)).thenReturn(Optional.empty());
+  assertDoesNotThrow(()->service.desregistrar("token",profile));verify(repository,never()).save(any());
+ }
 }

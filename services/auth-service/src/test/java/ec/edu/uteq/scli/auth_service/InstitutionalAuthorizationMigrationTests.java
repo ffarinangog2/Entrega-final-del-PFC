@@ -68,6 +68,7 @@ class InstitutionalAuthorizationMigrationTests {
                         "LABORATORIO_LEER",
                         "LABORATORIO_GESTIONAR",
                         "EQUIPO_LEER",
+                        "EQUIPO_GESTIONAR",
                         "AGENDA_GESTIONAR",
                         "INCIDENTE_CREAR",
                         "INCIDENTE_LEER",
@@ -97,6 +98,12 @@ class InstitutionalAuthorizationMigrationTests {
                         "SOLICITUD_RECHAZAR",
                         "RESERVA_CANCELAR",
                         "AGENDA_GESTIONAR");
+    }
+
+    @Test
+    void teacherCanCancelOnlyThroughReservationOwnershipPolicy() {
+        assertThat(permissions("DOCENTE"))
+                .contains("RESERVA_CANCELAR");
     }
 
     private Set<String> permissions(String roleCode) {

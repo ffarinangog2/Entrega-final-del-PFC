@@ -83,6 +83,9 @@ usuarios:
 
 app:
   internal-api-key: ${INTERNAL_API_KEY:clave-interna-desarrollo}
+  initial-data:
+    enabled: ${INITIAL_DATA_ENABLED:false}
+    password: ${INITIAL_USERS_PASSWORD:}
   password-reset:
     base-url: ${PASSWORD_RESET_BASE_URL:http://localhost:3000/restablecer-contrasena}
     expiration-minutes: ${PASSWORD_RESET_EXPIRATION_MINUTES:20}

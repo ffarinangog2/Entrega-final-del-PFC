@@ -10,6 +10,7 @@ interface AuthRepository {
     suspend fun logout()
     fun onSessionExpired(listener: () -> Unit) {}
     fun onAuthenticated(listener: suspend () -> Unit) {}
+    fun onBeforeLogout(listener: suspend () -> Unit) {}
 }
 
 interface SecureTokenStorage {
@@ -25,6 +26,7 @@ class RemoteAuthRepository(
 ) : AuthRepository {
     private var sessionExpiredListener: () -> Unit = {}
     private var authenticatedListener: suspend () -> Unit = {}
+    private var beforeLogoutListener: suspend () -> Unit = {}
     override suspend fun login(username: String, password: String): NetworkResult<AuthSession> = try {
         val response = api.login(LoginRequest(username, password))
         val body = response.body()
@@ -84,6 +86,13 @@ class RemoteAuthRepository(
     override suspend fun logout() {
         val current = storage.read()
         try {
+            beforeLogoutListener()
+        } catch (_: IOException) {
+            // La baja del dispositivo queda pendiente; se continúa con la revocación de Auth.
+        } catch (_: RuntimeException) {
+            // Un fallo de notificaciones no debe impedir revocar la sesión.
+        }
+        try {
             if (current != null) api.logout(RefreshRequest(current.refreshToken))
         } catch (_: IOException) {
             // El cierre local nunca debe depender de la disponibilidad de red.
@@ -95,4 +104,5 @@ class RemoteAuthRepository(
     }
     override fun onSessionExpired(listener: () -> Unit) { sessionExpiredListener = listener }
     override fun onAuthenticated(listener: suspend () -> Unit) { authenticatedListener = listener }
+    override fun onBeforeLogout(listener: suspend () -> Unit) { beforeLogoutListener = listener }
 }

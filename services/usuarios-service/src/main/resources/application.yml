@@ -66,6 +66,10 @@ security:
 
 app:
   internal-api-key: ${INTERNAL_API_KEY:test-internal-api-key}
+  initial-data:
+    enabled: ${INITIAL_DATA_ENABLED:false}
+    piso-ids: ${INITIAL_PISO_IDS:35000000-0000-0000-0000-000000000001,35000000-0000-0000-0000-000000000002}
+    carrera-ids: ${INITIAL_CARRERA_IDS:37000000-0000-0000-0000-000000000001,37000000-0000-0000-0000-000000000002}
   security:
     data-encryption-key: ${DATA_ENCRYPTION_KEY:MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=}
     data-hash-key: ${DATA_HASH_KEY:MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=}

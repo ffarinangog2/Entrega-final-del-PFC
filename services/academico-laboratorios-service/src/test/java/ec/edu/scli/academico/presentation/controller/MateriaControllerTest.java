@@ -3,6 +3,7 @@ package ec.edu.scli.academico.presentation.controller;
 import ec.edu.scli.academico.application.service.MateriaService;
 import ec.edu.scli.academico.presentation.dto.materia.MateriaRequest;
 import ec.edu.scli.academico.presentation.dto.materia.MateriaResponse;
+import ec.edu.scli.academico.security.PoliticaAmbitoAcademico;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -23,6 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -30,6 +32,9 @@ class MateriaControllerTest {
 
     @Mock
     private MateriaService materiaService;
+
+    @Mock
+    private PoliticaAmbitoAcademico politicaAmbitoAcademico;
 
     @InjectMocks
     private MateriaController materiaController;
@@ -41,6 +46,8 @@ class MateriaControllerTest {
     @BeforeEach
     void configurar() {
         carreraId = UUID.randomUUID();
+        lenient().when(politicaAmbitoAcademico.aplicarCarreraLectura(any(UUID.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
         requestValido = new MateriaRequest(carreraId, "PROG1", "Programacion I", 64);
         responseEsperado = new MateriaResponse(
                 UUID.randomUUID(), carreraId, "PROG1", "Programacion I", 64,

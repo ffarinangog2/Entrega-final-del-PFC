@@ -16,6 +16,14 @@ public class NotificacionService {
         e.setUsuarioAuthId(usuarioId);e.setPerfilId(perfilId);e.setToken(request.token());e.setPlataforma(request.plataforma());e.setActivo(true);
         return response(repository.saveAndFlush(e));
     }
+    @Transactional public void desregistrar(String token, UUID perfilId) {
+        repository.findByTokenAndPerfilId(token, perfilId).ifPresent(dispositivo -> {
+            if (dispositivo.isActivo()) {
+                dispositivo.setActivo(false);
+                repository.save(dispositivo);
+            }
+        });
+    }
     public void notificarPerfil(UUID perfilId,String titulo,String cuerpo,Map<String,String> datos){
         repository.findByPerfilIdAndActivoTrue(perfilId).forEach(d -> {
             try { sender.enviar(d.getToken(),titulo,cuerpo,datos); }

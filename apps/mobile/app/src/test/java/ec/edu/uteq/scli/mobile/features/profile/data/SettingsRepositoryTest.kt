@@ -34,7 +34,7 @@ class SettingsRepositoryTest {
 
     @Test
     fun `returns documented defaults when preferences are absent`() = runTest {
-        assertEquals("", repository.nombreTecnico.first())
+        assertEquals("", repository.nombreUsuario.first())
         assertTrue(repository.notificacionesHabilitadas.first())
         assertNull(repository.temaOscuro.first())
         assertNull(repository.idiomaApp.first())
@@ -42,10 +42,10 @@ class SettingsRepositoryTest {
 
     @Test
     fun `persists profile and notification preferences`() = runTest {
-        repository.setNombreTecnico("Técnico de laboratorio")
+        repository.setNombreUsuario("Usuario de laboratorio")
         repository.setNotificacionesHabilitadas(false)
 
-        assertEquals("Técnico de laboratorio", repository.nombreTecnico.first())
+        assertEquals("Usuario de laboratorio", repository.nombreUsuario.first())
         assertFalse(repository.notificacionesHabilitadas.first())
     }
 
@@ -63,7 +63,7 @@ class SettingsRepositoryTest {
     }
 
     private suspend fun resetPreferences() {
-        repository.setNombreTecnico("")
+        repository.setNombreUsuario("")
         repository.setNotificacionesHabilitadas(true)
         repository.setTemaOscuro(null)
         repository.setIdiomaApp(null)

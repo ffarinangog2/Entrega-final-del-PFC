@@ -34,13 +34,13 @@ class ProfileViewModelTest {
     }
 
     private fun mockSettingsRepository(
-        nombreTecnico: String = "",
+        nombreUsuario: String = "",
         notificacionesHabilitadas: Boolean = true,
         temaOscuro: Boolean? = null,
         idiomaApp: String? = null,
     ): SettingsRepository {
         val settingsRepository = mockk<SettingsRepository>(relaxed = true)
-        every { settingsRepository.nombreTecnico } returns flowOf(nombreTecnico)
+        every { settingsRepository.nombreUsuario } returns flowOf(nombreUsuario)
         every { settingsRepository.notificacionesHabilitadas } returns flowOf(notificacionesHabilitadas)
         every { settingsRepository.temaOscuro } returns flowOf(temaOscuro)
         every { settingsRepository.idiomaApp } returns flowOf(idiomaApp)
@@ -51,7 +51,7 @@ class ProfileViewModelTest {
     fun `uiState refleja los valores iniciales de nombreTecnico, notificacionesHabilitadas, temaOscuro e idiomaApp`() =
         runTest {
             val settingsRepository = mockSettingsRepository(
-                nombreTecnico = "Juan Pérez",
+                nombreUsuario = "Juan Pérez",
                 notificacionesHabilitadas = false,
                 temaOscuro = true,
                 idiomaApp = "en",
@@ -62,7 +62,7 @@ class ProfileViewModelTest {
             runCurrent()
 
             val actual = viewModel.uiState.value
-            assertEquals("Juan Pérez", actual.nombreTecnico)
+            assertEquals("Juan Pérez", actual.nombreUsuario)
             assertEquals(false, actual.notificacionesHabilitadas)
             assertEquals(true, actual.temaOscuro)
             assertEquals("en", actual.idiomaApp)
@@ -76,7 +76,7 @@ class ProfileViewModelTest {
         viewModel.onNombreChange("Ana Gómez")
         runCurrent()
 
-        coVerify { settingsRepository.setNombreTecnico("Ana Gómez") }
+        coVerify { settingsRepository.setNombreUsuario("Ana Gómez") }
     }
 
     @Test

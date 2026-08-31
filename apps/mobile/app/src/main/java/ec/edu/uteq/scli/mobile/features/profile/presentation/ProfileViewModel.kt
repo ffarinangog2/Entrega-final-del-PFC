@@ -27,14 +27,14 @@ class ProfileViewModel(
     }
 
     val uiState: StateFlow<ProfileUiState> = combine(
-        settingsRepository.nombreTecnico,
+        settingsRepository.nombreUsuario,
         settingsRepository.notificacionesHabilitadas,
         settingsRepository.temaOscuro,
         settingsRepository.idiomaApp,
         nombreRemoto,
     ) { nombre, notificaciones, temaOscuro, idiomaApp, remoto ->
         ProfileUiState(
-            nombreTecnico = remoto ?: nombre,
+            nombreUsuario = remoto ?: nombre,
             notificacionesHabilitadas = notificaciones,
             temaOscuro = temaOscuro,
             idiomaApp = idiomaApp,
@@ -49,8 +49,8 @@ class ProfileViewModel(
     fun onNombreChange(nombre: String) {
         if (profileRepository != null) return
         viewModelScope.launch {
-            settingsRepository.setNombreTecnico(nombre)
-            Timber.tag("ProfileViewModel").d("Nombre del técnico actualizado")
+            settingsRepository.setNombreUsuario(nombre)
+            Timber.tag("ProfileViewModel").d("Nombre del usuario actualizado")
         }
     }
 

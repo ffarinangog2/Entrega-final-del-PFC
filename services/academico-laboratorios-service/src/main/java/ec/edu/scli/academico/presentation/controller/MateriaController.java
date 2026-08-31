@@ -21,19 +21,22 @@ import ec.edu.scli.academico.application.service.MateriaService;
 import ec.edu.scli.academico.presentation.dto.materia.MateriaRequest;
 import ec.edu.scli.academico.presentation.dto.materia.MateriaResponse;
 import jakarta.validation.Valid;
+import ec.edu.scli.academico.security.PoliticaAmbitoAcademico;
 
 @RestController
 public class MateriaController {
 
     private final MateriaService materiaService;
+    private final PoliticaAmbitoAcademico politicaAmbito;
 
-    public MateriaController(MateriaService materiaService) {
+    public MateriaController(MateriaService materiaService, PoliticaAmbitoAcademico politicaAmbito) {
         this.materiaService = materiaService;
+        this.politicaAmbito = politicaAmbito;
     }
 
     @PostMapping("/api/v1/materias")
     public ResponseEntity<MateriaResponse> crear(@Valid @RequestBody MateriaRequest request) {
-
+        politicaAmbito.validarCarrera(request.carreraId());
         MateriaResponse creada = materiaService.crear(request);
 
         URI ubicacion = URI.create("/api/v1/materias/" + creada.id());
@@ -49,16 +52,19 @@ public class MateriaController {
             @RequestParam(required = false) Boolean activo,
             @ParameterObject Pageable pageable
     ) {
-        return ResponseEntity.ok(materiaService.listar(carreraId, codigo, nombre, activo, pageable));
+        UUID carreraEfectiva = politicaAmbito.aplicarCarreraLectura(carreraId);
+        return ResponseEntity.ok(materiaService.listar(carreraEfectiva, codigo, nombre, activo, pageable));
     }
 
     @GetMapping("/api/v1/materias/{id}")
     public ResponseEntity<MateriaResponse> obtenerPorId(@PathVariable UUID id) {
+        politicaAmbito.validarMateriaLectura(id);
         return ResponseEntity.ok(materiaService.obtenerPorId(id));
     }
 
     @GetMapping("/api/v1/carreras/{carreraId}/materias")
     public ResponseEntity<List<MateriaResponse>> listarPorCarrera(@PathVariable UUID carreraId) {
+        politicaAmbito.aplicarCarreraLectura(carreraId);
         return ResponseEntity.ok(materiaService.listarPorCarrera(carreraId));
     }
 
@@ -67,11 +73,14 @@ public class MateriaController {
             @PathVariable UUID id,
             @Valid @RequestBody MateriaRequest request
     ) {
+        politicaAmbito.validarMateria(id);
+        politicaAmbito.validarCarrera(request.carreraId());
         return ResponseEntity.ok(materiaService.actualizar(id, request));
     }
 
     @DeleteMapping("/api/v1/materias/{id}")
     public ResponseEntity<Void> eliminar(@PathVariable UUID id) {
+        politicaAmbito.validarMateria(id);
         materiaService.eliminar(id);
         return ResponseEntity.noContent().build();
     }

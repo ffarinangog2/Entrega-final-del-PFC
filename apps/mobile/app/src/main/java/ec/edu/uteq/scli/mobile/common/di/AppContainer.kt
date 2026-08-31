@@ -77,5 +77,8 @@ class AppContainer(context: Context) {
     val deviceTokenRegistrar = DeviceTokenRegistrar(
         context.applicationContext, authenticatedGatewayRetrofit.create(DeviceRegistrationApi::class.java),
     )
-    init { authRepository.onAuthenticated { deviceTokenRegistrar.registrarPendiente() } }
+    init {
+        authRepository.onAuthenticated { deviceTokenRegistrar.registrarPendiente() }
+        authRepository.onBeforeLogout { deviceTokenRegistrar.desregistrarActual() }
+    }
 }

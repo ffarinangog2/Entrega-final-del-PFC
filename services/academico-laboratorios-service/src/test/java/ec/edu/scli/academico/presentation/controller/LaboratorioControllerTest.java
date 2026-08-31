@@ -9,6 +9,7 @@ import ec.edu.scli.academico.presentation.dto.laboratorio.LaboratorioEstadoReque
 import ec.edu.scli.academico.presentation.dto.laboratorio.LaboratorioRequest;
 import ec.edu.scli.academico.presentation.dto.laboratorio.LaboratorioResponse;
 import ec.edu.scli.academico.presentation.dto.laboratorio.SerieEstadoResponse;
+import ec.edu.scli.academico.security.PoliticaAmbitoAcademico;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -42,6 +43,9 @@ class LaboratorioControllerTest {
 
     @Mock
     private PrometheusQueryClient prometheusQueryClient;
+
+    @Mock
+    private PoliticaAmbitoAcademico politicaAmbitoAcademico;
 
     @InjectMocks
     private LaboratorioController laboratorioController;

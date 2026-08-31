@@ -102,6 +102,29 @@ class ReservaServiceImplTest {
     }
 
     @Test
+    void docenteCancelaSuPropiaReserva() {
+        UUID docente = UUID.randomUUID();
+        Reserva reserva = reserva(EstadoReserva.PROGRAMADA);
+        reserva.setResponsableId(docente);
+        prepararActualizacion(reserva);
+        when(politica.actor()).thenReturn(new ActorAutenticado(docente, java.util.Set.of("ROLE_DOCENTE")));
+        assertEquals(EstadoReserva.CANCELADA,
+                service.cancelar(reserva.getId(), new CancelarReservaRequest("motivo"), docente).estado());
+        verify(politica, never()).validarGestion(any());
+    }
+
+    @Test
+    void docenteNoPuedeCancelarReservaAjena() {
+        UUID docente = UUID.randomUUID();
+        Reserva reserva = reserva(EstadoReserva.PROGRAMADA);
+        prepararActualizacion(reserva);
+        when(politica.actor()).thenReturn(new ActorAutenticado(docente, java.util.Set.of("ROLE_DOCENTE")));
+        assertThrows(org.springframework.security.access.AccessDeniedException.class,
+                () -> service.cancelar(reserva.getId(), new CancelarReservaRequest("motivo"), docente));
+        verify(repository, never()).guardar(any());
+    }
+
+    @Test
     void marcaNoAsistidaTrasFinalizarFranja() {
         Reserva reserva = reserva(EstadoReserva.PROGRAMADA);
         reserva.setFechaReserva(LocalDate.now().minusDays(1));

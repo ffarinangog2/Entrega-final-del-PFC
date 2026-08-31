@@ -4,6 +4,7 @@ import ec.edu.scli.academico.application.service.HorarioAcademicoService;
 import ec.edu.scli.academico.enums.DiaSemana;
 import ec.edu.scli.academico.presentation.dto.horario.HorarioAcademicoRequest;
 import ec.edu.scli.academico.presentation.dto.horario.HorarioAcademicoResponse;
+import ec.edu.scli.academico.security.PoliticaAmbitoAcademico;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -19,6 +20,8 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -26,6 +29,9 @@ class HorarioAcademicoControllerTest {
 
     @Mock
     private HorarioAcademicoService horarioAcademicoService;
+
+    @Mock
+    private PoliticaAmbitoAcademico politicaAmbitoAcademico;
 
     @InjectMocks
     private HorarioAcademicoController horarioAcademicoController;
@@ -37,6 +43,8 @@ class HorarioAcademicoControllerTest {
 
     @BeforeEach
     void configurar() {
+        lenient().when(politicaAmbitoAcademico.filtrarHorariosLectura(anyList()))
+                .thenAnswer(invocation -> invocation.getArgument(0));
         docenteId = UUID.randomUUID();
         laboratorioId = UUID.randomUUID();
         UUID materiaId = UUID.randomUUID();

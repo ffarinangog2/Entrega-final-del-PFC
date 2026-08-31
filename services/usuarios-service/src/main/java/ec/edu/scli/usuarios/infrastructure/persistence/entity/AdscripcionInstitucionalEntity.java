@@ -12,6 +12,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
@@ -50,4 +52,17 @@ public class AdscripcionInstitucionalEntity {
     public boolean isActivo() { return activo; }
     public OffsetDateTime getCreadoEn() { return creadoEn; }
     public OffsetDateTime getActualizadoEn() { return actualizadoEn; }
+    public void setPerfil(Perfil perfil) { this.perfil = perfil; }
+    public void setTipoAmbito(TipoAmbitoInstitucional tipoAmbito) { this.tipoAmbito = tipoAmbito; }
+    public void setAmbitoId(UUID ambitoId) { this.ambitoId = ambitoId; }
+    public void setActivo(boolean activo) { this.activo = activo; }
+
+    @PrePersist
+    void prePersist() {
+        creadoEn = OffsetDateTime.now();
+        actualizadoEn = creadoEn;
+    }
+
+    @PreUpdate
+    void preUpdate() { actualizadoEn = OffsetDateTime.now(); }
 }

@@ -133,6 +133,30 @@ class RemoteAuthRepositoryTest {
         verify { storage.clear() }
     }
 
+    @Test fun `logout intenta desregistrar dispositivo antes de revocar y limpiar`() = runTest {
+        every { storage.read() } returns SESSION
+        coEvery { api.logout(any()) } returns Response.success(Unit)
+        val orden = mutableListOf<String>()
+        val repository = RemoteAuthRepository(api, storage).also {
+            it.onBeforeLogout { orden += "dispositivo" }
+        }
+        coEvery { api.logout(any()) } answers { orden += "auth"; Response.success(Unit) }
+        every { storage.clear() } answers { orden += "local" }
+        repository.logout()
+        assertEquals(listOf("dispositivo", "auth", "local"), orden)
+    }
+
+    @Test fun `logout local continua cuando falla desregistro de dispositivo`() = runTest {
+        every { storage.read() } returns SESSION
+        coEvery { api.logout(any()) } returns Response.success(Unit)
+        val repository = RemoteAuthRepository(api, storage).also {
+            it.onBeforeLogout { throw IOException("sin red") }
+        }
+        repository.logout()
+        coVerify { api.logout(RefreshRequest("refresh-anterior")) }
+        verify { storage.clear() }
+    }
+
     @Test fun `logout limpia almacenamiento aunque falle la red`() = runTest {
         every { storage.read() } returns SESSION
         coEvery { api.logout(any()) } throws IOException("sin red")

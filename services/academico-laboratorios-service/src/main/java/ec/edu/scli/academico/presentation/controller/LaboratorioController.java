@@ -28,6 +28,7 @@ import ec.edu.scli.academico.presentation.dto.laboratorio.LaboratorioRequest;
 import ec.edu.scli.academico.presentation.dto.laboratorio.LaboratorioResponse;
 import ec.edu.scli.academico.presentation.dto.laboratorio.SerieEstadoResponse;
 import jakarta.validation.Valid;
+import ec.edu.scli.academico.security.PoliticaAmbitoAcademico;
 
 @RestController
 @RequestMapping("/api/v1/laboratorios")
@@ -36,21 +37,24 @@ public class LaboratorioController {
     private final LaboratorioService laboratorioService;
     private final LaboratorioDetalleFacade laboratorioDetalleFacade;
     private final PrometheusQueryClient prometheusQueryClient;
+    private final PoliticaAmbitoAcademico politicaAmbito;
 
 
     public LaboratorioController(
         LaboratorioService laboratorioService,
         LaboratorioDetalleFacade laboratorioDetalleFacade,
-        PrometheusQueryClient prometheusQueryClient
+        PrometheusQueryClient prometheusQueryClient,
+        PoliticaAmbitoAcademico politicaAmbito
     ) {
         this.laboratorioService = laboratorioService;
         this.laboratorioDetalleFacade = laboratorioDetalleFacade;
         this.prometheusQueryClient = prometheusQueryClient;
+        this.politicaAmbito = politicaAmbito;
     }
 
     @PostMapping
     public ResponseEntity<LaboratorioResponse> crear(@Valid @RequestBody LaboratorioRequest request) {
-
+        politicaAmbito.validarPiso(request.pisoId());
         LaboratorioResponse creado = laboratorioService.crear(request);
 
         URI ubicacion = URI.create("/api/v1/laboratorios/" + creado.id());
@@ -96,6 +100,8 @@ public class LaboratorioController {
             @PathVariable UUID id,
             @Valid @RequestBody LaboratorioRequest request
     ) {
+        politicaAmbito.validarLaboratorio(id);
+        politicaAmbito.validarPiso(request.pisoId());
         return ResponseEntity.ok(laboratorioService.actualizar(id, request));
     }
 
@@ -104,6 +110,7 @@ public class LaboratorioController {
             @PathVariable UUID id,
             @Valid @RequestBody LaboratorioEstadoRequest request
     ) {
+        politicaAmbito.validarLaboratorio(id);
         return ResponseEntity.ok(laboratorioService.cambiarEstado(id, request.estado()));
     }
 }

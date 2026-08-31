@@ -36,7 +36,7 @@ fun ProfileScreen(viewModel: ProfileViewModel, onLogout: () -> Unit) {
         Text(text = stringResource(R.string.perfil_titulo))
 
         OutlinedTextField(
-            value = uiState.nombreTecnico,
+            value = uiState.nombreUsuario,
             onValueChange = viewModel::onNombreChange,
             label = { Text(stringResource(R.string.perfil_nombre_label)) },
             readOnly = uiState.perfilRemoto,

@@ -5,6 +5,7 @@ import ec.edu.scli.academico.enums.EstadoEquipo;
 import ec.edu.scli.academico.presentation.dto.equipo.EquipoEstadoRequest;
 import ec.edu.scli.academico.presentation.dto.equipo.EquipoRequest;
 import ec.edu.scli.academico.presentation.dto.equipo.EquipoResponse;
+import ec.edu.scli.academico.security.PoliticaAmbitoAcademico;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,6 +32,9 @@ class EquipoControllerTest {
 
     @Mock
     private EquipoService equipoService;
+
+    @Mock
+    private PoliticaAmbitoAcademico politicaAmbitoAcademico;
 
     @InjectMocks
     private EquipoController equipoController;
@@ -113,6 +117,7 @@ class EquipoControllerTest {
     void actualizar_deberiaRetornar200ConElEquipoActualizado() {
 
         UUID id = responseEsperado.id();
+        when(equipoService.obtenerPorId(id)).thenReturn(responseEsperado);
         when(equipoService.actualizar(id, requestValido)).thenReturn(responseEsperado);
 
         ResponseEntity<EquipoResponse> respuesta = equipoController.actualizar(id, requestValido);
@@ -134,6 +139,7 @@ class EquipoControllerTest {
                 EstadoEquipo.MANTENIMIENTO, "Sin observaciones", true,
                 OffsetDateTime.now(), OffsetDateTime.now());
 
+        when(equipoService.obtenerPorId(id)).thenReturn(responseEsperado);
         when(equipoService.cambiarEstado(id, EstadoEquipo.MANTENIMIENTO))
                 .thenReturn(responseEnMantenimiento);
 

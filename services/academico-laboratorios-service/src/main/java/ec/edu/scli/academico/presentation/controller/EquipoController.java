@@ -23,19 +23,22 @@ import ec.edu.scli.academico.presentation.dto.equipo.EquipoEstadoRequest;
 import ec.edu.scli.academico.presentation.dto.equipo.EquipoRequest;
 import ec.edu.scli.academico.presentation.dto.equipo.EquipoResponse;
 import jakarta.validation.Valid;
+import ec.edu.scli.academico.security.PoliticaAmbitoAcademico;
 
 @RestController
 public class EquipoController {
 
     private final EquipoService equipoService;
+    private final PoliticaAmbitoAcademico politicaAmbito;
 
-    public EquipoController(EquipoService equipoService) {
+    public EquipoController(EquipoService equipoService, PoliticaAmbitoAcademico politicaAmbito) {
         this.equipoService = equipoService;
+        this.politicaAmbito = politicaAmbito;
     }
 
     @PostMapping("/api/v1/equipos")
     public ResponseEntity<EquipoResponse> crear(@Valid @RequestBody EquipoRequest request) {
-
+        politicaAmbito.validarLaboratorio(request.laboratorioId());
         EquipoResponse creado = equipoService.crear(request);
 
         URI ubicacion = URI.create("/api/v1/equipos/" + creado.id());
@@ -68,6 +71,8 @@ public class EquipoController {
             @PathVariable UUID id,
             @Valid @RequestBody EquipoRequest request
     ) {
+        politicaAmbito.validarLaboratorio(equipoService.obtenerPorId(id).laboratorioId());
+        politicaAmbito.validarLaboratorio(request.laboratorioId());
         return ResponseEntity.ok(equipoService.actualizar(id, request));
     }
 
@@ -76,6 +81,7 @@ public class EquipoController {
             @PathVariable UUID id,
             @Valid @RequestBody EquipoEstadoRequest request
     ) {
+        politicaAmbito.validarLaboratorio(equipoService.obtenerPorId(id).laboratorioId());
         return ResponseEntity.ok(equipoService.cambiarEstado(id, request.estado()));
     }
 }

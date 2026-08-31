@@ -136,7 +136,7 @@ dependencies {
     implementation("androidx.room:room-ktx:2.6.1")
     ksp("androidx.room:room-compiler:2.6.1")
 
-    // Settings / perfil del técnico
+    // Settings / perfil de usuario
     implementation("androidx.datastore:datastore-preferences:1.1.1")
 
     // Notificaciones push (capacidad #2)

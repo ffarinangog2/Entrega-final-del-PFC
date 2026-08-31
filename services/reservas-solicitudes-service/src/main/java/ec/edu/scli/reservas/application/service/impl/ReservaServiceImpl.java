@@ -93,7 +93,15 @@ public class ReservaServiceImpl implements ReservaService {
     @Transactional(isolation = Isolation.SERIALIZABLE)
     public ReservaResponse cancelar(UUID id, CancelarReservaRequest request, UUID usuario) {
         Reserva r = obtenerReservaParaActualizar(id);
-        politicaAmbito.validarGestion(r.getLaboratorioId());
+        ActorAutenticado actor = politicaAmbito.actor();
+        if (actor.tiene("ROLE_DOCENTE")) {
+            if (!actor.perfilId().equals(r.getResponsableId())) {
+                throw new org.springframework.security.access.AccessDeniedException(
+                        "La reserva pertenece a otro docente");
+            }
+        } else {
+            politicaAmbito.validarGestion(r.getLaboratorioId());
+        }
         r.setEstado(ReservaStates.desde(r.getEstado()).cancelar());
         ReservaResponse response = reservaMapper.toResponse(reservaRepository.guardar(r));
         businessEventMetrics.reservaCancelada();

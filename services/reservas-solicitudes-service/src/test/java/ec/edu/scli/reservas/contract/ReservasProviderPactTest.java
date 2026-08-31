@@ -89,6 +89,7 @@ class ReservasProviderPactTest {
     @State("usuario autenticado tiene incidentes") void tieneIncidentes(){var id=UUID.fromString("55555555-5555-5555-5555-555555555555");var r=new IncidenteResponse(id,RESPONSABLE_ID,"Laboratorio 1","Equipo sin red",PrioridadIncidente.ALTA,LocalDate.parse("2026-08-31"),EstadoIncidente.REPORTADO,Instant.now(),Instant.now(),0L);
         when(incidenteService.listar(eq(RESPONSABLE_ID),eq(false),anyInt(),anyInt())).thenReturn(new PaginaResponse<>(List.of(r),0,20,1,1,true,true));}
     @State("usuario autenticado registra dispositivo") void registraDispositivo(){when(notificacionService.registrar(any(),any(),eq(RESPONSABLE_ID))).thenReturn(new DispositivoNotificacionResponse(UUID.fromString("55555555-5555-5555-5555-555555555555"),"ANDROID",true,Instant.now(),Instant.now()));}
+    @State("usuario autenticado tiene dispositivo registrado") void tieneDispositivoRegistrado(){ }
 
     @State("existen reservas registradas")
     void existenReservasRegistradas() {

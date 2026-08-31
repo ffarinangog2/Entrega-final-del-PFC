@@ -18,6 +18,7 @@ import ec.edu.scli.academico.infrastructure.observability.PrometheusQueryClient;
 import ec.edu.scli.academico.presentation.controller.LaboratorioController;
 import ec.edu.scli.academico.presentation.controller.MateriaController;
 import ec.edu.scli.academico.presentation.controller.PeriodoLectivoController;
+import ec.edu.scli.academico.security.PoliticaAmbitoAcademico;
 import ec.edu.scli.academico.presentation.dto.bloque.BloqueResponse;
 import ec.edu.scli.academico.presentation.dto.campus.CampusResponse;
 import ec.edu.scli.academico.presentation.dto.laboratorio.LaboratorioDetalleCompletoResponse;
@@ -60,8 +61,8 @@ class AcademicoProviderPactTest {
         periodos = mock(PeriodoLectivoService.class);
         detalle = mock(LaboratorioDetalleFacade.class);
         var mockMvc = MockMvcBuilders.standaloneSetup(
-                        new LaboratorioController(laboratorios, detalle, mock(PrometheusQueryClient.class)),
-                        new MateriaController(materias), new PeriodoLectivoController(periodos))
+                        new LaboratorioController(laboratorios, detalle, mock(PrometheusQueryClient.class), mock(PoliticaAmbitoAcademico.class)),
+                        new MateriaController(materias, mock(PoliticaAmbitoAcademico.class)), new PeriodoLectivoController(periodos))
                 .setCustomArgumentResolvers(new PageableHandlerMethodArgumentResolver())
                 .setMessageConverters(new MappingJackson2HttpMessageConverter(
                         Jackson2ObjectMapperBuilder.json().modulesToInstall(new JavaTimeModule())
