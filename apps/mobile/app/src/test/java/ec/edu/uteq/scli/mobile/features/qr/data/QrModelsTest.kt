@@ -1,5 +1,6 @@
 package ec.edu.uteq.scli.mobile.features.qr.data
 
+import com.google.gson.Gson
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertThrows
@@ -7,13 +8,25 @@ import org.junit.Test
 
 class QrModelsTest {
     @Test
+    fun `deserializa piso con la forma real de detalle completo`() {
+        val dto = Gson().fromJson(
+            """{"laboratorio":{"id":"lab-1","codigo":"LAB-1","nombre":"Redes"},"piso":{"id":"piso-1","numero":2,"descripcion":"Planta alta"},"bloque":{"id":"b1","codigo":"B1","nombre":"Bloque 1"},"campus":{"id":"c1","codigo":"C1","nombre":"Central"},"equipos":[]}""",
+            LaboratorioDetalleDto::class.java,
+        )
+
+        val detalle = dto.toDomain()
+        assertEquals("2", detalle.piso?.codigo)
+        assertEquals("Planta alta", detalle.piso?.nombre)
+    }
+
+    @Test
     fun `mapea detalle completo con ubicaciones y equipos validos`() {
         val dto = LaboratorioDetalleDto(
             laboratorio = LaboratorioDto(
                 id = "lab-1", codigo = "LAB-1", nombre = "Redes", capacidad = 30,
                 descripcion = "Laboratorio de redes", estado = "ACTIVO", activo = true,
             ),
-            piso = UbicacionDto(id = "piso-1", codigo = "P1", nombre = "Piso 1"),
+            piso = PisoDto(id = "piso-1", numero = 1, descripcion = "Piso 1"),
             bloque = UbicacionDto(id = "bloque-1", codigo = "B1", nombre = "Bloque A"),
             campus = UbicacionDto(id = "campus-1", codigo = "C1", nombre = "Campus Central"),
             equipos = listOf(
@@ -34,7 +47,7 @@ class QrModelsTest {
         assertEquals("LAB-1", detalle.laboratorio.codigo)
         assertEquals("Redes", detalle.laboratorio.nombre)
         assertEquals(30, detalle.laboratorio.capacidad)
-        assertEquals("P1", detalle.piso?.codigo)
+        assertEquals("1", detalle.piso?.codigo)
         assertEquals("Piso 1", detalle.piso?.nombre)
         assertEquals("B1", detalle.bloque?.codigo)
         assertEquals("C1", detalle.campus?.codigo)

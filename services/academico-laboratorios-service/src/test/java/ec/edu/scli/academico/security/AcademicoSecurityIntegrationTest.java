@@ -37,6 +37,8 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
 @WebMvcTest(
         controllers = {PeriodoLectivoController.class, InternalController.class},
@@ -70,7 +72,9 @@ class AcademicoSecurityIntegrationTest {
     @Test
     void lecturaAcademicaSinJwtDevuelve401() throws Exception {
         mockMvc.perform(get("/api/v1/periodos-lectivos/actual"))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isUnauthorized())
+                .andExpect(content().contentType("application/json"))
+                .andExpect(jsonPath("$.error").value("UNAUTHORIZED"));
     }
 
     @Test
@@ -78,6 +82,23 @@ class AcademicoSecurityIntegrationTest {
         when(periodoLectivoService.obtenerActual()).thenReturn(periodo());
         mockMvc.perform(get("/api/v1/periodos-lectivos/actual")
                         .header("Authorization", bearer(List.of("DOCENTE"), List.of("ACADEMICO_LEER"))))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void planificacionGestionarPermiteLecturaSinAcademicoLeer() throws Exception {
+        when(periodoLectivoService.obtenerActual()).thenReturn(periodo());
+        mockMvc.perform(get("/api/v1/periodos-lectivos/actual")
+                        .header("Authorization", bearer(
+                                List.of("COORDINADOR"), List.of("PLANIFICACION_GESTIONAR"))))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void administradorPermiteLecturaDePlanificacion() throws Exception {
+        when(periodoLectivoService.obtenerActual()).thenReturn(periodo());
+        mockMvc.perform(get("/api/v1/periodos-lectivos/actual")
+                        .header("Authorization", bearer(List.of("ADMINISTRADOR"), List.of())))
                 .andExpect(status().isOk());
     }
 

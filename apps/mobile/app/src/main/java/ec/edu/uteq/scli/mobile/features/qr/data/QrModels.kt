@@ -2,7 +2,7 @@ package ec.edu.uteq.scli.mobile.features.qr.data
 
 data class LaboratorioDetalleDto(
     val laboratorio: LaboratorioDto?,
-    val piso: UbicacionDto?,
+    val piso: PisoDto?,
     val bloque: UbicacionDto?,
     val campus: UbicacionDto?,
     val equipos: List<EquipoDto> = emptyList(),
@@ -22,6 +22,12 @@ data class UbicacionDto(
     val id: String?,
     val codigo: String?,
     val nombre: String?,
+)
+
+data class PisoDto(
+    val id: String?,
+    val numero: Int?,
+    val descripcion: String?,
 )
 
 data class EquipoDto(
@@ -79,7 +85,7 @@ internal fun LaboratorioDetalleDto.toDomain(): LaboratorioDetalle = LaboratorioD
             activo = it.activo,
         )
     },
-    piso = piso?.toDomain(),
+    piso = piso?.let { Ubicacion(codigo = it.numero?.toString(), nombre = it.descripcion ?: it.numero?.let { numero -> "Piso $numero" }) },
     bloque = bloque?.toDomain(),
     campus = campus?.toDomain(),
     equipos = equipos.mapNotNull { equipo ->

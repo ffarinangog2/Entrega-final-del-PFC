@@ -4,6 +4,7 @@ import ec.edu.uteq.scli.mobile.common.network.NetworkResult
 import ec.edu.uteq.scli.mobile.features.reservas.data.remote.CatalogosRepository
 import ec.edu.uteq.scli.mobile.features.reservas.data.remote.CatalogosSolicitud
 import ec.edu.uteq.scli.mobile.features.reservas.data.remote.DocenteDto
+import ec.edu.uteq.scli.mobile.features.reservas.data.remote.EstadoPeriodoDto
 import ec.edu.uteq.scli.mobile.features.reservas.data.remote.HorarioDto
 import ec.edu.uteq.scli.mobile.features.reservas.data.remote.LaboratorioCatalogoDto
 import ec.edu.uteq.scli.mobile.features.reservas.data.remote.MateriaDto
@@ -65,7 +66,7 @@ class NuevaReservaCatalogosTest {
                 MateriaDto("m2", "MAT-2", "Bases de datos", activo = true),
                 MateriaDto("m3", "MAT-3", "Inactiva", activo = false),
             ),
-            periodo = PeriodoDto("p1", "2026-A", "2026 A", true),
+            periodo = PeriodoDto("p1", "2026-A", "2026 A", EstadoPeriodoDto.ACTIVO),
             laboratorios = listOf(
                 LaboratorioCatalogoDto("l1", "LAB-1", "Redes", "piso-1", true),
                 LaboratorioCatalogoDto("l2", "LAB-2", "Inactivo", "piso-1", false),
