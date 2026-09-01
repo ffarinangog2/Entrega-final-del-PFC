@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react'
+import type { ReactElement } from 'react'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
@@ -7,7 +8,7 @@ import {
   RouteErrorBoundary,
 } from './RouteFeedback'
 
-function BrokenRoute() {
+function BrokenRoute(): ReactElement {
   throw new Error('fallo controlado')
 }
 
