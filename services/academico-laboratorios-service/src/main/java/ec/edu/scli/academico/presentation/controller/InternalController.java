@@ -82,7 +82,9 @@ public class InternalController {
     public ResponseEntity<MateriaContextoResponse> contextoMateria(
             @PathVariable UUID id,
             @RequestHeader(value = "X-Internal-Api-Key", required = false) String apiKey) {
-        if (!esApiKeyValida(apiKey)) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        if (!esApiKeyValida(apiKey)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
         try {
             var materia = materiaService.obtenerPorId(id);
             return ResponseEntity.ok(new MateriaContextoResponse(
