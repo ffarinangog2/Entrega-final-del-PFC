@@ -3,13 +3,13 @@ package ec.edu.scli.academico.infrastructure.persistence.entity;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
+import ec.edu.scli.academico.infrastructure.persistence.generator.AssignedOrGeneratedUuid;
+
 import ec.edu.scli.academico.enums.EstadoEquipo;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
@@ -20,7 +20,7 @@ import jakarta.persistence.Table;
 public class EquipoEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @AssignedOrGeneratedUuid
     private UUID id;
 
     @Column(name = "laboratorio_id", nullable = false)

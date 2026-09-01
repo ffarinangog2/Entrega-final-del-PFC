@@ -4,6 +4,7 @@ import ec.edu.scli.usuarios.domain.model.TipoAmbitoInstitucional;
 import ec.edu.scli.usuarios.infrastructure.persistence.entity.*;
 import ec.edu.scli.usuarios.infrastructure.persistence.jpa.*;
 import ec.edu.scli.usuarios.infrastructure.security.HmacIdentificacionService;
+import jakarta.persistence.EntityManager;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -23,17 +24,20 @@ public class InitialProfilesBootstrap implements ApplicationRunner {
     private final DocenteRepository docentes;
     private final EstudianteRepository estudiantes;
     private final AdscripcionInstitucionalRepository adscripciones;
+    private final EntityManager entityManager;
     private final HmacIdentificacionService hmac;
     private final List<UUID> pisos;
     private final List<UUID> carreras;
 
     public InitialProfilesBootstrap(PerfilRepository perfiles, AdministradorRepository administradores,
             DocenteRepository docentes, EstudianteRepository estudiantes,
-            AdscripcionInstitucionalRepository adscripciones, HmacIdentificacionService hmac,
+            AdscripcionInstitucionalRepository adscripciones, EntityManager entityManager,
+            HmacIdentificacionService hmac,
             @Value("${app.initial-data.piso-ids:}") String pisoIds,
             @Value("${app.initial-data.carrera-ids:}") String carreraIds) {
         this.perfiles = perfiles; this.administradores = administradores; this.docentes = docentes;
-        this.estudiantes = estudiantes; this.adscripciones = adscripciones; this.hmac = hmac;
+        this.estudiantes = estudiantes; this.adscripciones = adscripciones; this.entityManager = entityManager;
+        this.hmac = hmac;
         this.pisos = parseIds(pisoIds); this.carreras = parseIds(carreraIds);
     }
 
@@ -63,7 +67,7 @@ public class InitialProfilesBootstrap implements ApplicationRunner {
         profile.setIdentificacionHash(hmac.calcularHash(identification));
         profile.setNombres("Usuario"); profile.setApellidos("Institucional " + String.format("%02d", number));
         profile.setEmailInstitucional(username(number) + "@scli.local"); profile.setActivo(true);
-        perfiles.save(profile);
+        entityManager.persist(profile);
     }
 
     private void createAdmin(int number, UUID pisoId, String code, String position) {

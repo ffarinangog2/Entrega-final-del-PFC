@@ -2,6 +2,7 @@ package ec.edu.scli.usuarios.infrastructure.persistence.entity;
 
 import jakarta.persistence.*;
 import ec.edu.scli.usuarios.infrastructure.persistence.converter.CampoCifradoConverter;
+import ec.edu.scli.usuarios.infrastructure.persistence.generator.AssignedOrGeneratedUuid;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -12,7 +13,7 @@ import java.util.UUID;
 public class Perfil {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @AssignedOrGeneratedUuid
     private UUID id;
     // Anterior
     //@Column(name = "identificacion", length = 20, unique = true)

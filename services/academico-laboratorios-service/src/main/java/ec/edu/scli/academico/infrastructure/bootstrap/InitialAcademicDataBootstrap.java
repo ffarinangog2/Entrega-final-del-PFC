@@ -26,6 +26,7 @@ import ec.edu.scli.academico.infrastructure.persistence.repository.MateriaJpaRep
 import ec.edu.scli.academico.infrastructure.persistence.repository.PeriodoLectivoJpaRepository;
 import ec.edu.scli.academico.infrastructure.persistence.repository.PisoJpaRepository;
 import ec.edu.scli.academico.infrastructure.persistence.repository.TipoEquipoJpaRepository;
+import jakarta.persistence.EntityManager;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -58,15 +59,17 @@ public class InitialAcademicDataBootstrap implements ApplicationRunner {
     private final MateriaJpaRepository subjects; private final LaboratorioJpaRepository labs;
     private final TipoEquipoJpaRepository equipmentTypes; private final EquipoJpaRepository equipment;
     private final HorarioAcademicoJpaRepository schedules;
+    private final EntityManager entityManager;
 
     public InitialAcademicDataBootstrap(CampusJpaRepository campuses, BloqueJpaRepository blocks,
             PisoJpaRepository floors, FacultadJpaRepository faculties, CarreraJpaRepository careers,
             PeriodoLectivoJpaRepository periods, MateriaJpaRepository subjects, LaboratorioJpaRepository labs,
             TipoEquipoJpaRepository equipmentTypes, EquipoJpaRepository equipment,
-            HorarioAcademicoJpaRepository schedules) {
+            HorarioAcademicoJpaRepository schedules, EntityManager entityManager) {
         this.campuses = campuses; this.blocks = blocks; this.floors = floors; this.faculties = faculties;
         this.careers = careers; this.periods = periods; this.subjects = subjects; this.labs = labs;
         this.equipmentTypes = equipmentTypes; this.equipment = equipment; this.schedules = schedules;
+        this.entityManager = entityManager;
     }
 
     @Override @Transactional public void run(ApplicationArguments args) {
@@ -76,7 +79,7 @@ public class InitialAcademicDataBootstrap implements ApplicationRunner {
     private void campusAndStructure() {
         if (!campuses.existsById(CAMPUS_ID)) {
             CampusEntity e = new CampusEntity(); e.setId(CAMPUS_ID); e.setCodigo("CAMPUS-01");
-            e.setNombre("Campus Institucional"); e.setActivo(true); campuses.save(e);
+            e.setNombre("Campus Institucional"); e.setActivo(true); entityManager.persist(e);
         }
         createBlock(BLOCK_ID, "BLOQUE-LAB-01", "Bloque de Laboratorios");
         createBlock(BLOCK_2_ID, "BLOQUE-LAB-02", "Bloque de Innovacion");
@@ -87,7 +90,7 @@ public class InitialAcademicDataBootstrap implements ApplicationRunner {
     private void facultyAndCareers() {
         if (!faculties.existsById(FACULTY_ID)) {
             FacultadEntity e = new FacultadEntity(); e.setId(FACULTY_ID); e.setCodigo("FAC-TEC");
-            e.setNombre("Facultad de Ciencias y Tecnologia"); e.setActivo(true); faculties.save(e);
+            e.setNombre("Facultad de Ciencias y Tecnologia"); e.setActivo(true); entityManager.persist(e);
         }
         createCareer(CAREER_1_ID, "CAR-SW", "Ingenieria de Software");
         createCareer(CAREER_2_ID, "CAR-TI", "Tecnologias de la Informacion");
@@ -141,7 +144,7 @@ public class InitialAcademicDataBootstrap implements ApplicationRunner {
                 e.setPeriodoLectivoId(PERIOD_ACTIVE_ID); e.setLaboratorioId(labIds[i]);
                 e.setDocenteId(id(String.format("22000000-0000-0000-0000-0000000000%02d", 7 + (i % 2))));
                 e.setDiaSemana(DiaSemana.values()[i]); e.setHoraInicio(LocalTime.of(8 + i, 0));
-                e.setHoraFin(LocalTime.of(10 + i, 0)); e.setParalelo("A"); e.setActivo(true); schedules.save(e);
+                e.setHoraFin(LocalTime.of(10 + i, 0)); e.setParalelo("A"); e.setActivo(true); entityManager.persist(e);
             }
         }
     }
@@ -149,28 +152,28 @@ public class InitialAcademicDataBootstrap implements ApplicationRunner {
     private void createBlock(UUID id, String code, String name) {
         if (!blocks.existsById(id)) {
             BloqueEntity e = new BloqueEntity(); e.setId(id); e.setCampusId(CAMPUS_ID); e.setCodigo(code);
-            e.setNombre(name); e.setActivo(true); blocks.save(e);
+            e.setNombre(name); e.setActivo(true); entityManager.persist(e);
         }
     }
 
     private void createFloor(UUID id, UUID blockId, int number, String description) {
         if (!floors.existsById(id)) {
             PisoEntity e = new PisoEntity(); e.setId(id); e.setBloqueId(blockId); e.setNumero(number);
-            e.setDescripcion(description); e.setActivo(true); floors.save(e);
+            e.setDescripcion(description); e.setActivo(true); entityManager.persist(e);
         }
     }
 
     private void createCareer(UUID id, String code, String name) {
         if (!careers.existsById(id)) {
             CarreraEntity e = new CarreraEntity(); e.setId(id); e.setFacultadId(FACULTY_ID); e.setCodigo(code);
-            e.setNombre(name); e.setActivo(true); careers.save(e);
+            e.setNombre(name); e.setActivo(true); entityManager.persist(e);
         }
     }
 
     private void createPeriod(UUID id, String code, String name, EstadoPeriodo state, LocalDate start, LocalDate end) {
         if (!periods.existsById(id)) {
             PeriodoLectivoEntity e = new PeriodoLectivoEntity(); e.setId(id); e.setCodigo(code); e.setNombre(name);
-            e.setEstado(state); e.setFechaInicio(start); e.setFechaFin(end); periods.save(e);
+            e.setEstado(state); e.setFechaInicio(start); e.setFechaFin(end); entityManager.persist(e);
         }
     }
 
@@ -178,7 +181,7 @@ public class InitialAcademicDataBootstrap implements ApplicationRunner {
         UUID id = id(String.format("3B000000-0000-0000-0000-%012d", n));
         if (!subjects.existsById(id)) {
             MateriaEntity e = new MateriaEntity(); e.setId(id); e.setCarreraId(careerId); e.setCodigo(code);
-            e.setNombre(name); e.setNumeroHoras(64); e.setActivo(true); subjects.save(e);
+            e.setNombre(name); e.setNumeroHoras(64); e.setActivo(true); entityManager.persist(e);
         }
     }
 
@@ -186,7 +189,7 @@ public class InitialAcademicDataBootstrap implements ApplicationRunner {
         if (!labs.existsById(id)) {
             LaboratorioEntity e = new LaboratorioEntity(); e.setId(id); e.setPisoId(floorId); e.setCodigo(code);
             e.setNombre(name); e.setCapacidad(30); e.setDescripcion("Espacio academico equipado");
-            e.setEstado(EstadoLaboratorio.DISPONIBLE); e.setActivo(true); labs.save(e);
+            e.setEstado(EstadoLaboratorio.DISPONIBLE); e.setActivo(true); entityManager.persist(e);
         }
     }
 
@@ -194,7 +197,7 @@ public class InitialAcademicDataBootstrap implements ApplicationRunner {
         UUID id = id(String.format("3C000000-0000-0000-0000-%012d", n));
         if (!equipmentTypes.existsById(id)) {
             TipoEquipoEntity e = new TipoEquipoEntity(); e.setId(id); e.setCodigo(code); e.setNombre(name);
-            e.setActivo(true); equipmentTypes.save(e);
+            e.setActivo(true); entityManager.persist(e);
         }
         return id;
     }
@@ -205,7 +208,7 @@ public class InitialAcademicDataBootstrap implements ApplicationRunner {
             EquipoEntity e = new EquipoEntity(); e.setId(id); e.setLaboratorioId(labId);
             e.setTipoEquipoId(typeId); e.setCodigoInventario("INV-LAB-%03d".formatted(n));
             e.setNumeroSerie("SN-LAB-%03d".formatted(n)); e.setMarca("Generic"); e.setModelo("Academic");
-            e.setEstado(EstadoEquipo.OPERATIVO); e.setActivo(true); equipment.save(e);
+            e.setEstado(EstadoEquipo.OPERATIVO); e.setActivo(true); entityManager.persist(e);
         }
     }
     private static UUID id(String value) { return UUID.fromString(value); }
