@@ -82,7 +82,7 @@ export function DashboardLayout({
           <p className="dashboard__nav-label">
             {t('dashboard.sidebar.workspaceLabel')}
           </p>
-          <nav aria-label="NavegaciÃ³n principal">
+          <nav aria-label="Navegación principal">
             <NavLink className="dashboard__nav-item" to="/main" end>
               <span>âŒ‚</span>
               {t('dashboard.nav.home')}
