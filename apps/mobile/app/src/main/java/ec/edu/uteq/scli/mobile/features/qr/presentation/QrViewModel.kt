@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import ec.edu.uteq.scli.mobile.common.network.NetworkResult
 import ec.edu.uteq.scli.mobile.features.qr.data.LaboratorioDetalle
 import ec.edu.uteq.scli.mobile.features.qr.data.QrRepository
+import ec.edu.uteq.scli.mobile.features.institutional.data.InstitutionalRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -14,6 +15,7 @@ import java.util.UUID
  data class QrUiState(
     val cargando: Boolean = false,
     val detalle: LaboratorioDetalle? = null,
+    val asistenciaRegistrada: Boolean = false,
     val error: QrError? = null,
 )
 
@@ -25,6 +27,7 @@ enum class QrError {
 
 class QrViewModel(
     private val repository: QrRepository,
+    private val institutionalRepository: InstitutionalRepository? = null,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(QrUiState())
     val uiState: StateFlow<QrUiState> = _uiState.asStateFlow()
@@ -34,6 +37,10 @@ class QrViewModel(
         val normalizado = valor.trim()
         if (normalizado.isBlank() || normalizado == ultimoQrProcesado || _uiState.value.cargando) return
         ultimoQrProcesado = normalizado
+        if (normalizado.startsWith("scli-asistencia:")) {
+            registrarAsistencia(normalizado)
+            return
+        }
         val laboratorioId = extraerUuid(normalizado)
         if (laboratorioId == null) {
             _uiState.value = QrUiState(error = QrError.INVALIDO)
@@ -45,6 +52,22 @@ class QrViewModel(
                 is NetworkResult.Success -> QrUiState(detalle = result.value)
                 is NetworkResult.Failure -> QrUiState(error = if (result.statusCode == null) QrError.RED else QrError.SERVICIO)
             }
+        }
+    }
+
+    private fun registrarAsistencia(valor: String) {
+        val partes = valor.split(':', limit = 3)
+        if (partes.size != 3 || institutionalRepository == null) {
+            _uiState.value = QrUiState(error = QrError.INVALIDO)
+            return
+        }
+        viewModelScope.launch {
+            _uiState.value = QrUiState(cargando = true)
+            _uiState.value = runCatching { institutionalRepository.registrarAsistencia(partes[1], partes[2]) }
+                .fold(
+                    onSuccess = { QrUiState(asistenciaRegistrada = true) },
+                    onFailure = { QrUiState(error = QrError.SERVICIO) },
+                )
         }
     }
 

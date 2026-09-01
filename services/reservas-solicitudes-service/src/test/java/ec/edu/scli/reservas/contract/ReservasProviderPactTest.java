@@ -12,10 +12,16 @@ import ec.edu.scli.reservas.application.service.ReservaService;
 import ec.edu.scli.reservas.application.service.SolicitudReservaService;
 import ec.edu.scli.reservas.application.service.IncidenteService;
 import ec.edu.scli.reservas.application.service.NotificacionService;
+import ec.edu.scli.reservas.application.service.PlanificacionService;
+import ec.edu.scli.reservas.application.service.AsistenciaService;
 import ec.edu.scli.reservas.presentation.controller.IncidenteController;
 import ec.edu.scli.reservas.presentation.controller.NotificacionController;
+import ec.edu.scli.reservas.presentation.controller.PlanificacionController;
+import ec.edu.scli.reservas.presentation.controller.AsistenciaController;
 import ec.edu.scli.reservas.presentation.dto.response.IncidenteResponse;
 import ec.edu.scli.reservas.presentation.dto.response.DispositivoNotificacionResponse;
+import ec.edu.scli.reservas.presentation.dto.response.PlanificacionResponse;
+import ec.edu.scli.reservas.presentation.dto.response.RegistroAsistenciaResponse;
 import ec.edu.scli.reservas.domain.model.*;
 import ec.edu.scli.reservas.security.JwtPrincipal;
 import ec.edu.scli.reservas.domain.model.EstadoReserva;
@@ -64,16 +70,20 @@ class ReservasProviderPactTest {
     private ReservaService reservaService;
     private SolicitudReservaService solicitudService;
     private IncidenteService incidenteService; private NotificacionService notificacionService;
+    private PlanificacionService planificacionService; private AsistenciaService asistenciaService;
 
     @BeforeEach
     void configurarTarget(PactVerificationContext context) {
         reservaService = mock(ReservaService.class);
         solicitudService = mock(SolicitudReservaService.class);
         incidenteService=mock(IncidenteService.class);notificacionService=mock(NotificacionService.class);
+        planificacionService=mock(PlanificacionService.class);asistenciaService=mock(AsistenciaService.class);
         var principal=new JwtPrincipal(UUID.randomUUID(),RESPONSABLE_ID,"pact");
         MockMvc mockMvc = MockMvcBuilders
                 .standaloneSetup(new ReservaController(reservaService),
-                        new SolicitudReservaController(solicitudService),new IncidenteController(incidenteService),new NotificacionController(notificacionService))
+                        new SolicitudReservaController(solicitudService),new IncidenteController(incidenteService),
+                        new NotificacionController(notificacionService),new PlanificacionController(planificacionService),
+                        new AsistenciaController(asistenciaService))
                 .defaultRequest(get("/").principal(principal))
                 .setMessageConverters(new MappingJackson2HttpMessageConverter(
                         Jackson2ObjectMapperBuilder.json()
@@ -90,6 +100,18 @@ class ReservasProviderPactTest {
         when(incidenteService.listar(eq(RESPONSABLE_ID),eq(false),anyInt(),anyInt())).thenReturn(new PaginaResponse<>(List.of(r),0,20,1,1,true,true));}
     @State("usuario autenticado registra dispositivo") void registraDispositivo(){when(notificacionService.registrar(any(),any(),eq(RESPONSABLE_ID))).thenReturn(new DispositivoNotificacionResponse(UUID.fromString("55555555-5555-5555-5555-555555555555"),"ANDROID",true,Instant.now(),Instant.now()));}
     @State("usuario autenticado tiene dispositivo registrado") void tieneDispositivoRegistrado(){ }
+    @State("existe planificacion en el ambito autenticado") void existePlanificacion(){
+        when(planificacionService.listar()).thenReturn(List.of(new PlanificacionResponse(
+                UUID.fromString("11111111-2222-3333-4444-555555555555"), UUID.randomUUID(), UUID.randomUUID(),
+                UUID.randomUUID(), null, LABORATORIO_ID, "LUNES", LocalTime.of(8,0), LocalTime.of(10,0),
+                "ENVIADA", null, RESPONSABLE_ID, Instant.parse("2026-09-01T13:00:00Z"),
+                Instant.parse("2026-09-01T13:00:00Z"), 0L)));
+    }
+    @State("estudiante autenticado tiene asistencia") void tieneAsistencia(){
+        when(asistenciaService.historial(RESPONSABLE_ID)).thenReturn(List.of(new RegistroAsistenciaResponse(
+                RESERVA_ID, UUID.fromString("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"), RESPONSABLE_ID,
+                Instant.parse("2026-09-01T14:00:00Z"), "PRESENTE")));
+    }
 
     @State("existen reservas registradas")
     void existenReservasRegistradas() {

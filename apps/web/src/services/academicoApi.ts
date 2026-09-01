@@ -5,6 +5,7 @@ export interface Laboratorio { id: string; pisoId: string; codigo: string; nombr
 export interface Docente { id: string; perfilId: string; codigoDocente: string | null; activo: boolean }
 export interface Materia { id: string; carreraId: string; codigo: string; nombre: string; numeroHoras: number; activo: boolean }
 export interface PeriodoLectivo { id: string; codigo: string; nombre: string; fechaInicio: string; fechaFin: string; estado: 'PLANIFICADO' | 'ACTIVO' | 'FINALIZADO' }
+export interface Carrera { id:string; facultadId:string; codigo:string; nombre:string; activo:boolean }
 export interface HorarioAcademico { id: string; materiaId: string; periodoLectivoId: string; laboratorioId: string | null; docenteId: string; diaSemana: string; horaInicio: string; horaFin: string; paralelo: string; activo: boolean }
 interface PageResponse<T> { content: T[]; totalElements: number; totalPages: number }
 
@@ -15,6 +16,7 @@ export async function obtenerDocentes(): Promise<Docente[]> { return (await apiR
 export function obtenerHorariosDocente(docenteId: string) { return apiRequest<HorarioAcademico[]>(`/api/v1/horarios/docente/${encodeURIComponent(docenteId)}`) }
 export async function obtenerMaterias(): Promise<Materia[]> { return (await apiRequest<PageResponse<Materia>>('/api/v1/materias?size=100')).content }
 export function obtenerPeriodoActual() { return apiRequest<PeriodoLectivo>('/api/v1/periodos-lectivos/actual') }
+export async function obtenerCarreras():Promise<Carrera[]>{return (await apiRequest<PageResponse<Carrera>>('/api/v1/carreras?size=100')).content}
 
 export interface PuntoSerie { instante: string; valor: number }
 export interface SerieEstado { estado: EstadoLaboratorio; puntos: PuntoSerie[] }

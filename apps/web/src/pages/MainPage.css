@@ -90,6 +90,7 @@
 .dashboard__identity {
   gap: 13px;
 }
+.dashboard__menu{display:none;min-width:40px;min-height:40px;border:1px solid var(--color-border);border-radius:7px;background:var(--color-bg-card);color:var(--color-primary);font-size:20px}
 
 .dashboard__logo {
   width: 34px;
@@ -321,12 +322,14 @@
     grid-template-columns: 1fr;
   }
 
+  .dashboard__menu{display:inline-grid;place-items:center}
   .dashboard__sidebar {
-    display: block;
+    display: none;
     padding: 12px 16px;
     border-right: 0;
     border-bottom: 1px solid var(--color-border);
   }
+  .dashboard__sidebar--open{display:block}
 
   .dashboard__nav-label,
   .dashboard__nav-label--secondary,

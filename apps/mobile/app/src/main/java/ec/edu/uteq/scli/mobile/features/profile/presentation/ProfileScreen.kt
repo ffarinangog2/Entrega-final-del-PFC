@@ -42,6 +42,22 @@ fun ProfileScreen(viewModel: ProfileViewModel, onLogout: () -> Unit) {
             readOnly = uiState.perfilRemoto,
             modifier = Modifier.fillMaxWidth(),
         )
+        if (uiState.perfilRemoto) {
+            OutlinedTextField(value = uiState.emailInstitucional, onValueChange = {}, readOnly = true,
+                label = { Text("Correo institucional") }, modifier = Modifier.fillMaxWidth())
+            OutlinedTextField(value = uiState.emailPersonal, onValueChange = viewModel::onEmailPersonalChange,
+                label = { Text("Correo personal") }, modifier = Modifier.fillMaxWidth())
+            OutlinedTextField(value = uiState.telefono, onValueChange = viewModel::onTelefonoChange,
+                label = { Text("Teléfono") }, modifier = Modifier.fillMaxWidth())
+            OutlinedTextField(value = uiState.direccion, onValueChange = viewModel::onDireccionChange,
+                label = { Text("Dirección") }, modifier = Modifier.fillMaxWidth())
+            OutlinedTextField(value = uiState.fotoUrl, onValueChange = viewModel::onFotoUrlChange,
+                label = { Text("URL de foto") }, modifier = Modifier.fillMaxWidth())
+            Button(onClick = viewModel::guardarPerfil, enabled = !uiState.guardando, modifier = Modifier.fillMaxWidth()) {
+                Text(if (uiState.guardando) "Guardando…" else "Guardar perfil")
+            }
+            uiState.mensaje?.let { Text(it) }
+        }
 
         HorizontalDivider()
 

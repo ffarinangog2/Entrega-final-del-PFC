@@ -81,6 +81,14 @@ fun QrScanScreen(viewModel: QrViewModel) {
             )
             Button(onClick = viewModel::reintentar) { Text("Reintentar escaneo") }
         }
+        state.asistenciaRegistrada -> Column(
+            modifier = Modifier.fillMaxSize().padding(24.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text("Asistencia registrada correctamente.")
+            Button(onClick = viewModel::reintentar) { Text("Escanear otro QR") }
+        }
         detalle != null -> QrDetailContent(detalle, onScanAgain = viewModel::reintentar)
         else -> CameraPreview(viewModel::procesarQr)
     }

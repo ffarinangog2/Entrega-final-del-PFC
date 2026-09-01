@@ -15,6 +15,8 @@ import ec.edu.uteq.scli.mobile.features.incidentes.data.IncidenteLocalRepository
 import ec.edu.uteq.scli.mobile.features.incidentes.data.IncidentesApi
 import ec.edu.uteq.scli.mobile.features.incidentes.data.RemoteIncidenteRepository
 import ec.edu.uteq.scli.mobile.features.incidentes.domain.IncidenteRepository
+import ec.edu.uteq.scli.mobile.features.institutional.data.InstitutionalApi
+import ec.edu.uteq.scli.mobile.features.institutional.data.InstitutionalRepository
 import ec.edu.uteq.scli.mobile.features.notifications.NotificationHelper
 import ec.edu.uteq.scli.mobile.features.notifications.DeviceRegistrationApi
 import ec.edu.uteq.scli.mobile.features.notifications.DeviceTokenRegistrar
@@ -72,6 +74,7 @@ class AppContainer(context: Context) {
     private val reservasApi = authenticatedGatewayRetrofit.create(ReservasApi::class.java)
     val reservaRepository: ReservaRepository = RemoteReservaRepository(reservasApi, database.reservaDao())
     val catalogosRepository = CatalogosRepository(authenticatedGatewayRetrofit.create(CatalogosApi::class.java))
+    val institutionalRepository = InstitutionalRepository(authenticatedGatewayRetrofit.create(InstitutionalApi::class.java))
     private val qrApi = authenticatedGatewayRetrofit.create(QrApi::class.java)
     val qrRepository: QrRepository = RemoteQrRepository(qrApi)
     val deviceTokenRegistrar = DeviceTokenRegistrar(

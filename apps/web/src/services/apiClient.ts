@@ -26,6 +26,8 @@ function humanMessage(status: number, backendMessage?: string) {
   if (status === 403) return 'No tiene permisos para realizar esta acción.'
   if (status === 404) return backendMessage || 'El recurso solicitado no existe.'
   if (status === 409) return backendMessage || 'Existe un conflicto de disponibilidad o estado.'
+  if (status === 423) return backendMessage || 'La cuenta estÃ¡ bloqueada temporalmente.'
+  if (status === 503) return 'El servicio no estÃ¡ disponible temporalmente. Intente nuevamente.'
   if (status >= 500) return 'Se produjo un error al procesar la solicitud.'
   return backendMessage || 'No se pudo completar la solicitud.'
 }

@@ -34,6 +34,9 @@ import ec.edu.uteq.scli.mobile.R
 import ec.edu.uteq.scli.mobile.ScliMobileApplication
 import ec.edu.uteq.scli.mobile.features.incidentes.presentation.IncidentesScreen
 import ec.edu.uteq.scli.mobile.features.incidentes.presentation.IncidentesViewModel
+import ec.edu.uteq.scli.mobile.features.institutional.presentation.HistorialAsistenciaScreen
+import ec.edu.uteq.scli.mobile.features.institutional.presentation.InstitutionalViewModel
+import ec.edu.uteq.scli.mobile.features.institutional.presentation.PlanificacionesScreen
 import ec.edu.uteq.scli.mobile.features.auth.presentation.AuthViewModel
 import ec.edu.uteq.scli.mobile.features.auth.presentation.LoginScreen
 import ec.edu.uteq.scli.mobile.features.profile.presentation.ProfileScreen
@@ -49,6 +52,7 @@ import ec.edu.uteq.scli.mobile.features.reservas.presentation.SolicitudDetalleSc
 import ec.edu.uteq.scli.mobile.features.reservas.presentation.CalendarioScreen
 import ec.edu.uteq.scli.mobile.features.auth.data.hasAnyPermission
 import ec.edu.uteq.scli.mobile.features.auth.data.hasPermission
+import ec.edu.uteq.scli.mobile.features.auth.data.hasRole
 
 private sealed class AppDestination(val route: String) {
     data object Incidentes : AppDestination("incidentes")
@@ -56,6 +60,8 @@ private sealed class AppDestination(val route: String) {
     data object Perfil : AppDestination("perfil")
     data object Calendario : AppDestination("calendario")
     data object EscanearQr : AppDestination("escanear-qr")
+    data object Planificacion : AppDestination("planificacion")
+    data object Asistencia : AppDestination("asistencia")
     data object NuevaReserva : AppDestination("reservas/nueva")
     data object SolicitudDetalle : AppDestination("solicitudes/{solicitudId}") { fun crearRuta(id: String) = "solicitudes/$id" }
     data object ReservaDetalle : AppDestination("reservas/{reservaId}") {
@@ -89,6 +95,9 @@ fun AppNavHost(application: ScliMobileApplication) {
     val puedeVerReservas = user.hasAnyPermission("RESERVA_LEER", "SOLICITUD_LEER")
     val puedeCrearSolicitud = user.hasPermission("SOLICITUD_CREAR")
     val puedeVerCalendario = user.hasAnyPermission("RESERVA_LEER", "AGENDA_GESTIONAR")
+    val puedeVerIncidentes = user.hasAnyPermission("INCIDENTE_LEER", "INCIDENTE_CREAR", "INCIDENTE_GESTIONAR")
+    val puedeVerPlanificacion = user.hasAnyPermission("PLANIFICACION_GESTIONAR", "SOLICITUD_APROBAR")
+    val puedeVerAsistencia = user.hasAnyPermission("ASISTENCIA_LEER", "ASISTENCIA_GESTIONAR", "ASISTENCIA_REGISTRAR")
 
     Scaffold(
         bottomBar = {
@@ -96,7 +105,7 @@ fun AppNavHost(application: ScliMobileApplication) {
             val currentDestination = navBackStackEntry?.destination
 
             NavigationBar {
-                if (puedeVerReservas) NavigationBarItem(
+                if (puedeVerIncidentes) NavigationBarItem(
                     selected = currentDestination.isRoute(AppDestination.Incidentes),
                     onClick = { navController.navigateToTab(AppDestination.Incidentes.route) },
                     icon = { Icon(Icons.Filled.Warning, contentDescription = null) },
@@ -108,7 +117,19 @@ fun AppNavHost(application: ScliMobileApplication) {
                     icon = { Icon(Icons.Filled.Event, contentDescription = null) },
                     label = { Text("Calendario") },
                 )
-                NavigationBarItem(
+                if (puedeVerPlanificacion) NavigationBarItem(
+                    selected = currentDestination.isRoute(AppDestination.Planificacion),
+                    onClick = { navController.navigateToTab(AppDestination.Planificacion.route) },
+                    icon = { Icon(Icons.Filled.Event, contentDescription = "Planificación") },
+                    label = { Text("Planificación") },
+                )
+                if (puedeVerAsistencia) NavigationBarItem(
+                    selected = currentDestination.isRoute(AppDestination.Asistencia),
+                    onClick = { navController.navigateToTab(AppDestination.Asistencia.route) },
+                    icon = { Icon(Icons.Filled.Event, contentDescription = "Asistencia") },
+                    label = { Text("Asistencia") },
+                )
+                if (puedeVerReservas) NavigationBarItem(
                     selected = currentDestination.isRoute(AppDestination.Reservas),
                     onClick = { navController.navigateToTab(AppDestination.Reservas.route) },
                     icon = { Icon(Icons.Filled.Event, contentDescription = null) },
@@ -131,10 +152,17 @@ fun AppNavHost(application: ScliMobileApplication) {
     ) { padding ->
         NavHost(
             navController = navController,
-            startDestination = AppDestination.Incidentes.route,
+            startDestination = when {
+                puedeVerReservas -> AppDestination.Reservas.route
+                puedeVerPlanificacion -> AppDestination.Planificacion.route
+                puedeVerAsistencia -> AppDestination.Asistencia.route
+                puedeVerIncidentes -> AppDestination.Incidentes.route
+                else -> AppDestination.Perfil.route
+            },
             modifier = Modifier.padding(padding),
         ) {
             composable(AppDestination.Incidentes.route) {
+                if (!puedeVerIncidentes) { Text("No tienes permisos para realizar esta acción."); return@composable }
                 val viewModel: IncidentesViewModel = viewModel(
                     factory = viewModelFactory {
                         initializer {
@@ -171,10 +199,28 @@ fun AppNavHost(application: ScliMobileApplication) {
             composable(AppDestination.EscanearQr.route) {
                 val viewModel: QrViewModel = viewModel(
                     factory = viewModelFactory {
-                        initializer { QrViewModel(container.qrRepository) }
+                        initializer { QrViewModel(container.qrRepository, container.institutionalRepository) }
                     },
                 )
                 QrScanScreen(viewModel)
+            }
+            composable(AppDestination.Planificacion.route) {
+                if (!puedeVerPlanificacion) { Text("No tienes permisos para realizar esta acción."); return@composable }
+                val viewModel: InstitutionalViewModel = viewModel(
+                    factory = viewModelFactory { initializer { InstitutionalViewModel(container.institutionalRepository) } },
+                )
+                PlanificacionesScreen(
+                    viewModel,
+                    puedeRevisar = user.hasPermission("SOLICITUD_APROBAR"),
+                    coordinador = user.hasRole("COORDINADOR"),
+                )
+            }
+            composable(AppDestination.Asistencia.route) {
+                if (!puedeVerAsistencia) { Text("No tienes permisos para realizar esta acción."); return@composable }
+                val viewModel: InstitutionalViewModel = viewModel(
+                    factory = viewModelFactory { initializer { InstitutionalViewModel(container.institutionalRepository) } },
+                )
+                HistorialAsistenciaScreen(viewModel)
             }
             composable(AppDestination.NuevaReserva.route) {
                 if (!puedeCrearSolicitud) { Text("No tienes permisos para realizar esta acción."); return@composable }
@@ -206,7 +252,16 @@ fun AppNavHost(application: ScliMobileApplication) {
                         initializer { ReservasViewModel(container.reservaRepository, cargarInicialmente = false) }
                     },
                 )
-                ReservaDetalleScreen(reservaId, viewModel, puedeCancelar = user.hasPermission("RESERVA_CANCELAR"))
+                val institutionalViewModel: InstitutionalViewModel = viewModel(
+                    factory = viewModelFactory { initializer { InstitutionalViewModel(container.institutionalRepository) } },
+                )
+                ReservaDetalleScreen(
+                    reservaId,
+                    viewModel,
+                    institutionalViewModel,
+                    puedeCancelar = user.hasPermission("RESERVA_CANCELAR"),
+                    puedeGestionarAsistencia = user.hasPermission("ASISTENCIA_GESTIONAR"),
+                )
             }
         }
     }

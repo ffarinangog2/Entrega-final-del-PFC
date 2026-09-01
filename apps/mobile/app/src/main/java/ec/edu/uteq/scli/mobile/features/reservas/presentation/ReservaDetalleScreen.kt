@@ -22,10 +22,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import ec.edu.uteq.scli.mobile.features.institutional.presentation.InstitutionalViewModel
 
 @Composable
-fun ReservaDetalleScreen(reservaId: String, viewModel: ReservasViewModel, puedeCancelar: Boolean = true) {
+fun ReservaDetalleScreen(
+    reservaId: String,
+    viewModel: ReservasViewModel,
+    institutionalViewModel: InstitutionalViewModel,
+    puedeCancelar: Boolean = true,
+    puedeGestionarAsistencia: Boolean = false,
+) {
     val state by viewModel.uiState.collectAsState()
+    val institutionalState by institutionalViewModel.uiState.collectAsState()
     var mostrarCancelacion by remember { mutableStateOf(false) }
     LaunchedEffect(reservaId) { viewModel.cargarDetalle(reservaId) }
 
@@ -58,6 +66,30 @@ fun ReservaDetalleScreen(reservaId: String, viewModel: ReservasViewModel, puedeC
                         modifier = Modifier.testTag("cancelar_reserva"),
                     ) { Text(if (state.cancelando) "Cancelando" else "Cancelar reserva") }
                 }
+                if (puedeGestionarAsistencia && reserva.estado == "PROGRAMADA") {
+                    Button(onClick = { institutionalViewModel.iniciarReserva(reserva.id) { viewModel.cargarDetalle(reserva.id) } }) {
+                        Text("Iniciar utilización")
+                    }
+                }
+                if (puedeGestionarAsistencia && reserva.estado == "EN_CURSO") {
+                    if (institutionalState.sesion == null) {
+                        Button(onClick = { institutionalViewModel.abrirSesion(reserva.id) }) { Text("Abrir asistencia") }
+                    } else {
+                        Text("Sesión: ${institutionalState.sesion?.estado}")
+                        institutionalState.sesion?.token?.let { token ->
+                            Text("Contenido QR: scli-asistencia:${institutionalState.sesion?.id}:$token")
+                        }
+                        Text("Asistentes: ${institutionalState.asistentes.size}")
+                        institutionalState.asistentes.forEach { Text("Registro ${it.id} — ${it.estado}") }
+                        Button(onClick = institutionalViewModel::refrescarSesion) { Text("Actualizar asistentes") }
+                        Button(onClick = institutionalViewModel::cerrarSesion) { Text("Cerrar asistencia") }
+                    }
+                    Button(onClick = { institutionalViewModel.finalizarReserva(reserva.id) { viewModel.cargarDetalle(reserva.id) } }) {
+                        Text("Finalizar utilización")
+                    }
+                }
+                institutionalState.mensaje?.let { Text(it) }
+                institutionalState.error?.let { Text(it) }
             }
         }
     }

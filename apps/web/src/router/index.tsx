@@ -12,6 +12,10 @@ import { ReservasListPage } from '../features/reservas/ReservasListPage'
 import { CalendarioReservasPage } from '../features/reservas/CalendarioReservasPage'
 import { NuevaSolicitudPage } from '../features/reservas/NuevaSolicitudPage'
 import { SolicitudDetailPage } from '../features/reservas/SolicitudDetailPage'
+import { PlanificacionPage } from '../features/planificacion/PlanificacionPage'
+import { AsistenciaPage } from '../features/asistencia/AsistenciaPage'
+import { IncidentesPage } from '../features/incidentes/IncidentesPage'
+import { ProfilePage } from '../pages/ProfilePage'
 
 export function AppRoutes() {
   return (
@@ -24,6 +28,10 @@ export function AppRoutes() {
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/about" element={<AboutPage />} />
         <Route path="/usuarios" element={<UsuariosPage />} />
+        <Route path="/perfil" element={<ProfilePage />} />
+        <Route element={<ProtectedRoute permissions={['PLANIFICACION_GESTIONAR', 'SOLICITUD_APROBAR']} />}><Route path="/planificacion" element={<PlanificacionPage />} /></Route>
+        <Route element={<ProtectedRoute permissions={['RESERVA_LEER', 'ACADEMICO_LEER']} />}><Route path="/asistencia" element={<AsistenciaPage />} /></Route>
+        <Route element={<ProtectedRoute permissions={['INCIDENTE_LEER', 'INCIDENTE_CREAR', 'INCIDENTE_GESTIONAR']} />}><Route path="/incidentes" element={<IncidentesPage />} /></Route>
         <Route element={<ProtectedRoute permissions={['RESERVA_LEER', 'SOLICITUD_LEER']} />}>
           <Route path="/reservas" element={<ReservasListPage />} />
           <Route path="/reservas/:id" element={<ReservaDetailPage />} />
