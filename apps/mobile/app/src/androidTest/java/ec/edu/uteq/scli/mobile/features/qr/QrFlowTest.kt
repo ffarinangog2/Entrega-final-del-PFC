@@ -14,15 +14,6 @@ import ec.edu.uteq.scli.mobile.features.qr.data.LaboratorioDetalle
 import ec.edu.uteq.scli.mobile.features.qr.data.QrRepository
 import ec.edu.uteq.scli.mobile.features.qr.presentation.QrScanScreen
 import ec.edu.uteq.scli.mobile.features.qr.presentation.QrViewModel
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.resetMain
-import kotlinx.coroutines.test.runCurrent
-import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.test.setMain
-import org.junit.After
-import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -35,7 +26,6 @@ import org.junit.runner.RunWith
  * cámara real (CameraPreview) y la prueba queda estable en cualquier
  * dispositivo o emulador, tenga o no cámara funcional.
  */
-@OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(AndroidJUnit4::class)
 class QrFlowTest {
 
@@ -45,21 +35,13 @@ class QrFlowTest {
     @get:Rule
     val composeTestRule = createComposeRule()
 
-    private val dispatcher = StandardTestDispatcher()
-
-    @Before
-    fun setUp() = Dispatchers.setMain(dispatcher)
-
-    @After
-    fun tearDown() = Dispatchers.resetMain()
-
     @Test
-    fun escanearQrValido_muestraDetalleDelLaboratorio() = runTest {
+    fun escanearQrValido_muestraDetalleDelLaboratorio() {
         val repository = FakeQrRepository(resultado = NetworkResult.Success(DETALLE))
         val viewModel = QrViewModel(repository)
 
         viewModel.procesarQr(LABORATORIO_ID)
-        runCurrent()
+        composeTestRule.waitUntil { viewModel.uiState.value.detalle != null }
 
         composeTestRule.setContent {
             MaterialTheme {
@@ -73,12 +55,11 @@ class QrFlowTest {
     }
 
     @Test
-    fun qrInvalido_muestraErrorYPermiteReintentar() = runTest {
+    fun qrInvalido_muestraErrorYPermiteReintentar() {
         val repository = FakeQrRepository(resultado = NetworkResult.Success(DETALLE))
         val viewModel = QrViewModel(repository)
 
         viewModel.procesarQr("no-es-un-uuid")
-        runCurrent()
 
         composeTestRule.setContent {
             MaterialTheme {
@@ -91,18 +72,17 @@ class QrFlowTest {
             .assertExists()
 
         composeTestRule.onNodeWithText("Reintentar escaneo").performClick()
-        runCurrent()
 
         assertViewModelReiniciado(viewModel)
     }
 
     @Test
-    fun errorDeRed_muestraMensajeDeGateway() = runTest {
+    fun errorDeRed_muestraMensajeDeGateway() {
         val repository = FakeQrRepository(resultado = NetworkResult.Failure(null, "gateway_no_disponible"))
         val viewModel = QrViewModel(repository)
 
         viewModel.procesarQr(LABORATORIO_ID)
-        runCurrent()
+        composeTestRule.waitUntil { viewModel.uiState.value.error != null }
 
         composeTestRule.setContent {
             MaterialTheme {
