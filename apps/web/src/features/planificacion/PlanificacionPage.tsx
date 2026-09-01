@@ -22,6 +22,7 @@ export function PlanificacionPage() {
   const gestor = hasPermission(usuario, 'SOLICITUD_APROBAR')
   const [items, setItems] = useState<api.Planificacion[]>([]),
     [form, setForm] = useState(inicial),
+    [editandoId, setEditandoId] = useState<string | null>(null),
     [cargando, setCargando] = useState(true),
     [guardando, setGuardando] = useState(false),
     [mensaje, setMensaje] = useState(''),
@@ -41,14 +42,26 @@ export function PlanificacionPage() {
         await Promise.all([
           api.listarPlanificaciones(),
           academico.obtenerPeriodoActual(),
-          academico.obtenerCarreras(),
+          coordinador ? Promise.resolve([]) : academico.obtenerCarreras(),
           academico.obtenerMaterias(),
           academico.obtenerLaboratorios(),
           academico.obtenerDocentes(),
         ])
+      const carreraCoordinada = coordinador
+        ? [...new Set(materias.map((materia) => materia.carreraId))]
+        : []
+      if (coordinador && carreraCoordinada.length !== 1) {
+        throw new Error(
+          'No se pudo determinar una única carrera institucional para el coordinador.',
+        )
+      }
       setItems(planes)
       setCatalogos({ periodo, carreras, materias, laboratorios, docentes })
-      setForm((f) => ({ ...f, periodoId: f.periodoId || periodo.id }))
+      setForm((f) => ({
+        ...f,
+        periodoId: f.periodoId || periodo.id,
+        carreraId: coordinador ? carreraCoordinada[0] : f.carreraId,
+      }))
     } catch (e) {
       setError(
         e instanceof Error ? e.message : 'No se pudo cargar la planificación.',
@@ -56,7 +69,7 @@ export function PlanificacionPage() {
     } finally {
       setCargando(false)
     }
-  }, [])
+  }, [coordinador])
   useEffect(() => {
     void cargar()
   }, [cargar])
@@ -67,13 +80,19 @@ export function PlanificacionPage() {
       ),
     [catalogos.materias, form.carreraId],
   )
-  async function crear(e: FormEvent) {
+  async function guardar(e: FormEvent) {
     e.preventDefault()
     setGuardando(true)
     setError('')
     try {
-      await api.crearPlanificacion(form)
-      setMensaje('Borrador guardado correctamente.')
+      if (editandoId) await api.editarPlanificacion(editandoId, form)
+      else await api.crearPlanificacion(form)
+      setMensaje(
+        editandoId
+          ? 'Planificación actualizada correctamente.'
+          : 'Borrador guardado correctamente.',
+      )
+      setEditandoId(null)
       setForm({ ...inicial, periodoId: catalogos.periodo?.id ?? '' })
       await cargar()
     } catch (x) {
@@ -81,6 +100,21 @@ export function PlanificacionPage() {
     } finally {
       setGuardando(false)
     }
+  }
+  function editar(item: api.Planificacion) {
+    setEditandoId(item.id)
+    setForm({
+      periodoId: item.periodoId,
+      carreraId: item.carreraId,
+      materiaId: item.materiaId,
+      docenteId: item.docenteId,
+      laboratorioId: item.laboratorioId,
+      diaSemana: item.diaSemana,
+      horaInicio: item.horaInicio,
+      horaFin: item.horaFin,
+      observacion: item.observacion ?? '',
+    })
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
   async function accion(
     id: string,
@@ -138,24 +172,18 @@ export function PlanificacionPage() {
           </p>
         )}
         {coordinador && (
-          <form className="operations__form" onSubmit={crear}>
-            <h2>Nuevo borrador</h2>
+          <form className="operations__form" onSubmit={guardar}>
+            <h2>{editandoId ? 'Editar planificación' : 'Nuevo borrador'}</h2>
             <label>
               Carrera
-              <select
-                required
-                value={form.carreraId}
-                onChange={(e) =>
-                  setForm({ ...form, carreraId: e.target.value, materiaId: '' })
+              <input
+                readOnly
+                value={
+                  form.carreraId
+                    ? 'Mi carrera institucional'
+                    : 'Sin carrera asignada'
                 }
-              >
-                <option value="">Seleccione</option>
-                {catalogos.carreras.map((x) => (
-                  <option key={x.id} value={x.id}>
-                    {x.codigo} — {x.nombre}
-                  </option>
-                ))}
-              </select>
+              />
             </label>
             <label>
               Materia
@@ -215,16 +243,11 @@ export function PlanificacionPage() {
                   setForm({ ...form, diaSemana: e.target.value })
                 }
               >
-                {[
-                  'LUNES',
-                  'MARTES',
-                  'MIERCOLES',
-                  'JUEVES',
-                  'VIERNES',
-                  'SABADO',
-                ].map((x) => (
-                  <option key={x}>{x}</option>
-                ))}
+                {['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES'].map(
+                  (x) => (
+                    <option key={x}>{x}</option>
+                  ),
+                )}
               </select>
             </label>
             <label>
@@ -232,6 +255,8 @@ export function PlanificacionPage() {
               <input
                 type="time"
                 required
+                min="07:30"
+                max="17:30"
                 value={form.horaInicio}
                 onChange={(e) =>
                   setForm({ ...form, horaInicio: e.target.value })
@@ -243,6 +268,8 @@ export function PlanificacionPage() {
               <input
                 type="time"
                 required
+                min="07:30"
+                max="17:30"
                 value={form.horaFin}
                 onChange={(e) => setForm({ ...form, horaFin: e.target.value })}
               />
@@ -257,8 +284,27 @@ export function PlanificacionPage() {
               />
             </label>
             <button disabled={guardando}>
-              {guardando ? 'Guardando…' : 'Guardar borrador'}
+              {guardando
+                ? 'Guardando…'
+                : editandoId
+                  ? 'Guardar cambios'
+                  : 'Guardar borrador'}
             </button>
+            {editandoId && (
+              <button
+                type="button"
+                onClick={() => {
+                  setEditandoId(null)
+                  setForm({
+                    ...inicial,
+                    periodoId: catalogos.periodo?.id ?? '',
+                    carreraId: form.carreraId,
+                  })
+                }}
+              >
+                Cancelar edición
+              </button>
+            )}
           </form>
         )}
         <div className="operations__table-wrap">
@@ -300,12 +346,18 @@ export function PlanificacionPage() {
                     <td>
                       <div className="operations__actions">
                         {coordinador && x.estado === 'BORRADOR' && (
-                          <button onClick={() => void accion(x.id, 'enviar')}>
-                            Enviar
-                          </button>
+                          <>
+                            <button onClick={() => editar(x)}>Editar</button>
+                            <button onClick={() => void accion(x.id, 'enviar')}>
+                              Enviar
+                            </button>
+                          </>
                         )}
                         {coordinador && x.estado === 'PROPUESTA_CAMBIO' && (
                           <>
+                            <button onClick={() => editar(x)}>
+                              Editar alternativa
+                            </button>
                             <button
                               onClick={() =>
                                 void accion(x.id, 'aceptar-propuesta')
