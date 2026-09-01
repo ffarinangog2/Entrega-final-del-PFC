@@ -155,12 +155,15 @@ class CockroachFlywayIntegrationTests {
                     'configuraciones_reserva',\
                     'idempotencia_aprobaciones',\
                     'idempotencia_creacion_solicitudes',\
-                    'mutex_agenda'\
+                    'mutex_agenda',\
+                    'planificaciones_semestre',\
+                    'sesiones_asistencia',\
+                    'registros_asistencia'\
                   )
                 """,
                 Integer.class);
 
-        assertThat(tablas).isEqualTo(8);
+        assertThat(tablas).isEqualTo(11);
 
         Integer clavesForaneas = jdbcTemplate.queryForObject(
                 """
@@ -175,6 +178,25 @@ class CockroachFlywayIntegrationTests {
                 """,
                 Integer.class);
         assertThat(clavesForaneas).isEqualTo(2);
+
+        Integer restriccionesV7 = jdbcTemplate.queryForObject(
+                """
+                SELECT count(*) FROM information_schema.table_constraints
+                WHERE constraint_schema = 'public'
+                  AND constraint_name IN ('ck_planificacion_horas','ck_planificacion_estado',
+                    'ck_sesion_asistencia_estado','ck_sesion_asistencia_ventana',
+                    'uq_registro_asistencia_estudiante','ck_registro_asistencia_estado')
+                """, Integer.class);
+        assertThat(restriccionesV7).isEqualTo(6);
+
+        Integer indicesV7 = jdbcTemplate.queryForObject(
+                """
+                SELECT count(*) FROM pg_indexes WHERE schemaname = 'public'
+                  AND indexname IN ('ix_planificacion_carrera_estado',
+                    'ix_planificacion_laboratorio_horario',
+                    'ix_sesiones_asistencia_reserva','ix_registros_asistencia_estudiante')
+                """, Integer.class);
+        assertThat(indicesV7).isEqualTo(4);
     }
 
     @Test

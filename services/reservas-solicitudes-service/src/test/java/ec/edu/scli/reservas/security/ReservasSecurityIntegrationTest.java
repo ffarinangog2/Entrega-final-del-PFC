@@ -6,6 +6,8 @@ import ec.edu.scli.reservas.infrastructure.audit.AuditLogger;
 import ec.edu.scli.reservas.presentation.controller.DisponibilidadController;
 import ec.edu.scli.reservas.presentation.controller.SolicitudReservaController;
 import ec.edu.scli.reservas.application.service.SolicitudReservaService;
+import ec.edu.scli.reservas.application.service.PlanificacionService;
+import ec.edu.scli.reservas.presentation.controller.PlanificacionController;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.junit.jupiter.api.Test;
@@ -30,7 +32,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import org.springframework.security.access.AccessDeniedException;
 
-@WebMvcTest({DisponibilidadController.class, SolicitudReservaController.class})
+@WebMvcTest({DisponibilidadController.class, SolicitudReservaController.class, PlanificacionController.class})
 @Import({SecurityConfig.class, JwtAuthenticationFilter.class, JwtTokenProvider.class})
 @TestPropertySource(properties = {
         "security.jwt.issuer=scli-auth-service",
@@ -41,6 +43,7 @@ class ReservasSecurityIntegrationTest {
     @MockitoBean private DisponibilidadService disponibilidadService;
     @MockitoBean private SolicitudReservaService solicitudService;
     @MockitoBean private AuditLogger auditLogger;
+    @MockitoBean private PlanificacionService planificacionService;
 
     @Test
     void sinTokenResponde401() throws Exception {
@@ -105,6 +108,47 @@ class ReservasSecurityIntegrationTest {
                                 List.of("SOLICITUD_APROBAR")))
                         .contentType("application/json").content("{}"))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void coordinadorConPermisoPuedeCrearPlanificacion() throws Exception {
+        when(planificacionService.crear(any())).thenReturn(new ec.edu.scli.reservas.presentation.dto.response.PlanificacionResponse(
+                UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), null,
+                UUID.randomUUID(), "LUNES", java.time.LocalTime.of(8, 0), java.time.LocalTime.of(10, 0),
+                "BORRADOR", null, UUID.randomUUID(), java.time.Instant.now(), java.time.Instant.now(), 0L));
+        mockMvc.perform(post("/api/v1/planificaciones")
+                        .header("Authorization", "Bearer " + token("access", "COORDINADOR", UUID.randomUUID(),
+                                List.of("PLANIFICACION_GESTIONAR")))
+                        .contentType("application/json").content(planificacionJson()))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
+    void docenteYEstudianteNoPuedenGestionarPlanificacion() throws Exception {
+        for (String rol : List.of("DOCENTE", "ESTUDIANTE")) {
+            mockMvc.perform(post("/api/v1/planificaciones")
+                            .header("Authorization", "Bearer " + token("access", rol, UUID.randomUUID(),
+                                    List.of("ACADEMICO_LEER")))
+                            .contentType("application/json").content(planificacionJson()))
+                    .andExpect(status().isForbidden());
+        }
+    }
+
+    @Test
+    void planificacionSinJwtEs401YRefreshEsRechazado() throws Exception {
+        mockMvc.perform(get("/api/v1/planificaciones")).andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/api/v1/planificaciones")
+                        .header("Authorization", "Bearer " + token("refresh", "COORDINADOR", UUID.randomUUID(),
+                                List.of("PLANIFICACION_GESTIONAR"))))
+                .andExpect(status().isUnauthorized());
+    }
+
+    private String planificacionJson() {
+        return """
+                {"periodoId":"%s","carreraId":"%s","materiaId":"%s",\
+                 "laboratorioId":"%s","diaSemana":"LUNES",\
+                 "horaInicio":"08:00","horaFin":"10:00"}
+                """.formatted(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID());
     }
 
     private org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder consulta() {

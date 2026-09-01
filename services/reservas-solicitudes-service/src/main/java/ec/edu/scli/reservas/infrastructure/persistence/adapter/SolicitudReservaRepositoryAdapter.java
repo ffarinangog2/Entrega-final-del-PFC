@@ -10,6 +10,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Component;
 import java.util.*;
+import java.time.Instant;
 
 @Component
 public class SolicitudReservaRepositoryAdapter implements SolicitudReservaRepositoryPort {
@@ -31,6 +32,9 @@ public class SolicitudReservaRepositoryAdapter implements SolicitudReservaReposi
             throw new ObjectOptimisticLockingFailureException(SolicitudReservaJpaEntity.class, d.getId());
         }
         mapper.updateEntity(d,e); return mapper.toDomain(repository.save(e));
+    }
+    public List<SolicitudReserva> buscarPendientesAnterioresA(Instant limite){
+        return repository.findByEstadoAndCreadaEnBefore(EstadoSolicitud.PENDIENTE, limite).stream().map(mapper::toDomain).toList();
     }
     private <T>Specification<SolicitudReservaJpaEntity>igual(String a,T v){return v==null?null:(r,q,b)->b.equal(r.get(a),v);}
     private Pagina<SolicitudReserva> pagina(Page<SolicitudReservaJpaEntity>p){return new Pagina<>(p.stream().map(mapper::toDomain).toList(),p.getNumber(),p.getSize(),p.getTotalElements(),p.getTotalPages(),p.isFirst(),p.isLast());}

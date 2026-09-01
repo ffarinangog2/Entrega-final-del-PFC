@@ -14,6 +14,7 @@ public interface EstudianteService {
     Page<EstudianteResponse> listar(Pageable pageable);
 
     EstudianteResponse obtenerPorId(UUID id);
+    EstudianteResponse obtenerPorPerfilId(UUID perfilId);
 
     EstudianteResponse actualizar(UUID id, EstudianteRequest request);
 }

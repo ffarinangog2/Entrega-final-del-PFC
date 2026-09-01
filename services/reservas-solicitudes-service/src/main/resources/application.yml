@@ -90,6 +90,11 @@ security:
 
 app:
   internal-api-key: ${INTERNAL_API_KEY}
+  reservas:
+    expiration-grace-minutes: ${RESERVA_EXPIRATION_GRACE_MINUTES:1440}
+    expiration-check-ms: ${RESERVA_EXPIRATION_CHECK_MS:60000}
+  asistencia:
+    window-minutes: ${ASISTENCIA_WINDOW_MINUTES:15}
 
   services:
     usuarios:

@@ -9,6 +9,8 @@ import ec.edu.scli.reservas.domain.strategy.disponibilidad.ConsultaDisponibilida
 import ec.edu.scli.reservas.domain.strategy.disponibilidad.DisponibilidadStrategy;
 import ec.edu.scli.reservas.domain.strategy.disponibilidad.EstadoLaboratorio;
 import ec.edu.scli.reservas.application.service.DisponibilidadService;
+import ec.edu.scli.reservas.domain.model.EstadoPlanificacion;
+import ec.edu.scli.reservas.infrastructure.persistence.repository.PlanificacionJpaRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -23,16 +25,19 @@ public class DisponibilidadServiceImpl implements DisponibilidadService {
     private final BloqueoAgendaRepository bloqueoAgendaRepository;
     private final AcademicoLaboratoriosClient academicoLaboratoriosClient;
     private final DisponibilidadStrategy disponibilidadStrategy;
+    private final PlanificacionJpaRepository planificaciones;
 
     public DisponibilidadServiceImpl(
             ReservaRepositoryPort reservaRepository,
             BloqueoAgendaRepository bloqueoAgendaRepository,
             AcademicoLaboratoriosClient academicoLaboratoriosClient,
-            DisponibilidadStrategy disponibilidadStrategy) {
+            DisponibilidadStrategy disponibilidadStrategy,
+            PlanificacionJpaRepository planificaciones) {
         this.reservaRepository = reservaRepository;
         this.bloqueoAgendaRepository = bloqueoAgendaRepository;
         this.academicoLaboratoriosClient = academicoLaboratoriosClient;
         this.disponibilidadStrategy = disponibilidadStrategy;
+        this.planificaciones = planificaciones;
     }
 
     @Override
@@ -43,6 +48,11 @@ public class DisponibilidadServiceImpl implements DisponibilidadService {
             LocalTime horaFin) {
         ConsultaDisponibilidad consulta =
                 new ConsultaDisponibilidad(laboratorioId, fecha, horaInicio, horaFin);
+        if (planificaciones.existsByLaboratorioIdAndDiaSemanaAndEstadoAndHoraInicioLessThanAndHoraFinGreaterThan(
+                laboratorioId, dia(fecha), EstadoPlanificacion.CONFIRMADA, horaFin, horaInicio)) {
+            return respuesta(laboratorioId, fecha, horaInicio, horaFin, false,
+                    "La franja esta ocupada por planificacion academica confirmada");
+        }
         var resultado = disponibilidadStrategy.evaluar(
                 consulta,
                 LocalDate.now(),
@@ -53,6 +63,18 @@ public class DisponibilidadServiceImpl implements DisponibilidadService {
                         laboratorioId, fecha, horaInicio, horaFin));
         return respuesta(laboratorioId, fecha, horaInicio, horaFin,
                 resultado.disponible(), resultado.motivo());
+    }
+
+    private String dia(LocalDate fecha) {
+        return switch (fecha.getDayOfWeek()) {
+            case MONDAY -> "LUNES";
+            case TUESDAY -> "MARTES";
+            case WEDNESDAY -> "MIERCOLES";
+            case THURSDAY -> "JUEVES";
+            case FRIDAY -> "VIERNES";
+            case SATURDAY -> "SABADO";
+            case SUNDAY -> "DOMINGO";
+        };
     }
 
     private EstadoLaboratorio obtenerEstadoLaboratorio(UUID laboratorioId) {

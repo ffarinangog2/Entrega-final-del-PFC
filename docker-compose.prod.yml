@@ -184,6 +184,8 @@ services:
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
       USUARIOS_SERVICE_URL: http://usuarios-service:8082
       ACADEMICO_LABORATORIOS_SERVICE_URL: http://academico-laboratorios-service:8083
+      RESERVA_EXPIRATION_GRACE_MINUTES: ${RESERVA_EXPIRATION_GRACE_MINUTES:-1440}
+      ASISTENCIA_WINDOW_MINUTES: ${ASISTENCIA_WINDOW_MINUTES:-15}
       OTEL_SERVICE_NAME: reservas-solicitudes-service
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
       OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://otel-collector:4318/v1/traces

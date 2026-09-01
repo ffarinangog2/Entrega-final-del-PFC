@@ -3,6 +3,7 @@ package ec.edu.scli.reservas.client;
 import ec.edu.scli.reservas.client.dto.PerfilExternoResponse;
 import ec.edu.scli.reservas.client.dto.ContextoInstitucionalExternoResponse;
 import ec.edu.scli.reservas.client.dto.DocenteExternoResponse;
+import ec.edu.scli.reservas.client.dto.EstudianteExternoResponse;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -55,6 +56,12 @@ public class UsuariosClient {
         return executeWithReadRetries(() -> restClient.get()
                 .uri("/api/v1/internal/docentes/{docenteId}", docenteId)
                 .retrieve().body(DocenteExternoResponse.class));
+    }
+
+    public EstudianteExternoResponse obtenerEstudiantePorPerfil(UUID perfilId) {
+        return executeWithReadRetries(() -> restClient.get()
+                .uri("/api/v1/internal/estudiantes/perfil/{perfilId}", perfilId)
+                .retrieve().body(EstudianteExternoResponse.class));
     }
 
     public boolean existeDocenteActivo(UUID perfilId) {

@@ -16,6 +16,7 @@ import ec.edu.scli.academico.application.service.MateriaService;
 import ec.edu.scli.academico.application.service.PeriodoLectivoService;
 import ec.edu.scli.academico.dto.internal.ExisteResponse;
 import ec.edu.scli.academico.dto.internal.LaboratorioDisponibilidadBaseResponse;
+import ec.edu.scli.academico.dto.internal.MateriaContextoResponse;
 
 /**
  * Endpoints internos consumidos por Reservas y Solicitudes Service.
@@ -75,6 +76,20 @@ public class InternalController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
         return ResponseEntity.ok(materiaService.verificarExistencia(id));
+    }
+
+    @GetMapping("/materias/{id}/contexto")
+    public ResponseEntity<MateriaContextoResponse> contextoMateria(
+            @PathVariable UUID id,
+            @RequestHeader(value = "X-Internal-Api-Key", required = false) String apiKey) {
+        if (!esApiKeyValida(apiKey)) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        try {
+            var materia = materiaService.obtenerPorId(id);
+            return ResponseEntity.ok(new MateriaContextoResponse(
+                    materia.id(), materia.carreraId(), true, Boolean.TRUE.equals(materia.activo())));
+        } catch (ec.edu.scli.academico.domain.exception.ResourceNotFoundException exception) {
+            return ResponseEntity.ok(new MateriaContextoResponse(id, null, false, false));
+        }
     }
 
     @GetMapping("/periodos-lectivos/{id}/exists")

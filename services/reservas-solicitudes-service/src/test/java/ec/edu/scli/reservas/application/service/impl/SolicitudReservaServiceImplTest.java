@@ -2,6 +2,7 @@ package ec.edu.scli.reservas.application.service.impl;
 
 import ec.edu.scli.reservas.application.service.DisponibilidadService;
 import ec.edu.scli.reservas.application.service.PoliticaAmbitoLaboratorio;
+import ec.edu.scli.reservas.application.service.NotificacionService;
 import ec.edu.scli.reservas.client.AcademicoLaboratoriosClient;
 import ec.edu.scli.reservas.client.UsuariosClient;
 import ec.edu.scli.reservas.client.dto.*;
@@ -39,6 +40,7 @@ class SolicitudReservaServiceImplTest {
     private PoliticaAmbitoLaboratorio politica;
     private AgendaMutexPort agendaMutex;
     private AuditLogger auditLogger;
+    private NotificacionService notificaciones;
 
     private final UUID solicitanteId = UUID.randomUUID();
     private final UUID docenteId = UUID.randomUUID();
@@ -61,10 +63,12 @@ class SolicitudReservaServiceImplTest {
         politica = mock(PoliticaAmbitoLaboratorio.class);
         agendaMutex = mock(AgendaMutexPort.class);
         auditLogger = mock(AuditLogger.class);
+        notificaciones = mock(NotificacionService.class);
         service = new SolicitudReservaServiceImpl(
                 solicitudes, reservas, historiales, idempotenciaAprobaciones, idempotenciaCreaciones,
                 new SolicitudReservaMapper(), new ReservaMapper(), new HistorialSolicitudMapper(),
                 docentes, academico, disponibilidad, metrics, politica, agendaMutex, auditLogger);
+        service.setNotificaciones(notificaciones);
 
         when(politica.actor()).thenReturn(new ActorAutenticado(
                 usuarioId, java.util.Set.of("ROLE_ADMINISTRADOR")));
@@ -218,6 +222,7 @@ class SolicitudReservaServiceImplTest {
         verify(metrics).solicitudAprobada();
         verify(metrics).reservaCreada();
         verify(idempotenciaAprobaciones).completar(eq("clave"), eq(respuesta.id()));
+        verify(notificaciones).notificarPerfil(eq(solicitanteId), eq("Solicitud aprobada"), anyString(), anyMap());
     }
 
     @Test
@@ -299,6 +304,7 @@ class SolicitudReservaServiceImplTest {
                 service.rechazar(solicitud.getId(), new RechazarSolicitudRequest("no cumple"), usuarioId).estado());
         verify(historiales).guardar(argThat(h -> "no cumple".equals(h.getComentario())));
         verify(metrics).solicitudRechazada();
+        verify(notificaciones).notificarPerfil(eq(solicitanteId), eq("Solicitud rechazada"), anyString(), anyMap());
     }
 
     @Test
@@ -377,6 +383,7 @@ class SolicitudReservaServiceImplTest {
                         laboratorioAlternativo, "alternativa"), usuarioId);
         assertEquals(EstadoSolicitud.PROPUESTA, propuesta.estado());
         assertEquals(laboratorioAlternativo, propuesta.propuestaLaboratorioId());
+        verify(notificaciones).notificarPerfil(eq(usuarioId), eq("Propuesta alternativa"), anyString(), anyMap());
 
         var aceptada = service.aceptarPropuesta(solicitud.getId(),
                 new ResponderPropuestaRequest("acepto"), usuarioId);

@@ -24,6 +24,10 @@ public class ContextoInstitucionalAdapter implements ContextoInstitucionalPort {
                 administrador != null && administrador.esAdministrador(),
                 administrador != null && administrador.activo(),
                 administrador != null && administrador.administradorPisoOperativo(),
-                administrador == null ? null : administrador.pisoId());
+                administrador == null ? null : administrador.pisoId(),
+                response.adscripciones() == null ? java.util.List.of() : response.adscripciones().stream()
+                        .filter(a -> a.activo() && "CARRERA".equalsIgnoreCase(a.tipoAmbito()))
+                        .map(ec.edu.scli.reservas.client.dto.ContextoInstitucionalExternoResponse.Adscripcion::ambitoId)
+                        .toList());
     }
 }

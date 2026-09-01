@@ -109,6 +109,14 @@ public class EstudianteServiceImpl implements EstudianteService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public EstudianteResponse obtenerPorPerfilId(UUID perfilId) {
+        return convertirAResponse(estudianteRepository.findByPerfilId(perfilId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "No existe un estudiante para el perfil: " + perfilId)));
+    }
+
+    @Override
     @Transactional
     public EstudianteResponse actualizar(
             UUID id,

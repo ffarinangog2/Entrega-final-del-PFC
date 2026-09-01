@@ -5,6 +5,7 @@ import ec.edu.scli.reservas.client.dto.LaboratorioExternoResponse;
 import ec.edu.scli.reservas.domain.port.out.ReservaRepositoryPort;
 import ec.edu.scli.reservas.domain.strategy.disponibilidad.DisponibilidadSinConflictosStrategy;
 import ec.edu.scli.reservas.repository.BloqueoAgendaRepository;
+import ec.edu.scli.reservas.infrastructure.persistence.repository.PlanificacionJpaRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -19,6 +20,7 @@ class DisponibilidadServiceImplTest {
     private ReservaRepositoryPort reservas;
     private BloqueoAgendaRepository bloqueos;
     private AcademicoLaboratoriosClient cliente;
+    private PlanificacionJpaRepository planificaciones;
     private DisponibilidadServiceImpl service;
     private final UUID laboratorioId = UUID.randomUUID();
 
@@ -27,8 +29,9 @@ class DisponibilidadServiceImplTest {
         reservas = mock(ReservaRepositoryPort.class);
         bloqueos = mock(BloqueoAgendaRepository.class);
         cliente = mock(AcademicoLaboratoriosClient.class);
+        planificaciones = mock(PlanificacionJpaRepository.class);
         service = new DisponibilidadServiceImpl(
-                reservas, bloqueos, cliente, new DisponibilidadSinConflictosStrategy());
+                reservas, bloqueos, cliente, new DisponibilidadSinConflictosStrategy(), planificaciones);
         when(cliente.obtenerLaboratorio(laboratorioId))
                 .thenReturn(new LaboratorioExternoResponse(
                         laboratorioId, UUID.randomUUID(), true, true, "DISPONIBLE", 30));
@@ -37,6 +40,17 @@ class DisponibilidadServiceImplTest {
     @Test
     void informaLaboratorioDisponible() {
         assertTrue(consultar().disponible());
+    }
+
+    @Test
+    void planificacionConfirmadaBloqueaLaFranja() {
+        when(planificaciones.existsByLaboratorioIdAndDiaSemanaAndEstadoAndHoraInicioLessThanAndHoraFinGreaterThan(
+                eq(laboratorioId), anyString(), eq(ec.edu.scli.reservas.domain.model.EstadoPlanificacion.CONFIRMADA),
+                any(), any())).thenReturn(true);
+        var resultado = consultar();
+        assertFalse(resultado.disponible());
+        assertTrue(resultado.motivo().contains("planificacion"));
+        verifyNoInteractions(reservas, bloqueos);
     }
 
     @Test

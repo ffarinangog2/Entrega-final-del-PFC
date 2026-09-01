@@ -37,6 +37,8 @@ import ec.edu.scli.reservas.domain.state.solicitud.SolicitudReservaStates;
 import ec.edu.scli.reservas.application.service.DisponibilidadService;
 import ec.edu.scli.reservas.application.service.SolicitudReservaService;
 import ec.edu.scli.reservas.application.service.PoliticaAmbitoLaboratorio;
+import ec.edu.scli.reservas.application.service.NotificacionService;
+import org.springframework.beans.factory.annotation.Autowired;
 import ec.edu.scli.reservas.domain.port.out.AgendaMutexPort;
 import ec.edu.scli.reservas.domain.port.out.DocenteInstitucionalPort;
 import ec.edu.scli.reservas.infrastructure.audit.AuditLogger;
@@ -83,6 +85,12 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
     private final PoliticaAmbitoLaboratorio politicaAmbito;
     private final AgendaMutexPort agendaMutex;
     private final AuditLogger auditLogger;
+    private NotificacionService notificaciones;
+
+    @Autowired
+    void setNotificaciones(NotificacionService notificaciones) {
+        this.notificaciones = notificaciones;
+    }
 
     public SolicitudReservaServiceImpl(
             SolicitudReservaRepositoryPort solicitudReservaRepository,
@@ -514,6 +522,8 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
                 ipCliente(),
                 "id=" + solicitud.getId());
 
+        notificarSolicitud(solicitud, "Solicitud aprobada", "La solicitud de laboratorio fue aprobada", "APROBADA");
+
         return reservaMapper.toResponse(guardada);
     }
 
@@ -548,6 +558,8 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
                 usuarioActual(),
                 ipCliente(),
                 "id=" + guardada.getId());
+
+        notificarSolicitud(guardada, "Solicitud rechazada", "La solicitud de laboratorio fue rechazada", "RECHAZADA");
 
         return solicitudReservaMapper.toResponse(guardada);
     }
@@ -623,6 +635,7 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
         SolicitudReserva guardada = solicitudReservaRepository.guardar(solicitud);
         guardarHistorial(id, EstadoSolicitud.EN_REVISION, EstadoSolicitud.PROPUESTA,
                 request.observacion(), actorId);
+        notificarSolicitud(guardada, "Propuesta alternativa", "Existe una alternativa para la solicitud", "PROPUESTA");
         return solicitudReservaMapper.toResponse(guardada);
     }
 
@@ -674,6 +687,14 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
         solicitud.setPropuestaHoraFin(null);
         solicitud.setPropuestaLaboratorioId(null);
         solicitud.setPropuestaObservacion(null);
+    }
+
+    private void notificarSolicitud(SolicitudReserva solicitud, String titulo, String cuerpo, String evento) {
+        if (notificaciones != null) {
+            notificaciones.notificarPerfil(solicitud.getSolicitanteId(), titulo, cuerpo,
+                    java.util.Map.of("tipo", "SOLICITUD", "evento", evento,
+                            "solicitudId", solicitud.getId().toString()));
+        }
     }
 
     private void guardarHistorial(UUID solicitudId, EstadoSolicitud anterior,
