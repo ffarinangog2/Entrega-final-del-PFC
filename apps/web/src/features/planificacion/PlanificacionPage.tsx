@@ -51,7 +51,7 @@ export function PlanificacionPage() {
       setForm((f) => ({ ...f, periodoId: f.periodoId || periodo.id }))
     } catch (e) {
       setError(
-        e instanceof Error ? e.message : 'No se pudo cargar la planificaciÃ³n.',
+        e instanceof Error ? e.message : 'No se pudo cargar la planificación.',
       )
     } finally {
       setCargando(false)
@@ -88,7 +88,7 @@ export function PlanificacionPage() {
   ) {
     if (
       (a === 'cancelar' || a === 'aceptar') &&
-      !confirm(`Â¿Confirma la acciÃ³n ${a}?`)
+      !confirm(`¿Confirma la acción ${a}?`)
     )
       return
     setError('')
@@ -104,7 +104,7 @@ export function PlanificacionPage() {
     const observacion = prompt(
       tipo === 'rechazar'
         ? 'Motivo del rechazo'
-        : 'ObservaciÃ³n de la alternativa',
+        : 'Observación de la alternativa',
     )
     if (observacion === null) return
     try {
@@ -116,11 +116,11 @@ export function PlanificacionPage() {
     }
   }
   return (
-    <DashboardLayout breadcrumb="PlanificaciÃ³n semestral">
+    <DashboardLayout breadcrumb="Planificación semestral">
       <div className="operations">
         <header>
           <div>
-            <h1>PlanificaciÃ³n semestral</h1>
+            <h1>Planificación semestral</h1>
             <p>Asignaciones institucionales del periodo activo.</p>
           </div>
           <button onClick={() => void cargar()} disabled={cargando}>
@@ -152,7 +152,7 @@ export function PlanificacionPage() {
                 <option value="">Seleccione</option>
                 {catalogos.carreras.map((x) => (
                   <option key={x.id} value={x.id}>
-                    {x.codigo} â€” {x.nombre}
+                    {x.codigo} — {x.nombre}
                   </option>
                 ))}
               </select>
@@ -169,7 +169,7 @@ export function PlanificacionPage() {
                 <option value="">Seleccione</option>
                 {materias.map((x) => (
                   <option key={x.id} value={x.id}>
-                    {x.codigo} â€” {x.nombre}
+                    {x.codigo} — {x.nombre}
                   </option>
                 ))}
               </select>
@@ -186,7 +186,7 @@ export function PlanificacionPage() {
                 <option value="">Seleccione</option>
                 {catalogos.laboratorios.map((x) => (
                   <option key={x.id} value={x.id}>
-                    {x.nombre} â€” capacidad {x.capacidad}
+                    {x.nombre} — capacidad {x.capacidad}
                   </option>
                 ))}
               </select>
@@ -208,7 +208,7 @@ export function PlanificacionPage() {
               </select>
             </label>
             <label>
-              DÃ­a
+              Día
               <select
                 value={form.diaSemana}
                 onChange={(e) =>
@@ -248,7 +248,7 @@ export function PlanificacionPage() {
               />
             </label>
             <label className="operations__wide">
-              ObservaciÃ³n
+              Observación
               <textarea
                 value={form.observacion}
                 onChange={(e) =>
@@ -257,23 +257,23 @@ export function PlanificacionPage() {
               />
             </label>
             <button disabled={guardando}>
-              {guardando ? 'Guardandoâ€¦' : 'Guardar borrador'}
+              {guardando ? 'Guardando…' : 'Guardar borrador'}
             </button>
           </form>
         )}
         <div className="operations__table-wrap">
           {cargando ? (
-            <p>Cargando planificaciÃ³nâ€¦</p>
+            <p>Cargando planificación…</p>
           ) : items.length === 0 ? (
             <p className="operations__empty">
-              No existen planificaciones para su Ã¡mbito.
+              No existen planificaciones para su ámbito.
             </p>
           ) : (
             <table>
               <thead>
                 <tr>
                   <th>Materia</th>
-                  <th>DÃ­a</th>
+                  <th>Día</th>
                   <th>Horario</th>
                   <th>Estado</th>
                   <th>Acciones</th>
@@ -288,7 +288,7 @@ export function PlanificacionPage() {
                     </td>
                     <td>{x.diaSemana}</td>
                     <td>
-                      {x.horaInicio}â€“{x.horaFin}
+                      {x.horaInicio}–{x.horaFin}
                     </td>
                     <td>
                       <span

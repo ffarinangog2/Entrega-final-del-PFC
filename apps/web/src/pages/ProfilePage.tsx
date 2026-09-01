@@ -62,7 +62,7 @@ export function ProfilePage() {
           </p>
         )}
         {loading ? (
-          <p>Cargando perfilâ€¦</p>
+          <p>Cargando perfil…</p>
         ) : (
           perfil && (
             <form className="operations__form" onSubmit={guardar}>
@@ -91,7 +91,7 @@ export function ProfilePage() {
                 />
               </label>
               <label>
-                TelÃ©fono
+                Teléfono
                 <input
                   value={perfil.telefono ?? ''}
                   onChange={(e) =>
@@ -100,7 +100,7 @@ export function ProfilePage() {
                 />
               </label>
               <label className="operations__wide">
-                DirecciÃ³n
+                Dirección
                 <input
                   value={perfil.direccion ?? ''}
                   onChange={(e) =>
@@ -119,7 +119,7 @@ export function ProfilePage() {
                 />
               </label>
               <button disabled={saving}>
-                {saving ? 'Guardandoâ€¦' : 'Guardar cambios'}
+                {saving ? 'Guardando…' : 'Guardar cambios'}
               </button>
             </form>
           )

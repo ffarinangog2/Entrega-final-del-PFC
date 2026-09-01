@@ -12,5 +12,6 @@ export function hasAnyPermission(
 }
 
 export function hasRole(usuario: AuthUser | null | undefined, role: string) {
-  return usuario?.roles?.includes(role) ?? false
+  const expected = role.replace(/^ROLE_/, '')
+  return usuario?.roles?.some((value) => value.replace(/^ROLE_/, '') === expected) ?? false
 }

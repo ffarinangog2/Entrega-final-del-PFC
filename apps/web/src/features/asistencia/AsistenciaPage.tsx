@@ -44,7 +44,7 @@ export function AsistenciaPage() {
       setSesionId(s.id)
       setToken(s.token ?? '')
       setMensaje(
-        'SesiÃ³n abierta. Comparta el cÃ³digo temporal de forma segura.',
+        'Sesión abierta. Comparta el código temporal de forma segura.',
       )
     } catch (x) {
       setError(x instanceof Error ? x.message : 'No se pudo abrir.')
@@ -60,10 +60,10 @@ export function AsistenciaPage() {
     }
   }
   async function cerrar() {
-    if (!sesionId || !confirm('Â¿Cerrar la sesiÃ³n de asistencia?')) return
+    if (!sesionId || !confirm('¿Cerrar la sesión de asistencia?')) return
     try {
       await api.cerrarAsistencia(sesionId)
-      setMensaje('SesiÃ³n cerrada.')
+      setMensaje('Sesión cerrada.')
       await actualizar()
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo cerrar.')
@@ -103,7 +103,7 @@ export function AsistenciaPage() {
           </p>
         )}
         {cargando ? (
-          <p>Cargandoâ€¦</p>
+          <p>Cargando…</p>
         ) : (
           <>
             {docente && (
@@ -119,20 +119,20 @@ export function AsistenciaPage() {
                       <option value="">Seleccione una reserva</option>
                       {reservas.map((r) => (
                         <option key={r.id} value={r.id}>
-                          {r.codigoReserva} â€” {r.fechaReserva} {r.horaInicio}
+                          {r.codigoReserva} — {r.fechaReserva} {r.horaInicio}
                         </option>
                       ))}
                     </select>
                   </label>
-                  <button>Abrir sesiÃ³n</button>
+                  <button>Abrir sesión</button>
                 </form>
                 {sesion && (
                   <section className="operations__card">
-                    <h2>SesiÃ³n {sesion.estado}</h2>
+                    <h2>Sesión {sesion.estado}</h2>
                     <p>Vence: {new Date(sesion.expiraEn).toLocaleString()}</p>
                     {sesion.token && (
                       <>
-                        <label>CÃ³digo temporal</label>
+                        <label>Código temporal</label>
                         <output className="operations__token">
                           {sesion.token}
                         </output>
@@ -153,7 +153,7 @@ export function AsistenciaPage() {
             {estudiante && (
               <form className="operations__form" onSubmit={registrar}>
                 <label>
-                  ID de sesiÃ³n
+                  ID de sesión
                   <input
                     required
                     value={sesionId}
@@ -162,7 +162,7 @@ export function AsistenciaPage() {
                   />
                 </label>
                 <label>
-                  CÃ³digo temporal
+                  Código temporal
                   <input
                     required
                     value={token}

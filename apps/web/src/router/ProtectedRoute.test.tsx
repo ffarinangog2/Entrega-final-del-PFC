@@ -10,5 +10,5 @@ function renderRoute(permisos: string[]) {
 }
 describe('ProtectedRoute por permisos', () => {
   it('permite URL directa con permiso', () => { renderRoute(['SOLICITUD_CREAR']); expect(screen.getByText('Formulario protegido')).toBeInTheDocument() })
-  it('bloquea URL directa sin permiso', () => { renderRoute([]); expect(screen.getByText('Inicio seguro')).toBeInTheDocument() })
+  it('muestra una vista 403 sin permiso', () => { renderRoute([]); expect(screen.getByRole('heading', { name: 'No tienes permiso' })).toBeInTheDocument() })
 })

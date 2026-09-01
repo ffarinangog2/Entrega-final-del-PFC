@@ -42,7 +42,7 @@ export function IncidentesPage() {
     }
   }
   async function estado(id: string, value: string) {
-    if (!confirm(`Â¿Cambiar el incidente a ${value}?`)) return
+    if (!confirm(`¿Cambiar el incidente a ${value}?`)) return
     try {
       await api.actualizarIncidente(id, value)
       await cargar()
@@ -56,7 +56,7 @@ export function IncidentesPage() {
         <header>
           <div>
             <h1>Incidentes</h1>
-            <p>Seguimiento operacional dentro de su Ã¡mbito autorizado.</p>
+            <p>Seguimiento operacional dentro de su ámbito autorizado.</p>
           </div>
           <button onClick={() => void cargar()}>Actualizar</button>
         </header>
@@ -96,7 +96,7 @@ export function IncidentesPage() {
               </select>
             </label>
             <label className="operations__wide">
-              DescripciÃ³n
+              Descripción
               <textarea
                 required
                 value={form.descripcion}
@@ -110,7 +110,7 @@ export function IncidentesPage() {
         )}
         <div className="operations__table-wrap">
           {loading ? (
-            <p>Cargandoâ€¦</p>
+            <p>Cargando…</p>
           ) : items.length === 0 ? (
             <p className="operations__empty">No existen incidentes.</p>
           ) : (
@@ -118,10 +118,10 @@ export function IncidentesPage() {
               <thead>
                 <tr>
                   <th>Recurso</th>
-                  <th>DescripciÃ³n</th>
+                  <th>Descripción</th>
                   <th>Prioridad</th>
                   <th>Estado</th>
-                  <th>AcciÃ³n</th>
+                  <th>Acción</th>
                 </tr>
               </thead>
               <tbody>

@@ -1,6 +1,7 @@
 import { Navigate, Outlet } from 'react-router-dom'
 import { useAuth } from '../auth'
 import { hasAnyPermission, hasRole } from '../auth'
+import { AccessDeniedPage } from './RouteFeedback'
 
 export function ProtectedRoute({
   permissions = [],
@@ -14,10 +15,10 @@ export function ProtectedRoute({
   if (isLoading) return <p>Cargando sesión...</p>
   if (!isAuthenticated) return <Navigate to="/login" replace />
   if (permissions.length > 0 && !hasAnyPermission(usuario, permissions)) {
-    return <Navigate to="/main" replace />
+    return <AccessDeniedPage />
   }
   if (roles.length > 0 && !roles.some((role) => hasRole(usuario, role))) {
-    return <Navigate to="/main" replace />
+    return <AccessDeniedPage />
   }
   return <Outlet />
 }

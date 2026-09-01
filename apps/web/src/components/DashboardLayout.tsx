@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { NavLink } from 'react-router-dom'
-import { hasAnyPermission, hasPermission, useAuth } from '../auth'
+import { hasAnyPermission, hasPermission, hasRole, useAuth } from '../auth'
 import '../i18n'
 import { LogoutButton } from './LogoutButton'
 import '../pages/MainPage.css'
@@ -19,29 +19,35 @@ export function DashboardLayout({
   const nombre =
     usuario?.nombres || usuario?.username || t('dashboard.userNameFallback')
   const rol = usuario?.roles?.[0] || t('dashboard.userRoleFallback')
-  const verLaboratorios = hasAnyPermission(usuario, [
+  const administrador = hasRole(usuario, 'ADMINISTRADOR')
+  const administradorPiso = hasRole(usuario, 'ADMINISTRADOR_PISO')
+  const coordinador = hasRole(usuario, 'COORDINADOR')
+  const docente = hasRole(usuario, 'DOCENTE')
+  const estudiante = hasRole(usuario, 'ESTUDIANTE')
+  const verLaboratorios = (administrador || administradorPiso || coordinador || docente || estudiante) && hasAnyPermission(usuario, [
     'ACADEMICO_LEER',
     'LABORATORIO_LEER',
   ])
-  const verReservas = hasAnyPermission(usuario, [
+  const verReservas = (administrador || administradorPiso || docente) && hasAnyPermission(usuario, [
     'RESERVA_LEER',
     'SOLICITUD_LEER',
   ])
-  const crearSolicitud = hasPermission(usuario, 'SOLICITUD_CREAR')
-  const verCalendario = hasAnyPermission(usuario, [
+  const crearSolicitud = docente && hasPermission(usuario, 'SOLICITUD_CREAR')
+  const verCalendario = (administrador || administradorPiso || coordinador || docente || estudiante) && hasAnyPermission(usuario, [
     'RESERVA_LEER',
     'AGENDA_GESTIONAR',
+    'ACADEMICO_LEER',
   ])
-  const verUsuarios = hasPermission(usuario, 'USUARIO_LEER')
-  const verPlanificacion = hasAnyPermission(usuario, [
+  const verUsuarios = administrador && hasPermission(usuario, 'USUARIO_LEER')
+  const verPlanificacion = (administrador || administradorPiso || coordinador) && hasAnyPermission(usuario, [
     'PLANIFICACION_GESTIONAR',
     'SOLICITUD_APROBAR',
   ])
-  const verAsistencia = hasAnyPermission(usuario, [
+  const verAsistencia = (administrador || docente || estudiante) && hasAnyPermission(usuario, [
     'RESERVA_LEER',
     'ACADEMICO_LEER',
   ])
-  const verIncidentes = hasAnyPermission(usuario, [
+  const verIncidentes = (administrador || administradorPiso || docente) && hasAnyPermission(usuario, [
     'INCIDENTE_LEER',
     'INCIDENTE_CREAR',
     'INCIDENTE_GESTIONAR',
@@ -52,11 +58,11 @@ export function DashboardLayout({
         <div className="dashboard__identity">
           <button
             className="dashboard__menu"
-            aria-label="Abrir navegaciÃ³n"
+            aria-label="Abrir navegación"
             aria-expanded={menuAbierto}
             onClick={() => setMenuAbierto((x) => !x)}
           >
-            â˜°
+            ☰
           </button>
           <span className="dashboard__logo">S</span>
           <div>
@@ -84,24 +90,24 @@ export function DashboardLayout({
           </p>
           <nav aria-label="Navegación principal">
             <NavLink className="dashboard__nav-item" to="/main" end>
-              <span>âŒ‚</span>
+              <span aria-hidden="true">⌂</span>
               {t('dashboard.nav.home')}
             </NavLink>
             {verLaboratorios && (
               <NavLink className="dashboard__nav-item" to="/main">
-                <span>â—¦</span>
+                <span aria-hidden="true">L</span>
                 {t('dashboard.nav.labs')}
               </NavLink>
             )}
             {verReservas && (
               <NavLink className="dashboard__nav-item" to="/reservas">
-                <span>â—«</span>
+                <span aria-hidden="true">R</span>
                 {t('dashboard.nav.reservations')}
               </NavLink>
             )}
             {crearSolicitud && (
               <NavLink className="dashboard__nav-item" to="/reservas/nueva">
-                <span>+</span>
+                <span aria-hidden="true">+</span>
                 {t('dashboard.nav.newRequest')}
               </NavLink>
             )}
@@ -110,47 +116,45 @@ export function DashboardLayout({
                 className="dashboard__nav-item"
                 to="/reservas/calendario"
               >
-                <span>â–¦</span>
-                {t('dashboard.nav.calendar')}
+                <span aria-hidden="true">C</span>
+                {estudiante ? 'Mi horario' : t('dashboard.nav.calendar')}
               </NavLink>
             )}
             {verPlanificacion && (
               <NavLink className="dashboard__nav-item" to="/planificacion">
-                <span>P</span>PlanificaciÃ³n
+                <span aria-hidden="true">P</span>Planificación
               </NavLink>
             )}
             {verAsistencia && (
               <NavLink className="dashboard__nav-item" to="/asistencia">
-                <span>A</span>Asistencia
+                <span aria-hidden="true">A</span>{estudiante ? 'Mi asistencia' : 'Asistencia'}
               </NavLink>
             )}
             {verIncidentes && (
               <NavLink className="dashboard__nav-item" to="/incidentes">
-                <span>!</span>Incidentes
+                <span aria-hidden="true">!</span>Incidentes
               </NavLink>
             )}
           </nav>
           <p className="dashboard__nav-label dashboard__nav-label--secondary">
             {t('dashboard.sidebar.systemLabel')}
           </p>
-          <nav aria-label="NavegaciÃ³n del sistema">
+          <nav aria-label="Navegación del sistema">
             {verUsuarios && (
               <NavLink className="dashboard__nav-item" to="/usuarios">
-                <span>U</span>
+                <span aria-hidden="true">U</span>
                 {t('dashboard.nav.usuarios')}
               </NavLink>
             )}
             <NavLink className="dashboard__nav-item" to="/perfil">
-              <span>â—‹</span>Mi perfil
+              <span aria-hidden="true">●</span>Mi perfil
             </NavLink>
-            <NavLink className="dashboard__nav-item" to="/settings">
-              <span>âš™</span>
-              {t('dashboard.nav.settings')}
-            </NavLink>
-            <NavLink className="dashboard__nav-item" to="/about">
-              <span>i</span>
-              {t('dashboard.nav.about')}
-            </NavLink>
+            {administrador && <NavLink className="dashboard__nav-item" to="/settings">
+              <span aria-hidden="true">⚙</span>{t('dashboard.nav.settings')}
+            </NavLink>}
+            {administrador && <NavLink className="dashboard__nav-item" to="/about">
+              <span aria-hidden="true">i</span>{t('dashboard.nav.about')}
+            </NavLink>}
           </nav>
           <div className="dashboard__sidebar-note">
             <span className="dashboard__status-dot" />
