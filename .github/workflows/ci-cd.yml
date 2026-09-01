@@ -77,6 +77,18 @@ jobs:
           ca_dir="$RUNNER_TEMP/cockroach-ca"
           mkdir -p "$certs_dir" "$ca_dir"
 
+          for attempt in {1..4}; do
+            if docker pull cockroachdb/cockroach:v26.2.0; then
+              break
+            fi
+
+            if [ "$attempt" -eq 4 ]; then
+              exit 1
+            fi
+
+            sleep $((attempt * 10))
+          done
+
           docker run --rm --user "$(id -u):$(id -g)" \
             --volume "$certs_dir:/certs" \
             --volume "$ca_dir:/ca" \
@@ -191,7 +203,22 @@ jobs:
 
       - name: Validate CockroachDB E3 cluster
         shell: bash
-        run: bash scripts/ci/verify-crdb-e3.sh
+        run: |
+          set -Eeuo pipefail
+
+          for attempt in {1..4}; do
+            if docker pull cockroachdb/cockroach:v26.2.0; then
+              break
+            fi
+
+            if [ "$attempt" -eq 4 ]; then
+              exit 1
+            fi
+
+            sleep $((attempt * 10))
+          done
+
+          bash scripts/ci/verify-crdb-e3.sh
 
       - name: Cleanup CockroachDB E3 stack
         if: always()
