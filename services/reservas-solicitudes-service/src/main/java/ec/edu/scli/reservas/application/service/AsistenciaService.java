@@ -11,6 +11,9 @@ import ec.edu.scli.reservas.presentation.dto.response.RegistroAsistenciaResponse
 import ec.edu.scli.reservas.presentation.dto.response.SesionAsistenciaResponse;
 import ec.edu.scli.reservas.presentation.exception.ResourceNotFoundException;
 import ec.edu.scli.reservas.domain.port.out.EstudianteInstitucionalPort;
+import ec.edu.scli.reservas.domain.port.out.ReservaRepositoryPort;
+import ec.edu.scli.reservas.domain.port.out.SolicitudReservaRepositoryPort;
+import ec.edu.scli.reservas.client.AcademicoLaboratoriosClient;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -32,16 +35,25 @@ public class AsistenciaService {
     private final ReservaService reservas;
     private final long minutos;
     private final EstudianteInstitucionalPort estudiantes;
+    private final ReservaRepositoryPort reservaRepository;
+    private final SolicitudReservaRepositoryPort solicitudRepository;
+    private final AcademicoLaboratoriosClient academico;
     private final SecureRandom random = new SecureRandom();
 
     public AsistenciaService(SesionAsistenciaJpaRepository sesiones, RegistroAsistenciaJpaRepository registros,
             ReservaService reservas, EstudianteInstitucionalPort estudiantes,
+            ReservaRepositoryPort reservaRepository,
+            SolicitudReservaRepositoryPort solicitudRepository,
+            AcademicoLaboratoriosClient academico,
             @Value("${app.asistencia.window-minutes:15}") long minutos) {
         this.sesiones = sesiones;
         this.registros = registros;
         this.reservas = reservas;
         this.minutos = minutos;
         this.estudiantes = estudiantes;
+        this.reservaRepository = reservaRepository;
+        this.solicitudRepository = solicitudRepository;
+        this.academico = academico;
     }
 
     @Transactional
@@ -82,6 +94,27 @@ public class AsistenciaService {
         return map(registros.save(registro));
     }
 
+    @Transactional(readOnly = true)
+    public List<SesionAsistenciaResponse> sesionesAbiertas(UUID perfilEstudiante) {
+        UUID carreraId = estudiantes.resolverCarreraActiva(perfilEstudiante);
+        Instant now = Instant.now();
+        return sesiones.findByEstado(EstadoSesionAsistencia.ABIERTA).stream()
+                .filter(sesion -> !now.isAfter(sesion.getExpiraEn()))
+                .filter(sesion -> perteneceCarrera(sesion, carreraId))
+                .map(sesion -> response(sesion, null))
+                .toList();
+    }
+
+    @Transactional
+    public RegistroAsistenciaResponse registrarPropia(UUID sesionId, UUID perfilEstudiante) {
+        UUID carreraId = estudiantes.resolverCarreraActiva(perfilEstudiante);
+        SesionAsistenciaJpaEntity sesion = obtener(sesionId);
+        if (!perteneceCarrera(sesion, carreraId)) {
+            throw new AccessDeniedException("La sesión no corresponde a la carrera del estudiante");
+        }
+        return crearRegistro(sesion, estudiantes.resolverEstudianteActivo(perfilEstudiante));
+    }
+
     @Transactional
     public void cerrar(UUID id, UUID actor) {
         SesionAsistenciaJpaEntity sesion = sesionPropia(id, actor);
@@ -111,6 +144,28 @@ public class AsistenciaService {
     }
     private SesionAsistenciaJpaEntity obtener(UUID id) {
         return sesiones.findById(id).orElseThrow(() -> new ResourceNotFoundException("Sesion de asistencia no encontrada"));
+    }
+    private boolean perteneceCarrera(SesionAsistenciaJpaEntity sesion, UUID carreraId) {
+        var reserva = reservaRepository.buscarPorId(sesion.getReservaId()).orElse(null);
+        if (reserva == null) return false;
+        var solicitud = solicitudRepository.buscarPorId(reserva.getSolicitudId()).orElse(null);
+        if (solicitud == null) return false;
+        var materia = academico.obtenerContextoMateria(solicitud.getMateriaId());
+        return materia != null && materia.existe() && carreraId.equals(materia.carreraId());
+    }
+    private RegistroAsistenciaResponse crearRegistro(SesionAsistenciaJpaEntity sesion, UUID estudiante) {
+        Instant now = Instant.now();
+        if (now.isAfter(sesion.getExpiraEn()) || sesion.getEstado() != EstadoSesionAsistencia.ABIERTA) {
+            throw new IllegalStateException("La sesión de asistencia no está abierta");
+        }
+        if (registros.existsBySesionIdAndEstudianteId(sesion.getId(), estudiante)) {
+            throw new IllegalStateException("La asistencia ya fue registrada");
+        }
+        RegistroAsistenciaJpaEntity registro = new RegistroAsistenciaJpaEntity();
+        registro.setSesionId(sesion.getId());
+        registro.setEstudianteId(estudiante);
+        registro.setRegistradaEn(now);
+        return map(registros.save(registro));
     }
     private String tokenSeguro() {
         byte[] bytes = new byte[32];

@@ -1,4 +1,7 @@
-const GATEWAY_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '')
+const GATEWAY_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? '').replace(
+  /\/$/,
+  '',
+)
 const USUARIOS_BASE_URL = GATEWAY_BASE_URL
 
 export interface Perfil {
@@ -26,6 +29,9 @@ export interface CrearPerfilRequest {
   telefono: string
   direccion: string
   fechaNacimiento: string
+}
+export interface ActualizarPerfilRequest extends CrearPerfilRequest {
+  fotoUrl: string | null
 }
 
 export interface ActualizarPerfilPropioRequest {
@@ -65,7 +71,10 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
       },
     })
   } catch {
-    throw new UsuariosApiError(503, 'El servicio de usuarios no está disponible.')
+    throw new UsuariosApiError(
+      503,
+      'El servicio de usuarios no está disponible.',
+    )
   }
 
   if (!response.ok) {
@@ -82,8 +91,12 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   return (await response.json()) as T
 }
 
-export async function listarPerfiles(): Promise<Perfil[]> {
-  return (await request<PageResponse<Perfil>>('/api/v1/perfiles')).content
+export async function listarPerfiles(filtro = ''): Promise<Perfil[]> {
+  const query = filtro
+    ? `?nombre=${encodeURIComponent(filtro)}&size=100`
+    : '?size=100'
+  return (await request<PageResponse<Perfil>>(`/api/v1/perfiles${query}`))
+    .content
 }
 
 export function crearPerfil(datos: CrearPerfilRequest): Promise<Perfil> {
@@ -92,12 +105,35 @@ export function crearPerfil(datos: CrearPerfilRequest): Promise<Perfil> {
     body: JSON.stringify(datos),
   })
 }
+export function obtenerPerfil(id: string): Promise<Perfil> {
+  return request<Perfil>(`/api/v1/perfiles/${encodeURIComponent(id)}`)
+}
+export function actualizarPerfil(
+  id: string,
+  datos: ActualizarPerfilRequest,
+): Promise<Perfil> {
+  return request<Perfil>(`/api/v1/perfiles/${encodeURIComponent(id)}`, {
+    method: 'PUT',
+    body: JSON.stringify(datos),
+  })
+}
+export function cambiarEstadoPerfil(
+  id: string,
+  activo: boolean,
+): Promise<Perfil> {
+  return request<Perfil>(`/api/v1/perfiles/${encodeURIComponent(id)}/estado`, {
+    method: 'PATCH',
+    body: JSON.stringify({ activo }),
+  })
+}
 
 export function obtenerPerfilPropio(): Promise<Perfil> {
   return request<Perfil>('/api/v1/perfiles/me')
 }
 
-export function actualizarPerfilPropio(datos: ActualizarPerfilPropioRequest): Promise<Perfil> {
+export function actualizarPerfilPropio(
+  datos: ActualizarPerfilPropioRequest,
+): Promise<Perfil> {
   return request<Perfil>('/api/v1/perfiles/me', {
     method: 'PATCH',
     body: JSON.stringify(datos),

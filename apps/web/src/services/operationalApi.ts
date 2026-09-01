@@ -112,6 +112,13 @@ export const registrarAsistencia = (id: string, token: string) =>
   )
 export const historialAsistencia = () =>
   apiRequest<RegistroAsistencia[]>('/api/v1/asistencias/historial')
+export const listarSesionesAbiertas = () =>
+  apiRequest<SesionAsistencia[]>('/api/v1/asistencias/sesiones/abiertas')
+export const registrarAsistenciaPropia = (id: string) =>
+  apiRequest<RegistroAsistencia>(
+    `/api/v1/asistencias/sesiones/${encodeURIComponent(id)}/registro-propio`,
+    { method: 'POST' },
+  )
 
 export interface Incidente {
   id: string

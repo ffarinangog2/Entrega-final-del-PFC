@@ -1,94 +1,166 @@
-import { FormEvent, useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { DashboardLayout } from '../../components/DashboardLayout'
 import { hasRole, useAuth } from '../../auth'
-import { obtenerReservas, type Reserva } from '../reservas/reservasApi'
+import {
+  obtenerLaboratorios,
+  obtenerMaterias,
+  type Laboratorio,
+  type Materia,
+} from '../../services/academicoApi'
 import * as api from '../../services/operationalApi'
+import {
+  obtenerReservas,
+  obtenerSolicitudPorId,
+  type Reserva,
+  type SolicitudReserva,
+} from '../reservas/reservasApi'
 import '../operaciones/Operations.css'
+
+type ClaseDocente = { reserva: Reserva; solicitud: SolicitudReserva }
+
 export function AsistenciaPage() {
   const { usuario } = useAuth()
   const docente = hasRole(usuario, 'DOCENTE')
   const estudiante = hasRole(usuario, 'ESTUDIANTE')
-  const [reservas, setReservas] = useState<Reserva[]>([]),
-    [sesion, setSesion] = useState<api.SesionAsistencia | null>(null),
-    [registros, setRegistros] = useState<api.RegistroAsistencia[]>([]),
-    [reservaId, setReservaId] = useState(''),
-    [sesionId, setSesionId] = useState(''),
-    [token, setToken] = useState(''),
-    [error, setError] = useState(''),
-    [mensaje, setMensaje] = useState(''),
-    [cargando, setCargando] = useState(true)
+  const [clases, setClases] = useState<ClaseDocente[]>([])
+  const [laboratorios, setLaboratorios] = useState<Laboratorio[]>([])
+  const [materias, setMaterias] = useState<Materia[]>([])
+  const [sesion, setSesion] = useState<api.SesionAsistencia | null>(null)
+  const [abiertas, setAbiertas] = useState<api.SesionAsistencia[]>([])
+  const [registros, setRegistros] = useState<api.RegistroAsistencia[]>([])
+  const [error, setError] = useState('')
+  const [mensaje, setMensaje] = useState('')
+  const [cargando, setCargando] = useState(true)
+  const hoy = new Date().toISOString().slice(0, 10)
+
   useEffect(() => {
-    void (async () => {
+    let active = true
+    async function cargar() {
       try {
-        if (docente)
-          setReservas(
-            (await obtenerReservas()).filter((r) =>
-              ['PROGRAMADA', 'EN_CURSO'].includes(r.estado),
-            ),
+        if (docente) {
+          const [reservas, labs, materiasData] = await Promise.all([
+            obtenerReservas(),
+            obtenerLaboratorios(),
+            obtenerMaterias(),
+          ])
+          const reservasHoy = reservas.filter(
+            (item) =>
+              item.fechaReserva === hoy &&
+              ['PROGRAMADA', 'EN_CURSO'].includes(item.estado),
           )
-        if (estudiante) setRegistros(await api.historialAsistencia())
-      } catch (e) {
-        setError(
-          e instanceof Error ? e.message : 'No se pudo cargar asistencia.',
-        )
+          const solicitudes = await Promise.all(
+            reservasHoy.map((item) => obtenerSolicitudPorId(item.solicitudId)),
+          )
+          if (active) {
+            setClases(
+              reservasHoy.map((reserva, index) => ({
+                reserva,
+                solicitud: solicitudes[index],
+              })),
+            )
+            setLaboratorios(labs)
+            setMaterias(materiasData)
+          }
+        } else if (estudiante) {
+          const [sesiones, historial] = await Promise.all([
+            api.listarSesionesAbiertas(),
+            api.historialAsistencia(),
+          ])
+          if (active) {
+            setAbiertas(sesiones)
+            setRegistros(historial)
+          }
+        }
+      } catch (cause) {
+        if (active)
+          setError(
+            cause instanceof Error
+              ? cause.message
+              : 'No se pudo cargar la asistencia.',
+          )
       } finally {
-        setCargando(false)
+        if (active) setCargando(false)
       }
-    })()
-  }, [docente, estudiante])
-  async function abrir(e: FormEvent) {
-    e.preventDefault()
+    }
+    void cargar()
+    return () => {
+      active = false
+    }
+  }, [docente, estudiante, hoy])
+
+  const labs = useMemo(
+    () => new Map(laboratorios.map((item) => [item.id, item])),
+    [laboratorios],
+  )
+  const materiasPorId = useMemo(
+    () => new Map(materias.map((item) => [item.id, item])),
+    [materias],
+  )
+
+  async function habilitar(reservaId: string) {
+    setError('')
+    setMensaje('')
     try {
-      const s = await api.abrirAsistencia(reservaId)
-      setSesion(s)
-      setSesionId(s.id)
-      setToken(s.token ?? '')
-      setMensaje(
-        'Sesión abierta. Comparta el código temporal de forma segura.',
+      setSesion(await api.abrirAsistencia(reservaId))
+      setMensaje('Asistencia habilitada temporalmente para esta clase.')
+    } catch (cause) {
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : 'No se pudo habilitar la asistencia.',
       )
-    } catch (x) {
-      setError(x instanceof Error ? x.message : 'No se pudo abrir.')
     }
   }
   async function actualizar() {
-    if (!sesionId) return
+    if (!sesion) return
     try {
-      setSesion(await api.consultarAsistencia(sesionId))
-      setRegistros(await api.listarAsistentes(sesionId))
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'No se pudo consultar.')
+      setRegistros(await api.listarAsistentes(sesion.id))
+      setSesion(await api.consultarAsistencia(sesion.id))
+    } catch (cause) {
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : 'No se pudo actualizar la sesión.',
+      )
     }
   }
   async function cerrar() {
-    if (!sesionId || !confirm('¿Cerrar la sesión de asistencia?')) return
+    if (!sesion || !confirm('¿Cerrar la sesión de asistencia?')) return
     try {
-      await api.cerrarAsistencia(sesionId)
-      setMensaje('Sesión cerrada.')
+      await api.cerrarAsistencia(sesion.id)
+      setMensaje('Sesión de asistencia cerrada.')
       await actualizar()
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'No se pudo cerrar.')
+    } catch (cause) {
+      setError(
+        cause instanceof Error ? cause.message : 'No se pudo cerrar la sesión.',
+      )
     }
   }
-  async function registrar(e: FormEvent) {
-    e.preventDefault()
+  async function registrar(sesionId: string) {
     try {
-      await api.registrarAsistencia(sesionId, token)
+      await api.registrarAsistenciaPropia(sesionId)
       setMensaje('Asistencia registrada correctamente.')
+      setAbiertas((actual) => actual.filter((item) => item.id !== sesionId))
       setRegistros(await api.historialAsistencia())
-    } catch (x) {
-      setError(x instanceof Error ? x.message : 'No se pudo registrar.')
+    } catch (cause) {
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : 'No se pudo registrar la asistencia.',
+      )
     }
   }
+
   return (
     <DashboardLayout breadcrumb="Asistencia">
       <div className="operations">
         <header>
           <div>
-            <h1>Asistencia</h1>
+            <h1>{docente ? 'Asistencia de mis clases' : 'Mi asistencia'}</h1>
             <p>
               {docente
-                ? 'Abra y controle sesiones de sus reservas.'
-                : 'Registre y consulte exclusivamente su asistencia.'}
+                ? 'Seleccione una clase asignada de hoy para habilitar el registro.'
+                : 'Registre su asistencia cuando el docente habilite la clase.'}
             </p>
           </div>
         </header>
@@ -103,97 +175,114 @@ export function AsistenciaPage() {
           </p>
         )}
         {cargando ? (
-          <p>Cargando…</p>
+          <p>Cargando...</p>
         ) : (
           <>
             {docente && (
-              <>
-                <form className="operations__form" onSubmit={abrir}>
-                  <label className="operations__wide">
-                    Reserva
-                    <select
-                      required
-                      value={reservaId}
-                      onChange={(e) => setReservaId(e.target.value)}
-                    >
-                      <option value="">Seleccione una reserva</option>
-                      {reservas.map((r) => (
-                        <option key={r.id} value={r.id}>
-                          {r.codigoReserva} — {r.fechaReserva} {r.horaInicio}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <button>Abrir sesión</button>
-                </form>
-                {sesion && (
-                  <section className="operations__card">
-                    <h2>Sesión {sesion.estado}</h2>
-                    <p>Vence: {new Date(sesion.expiraEn).toLocaleString()}</p>
-                    {sesion.token && (
-                      <>
-                        <label>Código temporal</label>
-                        <output className="operations__token">
-                          {sesion.token}
-                        </output>
-                      </>
-                    )}
-                    <div className="operations__actions">
-                      <button onClick={() => void actualizar()}>
-                        Actualizar asistentes
-                      </button>
-                      <button className="danger" onClick={() => void cerrar()}>
-                        Cerrar
-                      </button>
-                    </div>
-                  </section>
+              <section>
+                <h2>Mis clases de hoy</h2>
+                {clases.length === 0 ? (
+                  <p className="operations__empty">
+                    No tiene clases programadas para hoy.
+                  </p>
+                ) : (
+                  <div className="operations__cards">
+                    {clases.map(({ reserva, solicitud }) => (
+                      <article className="operations__card" key={reserva.id}>
+                        <h3>
+                          {materiasPorId.get(solicitud.materiaId)?.nombre ??
+                            'Clase asignada'}
+                        </h3>
+                        <p>
+                          <strong>
+                            {reserva.horaInicio}–{reserva.horaFin}
+                          </strong>
+                        </p>
+                        <p>
+                          {labs.get(reserva.laboratorioId)?.nombre ??
+                            'Laboratorio asignado'}
+                        </p>
+                        <button
+                          onClick={() => void habilitar(reserva.id)}
+                          disabled={sesion?.reservaId === reserva.id}
+                        >
+                          Habilitar asistencia
+                        </button>
+                      </article>
+                    ))}
+                  </div>
                 )}
-              </>
+              </section>
+            )}
+            {docente && sesion && (
+              <section className="operations__card">
+                <h2>Asistencia habilitada</h2>
+                <p>
+                  Disponible hasta{' '}
+                  {new Date(sesion.expiraEn).toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+                  .
+                </p>
+                <div className="operations__actions">
+                  <button onClick={() => void actualizar()}>
+                    Actualizar asistentes
+                  </button>
+                  <button className="danger" onClick={() => void cerrar()}>
+                    Cerrar sesión
+                  </button>
+                </div>
+              </section>
             )}
             {estudiante && (
-              <form className="operations__form" onSubmit={registrar}>
-                <label>
-                  ID de sesión
-                  <input
-                    required
-                    value={sesionId}
-                    onChange={(e) => setSesionId(e.target.value)}
-                    autoComplete="off"
-                  />
-                </label>
-                <label>
-                  Código temporal
-                  <input
-                    required
-                    value={token}
-                    onChange={(e) => setToken(e.target.value)}
-                    autoComplete="one-time-code"
-                  />
-                </label>
-                <button>Registrar mi asistencia</button>
-              </form>
+              <section>
+                <h2>Mis clases de hoy</h2>
+                {abiertas.length === 0 ? (
+                  <p className="operations__empty">
+                    Asistencia aún no habilitada.
+                  </p>
+                ) : (
+                  abiertas.map((item) => (
+                    <article className="operations__card" key={item.id}>
+                      <h3>Clase con asistencia habilitada</h3>
+                      <p>
+                        Disponible hasta{' '}
+                        {new Date(item.expiraEn).toLocaleTimeString([], {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                        .
+                      </p>
+                      <button onClick={() => void registrar(item.id)}>
+                        Registrar asistencia
+                      </button>
+                    </article>
+                  ))
+                )}
+              </section>
             )}
             <div className="operations__table-wrap">
-              <h2>{docente ? 'Asistentes' : 'Mi historial'}</h2>
+              <h2>{docente ? 'Estudiantes registrados' : 'Mi historial'}</h2>
               {registros.length === 0 ? (
-                <p className="operations__empty">No hay registros.</p>
+                <p className="operations__empty">
+                  No hay registros de asistencia.
+                </p>
               ) : (
                 <table>
                   <thead>
                     <tr>
                       <th>Fecha</th>
                       <th>Estado</th>
-                      {docente && <th>Estudiante</th>}
                     </tr>
                   </thead>
                   <tbody>
-                    {registros.map((r) => (
-                      <tr key={r.id}>
-                        <td>{new Date(r.registradaEn).toLocaleString()}</td>
+                    {registros.map((item) => (
+                      <tr key={item.id}>
+                        <td>{new Date(item.registradaEn).toLocaleString()}</td>
                         <td>
-                          <span className="status">{r.estado}</span>
+                          <span className="status">{item.estado}</span>
                         </td>
-                        {docente && <td>{r.estudianteId}</td>}
                       </tr>
                     ))}
                   </tbody>

@@ -11,4 +11,7 @@ public class EstudianteInstitucionalAdapter implements EstudianteInstitucionalPo
  public UUID resolverEstudianteActivo(UUID perfilId){var e=usuarios.obtenerEstudiantePorPerfil(perfilId);
   if(e==null||!e.activo()||!perfilId.equals(e.perfilId()))throw new ResourceNotFoundException("No existe estudiante activo para el perfil autenticado");
   return e.estudianteId();}
+ public UUID resolverCarreraActiva(UUID perfilId){var e=usuarios.obtenerEstudiantePorPerfil(perfilId);
+  if(e==null||!e.activo()||!perfilId.equals(e.perfilId())||e.carreraId()==null)throw new ResourceNotFoundException("No existe una carrera activa para el estudiante autenticado");
+  return e.carreraId();}
 }

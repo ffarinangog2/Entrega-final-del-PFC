@@ -36,6 +36,19 @@
 .usuarios-page__table-wrap {
   overflow-x: auto;
 }
+.usuarios-page__search {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+.usuarios-page__search input {
+  min-height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--color-border-logout);
+  border-radius: 7px;
+  background: var(--color-bg);
+  color: var(--color-text);
+}
 
 .usuarios-page__table {
   width: 100%;

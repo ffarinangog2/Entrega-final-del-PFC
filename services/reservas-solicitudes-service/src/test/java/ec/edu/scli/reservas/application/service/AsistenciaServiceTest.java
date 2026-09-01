@@ -8,6 +8,9 @@ import ec.edu.scli.reservas.presentation.dto.request.AbrirSesionAsistenciaReques
 import ec.edu.scli.reservas.presentation.dto.request.RegistrarAsistenciaRequest;
 import ec.edu.scli.reservas.presentation.dto.response.ReservaResponse;
 import ec.edu.scli.reservas.domain.port.out.EstudianteInstitucionalPort;
+import ec.edu.scli.reservas.domain.port.out.ReservaRepositoryPort;
+import ec.edu.scli.reservas.domain.port.out.SolicitudReservaRepositoryPort;
+import ec.edu.scli.reservas.client.AcademicoLaboratoriosClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.access.AccessDeniedException;
@@ -17,6 +20,10 @@ import java.security.MessageDigest;
 import java.time.Instant;
 import java.util.HexFormat;
 import java.util.Optional;
+import java.util.List;
+import ec.edu.scli.reservas.domain.model.Reserva;
+import ec.edu.scli.reservas.domain.model.SolicitudReserva;
+import ec.edu.scli.reservas.client.dto.MateriaContextoExternoResponse;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.*;
@@ -29,14 +36,21 @@ class AsistenciaServiceTest {
     private ReservaService reservas;
     private AsistenciaService service;
     private EstudianteInstitucionalPort estudiantes;
+    private ReservaRepositoryPort reservaRepository;
+    private SolicitudReservaRepositoryPort solicitudRepository;
+    private AcademicoLaboratoriosClient academico;
 
     @BeforeEach void preparar() {
         sesiones = mock(SesionAsistenciaJpaRepository.class);
         registros = mock(RegistroAsistenciaJpaRepository.class);
         reservas = mock(ReservaService.class);
         estudiantes = mock(EstudianteInstitucionalPort.class);
+        reservaRepository = mock(ReservaRepositoryPort.class);
+        solicitudRepository = mock(SolicitudReservaRepositoryPort.class);
+        academico = mock(AcademicoLaboratoriosClient.class);
         when(estudiantes.resolverEstudianteActivo(any())).thenAnswer(i -> i.getArgument(0));
-        service = new AsistenciaService(sesiones, registros, reservas, estudiantes, 15);
+        service = new AsistenciaService(sesiones, registros, reservas, estudiantes,
+                reservaRepository, solicitudRepository, academico, 15);
         when(sesiones.save(any())).thenAnswer(i -> i.getArgument(0));
         when(registros.save(any())).thenAnswer(i -> i.getArgument(0));
     }
@@ -82,6 +96,28 @@ class AsistenciaServiceTest {
         service.consultar(id, docente); service.listar(id, docente); service.cerrar(id, docente); service.historial(estudiante);
         verify(registros).findByEstudianteId(estudiante);
         assertThatThrownBy(() -> service.consultar(id, UUID.randomUUID())).isInstanceOf(AccessDeniedException.class);
+    }
+
+    @Test void estudianteDescubreYRegistraSesionDeSuCarreraSinIdsTecnicos() throws Exception {
+        UUID perfil = UUID.randomUUID(), estudiante = UUID.randomUUID(), carrera = UUID.randomUUID();
+        UUID sesionId = UUID.randomUUID(), reservaId = UUID.randomUUID();
+        UUID solicitudId = UUID.randomUUID(), materiaId = UUID.randomUUID();
+        SesionAsistenciaJpaEntity sesion = sesion(sesionId, "interno", Instant.now().plusSeconds(60));
+        sesion.setReservaId(reservaId);
+        Reserva reserva = new Reserva(); reserva.setId(reservaId); reserva.setSolicitudId(solicitudId);
+        SolicitudReserva solicitud = new SolicitudReserva(); solicitud.setId(solicitudId); solicitud.setMateriaId(materiaId);
+        when(estudiantes.resolverCarreraActiva(perfil)).thenReturn(carrera);
+        when(estudiantes.resolverEstudianteActivo(perfil)).thenReturn(estudiante);
+        when(sesiones.findByEstado(EstadoSesionAsistencia.ABIERTA)).thenReturn(List.of(sesion));
+        when(sesiones.findById(sesionId)).thenReturn(Optional.of(sesion));
+        when(reservaRepository.buscarPorId(reservaId)).thenReturn(Optional.of(reserva));
+        when(solicitudRepository.buscarPorId(solicitudId)).thenReturn(Optional.of(solicitud));
+        when(academico.obtenerContextoMateria(materiaId))
+                .thenReturn(new MateriaContextoExternoResponse(materiaId, carrera, true, true));
+
+        assertThat(service.sesionesAbiertas(perfil)).hasSize(1);
+        assertThat(service.registrarPropia(sesionId, perfil)).isNotNull();
+        verify(registros).save(any());
     }
 
     private SesionAsistenciaJpaEntity sesion(UUID id, String token, Instant expira) throws Exception {

@@ -7,5 +7,7 @@ import ec.edu.scli.reservas.application.service.AsistenciaService; import ec.edu
  @GetMapping("/sesiones/{id}/registros") public List<RegistroAsistenciaResponse> listar(@PathVariable UUID id,Principal p){return service.listar(id,id(p));}
  @PostMapping("/sesiones/{id}/registros") public ResponseEntity<RegistroAsistenciaResponse> registrar(@PathVariable UUID id,@Valid @RequestBody RegistrarAsistenciaRequest r,Principal p){if(SecurityContextHolder.getContext().getAuthentication().getAuthorities().stream().noneMatch(a -> "ROLE_ESTUDIANTE".equals(a.getAuthority()))) throw new AccessDeniedException("Solo estudiantes pueden registrar asistencia");return ResponseEntity.status(HttpStatus.CREATED).body(service.registrar(id,r,id(p)));}
  @GetMapping("/historial") public List<RegistroAsistenciaResponse> historial(Principal p){return service.historial(id(p));}
+ @GetMapping("/sesiones/abiertas") public List<SesionAsistenciaResponse> abiertas(Principal p){return service.sesionesAbiertas(id(p));}
+ @PostMapping("/sesiones/{id}/registro-propio") public ResponseEntity<RegistroAsistenciaResponse> registrarPropia(@PathVariable UUID id,Principal p){return ResponseEntity.status(HttpStatus.CREATED).body(service.registrarPropia(id,id(p)));}
  private UUID id(Principal p){return UUID.fromString(p.getName());}
 }

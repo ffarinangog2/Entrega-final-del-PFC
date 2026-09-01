@@ -56,6 +56,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/v1/asistencias/sesiones").hasAuthority("RESERVA_LEER")
                         .requestMatchers(HttpMethod.POST, "/api/v1/asistencias/sesiones/*/cerrar").hasAuthority("RESERVA_LEER")
                         .requestMatchers(HttpMethod.POST, "/api/v1/asistencias/sesiones/*/registros").hasAuthority("ACADEMICO_LEER")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/asistencias/sesiones/*/registro-propio").hasRole("ESTUDIANTE")
                         .requestMatchers(HttpMethod.GET, "/api/v1/asistencias/**").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/v1/planificaciones/*/aceptar").hasAuthority("SOLICITUD_APROBAR")
                         .requestMatchers(HttpMethod.POST, "/api/v1/planificaciones/*/rechazar").hasAuthority("SOLICITUD_RECHAZAR")
