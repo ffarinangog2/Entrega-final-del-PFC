@@ -50,7 +50,7 @@ class AppDatabaseMigrationTest {
         helper.close()
 
         val database = Room.databaseBuilder(context, AppDatabase::class.java, databaseName)
-            .addMigrations(AppDatabase.MIGRATION_1_2)
+            .addMigrations(AppDatabase.MIGRATION_1_2, AppDatabase.MIGRATION_2_3)
             .build()
         try {
             val incidentes = database.openHelper.readableDatabase.query("SELECT * FROM incidentes")

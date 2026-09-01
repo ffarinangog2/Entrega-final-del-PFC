@@ -142,7 +142,10 @@ jobs:
           } >> "$GITHUB_ENV"
 
       - name: Generate consumer Pacts
-        if: ${{ matrix.service == 'services/reservas-solicitudes-service' || matrix.service == 'services/usuarios-service' }}
+        if: >-
+          ${{ matrix.service == 'services/reservas-solicitudes-service' ||
+          matrix.service == 'services/usuarios-service' ||
+          matrix.service == 'services/academico-laboratorios-service' }}
         run: >-
           mvn --batch-mode
           -f tests/contract/pom.xml
