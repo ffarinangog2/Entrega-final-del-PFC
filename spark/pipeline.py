@@ -166,7 +166,7 @@ def construir_pipeline(fuentes: dict[str, DataFrame]) -> DataFrame:
 
 
 def ejecutar_pipeline() -> None:
-    """Construye el plan lógico sin exportar resultados ni generar métricas."""
+    """Construye el plan lógico sin exportar resultados ni generar métricas ."""
 
     spark = crear_sesion()
     try:
