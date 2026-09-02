@@ -7,6 +7,7 @@ import { AdminDashboard } from '../features/admin/AdminDashboard'
 import { hasRole, useAuth } from '../auth'
 import {
   obtenerDocentePorPerfil,
+  obtenerDocentes,
   obtenerHorariosDocente,
   obtenerLaboratorios,
   obtenerMaterias,
@@ -187,8 +188,10 @@ function InicioPorRol() {
       obtenerPeriodoActual(),
       obtenerMaterias(),
       obtenerCarreras(),
+      obtenerDocentes(),
+      obtenerLaboratorios(),
     ])
-      .then(([planes, periodo, materias, carreras]) => {
+      .then(([planes, periodo, materias, carreras, docentes, laboratorios]) => {
         if (!active) return
         const carreraId = materias[0]?.carreraId
         setResumenCoordinacion({
@@ -197,11 +200,9 @@ function InicioPorRol() {
             carreras.find((item) => item.id === carreraId)?.nombre ??
             'Mi carrera institucional',
           planes,
-          materias: new Set(planes.map((item) => item.materiaId)).size,
-          docentes: new Set(
-            planes.map((item) => item.docenteId).filter(Boolean),
-          ).size,
-          laboratorios: new Set(planes.map((item) => item.laboratorioId)).size,
+          materias: materias.filter((item) => item.activo).length,
+          docentes: docentes.filter((item) => item.activo).length,
+          laboratorios: laboratorios.filter((item) => item.activo).length,
         })
       })
       .catch((cause) => {
@@ -270,14 +271,17 @@ function InicioPorRol() {
                           : 'Sin iniciar'}
                 </p>
                 <p>
-                  {resumenCoordinacion.materias} materias ·{' '}
-                  {resumenCoordinacion.docentes} docentes ·{' '}
-                  {resumenCoordinacion.laboratorios} laboratorios
+                  {resumenCoordinacion.materias} materias disponibles ·{' '}
+                  {resumenCoordinacion.docentes} docentes disponibles ·{' '}
+                  {resumenCoordinacion.laboratorios} laboratorios disponibles ·{' '}
+                  {resumenCoordinacion.planes.length} bloques planificados
                 </p>
               </section>
             )}
             <Link to="/planificacion">Abrir planificación</Link>
-            <Link to="/reservas/calendario">Consultar calendario</Link>
+            <Link to="/reservas/calendario">
+              Disponibilidad de laboratorios
+            </Link>
           </>
         )}
         {administradorPiso && (

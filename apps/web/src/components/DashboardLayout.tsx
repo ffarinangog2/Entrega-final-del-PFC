@@ -117,7 +117,9 @@ export function DashboardLayout({
                 to="/reservas/calendario"
               >
                 <span aria-hidden="true">C</span>
-                {estudiante ? 'Mi horario' : t('dashboard.nav.calendar')}
+                {coordinador
+                  ? 'Disponibilidad de laboratorios'
+                  : t('dashboard.nav.calendar')}
               </NavLink>
             )}
             {verPlanificacion && (

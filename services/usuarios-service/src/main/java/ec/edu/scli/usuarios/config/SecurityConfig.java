@@ -50,7 +50,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/api/v1/perfiles/**").hasAuthority("USUARIO_EDITAR")
                         .requestMatchers(HttpMethod.PATCH, "/api/v1/perfiles/*/estado").hasAuthority("USUARIO_DESACTIVAR")
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/perfiles/**").hasAuthority("USUARIO_DESACTIVAR")
-                        .requestMatchers(HttpMethod.GET, "/api/v1/docentes/**", "/api/v1/estudiantes/**",
+                        .requestMatchers(HttpMethod.GET, "/api/v1/docentes/**")
+                                .hasAnyAuthority("USUARIO_LEER", "PLANIFICACION_GESTIONAR")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/estudiantes/**",
                                 "/api/v1/administradores/**").hasAuthority("USUARIO_LEER")
                         .requestMatchers(HttpMethod.POST, "/api/v1/docentes", "/api/v1/estudiantes",
                                 "/api/v1/administradores").hasAuthority("USUARIO_CREAR")

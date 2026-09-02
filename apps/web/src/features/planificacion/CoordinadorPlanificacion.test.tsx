@@ -167,6 +167,19 @@ describe('CoordinadorPlanificacion', () => {
     )
   })
 
+  it('inicia una planificación vacía y habilita la cuadrícula', async () => {
+    preparar([])
+    const user = userEvent.setup()
+    renderPage()
+    await user.click(
+      await screen.findByRole('button', { name: 'Iniciar planificación' }),
+    )
+    expect(
+      screen.getByRole('button', { name: 'Agregar LUNES 07:30' }),
+    ).toBeInTheDocument()
+    expect(screen.getByText('Materias disponibles')).toBeInTheDocument()
+  })
+
   it('edita una asignación existente', async () => {
     const user = userEvent.setup()
     renderPage()

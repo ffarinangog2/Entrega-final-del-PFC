@@ -53,6 +53,7 @@ export function CoordinadorPlanificacion() {
   const [confirmando, setConfirmando] = useState(false)
   const [error, setError] = useState('')
   const [mensaje, setMensaje] = useState('')
+  const [iniciado, setIniciado] = useState(false)
 
   const cargar = useCallback(async () => {
     setCargando(true)
@@ -80,6 +81,7 @@ export function CoordinadorPlanificacion() {
           'No se encontró la carrera institucional del coordinador.',
         )
       setItems(planes)
+      setIniciado(planes.length > 0)
       setCatalogos({
         periodo,
         carrera,
@@ -127,7 +129,8 @@ export function CoordinadorPlanificacion() {
           : visibles.length > 0
             ? 'BORRADOR'
             : null
-  const soloLectura = editables.length === 0
+  const soloLectura =
+    estadoGeneral === 'ENVIADA' || estadoGeneral === 'CONFIRMADA'
   const materia = (id: string) =>
     catalogos.materias.find((item) => item.id === id)
   const docente = (id: string | null) =>
@@ -322,16 +325,16 @@ export function CoordinadorPlanificacion() {
               aria-label="Resumen de planificación"
             >
               <div>
-                <strong>{resumen.materias}</strong>
-                <span>Materias</span>
+                <strong>{catalogos.materias.length}</strong>
+                <span>Materias disponibles</span>
               </div>
               <div>
-                <strong>{resumen.docentes}</strong>
-                <span>Docentes</span>
+                <strong>{catalogos.docentes.length}</strong>
+                <span>Docentes disponibles</span>
               </div>
               <div>
-                <strong>{resumen.laboratorios}</strong>
-                <span>Laboratorios</span>
+                <strong>{catalogos.laboratorios.length}</strong>
+                <span>Laboratorios disponibles</span>
               </div>
               <div>
                 <strong>{visibles.length}</strong>
@@ -339,10 +342,17 @@ export function CoordinadorPlanificacion() {
               </div>
             </section>
             {visibles.length === 0 && (
-              <p className="weekly-planning__empty">
-                La planificación está vacía. Seleccione un bloque de la
-                cuadrícula para comenzar.
-              </p>
+              <div className="weekly-planning__empty">
+                <p>La planificación todavía no tiene bloques.</p>
+                {!iniciado && (
+                  <button onClick={() => setIniciado(true)}>
+                    Iniciar planificación
+                  </button>
+                )}
+                {iniciado && (
+                  <p>Seleccione un bloque de la cuadrícula para comenzar.</p>
+                )}
+              </div>
             )}
             <div className="weekly-planning__grid-wrap">
               <table className="weekly-planning__grid">
@@ -414,15 +424,17 @@ export function CoordinadorPlanificacion() {
                                   )}
                               </article>
                             ))}
-                            {!soloLectura && bloques.length === 0 && (
-                              <button
-                                className="weekly-planning__add"
-                                aria-label={`Agregar ${dia} ${hora}`}
-                                onClick={() => abrirNuevo(dia, hora)}
-                              >
-                                +
-                              </button>
-                            )}
+                            {iniciado &&
+                              !soloLectura &&
+                              bloques.length === 0 && (
+                                <button
+                                  className="weekly-planning__add"
+                                  aria-label={`Agregar ${dia} ${hora}`}
+                                  onClick={() => abrirNuevo(dia, hora)}
+                                >
+                                  +
+                                </button>
+                              )}
                           </td>
                         )
                       })}

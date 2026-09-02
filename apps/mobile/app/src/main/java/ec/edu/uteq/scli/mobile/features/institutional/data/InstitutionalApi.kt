@@ -107,6 +107,9 @@ interface InstitutionalApi {
     @GET("api/v1/materias")
     suspend fun listarMaterias(@Query("page") page: Int, @Query("size") size: Int): PageResponse<MateriaPlanificacionDto>
 
+    @GET("api/v1/docentes")
+    suspend fun listarDocentes(@Query("page") page: Int, @Query("size") size: Int): PageResponse<DocentePlanificacionDto>
+
     @GET("api/v1/laboratorios")
     suspend fun listarLaboratorios(@Query("page") page: Int, @Query("size") size: Int): PageResponse<LaboratorioPlanificacionDto>
 
@@ -187,8 +190,7 @@ class InstitutionalRepository(private val api: InstitutionalApi) {
     suspend fun coordinacion() = CoordinacionData(
         planificaciones = api.listarPlanificaciones(),
         materias = todasLasPaginas(api::listarMaterias),
-        // Coordinación no consulta el catálogo global de usuarios, que requiere USUARIO_LEER.
-        docentes = emptyList(),
+        docentes = todasLasPaginas(api::listarDocentes),
         laboratorios = todasLasPaginas(api::listarLaboratorios),
         carreras = todasLasPaginas(api::listarCarreras),
         periodo = api.periodoActual(),
