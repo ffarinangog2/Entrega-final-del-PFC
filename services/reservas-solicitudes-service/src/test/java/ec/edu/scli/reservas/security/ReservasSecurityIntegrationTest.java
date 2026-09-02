@@ -145,10 +145,12 @@ class ReservasSecurityIntegrationTest {
 
     private String planificacionJson() {
         return """
-                {"periodoId":"%s","carreraId":"%s","materiaId":"%s",\
+                {"planificacionId":"%s","nivel":5,\
+                 "periodoId":"%s","carreraId":"%s","materiaId":"%s",\
                  "laboratorioId":"%s","diaSemana":"LUNES",\
                  "horaInicio":"08:00","horaFin":"10:00"}
-                """.formatted(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID());
+                """.formatted(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
+                        UUID.randomUUID(), UUID.randomUUID());
     }
 
     private org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder consulta() {
