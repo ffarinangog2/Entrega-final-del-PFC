@@ -39,6 +39,24 @@ class InstitutionalRepositoryTest {
     }
 
     @Test
+    fun `coordinacion carga catalogos autorizados sin consultar usuarios globales`() = runTest {
+        server.enqueue(MockResponse().setResponseCode(200).setBody(PLANIFICACIONES_JSON))
+        server.enqueue(MockResponse().setResponseCode(200).setBody(PAGINA_MATERIAS_JSON))
+        server.enqueue(MockResponse().setResponseCode(200).setBody(PAGINA_LABORATORIOS_JSON))
+        server.enqueue(MockResponse().setResponseCode(200).setBody(PAGINA_CARRERAS_JSON))
+        server.enqueue(MockResponse().setResponseCode(200).setBody(PERIODO_JSON))
+
+        val coordinacion = repository.coordinacion()
+
+        assertEquals("Programación Web", coordinacion.materias.single().nombre)
+        assertEquals("Ingeniería de Software", coordinacion.carreras.single().nombre)
+        assertEquals("2026-B", coordinacion.periodo.codigo)
+        assertEquals(emptyList<DocentePlanificacionDto>(), coordinacion.docentes)
+        val rutas = List(5) { server.takeRequest().path }
+        assertEquals(false, rutas.any { it?.startsWith("/api/v1/docentes") == true })
+    }
+
+    @Test
     fun `cerrar asistencia acepta respuesta 204 sin cuerpo`() = runTest {
         server.enqueue(MockResponse().setResponseCode(204))
 
@@ -61,5 +79,9 @@ class InstitutionalRepositoryTest {
     private companion object {
         const val PLANIFICACIONES_JSON = """[{"id":"plan-1","periodoId":"periodo-1","carreraId":"carrera-1","materiaId":"materia-1","docenteId":"docente-1","laboratorioId":"laboratorio-1","diaSemana":"LUNES","horaInicio":"08:00:00","horaFin":"10:00:00","estado":"PROPUESTA_CAMBIO","observacion":"Revisar horario"}]"""
         const val HISTORIAL_JSON = """[{"id":"registro-1","sesionId":"sesion-1","estudianteId":"estudiante-1","registradaEn":"2026-09-01T13:00:00Z","estado":"PRESENTE"}]"""
+        const val PAGINA_MATERIAS_JSON = """{"content":[{"id":"materia-1","carreraId":"carrera-1","codigo":"PROG","nombre":"Programación Web"}],"number":0,"size":100,"totalElements":1,"totalPages":1,"numberOfElements":1,"first":true,"last":true,"empty":false}"""
+        const val PAGINA_LABORATORIOS_JSON = """{"content":[{"id":"laboratorio-1","codigo":"LAB-01","nombre":"Laboratorio de Software","estado":"DISPONIBLE"}],"number":0,"size":100,"totalElements":1,"totalPages":1,"numberOfElements":1,"first":true,"last":true,"empty":false}"""
+        const val PAGINA_CARRERAS_JSON = """{"content":[{"id":"carrera-1","codigo":"IS","nombre":"Ingeniería de Software"}],"number":0,"size":100,"totalElements":1,"totalPages":1,"numberOfElements":1,"first":true,"last":true,"empty":false}"""
+        const val PERIODO_JSON = """{"id":"periodo-1","codigo":"2026-B","nombre":"Periodo 2026-B","estado":"ACTIVO"}"""
     }
 }

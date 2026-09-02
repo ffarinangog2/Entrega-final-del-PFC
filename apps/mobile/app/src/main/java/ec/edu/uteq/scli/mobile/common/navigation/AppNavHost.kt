@@ -53,6 +53,7 @@ import ec.edu.uteq.scli.mobile.features.reservas.presentation.CalendarioScreen
 import ec.edu.uteq.scli.mobile.features.auth.data.hasAnyPermission
 import ec.edu.uteq.scli.mobile.features.auth.data.hasPermission
 import ec.edu.uteq.scli.mobile.features.auth.data.hasRole
+import ec.edu.uteq.scli.mobile.features.auth.data.AuthUserResponse
 
 private sealed class AppDestination(val route: String) {
     data object Incidentes : AppDestination("incidentes")
@@ -67,6 +68,25 @@ private sealed class AppDestination(val route: String) {
     data object ReservaDetalle : AppDestination("reservas/{reservaId}") {
         fun crearRuta(id: String) = "reservas/$id"
     }
+}
+
+internal data class MobileNavigationAccess(
+    val coordinador: Boolean,
+    val reservas: Boolean,
+    val calendario: Boolean,
+    val incidentes: Boolean,
+    val planificacion: Boolean,
+)
+
+internal fun navigationAccess(user: AuthUserResponse): MobileNavigationAccess {
+    val coordinador = user.hasRole("COORDINADOR")
+    return MobileNavigationAccess(
+        coordinador = coordinador,
+        reservas = !coordinador && user.hasAnyPermission("RESERVA_LEER", "SOLICITUD_LEER"),
+        calendario = !coordinador && user.hasAnyPermission("RESERVA_LEER", "AGENDA_GESTIONAR"),
+        incidentes = !coordinador && user.hasAnyPermission("INCIDENTE_LEER", "INCIDENTE_CREAR", "INCIDENTE_GESTIONAR"),
+        planificacion = user.hasAnyPermission("PLANIFICACION_GESTIONAR", "SOLICITUD_APROBAR"),
+    )
 }
 
 @Composable
@@ -92,11 +112,13 @@ fun AppNavHost(application: ScliMobileApplication) {
 
     val navController = rememberNavController()
     val user = requireNotNull(authState.sesion).usuario
-    val puedeVerReservas = user.hasAnyPermission("RESERVA_LEER", "SOLICITUD_LEER")
+    val access = navigationAccess(user)
+    val coordinador = access.coordinador
+    val puedeVerReservas = access.reservas
     val puedeCrearSolicitud = user.hasPermission("SOLICITUD_CREAR")
-    val puedeVerCalendario = user.hasAnyPermission("RESERVA_LEER", "AGENDA_GESTIONAR")
-    val puedeVerIncidentes = user.hasAnyPermission("INCIDENTE_LEER", "INCIDENTE_CREAR", "INCIDENTE_GESTIONAR")
-    val puedeVerPlanificacion = user.hasAnyPermission("PLANIFICACION_GESTIONAR", "SOLICITUD_APROBAR")
+    val puedeVerCalendario = access.calendario
+    val puedeVerIncidentes = access.incidentes
+    val puedeVerPlanificacion = access.planificacion
     val puedeVerAsistencia = user.hasAnyPermission("ASISTENCIA_LEER", "ASISTENCIA_GESTIONAR", "ASISTENCIA_REGISTRAR")
 
     Scaffold(
@@ -141,12 +163,14 @@ fun AppNavHost(application: ScliMobileApplication) {
                     icon = { Icon(Icons.Filled.Person, contentDescription = null) },
                     label = { Text(stringResource(R.string.nav_perfil)) },
                 )
-                NavigationBarItem(
-                    selected = currentDestination.isRoute(AppDestination.EscanearQr),
-                    onClick = { navController.navigateToTab(AppDestination.EscanearQr.route) },
-                    icon = { Icon(Icons.Filled.QrCodeScanner, contentDescription = null) },
-                    label = { Text("Escanear QR") },
-                )
+                if (!coordinador) {
+                    NavigationBarItem(
+                        selected = currentDestination.isRoute(AppDestination.EscanearQr),
+                        onClick = { navController.navigateToTab(AppDestination.EscanearQr.route) },
+                        icon = { Icon(Icons.Filled.QrCodeScanner, contentDescription = null) },
+                        label = { Text("Escanear QR") },
+                    )
+                }
             }
         },
     ) { padding ->
@@ -212,7 +236,7 @@ fun AppNavHost(application: ScliMobileApplication) {
                 PlanificacionesScreen(
                     viewModel,
                     puedeRevisar = user.hasPermission("SOLICITUD_APROBAR"),
-                    coordinador = user.hasRole("COORDINADOR"),
+                    coordinador = coordinador,
                 )
             }
             composable(AppDestination.Asistencia.route) {

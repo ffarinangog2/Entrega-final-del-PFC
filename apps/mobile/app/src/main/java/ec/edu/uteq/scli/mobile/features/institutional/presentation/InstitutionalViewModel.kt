@@ -6,6 +6,7 @@ import ec.edu.uteq.scli.mobile.features.institutional.data.InstitutionalReposito
 import ec.edu.uteq.scli.mobile.features.institutional.data.PlanificacionDto
 import ec.edu.uteq.scli.mobile.features.institutional.data.RegistroAsistenciaDto
 import ec.edu.uteq.scli.mobile.features.institutional.data.SesionAsistenciaDto
+import ec.edu.uteq.scli.mobile.features.institutional.data.CoordinacionData
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
@@ -13,6 +14,7 @@ import kotlinx.coroutines.launch
 data class InstitutionalUiState(
     val cargando: Boolean = false,
     val planificaciones: List<PlanificacionDto> = emptyList(),
+    val coordinacion: CoordinacionData? = null,
     val historial: List<RegistroAsistenciaDto> = emptyList(),
     val sesion: SesionAsistenciaDto? = null,
     val asistentes: List<RegistroAsistenciaDto> = emptyList(),
@@ -25,6 +27,10 @@ class InstitutionalViewModel(private val repository: InstitutionalRepository) : 
     val uiState = mutableState.asStateFlow()
 
     fun cargarPlanificaciones() = ejecutar { copy(planificaciones = repository.planificaciones()) }
+    fun cargarCoordinacion() = ejecutar {
+        val data = repository.coordinacion()
+        copy(planificaciones = data.planificaciones, coordinacion = data)
+    }
     fun cargarHistorial() = ejecutar { copy(historial = repository.historial()) }
     fun aceptar(id: String) = ejecutar { repository.aceptar(id); copy(mensaje = "Planificación aceptada") }
     fun rechazar(id: String, motivo: String?) = ejecutar { repository.rechazar(id, motivo); copy(mensaje = "Planificación rechazada") }

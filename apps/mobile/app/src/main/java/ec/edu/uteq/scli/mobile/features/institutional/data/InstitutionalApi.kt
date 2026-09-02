@@ -6,6 +6,8 @@ import retrofit2.http.POST
 import retrofit2.http.Path
 import retrofit2.Response
 import ec.edu.uteq.scli.mobile.features.reservas.data.remote.ReservaDto
+import ec.edu.uteq.scli.mobile.features.reservas.data.remote.PageResponse
+import retrofit2.http.Query
 
 data class PlanificacionDto(
     val id: String,
@@ -19,6 +21,37 @@ data class PlanificacionDto(
     val horaFin: String,
     val estado: String,
     val observacion: String?,
+)
+
+data class MateriaPlanificacionDto(
+    val id: String,
+    val carreraId: String,
+    val codigo: String,
+    val nombre: String,
+)
+
+data class DocentePlanificacionDto(
+    val id: String,
+    val codigoDocente: String,
+)
+
+data class LaboratorioPlanificacionDto(
+    val id: String,
+    val codigo: String,
+    val nombre: String,
+    val estado: String,
+)
+
+data class CarreraPlanificacionDto(val id: String, val codigo: String, val nombre: String)
+data class PeriodoPlanificacionDto(val id: String, val codigo: String, val nombre: String, val estado: String)
+
+data class CoordinacionData(
+    val planificaciones: List<PlanificacionDto>,
+    val materias: List<MateriaPlanificacionDto>,
+    val docentes: List<DocentePlanificacionDto>,
+    val laboratorios: List<LaboratorioPlanificacionDto>,
+    val carreras: List<CarreraPlanificacionDto>,
+    val periodo: PeriodoPlanificacionDto,
 )
 
 data class ObservacionRequest(val observacion: String?)
@@ -43,6 +76,18 @@ data class SesionAsistenciaDto(
 interface InstitutionalApi {
     @GET("api/v1/planificaciones")
     suspend fun listarPlanificaciones(): List<PlanificacionDto>
+
+    @GET("api/v1/materias")
+    suspend fun listarMaterias(@Query("page") page: Int, @Query("size") size: Int): PageResponse<MateriaPlanificacionDto>
+
+    @GET("api/v1/laboratorios")
+    suspend fun listarLaboratorios(@Query("page") page: Int, @Query("size") size: Int): PageResponse<LaboratorioPlanificacionDto>
+
+    @GET("api/v1/carreras")
+    suspend fun listarCarreras(@Query("page") page: Int, @Query("size") size: Int): PageResponse<CarreraPlanificacionDto>
+
+    @GET("api/v1/periodos-lectivos/actual")
+    suspend fun periodoActual(): PeriodoPlanificacionDto
 
     @POST("api/v1/planificaciones/{id}/aceptar")
     suspend fun aceptarPlanificacion(@Path("id") id: String): PlanificacionDto
@@ -86,6 +131,15 @@ interface InstitutionalApi {
 
 class InstitutionalRepository(private val api: InstitutionalApi) {
     suspend fun planificaciones() = api.listarPlanificaciones()
+    suspend fun coordinacion() = CoordinacionData(
+        planificaciones = api.listarPlanificaciones(),
+        materias = todasLasPaginas(api::listarMaterias),
+        // Coordinación no consulta el catálogo global de usuarios, que requiere USUARIO_LEER.
+        docentes = emptyList(),
+        laboratorios = todasLasPaginas(api::listarLaboratorios),
+        carreras = todasLasPaginas(api::listarCarreras),
+        periodo = api.periodoActual(),
+    )
     suspend fun aceptar(id: String) = api.aceptarPlanificacion(id)
     suspend fun rechazar(id: String, motivo: String?) = api.rechazarPlanificacion(id, ObservacionRequest(motivo))
     suspend fun aceptarPropuesta(id: String) = api.aceptarPropuesta(id)
@@ -100,5 +154,18 @@ class InstitutionalRepository(private val api: InstitutionalApi) {
     suspend fun cerrarSesion(id: String) {
         val response = api.cerrarSesion(id)
         if (!response.isSuccessful) error("No fue posible cerrar la sesión")
+    }
+
+    private suspend fun <T> todasLasPaginas(
+        cargar: suspend (page: Int, size: Int) -> PageResponse<T>,
+    ): List<T> {
+        val resultado = mutableListOf<T>()
+        var pagina = 0
+        do {
+            val respuesta = cargar(pagina, 100)
+            resultado += respuesta.content
+            pagina++
+        } while (!respuesta.last && pagina < respuesta.totalPages)
+        return resultado
     }
 }
