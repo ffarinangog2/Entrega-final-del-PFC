@@ -185,6 +185,74 @@ class PlanificacionAgregadaServiceTest {
         verify(revisiones, never()).saveAndFlush(any());
     }
 
+    @Test
+    void administradorGlobalListaTodasLasPlanificaciones() {
+        PlanificacionAgregadaJpaEntity plan = plan(UUID.randomUUID(),
+                EstadoPlanificacionAgregada.EN_REVISION);
+        when(actores.obtener()).thenReturn(new ActorAutenticado(perfil,
+                Set.of("ROLE_ADMINISTRADOR")));
+        when(planes.findAll()).thenReturn(List.of(plan));
+        when(bloques.findByPlanificacionId(plan.getId())).thenReturn(List.of());
+
+        var resultado = service.listar();
+
+        assertThat(resultado).singleElement()
+                .extracting(response -> response.id())
+                .isEqualTo(plan.getId());
+    }
+
+    @Test
+    void administradorPisoListaSoloPlanificacionDeSuAmbito() {
+        UUID piso = UUID.randomUUID();
+        UUID otroPiso = UUID.randomUUID();
+        PlanificacionAgregadaJpaEntity visible = plan(UUID.randomUUID(),
+                EstadoPlanificacionAgregada.EN_REVISION);
+        RevisionPlanificacionPisoJpaEntity propia = new RevisionPlanificacionPisoJpaEntity();
+        propia.setPlanificacionId(visible.getId());
+        propia.setPisoId(piso);
+        RevisionPlanificacionPisoJpaEntity ajena = new RevisionPlanificacionPisoJpaEntity();
+        ajena.setPlanificacionId(UUID.randomUUID());
+        ajena.setPisoId(otroPiso);
+        when(actores.obtener()).thenReturn(new ActorAutenticado(perfil,
+                Set.of("ROLE_ADMINISTRADOR_PISO")));
+        when(ambito.pisoGestionado()).thenReturn(piso);
+        when(revisiones.findAll()).thenReturn(List.of(propia, ajena));
+        when(planes.findById(visible.getId())).thenReturn(Optional.of(visible));
+        when(bloques.findByPlanificacionId(visible.getId())).thenReturn(List.of());
+
+        var resultado = service.listar();
+
+        assertThat(resultado).singleElement()
+                .extracting(response -> response.id())
+                .isEqualTo(visible.getId());
+    }
+
+    @Test
+    void rechazoDePisoDevuelveLaPlanificacionParaCorrecciones() {
+        UUID planId = UUID.randomUUID();
+        UUID piso = UUID.randomUUID();
+        PlanificacionAgregadaJpaEntity plan = plan(planId,
+                EstadoPlanificacionAgregada.EN_REVISION);
+        RevisionPlanificacionPisoJpaEntity revision = new RevisionPlanificacionPisoJpaEntity();
+        revision.setId(UUID.randomUUID());
+        revision.setPlanificacionId(planId);
+        revision.setPisoId(piso);
+        revision.setEstado(EstadoRevisionPlanificacion.PENDIENTE);
+        when(ambito.pisoGestionado()).thenReturn(piso);
+        when(revisiones.findByPlanificacionIdAndPisoId(planId, piso))
+                .thenReturn(Optional.of(revision));
+        when(planes.findById(planId)).thenReturn(Optional.of(plan));
+        when(revisiones.saveAndFlush(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(planes.saveAndFlush(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(bloques.findByPlanificacionId(planId)).thenReturn(List.of());
+
+        var response = service.rechazarPiso(planId, "Conflicto operativo");
+
+        assertThat(response.estado()).isEqualTo("REQUIERE_CAMBIOS");
+        assertThat(revision.getEstado()).isEqualTo(EstadoRevisionPlanificacion.RECHAZADA);
+        assertThat(revision.getObservacion()).isEqualTo("Conflicto operativo");
+    }
+
     private PlanificacionAgregadaJpaEntity plan(UUID id, EstadoPlanificacionAgregada estado) {
         PlanificacionAgregadaJpaEntity plan = new PlanificacionAgregadaJpaEntity();
         plan.setId(id); plan.setCarreraId(carrera); plan.setPeriodoId(UUID.randomUUID());
