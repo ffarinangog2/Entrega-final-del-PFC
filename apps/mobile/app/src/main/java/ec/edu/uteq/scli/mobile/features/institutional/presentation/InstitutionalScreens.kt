@@ -88,7 +88,7 @@ fun AdministradorPisoPlanificacionScreen(viewModel: InstitutionalViewModel) {
     var confirmarAprobacion by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { viewModel.cargarCoordinacion() }
     val data = state.coordinacion
-    val pendientes = state.planificaciones.filter { it.estado == "ENVIADA" }
+    val pendiente = data?.planificacion?.estado == "EN_REVISION"
 
     LazyColumn(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item {
@@ -125,11 +125,11 @@ fun AdministradorPisoPlanificacionScreen(viewModel: InstitutionalViewModel) {
                         Text("Docente asignado")
                         Text("Estado: ${etiquetaEstado(plan.estado)}")
                         plan.observacion?.let { Text("Observación: $it") }
-                        if (plan.estado == "ENVIADA") OutlinedButton(onClick = { planObservado = plan }) { Text("Marcar bloque problemático") }
+                        if (pendiente) OutlinedButton(onClick = { planObservado = plan }) { Text("Marcar bloque problemático") }
                     }
                 }
             }
-            if (pendientes.isNotEmpty()) item {
+            if (pendiente) item {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(onClick = { confirmarAprobacion = true }, enabled = !state.cargando, modifier = Modifier.fillMaxWidth()) { Text("Aprobar planificación") }
                     OutlinedTextField(motivoRechazo, { motivoRechazo = it }, label = { Text("Motivo del rechazo") }, modifier = Modifier.fillMaxWidth())

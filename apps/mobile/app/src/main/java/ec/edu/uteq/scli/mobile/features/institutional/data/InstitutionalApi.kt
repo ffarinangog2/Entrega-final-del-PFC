@@ -90,6 +90,11 @@ data class PropuestaPlanificacionRequest(
     val horaFin: String? = null,
     val observacion: String,
 )
+data class PropuestaAgregadaRequest(
+    val bloqueId: String,
+    val laboratorioPropuestoId: String? = null,
+    val observacion: String,
+)
 data class RegistroAsistenciaDto(
     val id: String,
     val sesionId: String,
@@ -122,6 +127,21 @@ interface InstitutionalApi {
 
     @GET("api/v1/planificaciones-agregadas")
     suspend fun listarPlanificacionesAgregadas(): List<PlanificacionAgregadaDto>
+
+    @POST("api/v1/planificaciones-agregadas/{id}/revisiones/mi-piso/aprobar")
+    suspend fun aprobarPlanificacionPiso(@Path("id") id: String): PlanificacionAgregadaDto
+
+    @POST("api/v1/planificaciones-agregadas/{id}/revisiones/mi-piso/rechazar")
+    suspend fun rechazarPlanificacionPiso(
+        @Path("id") id: String,
+        @Body request: ObservacionRequest,
+    ): PlanificacionAgregadaDto
+
+    @POST("api/v1/planificaciones-agregadas/{id}/revisiones/mi-piso/proponer-cambio")
+    suspend fun proponerCambioPlanificacionPiso(
+        @Path("id") id: String,
+        @Body request: PropuestaAgregadaRequest,
+    ): PlanificacionAgregadaDto
 
     @GET("api/v1/materias")
     suspend fun listarMaterias(@Query("page") page: Int, @Query("size") size: Int): PageResponse<MateriaPlanificacionDto>
@@ -230,6 +250,14 @@ class InstitutionalRepository(private val api: InstitutionalApi) {
         )
     }
     suspend fun aceptar(id: String) = api.aceptarPlanificacion(id)
+    suspend fun aprobarPlanificacionPiso(id: String) = api.aprobarPlanificacionPiso(id)
+    suspend fun rechazarPlanificacionPiso(id: String, motivo: String) =
+        api.rechazarPlanificacionPiso(id, ObservacionRequest(motivo))
+    suspend fun proponerCambioPlanificacionPiso(planId: String, bloqueId: String, observacion: String) =
+        api.proponerCambioPlanificacionPiso(
+            planId,
+            PropuestaAgregadaRequest(bloqueId = bloqueId, observacion = observacion),
+        )
     suspend fun rechazar(id: String, motivo: String?) = api.rechazarPlanificacion(id, ObservacionRequest(motivo))
     suspend fun proponer(id: String, observacion: String) =
         api.proponerPlanificacion(id, PropuestaPlanificacionRequest(observacion = observacion))

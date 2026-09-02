@@ -60,21 +60,46 @@ class InstitutionalViewModel(private val repository: InstitutionalRepository) : 
     fun rechazar(id: String, motivo: String?) = ejecutar { repository.rechazar(id, motivo); copy(mensaje = "Planificación rechazada") }
     fun aceptarPropuesta(id: String) = ejecutar { repository.aceptarPropuesta(id); copy(mensaje = "Propuesta aceptada") }
     fun aprobarPaquete() = ejecutar {
-        planificaciones.filter { it.estado == "ENVIADA" }.forEach { repository.aceptar(it.id) }
-        val actualizadas = repository.planificaciones()
-        copy(planificaciones = actualizadas, coordinacion = coordinacion?.copy(planificaciones = actualizadas), mensaje = "Planificación aprobada")
+        val plan = requireNotNull(coordinacion?.planificacion)
+        val actualizado = repository.aprobarPlanificacionPiso(plan.id)
+        copy(
+            planificaciones = actualizado.bloques,
+            coordinacion = coordinacion?.copy(
+                planificaciones = actualizado.bloques,
+                planificacion = actualizado,
+            ),
+            mensaje = "Planificación aprobada",
+        )
     }
     fun rechazarPaquete(motivo: String) = ejecutar {
         require(motivo.isNotBlank()) { "La observación es obligatoria" }
-        planificaciones.filter { it.estado == "ENVIADA" }.forEach { repository.rechazar(it.id, motivo.trim()) }
-        val actualizadas = repository.planificaciones()
-        copy(planificaciones = actualizadas, coordinacion = coordinacion?.copy(planificaciones = actualizadas), mensaje = "Planificación rechazada")
+        val plan = requireNotNull(coordinacion?.planificacion)
+        val actualizado = repository.rechazarPlanificacionPiso(plan.id, motivo.trim())
+        copy(
+            planificaciones = actualizado.bloques,
+            coordinacion = coordinacion?.copy(
+                planificaciones = actualizado.bloques,
+                planificacion = actualizado,
+            ),
+            mensaje = "Planificación rechazada",
+        )
     }
     fun proponerCambio(id: String, observacion: String) = ejecutar {
         require(observacion.isNotBlank()) { "La observación es obligatoria" }
-        repository.proponer(id, observacion.trim())
-        val actualizadas = repository.planificaciones()
-        copy(planificaciones = actualizadas, coordinacion = coordinacion?.copy(planificaciones = actualizadas), mensaje = "Observación enviada")
+        val plan = requireNotNull(coordinacion?.planificacion)
+        val actualizado = repository.proponerCambioPlanificacionPiso(
+            plan.id,
+            id,
+            observacion.trim(),
+        )
+        copy(
+            planificaciones = actualizado.bloques,
+            coordinacion = coordinacion?.copy(
+                planificaciones = actualizado.bloques,
+                planificacion = actualizado,
+            ),
+            mensaje = "Observación enviada",
+        )
     }
     fun registrarQr(valor: String) {
         val partes = valor.trim().split(':', limit = 3)
