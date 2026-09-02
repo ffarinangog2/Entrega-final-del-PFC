@@ -18,6 +18,7 @@ import ec.edu.uteq.scli.mobile.features.incidentes.data.IncidenteLocalRepository
 import ec.edu.uteq.scli.mobile.features.incidentes.presentation.IncidentesScreen
 import ec.edu.uteq.scli.mobile.features.incidentes.presentation.IncidentesViewModel
 import ec.edu.uteq.scli.mobile.features.notifications.NotificationHelper
+import ec.edu.uteq.scli.mobile.features.reservas.data.remote.LaboratorioCatalogoDto
 import org.junit.After
 import org.junit.Rule
 import org.junit.Test
@@ -65,13 +66,28 @@ class IncidentesFlowTest {
 
         composeTestRule.setContent {
             MaterialTheme {
-                IncidentesScreen(viewModel)
+                IncidentesScreen(
+                    viewModel,
+                    laboratoriosIniciales = listOf(
+                        LaboratorioCatalogoDto(
+                            id = "lab-3",
+                            codigo = "LAB-03",
+                            nombre = "Laboratorio de Redes",
+                            pisoId = "piso-1",
+                            activo = true,
+                        ),
+                    ),
+                )
             }
         }
 
         composeTestRule
             .onNodeWithText(context.getString(R.string.incidentes_form_laboratorio_equipo))
-            .performTextInput("Lab 3 - PC 12")
+            .performClick()
+
+        composeTestRule
+            .onNodeWithText("LAB-03 — Laboratorio de Redes")
+            .performClick()
 
         composeTestRule
             .onNodeWithText(context.getString(R.string.incidentes_form_descripcion))
@@ -82,7 +98,7 @@ class IncidentesFlowTest {
             .performClick()
 
         composeTestRule
-            .onNodeWithText("Lab 3 - PC 12")
+            .onNodeWithText("LAB-03 — Laboratorio de Redes")
             .assertExists()
     }
 }

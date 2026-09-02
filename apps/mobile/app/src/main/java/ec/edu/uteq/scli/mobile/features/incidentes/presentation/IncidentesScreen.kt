@@ -34,14 +34,26 @@ import androidx.compose.ui.unit.dp
 import ec.edu.uteq.scli.mobile.R
 import ec.edu.uteq.scli.mobile.features.incidentes.domain.Incidente
 import ec.edu.uteq.scli.mobile.features.incidentes.domain.Prioridad
+import ec.edu.uteq.scli.mobile.features.reservas.data.remote.CatalogosRepository
+import ec.edu.uteq.scli.mobile.features.reservas.data.remote.LaboratorioCatalogoDto
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun IncidentesScreen(viewModel: IncidentesViewModel, puedeGestionar: Boolean = false) {
+fun IncidentesScreen(
+    viewModel: IncidentesViewModel,
+    puedeGestionar: Boolean = false,
+    catalogos: CatalogosRepository? = null,
+    laboratoriosIniciales: List<LaboratorioCatalogoDto> = emptyList(),
+) {
     val uiState by viewModel.uiState.collectAsState()
+    var laboratorios by remember { mutableStateOf(laboratoriosIniciales) }
+    androidx.compose.runtime.LaunchedEffect(catalogos) {
+        if (catalogos != null) runCatching { catalogos.laboratorios() }
+            .onSuccess { laboratorios = it }
+    }
 
     Column(modifier = Modifier.fillMaxSize()) {
         Column(
@@ -52,11 +64,10 @@ fun IncidentesScreen(viewModel: IncidentesViewModel, puedeGestionar: Boolean = f
         ) {
             Text(text = stringResource(R.string.incidentes_form_titulo))
 
-            OutlinedTextField(
-                value = uiState.laboratorioEquipo,
-                onValueChange = viewModel::onLaboratorioEquipoChange,
-                label = { Text(stringResource(R.string.incidentes_form_laboratorio_equipo)) },
-                modifier = Modifier.fillMaxWidth(),
+            LaboratorioDropdown(
+                laboratorios = laboratorios,
+                seleccionado = uiState.laboratorioEquipo,
+                onSeleccionar = viewModel::onLaboratorioEquipoChange,
             )
 
             OutlinedTextField(
@@ -110,6 +121,35 @@ fun IncidentesScreen(viewModel: IncidentesViewModel, puedeGestionar: Boolean = f
                 items(uiState.incidentes, key = { it.id }) { incidente ->
                     IncidenteItem(incidente, puedeGestionar, viewModel::actualizarEstado)
                 }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun LaboratorioDropdown(
+    laboratorios: List<LaboratorioCatalogoDto>,
+    seleccionado: String,
+    onSeleccionar: (String) -> Unit,
+) {
+    var expandido by remember { mutableStateOf(false) }
+    ExposedDropdownMenuBox(expanded = expandido, onExpandedChange = { expandido = it }) {
+        OutlinedTextField(
+            value = seleccionado,
+            onValueChange = {},
+            readOnly = true,
+            label = { Text(stringResource(R.string.incidentes_form_laboratorio_equipo)) },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandido) },
+            modifier = Modifier.fillMaxWidth().menuAnchor(),
+        )
+        ExposedDropdownMenu(expanded = expandido, onDismissRequest = { expandido = false }) {
+            laboratorios.forEach { laboratorio ->
+                val nombre = "${laboratorio.codigo} — ${laboratorio.nombre}"
+                DropdownMenuItem(
+                    text = { Text(nombre) },
+                    onClick = { onSeleccionar(nombre); expandido = false },
+                )
             }
         }
     }
