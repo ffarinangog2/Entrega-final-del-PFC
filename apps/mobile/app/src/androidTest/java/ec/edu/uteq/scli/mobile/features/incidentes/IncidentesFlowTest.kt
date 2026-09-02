@@ -6,6 +6,9 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.ViewModelStore
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -31,9 +34,12 @@ class IncidentesFlowTest {
     val composeTestRule = createComposeRule()
 
     private lateinit var database: AppDatabase
+    private val viewModelStore = ViewModelStore()
 
     @After
     fun tearDown() {
+        viewModelStore.clear()
+        composeTestRule.waitForIdle()
         database.close()
     }
 
@@ -47,7 +53,15 @@ class IncidentesFlowTest {
 
         val repository = IncidenteLocalRepository(database.incidenteDao())
         val notificationHelper = NotificationHelper(context)
-        val viewModel = IncidentesViewModel(repository, notificationHelper)
+        val viewModel = ViewModelProvider(
+            viewModelStore,
+            object : ViewModelProvider.Factory {
+                override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                    @Suppress("UNCHECKED_CAST")
+                    return IncidentesViewModel(repository, notificationHelper) as T
+                }
+            },
+        )[IncidentesViewModel::class.java]
 
         composeTestRule.setContent {
             MaterialTheme {
