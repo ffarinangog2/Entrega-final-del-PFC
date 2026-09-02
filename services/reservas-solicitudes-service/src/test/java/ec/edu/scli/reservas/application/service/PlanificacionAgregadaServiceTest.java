@@ -27,6 +27,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -111,6 +112,77 @@ class PlanificacionAgregadaServiceTest {
         pendiente.setEstado(EstadoRevisionPlanificacion.APROBADA);
         service.aprobarPiso(planId);
         assertThat(plan.getEstado()).isEqualTo(EstadoPlanificacionAgregada.APROBADA);
+    }
+
+    @Test
+    void iniciarReutilizaLaPlanificacionExistenteDelCiclo() {
+        UUID periodo = UUID.randomUUID();
+        PlanificacionAgregadaJpaEntity existente = plan(UUID.randomUUID(),
+                EstadoPlanificacionAgregada.BORRADOR);
+        existente.setPeriodoId(periodo);
+        when(academico.existePeriodoLectivo(periodo)).thenReturn(true);
+        when(planes.findByCarreraIdAndPeriodoId(carrera, periodo))
+                .thenReturn(Optional.of(existente));
+
+        var response = service.iniciar(periodo);
+
+        assertThat(response.id()).isEqualTo(existente.getId());
+        verify(planes, never()).saveAndFlush(any());
+    }
+
+    @Test
+    void enviarRechazaPlanificacionSinBloques() {
+        UUID planId = UUID.randomUUID();
+        when(planes.findById(planId)).thenReturn(Optional.of(
+                plan(planId, EstadoPlanificacionAgregada.BORRADOR)));
+        when(bloques.findByPlanificacionId(planId)).thenReturn(List.of());
+
+        assertThatThrownBy(() -> service.enviar(planId))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("no contiene bloques");
+        verify(revisiones, never()).save(any());
+    }
+
+    @Test
+    void enviarDetectaLaboratorioSolapadoEntreNiveles() {
+        UUID planId = UUID.randomUUID();
+        UUID laboratorio = UUID.randomUUID();
+        PlanificacionJpaEntity primero = bloque(planId, 2, UUID.randomUUID(), laboratorio);
+        PlanificacionJpaEntity segundo = bloque(planId, 7, UUID.randomUUID(), laboratorio);
+        segundo.setHoraInicio(primero.getHoraInicio());
+        segundo.setHoraFin(primero.getHoraFin());
+        when(planes.findById(planId)).thenReturn(Optional.of(
+                plan(planId, EstadoPlanificacionAgregada.BORRADOR)));
+        when(bloques.findByPlanificacionId(planId)).thenReturn(List.of(primero, segundo));
+
+        assertThatThrownBy(() -> service.enviar(planId))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("laboratorio");
+    }
+
+    @Test
+    void enviarDetectaDocenteSolapadoEntreNiveles() {
+        UUID planId = UUID.randomUUID();
+        UUID docente = UUID.randomUUID();
+        PlanificacionJpaEntity primero = bloque(planId, 3, docente, UUID.randomUUID());
+        PlanificacionJpaEntity segundo = bloque(planId, 8, docente, UUID.randomUUID());
+        segundo.setHoraInicio(primero.getHoraInicio());
+        segundo.setHoraFin(primero.getHoraFin());
+        when(planes.findById(planId)).thenReturn(Optional.of(
+                plan(planId, EstadoPlanificacionAgregada.BORRADOR)));
+        when(bloques.findByPlanificacionId(planId)).thenReturn(List.of(primero, segundo));
+
+        assertThatThrownBy(() -> service.enviar(planId))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("docente");
+    }
+
+    @Test
+    void rechazarPisoExigeUnaObservacionHumana() {
+        assertThatThrownBy(() -> service.rechazarPiso(UUID.randomUUID(), " "))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("observacion");
+        verify(revisiones, never()).saveAndFlush(any());
     }
 
     private PlanificacionAgregadaJpaEntity plan(UUID id, EstadoPlanificacionAgregada estado) {
