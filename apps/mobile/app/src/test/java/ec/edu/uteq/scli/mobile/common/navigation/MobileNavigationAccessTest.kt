@@ -39,6 +39,16 @@ class MobileNavigationAccessTest {
         assertFalse(access.planificacion)
     }
 
+    @Test
+    fun `administrador recibe inicio global y modulos segun permisos`() {
+        val access = navigationAccess(user("ADMINISTRADOR", listOf("RESERVA_LEER", "INCIDENTE_LEER", "PLANIFICACION_GESTIONAR")))
+
+        assertTrue(access.administrador)
+        assertTrue(access.reservas)
+        assertTrue(access.incidentes)
+        assertTrue(access.planificacion)
+    }
+
     private fun user(role: String, permissions: List<String>) = AuthUserResponse(
         "usuario", "perfil", "user", "Nombre", "Apellido", "user@uteq.edu.ec",
         roles = listOf(role), permisos = permissions,

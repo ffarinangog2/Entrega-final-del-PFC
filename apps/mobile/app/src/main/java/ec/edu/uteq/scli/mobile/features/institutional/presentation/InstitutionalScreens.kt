@@ -369,3 +369,40 @@ internal fun RegistroLaboratorioEstudianteContent(
         item { Text("También puedes usar Escanear QR cuando el responsable muestre un código de registro.") }
     }
 }
+
+@Composable
+fun AdministracionGlobalScreen(viewModel: InstitutionalViewModel) {
+    val state by viewModel.uiState.collectAsState()
+    LaunchedEffect(Unit) { viewModel.cargarAdministracion() }
+    LazyColumn(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        item { Text("Supervisión global", style = MaterialTheme.typography.headlineMedium) }
+        if (state.cargando && state.administracion == null) item { CircularProgressIndicator() }
+        state.error?.let { item {
+            Text("No fue posible cargar la información global.", color = MaterialTheme.colorScheme.error)
+            OutlinedButton(onClick = viewModel::cargarAdministracion) { Text("Reintentar") }
+        } }
+        state.administracion?.let { data ->
+            item {
+                val activos = data.perfiles.count { it.activo }
+                Text("Usuarios", style = MaterialTheme.typography.titleLarge)
+                Text("$activos activos de ${data.perfiles.size} perfiles")
+            }
+            item {
+                Text("Laboratorios", style = MaterialTheme.typography.titleLarge)
+                Text("${data.laboratorios.size} registrados · ${data.laboratorios.count { it.estado == "DISPONIBLE" }} disponibles")
+            }
+            item {
+                Text("Planificación", style = MaterialTheme.typography.titleLarge)
+                Text("${data.planificaciones.size} asignaciones globales")
+            }
+            item { Text("Usuarios recientes", style = MaterialTheme.typography.titleLarge) }
+            items(data.perfiles.take(20), key = { it.id }) { perfil ->
+                Card(Modifier.fillMaxWidth()) { Column(Modifier.padding(12.dp)) {
+                    Text("${perfil.nombres} ${perfil.apellidos}", style = MaterialTheme.typography.titleMedium)
+                    Text(perfil.emailInstitucional)
+                    Text(if (perfil.activo) "Activo" else "Inactivo")
+                } }
+            }
+        }
+    }
+}

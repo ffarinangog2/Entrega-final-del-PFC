@@ -37,6 +37,7 @@ import ec.edu.uteq.scli.mobile.features.incidentes.presentation.IncidentesViewMo
 import ec.edu.uteq.scli.mobile.features.institutional.presentation.HistorialAsistenciaScreen
 import ec.edu.uteq.scli.mobile.features.institutional.presentation.InstitutionalViewModel
 import ec.edu.uteq.scli.mobile.features.institutional.presentation.PlanificacionesScreen
+import ec.edu.uteq.scli.mobile.features.institutional.presentation.AdministracionGlobalScreen
 import ec.edu.uteq.scli.mobile.features.auth.presentation.AuthViewModel
 import ec.edu.uteq.scli.mobile.features.auth.presentation.LoginScreen
 import ec.edu.uteq.scli.mobile.features.profile.presentation.ProfileScreen
@@ -63,6 +64,7 @@ private sealed class AppDestination(val route: String) {
     data object EscanearQr : AppDestination("escanear-qr")
     data object Planificacion : AppDestination("planificacion")
     data object Asistencia : AppDestination("asistencia")
+    data object Administracion : AppDestination("administracion")
     data object NuevaReserva : AppDestination("reservas/nueva")
     data object SolicitudDetalle : AppDestination("solicitudes/{solicitudId}") { fun crearRuta(id: String) = "solicitudes/$id" }
     data object ReservaDetalle : AppDestination("reservas/{reservaId}") {
@@ -77,11 +79,13 @@ internal data class MobileNavigationAccess(
     val incidentes: Boolean,
     val planificacion: Boolean,
     val estudiante: Boolean,
+    val administrador: Boolean,
 )
 
 internal fun navigationAccess(user: AuthUserResponse): MobileNavigationAccess {
     val coordinador = user.hasRole("COORDINADOR")
     val estudiante = user.hasRole("ESTUDIANTE")
+    val administrador = user.hasRole("ADMINISTRADOR")
     return MobileNavigationAccess(
         coordinador = coordinador,
         reservas = !coordinador && user.hasAnyPermission("RESERVA_LEER", "SOLICITUD_LEER"),
@@ -89,6 +93,7 @@ internal fun navigationAccess(user: AuthUserResponse): MobileNavigationAccess {
         incidentes = !coordinador && user.hasAnyPermission("INCIDENTE_LEER", "INCIDENTE_CREAR", "INCIDENTE_GESTIONAR"),
         planificacion = user.hasAnyPermission("PLANIFICACION_GESTIONAR", "SOLICITUD_APROBAR"),
         estudiante = estudiante,
+        administrador = administrador,
     )
 }
 
@@ -131,6 +136,12 @@ fun AppNavHost(application: ScliMobileApplication) {
             val currentDestination = navBackStackEntry?.destination
 
             NavigationBar {
+                if (access.administrador) NavigationBarItem(
+                    selected = currentDestination.isRoute(AppDestination.Administracion),
+                    onClick = { navController.navigateToTab(AppDestination.Administracion.route) },
+                    icon = { Icon(Icons.Filled.Person, contentDescription = null) },
+                    label = { Text("Inicio") },
+                )
                 if (puedeVerIncidentes) NavigationBarItem(
                     selected = currentDestination.isRoute(AppDestination.Incidentes),
                     onClick = { navController.navigateToTab(AppDestination.Incidentes.route) },
@@ -181,6 +192,7 @@ fun AppNavHost(application: ScliMobileApplication) {
         NavHost(
             navController = navController,
             startDestination = when {
+                access.administrador -> AppDestination.Administracion.route
                 puedeVerReservas -> AppDestination.Reservas.route
                 puedeVerPlanificacion -> AppDestination.Planificacion.route
                 puedeVerAsistencia -> AppDestination.Asistencia.route
@@ -189,6 +201,13 @@ fun AppNavHost(application: ScliMobileApplication) {
             },
             modifier = Modifier.padding(padding),
         ) {
+            composable(AppDestination.Administracion.route) {
+                if (!access.administrador) { Text("No tienes permisos para realizar esta acción."); return@composable }
+                val viewModel: InstitutionalViewModel = viewModel(
+                    factory = viewModelFactory { initializer { InstitutionalViewModel(container.institutionalRepository) } },
+                )
+                AdministracionGlobalScreen(viewModel)
+            }
             composable(AppDestination.Incidentes.route) {
                 if (!puedeVerIncidentes) { Text("No tienes permisos para realizar esta acción."); return@composable }
                 val viewModel: IncidentesViewModel = viewModel(

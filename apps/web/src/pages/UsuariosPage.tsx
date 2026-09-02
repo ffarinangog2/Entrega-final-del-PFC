@@ -33,6 +33,9 @@ export function UsuariosPage() {
   const [submitError, setSubmitError] = useState('')
   const [submitStatus, setSubmitStatus] = useState('')
   const [busqueda, setBusqueda] = useState('')
+  const [estado, setEstado] = useState<'TODOS' | 'ACTIVOS' | 'INACTIVOS'>(
+    'TODOS',
+  )
   const [seleccionado, setSeleccionado] = useState<Perfil | null>(null)
 
   function cargarPerfiles() {
@@ -141,6 +144,18 @@ export function UsuariosPage() {
               onChange={(event) => setBusqueda(event.target.value)}
               placeholder="Nombre, apellido o correo"
             />
+            <label htmlFor="estado-usuario">Estado</label>
+            <select
+              id="estado-usuario"
+              value={estado}
+              onChange={(event) =>
+                setEstado(event.target.value as typeof estado)
+              }
+            >
+              <option value="TODOS">Todos</option>
+              <option value="ACTIVOS">Activos</option>
+              <option value="INACTIVOS">Inactivos</option>
+            </select>
           </div>
           {loadError ? (
             <>
@@ -175,11 +190,17 @@ export function UsuariosPage() {
                 </thead>
                 <tbody>
                   {perfiles
-                    .filter((perfil) =>
-                      `${perfil.nombres} ${perfil.apellidos} ${perfil.emailInstitucional}`
-                        .toLowerCase()
-                        .includes(busqueda.toLowerCase()),
-                    )
+                    .filter((perfil) => {
+                      const coincideEstado =
+                        estado === 'TODOS' ||
+                        (estado === 'ACTIVOS' ? perfil.activo : !perfil.activo)
+                      return (
+                        coincideEstado &&
+                        `${perfil.nombres} ${perfil.apellidos} ${perfil.emailInstitucional} ${perfil.identificacion}`
+                          .toLowerCase()
+                          .includes(busqueda.toLowerCase())
+                      )
+                    })
                     .map((perfil) => (
                       <tr key={perfil.id}>
                         <td>{perfil.nombres}</td>

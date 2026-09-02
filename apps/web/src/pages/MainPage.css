@@ -494,3 +494,27 @@
     flex-direction: column;
   }
 }
+.admin-overview {
+  display: grid;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+.admin-overview__metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 0.75rem;
+}
+.admin-overview__metrics article {
+  display: grid;
+  gap: 0.35rem;
+  padding: 1rem;
+  border: 1px solid var(--border-color, #d9e0e8);
+  border-radius: 0.75rem;
+  background: #fff;
+}
+.admin-overview__metrics strong {
+  font-size: 1.8rem;
+}
+.admin-overview__metrics small {
+  color: #52606d;
+}

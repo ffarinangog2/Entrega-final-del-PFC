@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { DashboardLayout } from '../components/DashboardLayout'
 import { LaboratoriosPanel } from '../features/laboratorios/LaboratoriosPanel'
 import { MonitoreoPanel } from '../features/monitoreo/MonitoreoPanel'
+import { AdminDashboard } from '../features/admin/AdminDashboard'
 import { hasRole, useAuth } from '../auth'
 import {
   obtenerDocentePorPerfil,
@@ -272,7 +273,7 @@ export function MainPage() {
     <DashboardLayout breadcrumb="Inicio">
       {administrador && (
         <>
-          <LaboratoriosPanel />
+          <AdminDashboard />
           <MonitoreoPanel />
         </>
       )}

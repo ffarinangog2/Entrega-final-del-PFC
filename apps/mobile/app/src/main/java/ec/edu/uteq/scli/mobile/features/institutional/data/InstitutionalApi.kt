@@ -44,6 +44,12 @@ data class LaboratorioPlanificacionDto(
 
 data class CarreraPlanificacionDto(val id: String, val codigo: String, val nombre: String)
 data class PeriodoPlanificacionDto(val id: String, val codigo: String, val nombre: String, val estado: String)
+data class PerfilAdminDto(val id: String, val nombres: String, val apellidos: String, val emailInstitucional: String, val activo: Boolean)
+data class AdministracionData(
+    val perfiles: List<PerfilAdminDto>,
+    val laboratorios: List<LaboratorioPlanificacionDto>,
+    val planificaciones: List<PlanificacionDto>,
+)
 
 data class CoordinacionData(
     val planificaciones: List<PlanificacionDto>,
@@ -80,6 +86,8 @@ data class SesionAsistenciaDto(
 )
 
 interface InstitutionalApi {
+    @GET("api/v1/perfiles")
+    suspend fun listarPerfiles(@Query("page") page: Int, @Query("size") size: Int): PageResponse<PerfilAdminDto>
     @GET("api/v1/planificaciones")
     suspend fun listarPlanificaciones(): List<PlanificacionDto>
 
@@ -148,6 +156,11 @@ interface InstitutionalApi {
 }
 
 class InstitutionalRepository(private val api: InstitutionalApi) {
+    suspend fun administracion() = AdministracionData(
+        perfiles = todasLasPaginas(api::listarPerfiles),
+        laboratorios = todasLasPaginas(api::listarLaboratorios),
+        planificaciones = api.listarPlanificaciones(),
+    )
     suspend fun planificaciones() = api.listarPlanificaciones()
     suspend fun coordinacion() = CoordinacionData(
         planificaciones = api.listarPlanificaciones(),

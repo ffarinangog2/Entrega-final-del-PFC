@@ -24,6 +24,9 @@ vi.mock('../features/laboratorios/LaboratoriosPanel', () => ({
 vi.mock('../features/monitoreo/MonitoreoPanel', () => ({
   MonitoreoPanel: () => <div>Monitoreo global</div>,
 }))
+vi.mock('../features/admin/AdminDashboard', () => ({
+  AdminDashboard: () => <div>Resumen administrativo global</div>,
+}))
 
 describe('MainPage', () => {
   beforeEach(() => {
