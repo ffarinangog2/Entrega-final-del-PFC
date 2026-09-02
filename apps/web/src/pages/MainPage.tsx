@@ -266,6 +266,7 @@ function InicioPorRol() {
 export function MainPage() {
   const { usuario } = useAuth()
   const administrador = hasRole(usuario, 'ADMINISTRADOR')
+  const administradorPiso = hasRole(usuario, 'ADMINISTRADOR_PISO')
   const docente = hasRole(usuario, 'DOCENTE')
   return (
     <DashboardLayout breadcrumb="Inicio">
@@ -275,6 +276,7 @@ export function MainPage() {
           <MonitoreoPanel />
         </>
       )}
+      {administradorPiso && <LaboratoriosPanel />}
       {docente && usuario?.perfilId && <MiSemana perfilId={usuario.perfilId} />}
       {!administrador && !docente && <InicioPorRol />}
     </DashboardLayout>

@@ -24,6 +24,14 @@ class RemoteIncidenteRepository(private val api: IncidentesApi, private val dao:
         return entity.copy(id=localId).toDomain()
     }
 
+    override suspend fun actualizarEstado(id: String, estado: String) {
+        val response = api.actualizarEstado(id, ActualizarEstadoIncidenteDto(estado))
+        if (!response.isSuccessful || response.body() == null) {
+            throw IllegalStateException("No se pudo actualizar el incidente")
+        }
+        refrescar()
+    }
+
     private fun IncidenteDto.toEntity() = IncidenteEntity(remoteId=id, laboratorioEquipo=laboratorioEquipo,
         descripcion=descripcion, prioridad=prioridad,
         fechaMillis=LocalDate.parse(fecha).atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli(),

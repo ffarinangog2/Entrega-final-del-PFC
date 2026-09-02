@@ -2,6 +2,7 @@ package ec.edu.uteq.scli.mobile.features.incidentes.presentation
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -39,7 +40,7 @@ import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun IncidentesScreen(viewModel: IncidentesViewModel) {
+fun IncidentesScreen(viewModel: IncidentesViewModel, puedeGestionar: Boolean = false) {
     val uiState by viewModel.uiState.collectAsState()
 
     Column(modifier = Modifier.fillMaxSize()) {
@@ -107,7 +108,7 @@ fun IncidentesScreen(viewModel: IncidentesViewModel) {
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 items(uiState.incidentes, key = { it.id }) { incidente ->
-                    IncidenteItem(incidente)
+                    IncidenteItem(incidente, puedeGestionar, viewModel::actualizarEstado)
                 }
             }
         }
@@ -115,12 +116,23 @@ fun IncidentesScreen(viewModel: IncidentesViewModel) {
 }
 
 @Composable
-private fun IncidenteItem(incidente: Incidente) {
+private fun IncidenteItem(
+    incidente: Incidente,
+    puedeGestionar: Boolean,
+    onEstado: (Incidente, String) -> Unit,
+) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(12.dp)) {
             Text(text = incidente.laboratorioEquipo)
             Text(text = incidente.descripcion)
             Text(text = "${incidente.prioridad} · ${formatearFecha(incidente.fechaMillis)}")
+            Text(text = "Estado: ${incidente.estado.replace('_', ' ')}")
+            if (puedeGestionar && incidente.remoteId != null) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (incidente.estado == "REPORTADO") Button(onClick = { onEstado(incidente, "EN_REVISION") }) { Text("En revisión") }
+                    if (incidente.estado == "EN_REVISION") Button(onClick = { onEstado(incidente, "RESUELTO") }) { Text("Resolver") }
+                }
+            }
         }
     }
 }

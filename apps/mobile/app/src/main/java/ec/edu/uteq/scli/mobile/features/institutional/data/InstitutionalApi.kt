@@ -55,6 +55,12 @@ data class CoordinacionData(
 )
 
 data class ObservacionRequest(val observacion: String?)
+data class PropuestaPlanificacionRequest(
+    val laboratorioId: String? = null,
+    val horaInicio: String? = null,
+    val horaFin: String? = null,
+    val observacion: String,
+)
 data class RegistroAsistenciaDto(
     val id: String,
     val sesionId: String,
@@ -96,6 +102,12 @@ interface InstitutionalApi {
     suspend fun rechazarPlanificacion(
         @Path("id") id: String,
         @Body request: ObservacionRequest,
+    ): PlanificacionDto
+
+    @POST("api/v1/planificaciones/{id}/proponer-alternativa")
+    suspend fun proponerPlanificacion(
+        @Path("id") id: String,
+        @Body request: PropuestaPlanificacionRequest,
     ): PlanificacionDto
 
     @POST("api/v1/planificaciones/{id}/aceptar-propuesta")
@@ -142,6 +154,8 @@ class InstitutionalRepository(private val api: InstitutionalApi) {
     )
     suspend fun aceptar(id: String) = api.aceptarPlanificacion(id)
     suspend fun rechazar(id: String, motivo: String?) = api.rechazarPlanificacion(id, ObservacionRequest(motivo))
+    suspend fun proponer(id: String, observacion: String) =
+        api.proponerPlanificacion(id, PropuestaPlanificacionRequest(observacion = observacion))
     suspend fun aceptarPropuesta(id: String) = api.aceptarPropuesta(id)
     suspend fun registrarAsistencia(sesionId: String, token: String) =
         api.registrarAsistencia(sesionId, RegistrarAsistenciaRequest(token))

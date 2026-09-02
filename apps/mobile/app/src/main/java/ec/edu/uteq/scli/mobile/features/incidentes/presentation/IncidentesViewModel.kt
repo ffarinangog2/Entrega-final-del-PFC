@@ -95,4 +95,12 @@ class IncidentesViewModel(
             formState.value = FormState()
         }
     }
+
+    fun actualizarEstado(incidente: Incidente, estado: String) {
+        val id = incidente.remoteId ?: return
+        viewModelScope.launch {
+            runCatching { repository.actualizarEstado(id, estado) }
+                .onFailure { formState.value = formState.value.copy(error = "servicio_no_disponible") }
+        }
+    }
 }

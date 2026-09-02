@@ -35,6 +35,23 @@ class InstitutionalViewModel(private val repository: InstitutionalRepository) : 
     fun aceptar(id: String) = ejecutar { repository.aceptar(id); copy(mensaje = "Planificación aceptada") }
     fun rechazar(id: String, motivo: String?) = ejecutar { repository.rechazar(id, motivo); copy(mensaje = "Planificación rechazada") }
     fun aceptarPropuesta(id: String) = ejecutar { repository.aceptarPropuesta(id); copy(mensaje = "Propuesta aceptada") }
+    fun aprobarPaquete() = ejecutar {
+        planificaciones.filter { it.estado == "ENVIADA" }.forEach { repository.aceptar(it.id) }
+        val actualizadas = repository.planificaciones()
+        copy(planificaciones = actualizadas, coordinacion = coordinacion?.copy(planificaciones = actualizadas), mensaje = "Planificación aprobada")
+    }
+    fun rechazarPaquete(motivo: String) = ejecutar {
+        require(motivo.isNotBlank()) { "La observación es obligatoria" }
+        planificaciones.filter { it.estado == "ENVIADA" }.forEach { repository.rechazar(it.id, motivo.trim()) }
+        val actualizadas = repository.planificaciones()
+        copy(planificaciones = actualizadas, coordinacion = coordinacion?.copy(planificaciones = actualizadas), mensaje = "Planificación rechazada")
+    }
+    fun proponerCambio(id: String, observacion: String) = ejecutar {
+        require(observacion.isNotBlank()) { "La observación es obligatoria" }
+        repository.proponer(id, observacion.trim())
+        val actualizadas = repository.planificaciones()
+        copy(planificaciones = actualizadas, coordinacion = coordinacion?.copy(planificaciones = actualizadas), mensaje = "Observación enviada")
+    }
     fun registrarQr(valor: String) {
         val partes = valor.trim().split(':', limit = 3)
         if (partes.size != 3 || partes[0] != "scli-asistencia") {

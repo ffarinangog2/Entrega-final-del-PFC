@@ -13,11 +13,14 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -32,9 +35,18 @@ import ec.edu.uteq.scli.mobile.features.institutional.data.CoordinacionData
 import ec.edu.uteq.scli.mobile.features.institutional.data.PlanificacionDto
 
 @Composable
-fun PlanificacionesScreen(viewModel: InstitutionalViewModel, puedeRevisar: Boolean, coordinador: Boolean) {
+fun PlanificacionesScreen(
+    viewModel: InstitutionalViewModel,
+    puedeRevisar: Boolean,
+    coordinador: Boolean,
+    administradorPiso: Boolean = false,
+) {
     if (coordinador) {
         CoordinacionScreen(viewModel)
+        return
+    }
+    if (administradorPiso) {
+        AdministradorPisoPlanificacionScreen(viewModel)
         return
     }
     val state by viewModel.uiState.collectAsState()
@@ -62,6 +74,86 @@ fun PlanificacionesScreen(viewModel: InstitutionalViewModel, puedeRevisar: Boole
             }
         }
     }
+}
+
+@Composable
+fun AdministradorPisoPlanificacionScreen(viewModel: InstitutionalViewModel) {
+    val state by viewModel.uiState.collectAsState()
+    var dia by remember { mutableStateOf("LUNES") }
+    var motivoRechazo by remember { mutableStateOf("") }
+    var planObservado by remember { mutableStateOf<PlanificacionDto?>(null) }
+    var observacion by remember { mutableStateOf("") }
+    var confirmarAprobacion by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { viewModel.cargarCoordinacion() }
+    val data = state.coordinacion
+    val pendientes = state.planificaciones.filter { it.estado == "ENVIADA" }
+
+    LazyColumn(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        item {
+            Text("Administración de piso", style = MaterialTheme.typography.headlineMedium)
+            Text("Planificación recibida como conjunto")
+        }
+        if (state.cargando && data == null) item { CircularProgressIndicator() }
+        state.error?.let { item { Text(it, color = MaterialTheme.colorScheme.error) } }
+        state.mensaje?.let { item { Text(it, color = MaterialTheme.colorScheme.primary) } }
+        data?.let { paquete ->
+            item { ResumenCoordinacion(paquete) }
+            item {
+                Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    diasPlanificacion.forEach { value ->
+                        FilterChip(selected = dia == value, onClick = { dia = value }, label = { Text(etiquetaDia(value)) })
+                    }
+                }
+            }
+            val bloques = paquete.planificaciones.filter { it.diaSemana == dia && it.estado != "CANCELADA" }.sortedBy { it.horaInicio }
+            if (bloques.isEmpty()) item { Text("No hay bloques para ${etiquetaDia(dia)}.") }
+            items(bloques, key = { it.id }) { plan ->
+                Card(Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text("${plan.horaInicio} - ${plan.horaFin}", style = MaterialTheme.typography.titleMedium)
+                        Text(paquete.materias.find { it.id == plan.materiaId }?.nombre ?: "Materia asignada")
+                        Text(paquete.laboratorios.find { it.id == plan.laboratorioId }?.codigo ?: "Laboratorio")
+                        Text("Docente asignado")
+                        Text("Estado: ${etiquetaEstado(plan.estado)}")
+                        plan.observacion?.let { Text("Observación: $it") }
+                        if (plan.estado == "ENVIADA") OutlinedButton(onClick = { planObservado = plan }) { Text("Marcar bloque problemático") }
+                    }
+                }
+            }
+            if (pendientes.isNotEmpty()) item {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(onClick = { confirmarAprobacion = true }, enabled = !state.cargando, modifier = Modifier.fillMaxWidth()) { Text("Aprobar planificación") }
+                    OutlinedTextField(motivoRechazo, { motivoRechazo = it }, label = { Text("Motivo del rechazo") }, modifier = Modifier.fillMaxWidth())
+                    OutlinedButton(onClick = { viewModel.rechazarPaquete(motivoRechazo) }, enabled = motivoRechazo.isNotBlank() && !state.cargando, modifier = Modifier.fillMaxWidth()) { Text("Rechazar planificación") }
+                }
+            }
+            item { Text("Laboratorios de mi piso", style = MaterialTheme.typography.titleLarge) }
+            if (paquete.laboratorios.isEmpty()) item { Text("No hay laboratorios disponibles en su ámbito.") }
+            items(paquete.laboratorios, key = { "lab-${it.id}" }) { laboratorio ->
+                Card(Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(12.dp)) {
+                        Text(laboratorio.codigo, style = MaterialTheme.typography.titleMedium)
+                        Text(laboratorio.nombre)
+                        Text(estadoLaboratorio(laboratorio.estado))
+                    }
+                }
+            }
+        }
+    }
+    if (confirmarAprobacion) AlertDialog(
+        onDismissRequest = { confirmarAprobacion = false },
+        title = { Text("Aprobar planificación") },
+        text = { Text("¿Desea aprobar todos los bloques pendientes de esta planificación?") },
+        confirmButton = { TextButton(onClick = { confirmarAprobacion = false; viewModel.aprobarPaquete() }) { Text("Aprobar") } },
+        dismissButton = { TextButton(onClick = { confirmarAprobacion = false }) { Text("Cancelar") } },
+    )
+    planObservado?.let { plan -> AlertDialog(
+        onDismissRequest = { planObservado = null },
+        title = { Text("Observación del bloque") },
+        text = { OutlinedTextField(observacion, { observacion = it }, label = { Text("Problema o propuesta") }) },
+        confirmButton = { TextButton(enabled = observacion.isNotBlank(), onClick = { viewModel.proponerCambio(plan.id, observacion); observacion = ""; planObservado = null }) { Text("Enviar") } },
+        dismissButton = { TextButton(onClick = { planObservado = null }) { Text("Cancelar") } },
+    ) }
 }
 
 private val diasPlanificacion = listOf("LUNES", "MARTES", "MIERCOLES", "JUEVES", "VIERNES")

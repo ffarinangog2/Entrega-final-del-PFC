@@ -194,7 +194,7 @@ fun AppNavHost(application: ScliMobileApplication) {
                         }
                     },
                 )
-                IncidentesScreen(viewModel)
+                IncidentesScreen(viewModel, puedeGestionar = user.hasPermission("INCIDENTE_GESTIONAR"))
             }
             composable(AppDestination.Perfil.route) {
                 val viewModel: ProfileViewModel = viewModel(
@@ -237,6 +237,7 @@ fun AppNavHost(application: ScliMobileApplication) {
                     viewModel,
                     puedeRevisar = user.hasPermission("SOLICITUD_APROBAR"),
                     coordinador = coordinador,
+                    administradorPiso = user.hasRole("ADMINISTRADOR_PISO"),
                 )
             }
             composable(AppDestination.Asistencia.route) {

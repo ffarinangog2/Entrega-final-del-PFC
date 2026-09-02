@@ -13,4 +13,7 @@ interface IncidenteRepository {
     fun observarTodos(): Flow<List<Incidente>>
     suspend fun crear(incidente: Incidente): Incidente
     suspend fun refrescar() { }
+    suspend fun actualizarEstado(id: String, estado: String) {
+        error("La actualización remota no está disponible")
+    }
 }

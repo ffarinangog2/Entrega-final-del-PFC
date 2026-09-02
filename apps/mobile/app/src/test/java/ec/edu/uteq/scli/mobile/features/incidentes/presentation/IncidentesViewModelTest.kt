@@ -40,6 +40,7 @@ class IncidentesViewModelTest {
     private class FakeIncidenteRepository : IncidenteRepository {
         private val state = MutableStateFlow<List<Incidente>>(emptyList())
         private var nextId = 1L
+        var estadoActualizado: Pair<String, String>? = null
 
         override fun observarTodos() = state.asStateFlow()
 
@@ -47,6 +48,10 @@ class IncidentesViewModelTest {
             val creado = incidente.copy(id = nextId++)
             state.value = state.value + creado
             return creado
+        }
+
+        override suspend fun actualizarEstado(id: String, estado: String) {
+            estadoActualizado = id to estado
         }
     }
 
@@ -106,5 +111,19 @@ class IncidentesViewModelTest {
         val actual = viewModel.uiState.value
         assertEquals(Prioridad.ALTA, actual.prioridad)
         assertEquals(123_456L, actual.fechaMillis)
+    }
+
+    @Test
+    fun `administrador actualiza estado remoto del incidente`() = runTest {
+        val repository = FakeIncidenteRepository()
+        val viewModel = IncidentesViewModel(repository, mockk(relaxed = true))
+
+        viewModel.actualizarEstado(
+            Incidente(remoteId = "incidente-1", laboratorioEquipo = "LAB-01", descripcion = "Falla", prioridad = Prioridad.ALTA, fechaMillis = 1L),
+            "EN_REVISION",
+        )
+        runCurrent()
+
+        assertEquals("incidente-1" to "EN_REVISION", repository.estadoActualizado)
     }
 }
