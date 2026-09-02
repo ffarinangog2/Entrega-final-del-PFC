@@ -153,6 +153,13 @@ export function CoordinadorPlanificacion() {
     setPlan(actual)
     setItems(actual?.bloques ?? [])
     setIniciado(actual !== null)
+    setForm((value) => ({
+      ...value,
+      periodoId: id,
+      planificacionId: actual?.id ?? '',
+      nivel,
+    }))
+    setEditorAbierto(false)
   }
   const editables = visibles.filter((item) =>
     ['BORRADOR', 'PROPUESTA_CAMBIO'].includes(item.estado),
@@ -255,8 +262,17 @@ export function CoordinadorPlanificacion() {
     }
     setGuardando(true)
     try {
-      if (editandoId) await api.editarPlanificacion(editandoId, form)
-      else await api.crearPlanificacion(form)
+      const guardada = editandoId
+        ? await api.editarPlanificacion(editandoId, form)
+        : await api.crearPlanificacion(form)
+      const actualizarBloques = (actuales: api.Planificacion[]) =>
+        editandoId
+          ? actuales.map((item) => (item.id === editandoId ? guardada : item))
+          : [...actuales, guardada]
+      setItems(actualizarBloques)
+      setPlan((actual) =>
+        actual ? { ...actual, bloques: actualizarBloques(actual.bloques) } : actual,
+      )
       setMensaje(
         editandoId
           ? 'Asignación actualizada.'
@@ -264,7 +280,6 @@ export function CoordinadorPlanificacion() {
       )
       setEditorAbierto(false)
       setEditandoId(null)
-      await cargar()
     } catch (cause) {
       setError(
         cause instanceof Error
@@ -316,8 +331,18 @@ export function CoordinadorPlanificacion() {
     try {
       const creada = await api.iniciarPlanificacion(periodoId)
       setPlan(creada)
+      setPlanesAgregados((actuales) => [
+        ...actuales.filter((item) => item.id !== creada.id),
+        creada,
+      ])
       setItems(creada.bloques)
       setIniciado(true)
+      setForm((actual) => ({
+        ...actual,
+        planificacionId: creada.id,
+        periodoId: creada.periodoId,
+        nivel,
+      }))
       setMensaje('Planificación iniciada en borrador.')
     } catch (cause) {
       setError(

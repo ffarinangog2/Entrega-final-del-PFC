@@ -15,6 +15,8 @@ class GatewayRoutesTest {
         assertThat(GatewayRoutes.esRutaReservasCanonica("/api/v1/solicitudes/123/aprobar")).isTrue();
         assertThat(GatewayRoutes.esRutaReservasCanonica("/api/v1/incidentes")).isTrue();
         assertThat(GatewayRoutes.esRutaReservasCanonica("/api/v1/notificaciones/dispositivos")).isTrue();
+        assertThat(GatewayRoutes.esRutaReservasCanonica(
+                "/api/v1/planificaciones-agregadas/123/enviar")).isTrue();
     }
 
     @Test

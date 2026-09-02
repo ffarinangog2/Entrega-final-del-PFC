@@ -127,7 +127,14 @@ function preparar(
       actualizadoEn: '',
     },
   ])
-  vi.mocked(api.crearPlanificacion).mockResolvedValue(base)
+  vi.mocked(api.crearPlanificacion).mockImplementation(async (body) => ({
+    ...base,
+    ...body,
+    id: 'plan-nueva',
+    estado: 'BORRADOR',
+    observacion: body.observacion || null,
+    version: 0,
+  }))
   vi.mocked(api.editarPlanificacion).mockResolvedValue(base)
   vi.mocked(api.accionPlanificacion).mockResolvedValue({
     ...base,
@@ -188,6 +195,24 @@ describe('CoordinadorPlanificacion', () => {
         }),
       ),
     )
+    expect(screen.getAllByText('Bases de Datos')).toHaveLength(2)
+  })
+
+  it('cambia de nivel y presenta únicamente sus bloques', async () => {
+    preparar([base, { ...segunda, nivel: 2 }])
+    const user = userEvent.setup()
+    renderPage()
+    await screen.findByText(/Programaci/)
+
+    const nivelDos = screen
+      .getAllByRole('button')
+      .find((button) => button.textContent === '2°')
+    expect(nivelDos).toBeDefined()
+    await user.click(nivelDos!)
+
+    expect(screen.getByText('Bases de Datos')).toBeInTheDocument()
+    expect(screen.queryByText(/Programaci/)).not.toBeInTheDocument()
+    expect(nivelDos).toHaveAttribute('aria-pressed', 'true')
   })
 
   it('inicia una planificación vacía y habilita la cuadrícula', async () => {
