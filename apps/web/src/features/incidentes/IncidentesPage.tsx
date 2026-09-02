@@ -1,13 +1,16 @@
 import { FormEvent, useCallback, useEffect, useState } from 'react'
 import { DashboardLayout } from '../../components/DashboardLayout'
-import { hasPermission, useAuth } from '../../auth'
+import { hasPermission, hasRole, useAuth } from '../../auth'
 import * as api from '../../services/operationalApi'
+import { obtenerLaboratorios, type Laboratorio } from '../../services/academicoApi'
 import '../operaciones/Operations.css'
 export function IncidentesPage() {
   const { usuario } = useAuth(),
     gestor = hasPermission(usuario, 'INCIDENTE_GESTIONAR'),
-    puedeCrear = hasPermission(usuario, 'INCIDENTE_CREAR')
+    puedeCrear = hasPermission(usuario, 'INCIDENTE_CREAR'),
+    administradorPiso = hasRole(usuario, 'ADMINISTRADOR_PISO')
   const [items, setItems] = useState<api.Incidente[]>([]),
+    [laboratorios, setLaboratorios] = useState<Laboratorio[]>([]),
     [form, setForm] = useState({
       laboratorioEquipo: '',
       descripcion: '',
@@ -29,7 +32,12 @@ export function IncidentesPage() {
   }, [])
   useEffect(() => {
     void cargar()
-  }, [cargar])
+    if (administradorPiso) {
+      void Promise.resolve(obtenerLaboratorios())
+        .then((items) => setLaboratorios(items ?? []))
+        .catch(() => setLaboratorios([]))
+    }
+  }, [administradorPiso, cargar])
   async function crear(e: FormEvent) {
     e.preventDefault()
     try {
@@ -74,13 +82,30 @@ export function IncidentesPage() {
           <form className="operations__form" onSubmit={crear}>
             <label>
               Laboratorio o equipo
-              <input
-                required
-                value={form.laboratorioEquipo}
-                onChange={(e) =>
-                  setForm({ ...form, laboratorioEquipo: e.target.value })
-                }
-              />
+              {administradorPiso ? (
+                <select
+                  required
+                  value={form.laboratorioEquipo}
+                  onChange={(e) =>
+                    setForm({ ...form, laboratorioEquipo: e.target.value })
+                  }
+                >
+                  <option value="">Seleccione un laboratorio</option>
+                  {laboratorios.map((laboratorio) => (
+                    <option key={laboratorio.id} value={laboratorio.codigo}>
+                      {laboratorio.codigo} — {laboratorio.nombre}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  required
+                  value={form.laboratorioEquipo}
+                  onChange={(e) =>
+                    setForm({ ...form, laboratorioEquipo: e.target.value })
+                  }
+                />
+              )}
             </label>
             <label>
               Prioridad

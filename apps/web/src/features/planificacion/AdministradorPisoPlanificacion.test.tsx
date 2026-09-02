@@ -18,6 +18,7 @@ const plan = (
   estado: operational.EstadoPlanificacion = 'ENVIADA',
 ): operational.Planificacion => ({
   id,
+  planificacionId: 'aggregate-1',
   periodoId: 'periodo-uuid',
   carreraId: 'carrera-uuid',
   materiaId: 'materia-uuid',
@@ -35,10 +36,11 @@ describe('AdministradorPisoPlanificacion', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.spyOn(window, 'confirm').mockReturnValue(true)
-    vi.mocked(operational.listarPlanificaciones).mockResolvedValue([
-      plan('plan-1'),
-      plan('plan-2'),
-    ])
+    vi.mocked(operational.listarPlanificacionesAgregadas).mockResolvedValue([{
+      id: 'aggregate-1', carreraId: 'carrera-uuid', periodoId: 'periodo-uuid',
+      estado: 'EN_REVISION', bloques: [plan('plan-1'), plan('plan-2')],
+      revisiones: [],
+    }])
     vi.mocked(academico.obtenerMaterias).mockResolvedValue([
       {
         id: 'materia-uuid',
@@ -99,7 +101,9 @@ describe('AdministradorPisoPlanificacion', () => {
       await screen.findByRole('button', { name: 'Aprobar planificación' }),
     )
     await waitFor(() =>
-      expect(operational.accionPlanificacion).toHaveBeenCalledTimes(2),
+      expect(operational.aprobarPlanificacionPiso).toHaveBeenCalledWith(
+        'aggregate-1',
+      ),
     )
     expect(window.confirm).toHaveBeenCalledTimes(1)
   })
@@ -115,7 +119,10 @@ describe('AdministradorPisoPlanificacion', () => {
     })
     fireEvent.click(button)
     await waitFor(() =>
-      expect(operational.rechazarPlanificacion).toHaveBeenCalledTimes(2),
+      expect(operational.rechazarPlanificacionPiso).toHaveBeenCalledWith(
+        'aggregate-1',
+        'Conflictos en LAB-01',
+      ),
     )
   })
 
@@ -131,9 +138,10 @@ describe('AdministradorPisoPlanificacion', () => {
       screen.getByRole('button', { name: 'Enviar observaciones/propuestas' }),
     )
     await waitFor(() =>
-      expect(operational.proponerPlanificacion).toHaveBeenCalledWith(
-        'plan-1',
+      expect(operational.proponerCambioPlanificacionPiso).toHaveBeenCalledWith(
+        'aggregate-1',
         expect.objectContaining({
+          bloqueId: 'plan-1',
           observacion: 'Laboratorio en mantenimiento',
         }),
       ),
@@ -141,7 +149,7 @@ describe('AdministradorPisoPlanificacion', () => {
   })
 
   it('muestra error controlado cuando falla el API', async () => {
-    vi.mocked(operational.listarPlanificaciones).mockRejectedValue(
+    vi.mocked(operational.listarPlanificacionesAgregadas).mockRejectedValue(
       new Error('No tiene un piso institucional asignado.'),
     )
     render(<AdministradorPisoPlanificacion />)

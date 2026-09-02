@@ -42,6 +42,9 @@ export const listarPlanificacionesAgregadas = () => apiRequest<PlanificacionAgre
 export const iniciarPlanificacion = (periodoId: string) => apiRequest<PlanificacionAgregada>('/api/v1/planificaciones-agregadas', { method: 'POST', body: JSON.stringify({ periodoId }) })
 export const enviarPlanificacionCompleta = (id: string) => apiRequest<PlanificacionAgregada>(`/api/v1/planificaciones-agregadas/${encodeURIComponent(id)}/enviar`, { method: 'POST' })
 export const retirarPlanificacionCompleta = (id: string) => apiRequest<PlanificacionAgregada>(`/api/v1/planificaciones-agregadas/${encodeURIComponent(id)}/retirar`, { method: 'POST' })
+export const aprobarPlanificacionPiso = (id: string) => apiRequest<PlanificacionAgregada>(`/api/v1/planificaciones-agregadas/${encodeURIComponent(id)}/revisiones/mi-piso/aprobar`, { method: 'POST' })
+export const rechazarPlanificacionPiso = (id: string, observacion: string) => apiRequest<PlanificacionAgregada>(`/api/v1/planificaciones-agregadas/${encodeURIComponent(id)}/revisiones/mi-piso/rechazar`, { method: 'POST', body: JSON.stringify({ observacion }) })
+export const proponerCambioPlanificacionPiso = (id: string, body: { bloqueId: string; laboratorioPropuestoId?: string; observacion: string }) => apiRequest<PlanificacionAgregada>(`/api/v1/planificaciones-agregadas/${encodeURIComponent(id)}/revisiones/mi-piso/proponer-cambio`, { method: 'POST', body: JSON.stringify(body) })
 export const listarPlanificaciones = () =>
   apiRequest<Planificacion[]>('/api/v1/planificaciones')
 export const crearPlanificacion = (body: GuardarPlanificacion) =>

@@ -16,6 +16,8 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -33,6 +35,17 @@ class PoliticaAmbitoAcademicoTest {
         UUID pisoA = UUID.randomUUID(); authenticate("ADMINISTRADOR_PISO");
         when(contextos.obtener(profileId)).thenReturn(context(pisoA, List.of()));
         assertDoesNotThrow(() -> policy.validarPiso(pisoA));
+    }
+
+    @Test void adminPisoUsaElMismoPisoParaLectura() {
+        UUID pisoA = UUID.randomUUID(); authenticate("ADMINISTRADOR_PISO");
+        when(contextos.obtener(profileId)).thenReturn(context(pisoA, List.of()));
+        assertEquals(pisoA, policy.pisoParaLectura());
+    }
+
+    @Test void otrosRolesConservanLecturaGlobalDeLaboratorios() {
+        authenticate("COORDINADOR");
+        assertNull(policy.pisoParaLectura());
     }
 
     @Test void adminPisoAResourcePisoBForbidden() {

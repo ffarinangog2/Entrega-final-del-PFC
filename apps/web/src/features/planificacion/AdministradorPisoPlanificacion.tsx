@@ -11,10 +11,11 @@ import {
   type PeriodoLectivo,
 } from '../../services/academicoApi'
 import {
-  accionPlanificacion,
-  listarPlanificaciones,
-  proponerPlanificacion,
-  rechazarPlanificacion,
+  aprobarPlanificacionPiso,
+  listarPlanificacionesAgregadas,
+  proponerCambioPlanificacionPiso,
+  rechazarPlanificacionPiso,
+  type PlanificacionAgregada,
   type Planificacion,
 } from '../../services/operationalApi'
 import './AdministradorPisoPlanificacion.css'
@@ -34,6 +35,7 @@ type Propuesta = {
 
 export function AdministradorPisoPlanificacion() {
   const [planes, setPlanes] = useState<Planificacion[]>([])
+  const [agregados, setAgregados] = useState<PlanificacionAgregada[]>([])
   const [materias, setMaterias] = useState<Materia[]>([])
   const [laboratorios, setLaboratorios] = useState<Laboratorio[]>([])
   const [carreras, setCarreras] = useState<Carrera[]>([])
@@ -57,19 +59,20 @@ export function AdministradorPisoPlanificacion() {
         carrerasData,
         periodoData,
       ] = await Promise.all([
-        listarPlanificaciones(),
+        listarPlanificacionesAgregadas(),
         obtenerMaterias(),
         obtenerLaboratorios(),
         obtenerCarreras(),
         obtenerPeriodoActual(),
       ])
-      setPlanes(planesData)
+      setAgregados(planesData)
+      setPlanes(planesData.flatMap((item) => item.bloques))
       setMaterias(materiasData)
       setLaboratorios(laboratoriosData)
       setCarreras(carrerasData)
       setPeriodo(periodoData)
-      const primera = planesData.find((item) => item.estado !== 'CANCELADA')
-      setPaquete((actual) => actual || (primera ? clavePaquete(primera) : ''))
+      const primera = planesData[0]
+      setPaquete((actual) => actual || primera?.id || '')
     } catch (cause) {
       setError(
         cause instanceof Error
@@ -86,21 +89,20 @@ export function AdministradorPisoPlanificacion() {
     () =>
       Array.from(
         new Map(
-          planes
-            .filter((item) => item.estado !== 'CANCELADA')
-            .map((item) => [clavePaquete(item), item]),
+          agregados.map((item) => [item.id, item]),
         ).entries(),
       ),
-    [planes],
+    [agregados],
   )
   const visibles = useMemo(
     () =>
       planes.filter(
-        (item) => clavePaquete(item) === paquete && item.estado !== 'CANCELADA',
+        (item) => item.planificacionId === paquete && item.estado !== 'CANCELADA',
       ),
     [paquete, planes],
   )
-  const pendientes = visibles.filter((item) => item.estado === 'ENVIADA')
+  const planActual = agregados.find((item) => item.id === paquete)
+  const pendiente = planActual?.estado === 'EN_REVISION'
   const materia = (id: string) => materias.find((item) => item.id === id)
   const laboratorio = (id: string) =>
     laboratorios.find((item) => item.id === id)
@@ -133,10 +135,7 @@ export function AdministradorPisoPlanificacion() {
 
   const aprobar = () =>
     ejecutar(
-      () =>
-        Promise.all(
-          pendientes.map((item) => accionPlanificacion(item.id, 'aceptar')),
-        ),
+      () => aprobarPlanificacionPiso(paquete),
       `¿Desea aprobar la planificación ${periodo?.codigo ?? ''}?`,
     )
   const rechazar = () => {
@@ -145,12 +144,7 @@ export function AdministradorPisoPlanificacion() {
       return
     }
     void ejecutar(
-      () =>
-        Promise.all(
-          pendientes.map((item) =>
-            rechazarPlanificacion(item.id, rechazo.trim()),
-          ),
-        ),
+      () => rechazarPlanificacionPiso(paquete, rechazo.trim()),
       '¿Desea devolver la planificación completa a Coordinación?',
     )
   }
@@ -166,10 +160,9 @@ export function AdministradorPisoPlanificacion() {
       () =>
         Promise.all(
           marcadas.map(([id, value]) =>
-            proponerPlanificacion(id, {
-              laboratorioId: value.laboratorioId,
-              horaInicio: value.horaInicio,
-              horaFin: value.horaFin,
+            proponerCambioPlanificacionPiso(paquete, {
+              bloqueId: id,
+              laboratorioPropuestoId: value.laboratorioId,
               observacion: value.observacion.trim(),
             }),
           ),
@@ -227,7 +220,7 @@ export function AdministradorPisoPlanificacion() {
             <div className="floor-planning__summary">
               <strong>{carrera?.nombre ?? 'Carrera institucional'}</strong>
               <span>Periodo: {periodo?.codigo ?? 'No disponible'}</span>
-              <span>Estado: {estadoPaquete(visibles)}</span>
+              <span>Estado: {planActual?.estado ?? estadoPaquete(visibles)}</span>
               <span>{visibles.length} bloques en su piso</span>
             </div>
             <div className="floor-planning__grid-wrap">
@@ -271,7 +264,7 @@ export function AdministradorPisoPlanificacion() {
                                 {item.observacion && (
                                   <em>{item.observacion}</em>
                                 )}
-                                {item.estado === 'ENVIADA' && (
+                                {pendiente && (
                                   <button
                                     type="button"
                                     onClick={() =>
@@ -383,7 +376,7 @@ export function AdministradorPisoPlanificacion() {
                 </fieldset>
               )
             })}
-            {pendientes.length > 0 && (
+            {pendiente && (
               <div className="floor-planning__actions">
                 <button disabled={ocupado} onClick={() => void aprobar()}>
                   Aprobar planificación
@@ -417,8 +410,6 @@ export function AdministradorPisoPlanificacion() {
   )
 }
 
-const clavePaquete = (item: Planificacion) =>
-  `${item.periodoId}:${item.carreraId}`
 const etiquetaDia = (dia: string) =>
   dia === 'MIERCOLES'
     ? 'Miércoles'

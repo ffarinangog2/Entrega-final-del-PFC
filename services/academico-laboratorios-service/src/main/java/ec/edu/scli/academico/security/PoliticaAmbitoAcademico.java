@@ -46,6 +46,21 @@ public class PoliticaAmbitoAcademico {
         validarPiso(laboratorios.obtenerPorId(laboratorioId).pisoId());
     }
 
+    public UUID pisoParaLectura() {
+        Authentication authentication = autenticacion();
+        if (!tiene(authentication, "ROLE_ADMINISTRADOR_PISO")) {
+            return null;
+        }
+        ContextoInstitucionalResponse contexto = contexto(authentication);
+        var administrador = contexto.administrador();
+        if (!contexto.existe() || !contexto.activo() || administrador == null
+                || !administrador.administradorPisoOperativo()
+                || administrador.pisoId() == null) {
+            throw denegado();
+        }
+        return administrador.pisoId();
+    }
+
     public void validarCarrera(UUID carreraId) {
         Authentication authentication = autenticacion();
         if (tiene(authentication, "ROLE_ADMINISTRADOR")) {

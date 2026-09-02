@@ -7,6 +7,7 @@ import java.util.UUID;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -69,7 +70,15 @@ public class LaboratorioController {
             @RequestParam(required = false) Boolean activo,
             @ParameterObject Pageable pageable
     ) {
-        return ResponseEntity.ok(laboratorioService.listar(texto, estado, activo, pageable));
+        Page<LaboratorioResponse> resultado = laboratorioService.listar(texto, estado, activo, pageable);
+        UUID pisoId = politicaAmbito.pisoParaLectura();
+        if (pisoId == null) {
+            return ResponseEntity.ok(resultado);
+        }
+        List<LaboratorioResponse> contenido = resultado.getContent().stream()
+                .filter(item -> pisoId.equals(item.pisoId()))
+                .toList();
+        return ResponseEntity.ok(new PageImpl<>(contenido, pageable, contenido.size()));
     }
 
     // Nota: se registra ANTES que "/{id}" para que Spring no interprete
