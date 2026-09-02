@@ -77,8 +77,8 @@ if [[ "$table_count" != "$EXPECTED_TABLES" ]]; then
 fi
 
 flyway_version="$(sql "SELECT max(version) FROM flyway_schema_history WHERE success;" | tail -n 1)"
-if [[ "$flyway_version" != "7" ]]; then
-  printf 'Expected Flyway schema version 7, found %s\n' "$flyway_version" >&2
+if [[ "$flyway_version" != "9" ]]; then
+  printf 'Expected Flyway schema version 9, found %s\n' "$flyway_version" >&2
   exit 1
 fi
 
