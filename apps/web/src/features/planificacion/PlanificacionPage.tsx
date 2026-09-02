@@ -4,6 +4,7 @@ import { hasPermission, hasRole, useAuth } from '../../auth'
 import * as academico from '../../services/academicoApi'
 import * as api from '../../services/operationalApi'
 import '../operaciones/Operations.css'
+import { CoordinadorPlanificacion } from './CoordinadorPlanificacion'
 
 const inicial: api.GuardarPlanificacion = {
   periodoId: '',
@@ -19,6 +20,13 @@ const inicial: api.GuardarPlanificacion = {
 export function PlanificacionPage() {
   const { usuario } = useAuth()
   const coordinador = hasRole(usuario, 'COORDINADOR')
+  if (coordinador) return <CoordinadorPlanificacion />
+  return <PlanificacionOperativa />
+}
+
+function PlanificacionOperativa() {
+  const { usuario } = useAuth()
+  const coordinador = false
   const gestor = hasPermission(usuario, 'SOLICITUD_APROBAR')
   const [items, setItems] = useState<api.Planificacion[]>([]),
     [form, setForm] = useState(inicial),

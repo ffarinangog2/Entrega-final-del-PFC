@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as academico from '../services/academicoApi'
+import * as operational from '../services/operationalApi'
 import { MainPage } from './MainPage'
 
 let usuario = { perfilId: 'perfil-1', roles: ['DOCENTE'], permisos: [] }
@@ -11,6 +12,7 @@ vi.mock('../auth', async (original) => ({
   useAuth: () => ({ usuario }),
 }))
 vi.mock('../services/academicoApi')
+vi.mock('../services/operationalApi')
 vi.mock('../components/DashboardLayout', () => ({
   DashboardLayout: ({ children }: { children: React.ReactNode }) => (
     <>{children}</>
@@ -95,5 +97,57 @@ describe('MainPage', () => {
       screen.getByRole('heading', { name: 'Mi información académica' }),
     ).toBeInTheDocument()
     expect(academico.obtenerLaboratorios).not.toHaveBeenCalled()
+  })
+
+  it('muestra al coordinador carrera, periodo y estado de planificación', async () => {
+    usuario = { perfilId: 'perfil-3', roles: ['COORDINADOR'], permisos: [] }
+    vi.mocked(operational.listarPlanificaciones).mockResolvedValue([
+      {
+        id: 'p-1',
+        periodoId: 'periodo-1',
+        carreraId: 'c-1',
+        materiaId: 'm-1',
+        docenteId: 'd-1',
+        laboratorioId: 'l-1',
+        diaSemana: 'LUNES',
+        horaInicio: '07:30',
+        horaFin: '09:30',
+        estado: 'ENVIADA',
+        observacion: null,
+        version: 0,
+      },
+    ])
+    vi.mocked(academico.obtenerPeriodoActual).mockResolvedValue({
+      id: 'periodo-1',
+      codigo: '2026-B',
+      nombre: 'Periodo 2026-B',
+      fechaInicio: '',
+      fechaFin: '',
+      estado: 'ACTIVO',
+    })
+    vi.mocked(academico.obtenerCarreras).mockResolvedValue([
+      {
+        id: 'c-1',
+        facultadId: 'f-1',
+        codigo: 'IS',
+        nombre: 'Ingeniería de Software',
+        activo: true,
+      },
+    ])
+    vi.mocked(academico.obtenerDocentes).mockResolvedValue([])
+    render(
+      <MemoryRouter>
+        <MainPage />
+      </MemoryRouter>,
+    )
+    expect(
+      (await screen.findByText(/Carrera:/)).closest('p'),
+    ).toHaveTextContent('Ingeniería de Software')
+    expect(screen.getByText(/Periodo:/).closest('p')).toHaveTextContent(
+      'Periodo 2026-B',
+    )
+    expect(screen.getByText(/Estado:/).closest('p')).toHaveTextContent(
+      'En revisión',
+    )
   })
 })

@@ -9,10 +9,16 @@ import {
   obtenerHorariosDocente,
   obtenerLaboratorios,
   obtenerMaterias,
+  obtenerPeriodoActual,
+  obtenerCarreras,
   type HorarioAcademico,
   type Laboratorio,
   type Materia,
 } from '../services/academicoApi'
+import {
+  listarPlanificaciones,
+  type Planificacion,
+} from '../services/operationalApi'
 
 const dias = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES']
 
@@ -129,6 +135,52 @@ function InicioPorRol() {
   const estudiante = hasRole(usuario, 'ESTUDIANTE')
   const coordinador = hasRole(usuario, 'COORDINADOR')
   const administradorPiso = hasRole(usuario, 'ADMINISTRADOR_PISO')
+  const [resumenCoordinacion, setResumenCoordinacion] = useState<{
+    periodo: string
+    carrera: string
+    planes: Planificacion[]
+    materias: number
+    docentes: number
+    laboratorios: number
+  } | null>(null)
+  const [errorCoordinacion, setErrorCoordinacion] = useState('')
+  useEffect(() => {
+    if (!coordinador) return
+    let active = true
+    void Promise.all([
+      listarPlanificaciones(),
+      obtenerPeriodoActual(),
+      obtenerMaterias(),
+      obtenerCarreras(),
+    ])
+      .then(([planes, periodo, materias, carreras]) => {
+        if (!active) return
+        const carreraId = materias[0]?.carreraId
+        setResumenCoordinacion({
+          periodo: periodo.nombre,
+          carrera:
+            carreras.find((item) => item.id === carreraId)?.nombre ??
+            'Mi carrera institucional',
+          planes,
+          materias: new Set(planes.map((item) => item.materiaId)).size,
+          docentes: new Set(
+            planes.map((item) => item.docenteId).filter(Boolean),
+          ).size,
+          laboratorios: new Set(planes.map((item) => item.laboratorioId)).size,
+        })
+      })
+      .catch((cause) => {
+        if (active)
+          setErrorCoordinacion(
+            cause instanceof Error
+              ? cause.message
+              : 'No se pudo cargar el resumen de coordinación.',
+          )
+      })
+    return () => {
+      active = false
+    }
+  }, [coordinador])
   const titulo = estudiante
     ? 'Mi información académica'
     : coordinador
@@ -151,6 +203,44 @@ function InicioPorRol() {
       <div className="role-home__links">
         {coordinador && (
           <>
+            {errorCoordinacion && <p role="alert">{errorCoordinacion}</p>}
+            {resumenCoordinacion && (
+              <section
+                className="role-home__summary"
+                aria-label="Resumen de coordinación"
+              >
+                <p>
+                  <strong>Carrera:</strong> {resumenCoordinacion.carrera}
+                </p>
+                <p>
+                  <strong>Periodo:</strong> {resumenCoordinacion.periodo}
+                </p>
+                <p>
+                  <strong>Estado:</strong>{' '}
+                  {resumenCoordinacion.planes.some(
+                    (item) => item.estado === 'PROPUESTA_CAMBIO',
+                  )
+                    ? 'Devuelta con propuesta'
+                    : resumenCoordinacion.planes.some(
+                          (item) => item.estado === 'ENVIADA',
+                        )
+                      ? 'En revisión'
+                      : resumenCoordinacion.planes.length > 0 &&
+                          resumenCoordinacion.planes.every(
+                            (item) => item.estado === 'CONFIRMADA',
+                          )
+                        ? 'Aprobada'
+                        : resumenCoordinacion.planes.length > 0
+                          ? 'Borrador'
+                          : 'Sin iniciar'}
+                </p>
+                <p>
+                  {resumenCoordinacion.materias} materias ·{' '}
+                  {resumenCoordinacion.docentes} docentes ·{' '}
+                  {resumenCoordinacion.laboratorios} laboratorios
+                </p>
+              </section>
+            )}
             <Link to="/planificacion">Abrir planificación</Link>
             <Link to="/reservas/calendario">Consultar calendario</Link>
           </>
