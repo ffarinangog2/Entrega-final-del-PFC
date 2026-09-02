@@ -189,7 +189,7 @@ function InicioPorRol() {
         ? 'Operación de mi piso'
         : 'Bienvenido a SCLI'
   const descripcion = estudiante
-    ? 'Consulte sus clases, laboratorios asignados y asistencia desde las opciones disponibles.'
+    ? 'Registre su presencia cuando exista una actividad de laboratorio habilitada y consulte su historial propio.'
     : coordinador
       ? 'Organice el horario semestral de su carrera y consulte su estado sin intervenir en la operación diaria.'
       : administradorPiso
@@ -254,7 +254,7 @@ function InicioPorRol() {
         )}
         {estudiante && (
           <>
-            <Link to="/asistencia">Mi asistencia</Link>
+            <Link to="/asistencia">Registro de laboratorio</Link>
             <Link to="/perfil">Mi perfil</Link>
           </>
         )}

@@ -76,16 +76,19 @@ internal data class MobileNavigationAccess(
     val calendario: Boolean,
     val incidentes: Boolean,
     val planificacion: Boolean,
+    val estudiante: Boolean,
 )
 
 internal fun navigationAccess(user: AuthUserResponse): MobileNavigationAccess {
     val coordinador = user.hasRole("COORDINADOR")
+    val estudiante = user.hasRole("ESTUDIANTE")
     return MobileNavigationAccess(
         coordinador = coordinador,
         reservas = !coordinador && user.hasAnyPermission("RESERVA_LEER", "SOLICITUD_LEER"),
-        calendario = !coordinador && user.hasAnyPermission("RESERVA_LEER", "AGENDA_GESTIONAR"),
+        calendario = !coordinador && !estudiante && user.hasAnyPermission("RESERVA_LEER", "AGENDA_GESTIONAR"),
         incidentes = !coordinador && user.hasAnyPermission("INCIDENTE_LEER", "INCIDENTE_CREAR", "INCIDENTE_GESTIONAR"),
         planificacion = user.hasAnyPermission("PLANIFICACION_GESTIONAR", "SOLICITUD_APROBAR"),
+        estudiante = estudiante,
     )
 }
 
@@ -119,7 +122,8 @@ fun AppNavHost(application: ScliMobileApplication) {
     val puedeVerCalendario = access.calendario
     val puedeVerIncidentes = access.incidentes
     val puedeVerPlanificacion = access.planificacion
-    val puedeVerAsistencia = user.hasAnyPermission("ASISTENCIA_LEER", "ASISTENCIA_GESTIONAR", "ASISTENCIA_REGISTRAR")
+    val puedeVerAsistencia = access.estudiante ||
+        user.hasAnyPermission("ASISTENCIA_LEER", "ASISTENCIA_GESTIONAR", "ASISTENCIA_REGISTRAR")
 
     Scaffold(
         bottomBar = {
@@ -245,7 +249,7 @@ fun AppNavHost(application: ScliMobileApplication) {
                 val viewModel: InstitutionalViewModel = viewModel(
                     factory = viewModelFactory { initializer { InstitutionalViewModel(container.institutionalRepository) } },
                 )
-                HistorialAsistenciaScreen(viewModel)
+                HistorialAsistenciaScreen(viewModel, estudiante = access.estudiante)
             }
             composable(AppDestination.NuevaReserva.route) {
                 if (!puedeCrearSolicitud) { Text("No tienes permisos para realizar esta acción."); return@composable }

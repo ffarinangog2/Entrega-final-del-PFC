@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.util.UUID
+import retrofit2.HttpException
 
  data class QrUiState(
     val cargando: Boolean = false,
@@ -23,6 +24,7 @@ enum class QrError {
     INVALIDO,
     RED,
     SERVICIO,
+    REGISTRO_NO_DISPONIBLE,
 }
 
 class QrViewModel(
@@ -66,7 +68,12 @@ class QrViewModel(
             _uiState.value = runCatching { institutionalRepository.registrarAsistencia(partes[1], partes[2]) }
                 .fold(
                     onSuccess = { QrUiState(asistenciaRegistrada = true) },
-                    onFailure = { QrUiState(error = QrError.SERVICIO) },
+                    onFailure = {
+                        QrUiState(
+                            error = if ((it as? HttpException)?.code() in listOf(409, 410))
+                                QrError.REGISTRO_NO_DISPONIBLE else QrError.SERVICIO,
+                        )
+                    },
                 )
         }
     }

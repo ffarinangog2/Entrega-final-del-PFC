@@ -17,6 +17,7 @@ data class InstitutionalUiState(
     val coordinacion: CoordinacionData? = null,
     val historial: List<RegistroAsistenciaDto> = emptyList(),
     val sesion: SesionAsistenciaDto? = null,
+    val sesionesAbiertas: List<SesionAsistenciaDto> = emptyList(),
     val asistentes: List<RegistroAsistenciaDto> = emptyList(),
     val mensaje: String? = null,
     val error: String? = null,
@@ -32,6 +33,23 @@ class InstitutionalViewModel(private val repository: InstitutionalRepository) : 
         copy(planificaciones = data.planificaciones, coordinacion = data)
     }
     fun cargarHistorial() = ejecutar { copy(historial = repository.historial()) }
+    fun cargarEstudiante() = ejecutar {
+        copy(
+            sesionesAbiertas = repository.sesionesAbiertas(),
+            historial = repository.historial(),
+        )
+    }
+    fun registrarPresencia(id: String) {
+        if (mutableState.value.cargando || mutableState.value.historial.any { it.sesionId == id }) return
+        ejecutar {
+            repository.registrarPresenciaPropia(id)
+            copy(
+                sesionesAbiertas = repository.sesionesAbiertas(),
+                historial = repository.historial(),
+                mensaje = "Tu presencia fue registrada correctamente",
+            )
+        }
+    }
     fun aceptar(id: String) = ejecutar { repository.aceptar(id); copy(mensaje = "Planificación aceptada") }
     fun rechazar(id: String, motivo: String?) = ejecutar { repository.rechazar(id, motivo); copy(mensaje = "Planificación rechazada") }
     fun aceptarPropuesta(id: String) = ejecutar { repository.aceptarPropuesta(id); copy(mensaje = "Propuesta aceptada") }

@@ -295,7 +295,11 @@ private fun estadoLaboratorio(estado: String): String = when (estado) {
 }
 
 @Composable
-fun HistorialAsistenciaScreen(viewModel: InstitutionalViewModel) {
+fun HistorialAsistenciaScreen(viewModel: InstitutionalViewModel, estudiante: Boolean = false) {
+    if (estudiante) {
+        RegistroLaboratorioEstudianteScreen(viewModel)
+        return
+    }
     val state by viewModel.uiState.collectAsState()
     LaunchedEffect(Unit) { viewModel.cargarHistorial() }
     LazyColumn(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -307,5 +311,61 @@ fun HistorialAsistenciaScreen(viewModel: InstitutionalViewModel) {
         items(state.historial, key = { it.id }) { registro ->
             Column { Text(registro.registradaEn); Text(registro.estado) }
         }
+    }
+}
+
+@Composable
+fun RegistroLaboratorioEstudianteScreen(viewModel: InstitutionalViewModel) {
+    val state by viewModel.uiState.collectAsState()
+    LaunchedEffect(Unit) { viewModel.cargarEstudiante() }
+    RegistroLaboratorioEstudianteContent(
+        state = state,
+        onRegistrar = viewModel::registrarPresencia,
+        onActualizar = viewModel::cargarEstudiante,
+    )
+}
+
+@Composable
+internal fun RegistroLaboratorioEstudianteContent(
+    state: InstitutionalUiState,
+    onRegistrar: (String) -> Unit,
+    onActualizar: () -> Unit,
+) {
+    LazyColumn(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        item {
+            Text("Registro de laboratorio", style = MaterialTheme.typography.headlineMedium)
+            Text("Tu identidad se obtiene de la sesión autenticada.")
+        }
+        if (state.cargando && state.sesionesAbiertas.isEmpty()) item { CircularProgressIndicator() }
+        state.error?.let { item {
+            Text("No fue posible consultar los registros. Intenta nuevamente.", color = MaterialTheme.colorScheme.error)
+            OutlinedButton(onClick = onActualizar) { Text("Reintentar") }
+        } }
+        state.mensaje?.let { item { Text(it, color = MaterialTheme.colorScheme.primary) } }
+        if (!state.cargando && state.error == null && state.sesionesAbiertas.isEmpty()) item {
+            Text("No hay registros de laboratorio habilitados en este momento.")
+        }
+        items(state.sesionesAbiertas, key = { it.id }) { sesion ->
+            val registrado = state.historial.any { it.sesionId == sesion.id }
+            Card(Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text("Registro habilitado", style = MaterialTheme.typography.titleMedium)
+                    Text("Disponible hasta ${sesion.expiraEn}")
+                    if (registrado) Text("Tu presencia ya fue registrada en esta sesión.")
+                    else Button(onClick = { onRegistrar(sesion.id) }, enabled = !state.cargando) { Text("Registrar mi presencia") }
+                }
+            }
+        }
+        item { Text("Mi historial de presencia", style = MaterialTheme.typography.titleLarge) }
+        if (!state.cargando && state.historial.isEmpty()) item { Text("Aún no tienes registros de uso.") }
+        items(state.historial, key = { it.id }) { registro ->
+            Card(Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(12.dp)) {
+                    Text(registro.registradaEn)
+                    Text(if (registro.estado == "PRESENTE") "Registrado" else registro.estado.lowercase().replaceFirstChar(Char::uppercase))
+                }
+            }
+        }
+        item { Text("También puedes usar Escanear QR cuando el responsable muestre un código de registro.") }
     }
 }

@@ -31,6 +31,7 @@ export function AsistenciaPage() {
   const [error, setError] = useState('')
   const [mensaje, setMensaje] = useState('')
   const [cargando, setCargando] = useState(true)
+  const [registrando, setRegistrando] = useState<string | null>(null)
   const hoy = new Date().toISOString().slice(0, 10)
 
   useEffect(() => {
@@ -137,17 +138,23 @@ export function AsistenciaPage() {
     }
   }
   async function registrar(sesionId: string) {
+    if (registrando || registros.some((item) => item.sesionId === sesionId))
+      return
+    setRegistrando(sesionId)
+    setError('')
     try {
       await api.registrarAsistenciaPropia(sesionId)
-      setMensaje('Asistencia registrada correctamente.')
+      setMensaje('Tu presencia fue registrada correctamente.')
       setAbiertas((actual) => actual.filter((item) => item.id !== sesionId))
       setRegistros(await api.historialAsistencia())
     } catch (cause) {
       setError(
         cause instanceof Error
           ? cause.message
-          : 'No se pudo registrar la asistencia.',
+          : 'No se pudo registrar la presencia.',
       )
+    } finally {
+      setRegistrando(null)
     }
   }
 
@@ -156,11 +163,13 @@ export function AsistenciaPage() {
       <div className="operations">
         <header>
           <div>
-            <h1>{docente ? 'Asistencia de mis clases' : 'Mi asistencia'}</h1>
+            <h1>
+              {docente ? 'Asistencia de mis clases' : 'Registro de laboratorio'}
+            </h1>
             <p>
               {docente
                 ? 'Seleccione una clase asignada de hoy para habilitar el registro.'
-                : 'Registre su asistencia cuando el docente habilite la clase.'}
+                : 'Registre su presencia cuando exista una actividad habilitada para su carrera.'}
             </p>
           </div>
         </header>
@@ -237,15 +246,15 @@ export function AsistenciaPage() {
             )}
             {estudiante && (
               <section>
-                <h2>Mis clases de hoy</h2>
+                <h2>Actividad de laboratorio disponible</h2>
                 {abiertas.length === 0 ? (
                   <p className="operations__empty">
-                    Asistencia aún no habilitada.
+                    No hay registros de laboratorio habilitados en este momento.
                   </p>
                 ) : (
                   abiertas.map((item) => (
                     <article className="operations__card" key={item.id}>
-                      <h3>Clase con asistencia habilitada</h3>
+                      <h3>Registro habilitado</h3>
                       <p>
                         Disponible hasta{' '}
                         {new Date(item.expiraEn).toLocaleTimeString([], {
@@ -254,19 +263,36 @@ export function AsistenciaPage() {
                         })}
                         .
                       </p>
-                      <button onClick={() => void registrar(item.id)}>
-                        Registrar asistencia
-                      </button>
+                      {registros.some(
+                        (registro) => registro.sesionId === item.id,
+                      ) ? (
+                        <p>Tu presencia ya fue registrada en esta sesión.</p>
+                      ) : (
+                        <button
+                          disabled={registrando === item.id}
+                          onClick={() => void registrar(item.id)}
+                        >
+                          {registrando === item.id
+                            ? 'Registrando...'
+                            : 'Registrar mi presencia'}
+                        </button>
+                      )}
                     </article>
                   ))
                 )}
               </section>
             )}
             <div className="operations__table-wrap">
-              <h2>{docente ? 'Estudiantes registrados' : 'Mi historial'}</h2>
+              <h2>
+                {docente
+                  ? 'Estudiantes registrados'
+                  : 'Mi historial de presencia'}
+              </h2>
               {registros.length === 0 ? (
                 <p className="operations__empty">
-                  No hay registros de asistencia.
+                  {docente
+                    ? 'No hay registros de asistencia.'
+                    : 'Aún no tienes registros de uso.'}
                 </p>
               ) : (
                 <table>

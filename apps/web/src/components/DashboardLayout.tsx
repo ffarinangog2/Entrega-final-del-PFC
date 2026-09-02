@@ -24,34 +24,37 @@ export function DashboardLayout({
   const coordinador = hasRole(usuario, 'COORDINADOR')
   const docente = hasRole(usuario, 'DOCENTE')
   const estudiante = hasRole(usuario, 'ESTUDIANTE')
-  const verLaboratorios = (administrador || administradorPiso || coordinador || docente || estudiante) && hasAnyPermission(usuario, [
-    'ACADEMICO_LEER',
-    'LABORATORIO_LEER',
-  ])
-  const verReservas = (administrador || administradorPiso || docente) && hasAnyPermission(usuario, [
-    'RESERVA_LEER',
-    'SOLICITUD_LEER',
-  ])
+  const verLaboratorios =
+    (administrador ||
+      administradorPiso ||
+      coordinador ||
+      docente) &&
+    hasAnyPermission(usuario, ['ACADEMICO_LEER', 'LABORATORIO_LEER'])
+  const verReservas =
+    (administrador || administradorPiso || docente) &&
+    hasAnyPermission(usuario, ['RESERVA_LEER', 'SOLICITUD_LEER'])
   const crearSolicitud = docente && hasPermission(usuario, 'SOLICITUD_CREAR')
-  const verCalendario = (administrador || administradorPiso || coordinador || docente || estudiante) && hasAnyPermission(usuario, [
-    'RESERVA_LEER',
-    'AGENDA_GESTIONAR',
-    'ACADEMICO_LEER',
-  ])
+  const verCalendario =
+    (administrador || administradorPiso || coordinador || docente) &&
+    hasAnyPermission(usuario, [
+      'RESERVA_LEER',
+      'AGENDA_GESTIONAR',
+      'ACADEMICO_LEER',
+    ])
   const verUsuarios = administrador && hasPermission(usuario, 'USUARIO_LEER')
-  const verPlanificacion = (administrador || administradorPiso || coordinador) && hasAnyPermission(usuario, [
-    'PLANIFICACION_GESTIONAR',
-    'SOLICITUD_APROBAR',
-  ])
-  const verAsistencia = (administrador || docente || estudiante) && hasAnyPermission(usuario, [
-    'RESERVA_LEER',
-    'ACADEMICO_LEER',
-  ])
-  const verIncidentes = (administrador || administradorPiso || docente) && hasAnyPermission(usuario, [
-    'INCIDENTE_LEER',
-    'INCIDENTE_CREAR',
-    'INCIDENTE_GESTIONAR',
-  ])
+  const verPlanificacion =
+    (administrador || administradorPiso || coordinador) &&
+    hasAnyPermission(usuario, ['PLANIFICACION_GESTIONAR', 'SOLICITUD_APROBAR'])
+  const verAsistencia =
+    (administrador || docente || estudiante) &&
+    hasAnyPermission(usuario, ['RESERVA_LEER', 'ACADEMICO_LEER'])
+  const verIncidentes =
+    (administrador || administradorPiso || docente) &&
+    hasAnyPermission(usuario, [
+      'INCIDENTE_LEER',
+      'INCIDENTE_CREAR',
+      'INCIDENTE_GESTIONAR',
+    ])
   return (
     <div className="dashboard">
       <header className="dashboard__topbar">
@@ -76,7 +79,7 @@ export function DashboardLayout({
           </div>
           <div className="dashboard__user-copy">
             <strong>{nombre}</strong>
-              <span>{rol.replace(/_/g, ' ')}</span>
+            <span>{rol.replace(/_/g, ' ')}</span>
           </div>
           <LogoutButton />
         </div>
@@ -127,7 +130,8 @@ export function DashboardLayout({
             )}
             {verAsistencia && (
               <NavLink className="dashboard__nav-item" to="/asistencia">
-                <span aria-hidden="true">A</span>{estudiante ? 'Mi asistencia' : 'Asistencia'}
+                <span aria-hidden="true">A</span>
+                {estudiante ? 'Registro e historial' : 'Asistencia'}
               </NavLink>
             )}
             {verIncidentes && (
@@ -149,12 +153,18 @@ export function DashboardLayout({
             <NavLink className="dashboard__nav-item" to="/perfil">
               <span aria-hidden="true">●</span>Mi perfil
             </NavLink>
-            {administrador && <NavLink className="dashboard__nav-item" to="/settings">
-              <span aria-hidden="true">⚙</span>{t('dashboard.nav.settings')}
-            </NavLink>}
-            {administrador && <NavLink className="dashboard__nav-item" to="/about">
-              <span aria-hidden="true">i</span>{t('dashboard.nav.about')}
-            </NavLink>}
+            {administrador && (
+              <NavLink className="dashboard__nav-item" to="/settings">
+                <span aria-hidden="true">⚙</span>
+                {t('dashboard.nav.settings')}
+              </NavLink>
+            )}
+            {administrador && (
+              <NavLink className="dashboard__nav-item" to="/about">
+                <span aria-hidden="true">i</span>
+                {t('dashboard.nav.about')}
+              </NavLink>
+            )}
           </nav>
           <div className="dashboard__sidebar-note">
             <span className="dashboard__status-dot" />

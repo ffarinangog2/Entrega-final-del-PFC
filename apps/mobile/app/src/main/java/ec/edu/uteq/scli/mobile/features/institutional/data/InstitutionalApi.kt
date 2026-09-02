@@ -122,6 +122,12 @@ interface InstitutionalApi {
     @GET("api/v1/asistencias/historial")
     suspend fun historialAsistencia(): List<RegistroAsistenciaDto>
 
+    @GET("api/v1/asistencias/sesiones/abiertas")
+    suspend fun sesionesAbiertas(): List<SesionAsistenciaDto>
+
+    @POST("api/v1/asistencias/sesiones/{id}/registro-propio")
+    suspend fun registrarPresenciaPropia(@Path("id") id: String): RegistroAsistenciaDto
+
     @POST("api/v1/reservas/{id}/iniciar")
     suspend fun iniciarReserva(@Path("id") id: String): ReservaDto
 
@@ -160,6 +166,8 @@ class InstitutionalRepository(private val api: InstitutionalApi) {
     suspend fun registrarAsistencia(sesionId: String, token: String) =
         api.registrarAsistencia(sesionId, RegistrarAsistenciaRequest(token))
     suspend fun historial() = api.historialAsistencia()
+    suspend fun sesionesAbiertas() = api.sesionesAbiertas()
+    suspend fun registrarPresenciaPropia(id: String) = api.registrarPresenciaPropia(id)
     suspend fun iniciarReserva(id: String) = api.iniciarReserva(id)
     suspend fun finalizarReserva(id: String) = api.finalizarReserva(id)
     suspend fun abrirSesion(reservaId: String) = api.abrirSesion(AbrirSesionAsistenciaRequest(reservaId))

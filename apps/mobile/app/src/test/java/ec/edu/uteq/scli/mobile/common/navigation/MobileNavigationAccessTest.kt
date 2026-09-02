@@ -28,6 +28,17 @@ class MobileNavigationAccessTest {
         assertFalse(access.planificacion)
     }
 
+    @Test
+    fun `estudiante no recibe calendario reservas incidentes ni planificacion`() {
+        val access = navigationAccess(user("ESTUDIANTE", listOf("ACADEMICO_LEER")))
+
+        assertTrue(access.estudiante)
+        assertFalse(access.reservas)
+        assertFalse(access.calendario)
+        assertFalse(access.incidentes)
+        assertFalse(access.planificacion)
+    }
+
     private fun user(role: String, permissions: List<String>) = AuthUserResponse(
         "usuario", "perfil", "user", "Nombre", "Apellido", "user@uteq.edu.ec",
         roles = listOf(role), permisos = permissions,

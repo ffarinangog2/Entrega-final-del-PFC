@@ -76,6 +76,7 @@ fun QrScanScreen(viewModel: QrViewModel) {
                     QrError.INVALIDO -> "El QR no contiene un UUID de laboratorio válido."
                     QrError.RED -> "No se pudo conectar con el Gateway."
                     QrError.SERVICIO -> "No se encontró el laboratorio o el servicio no está disponible."
+                    QrError.REGISTRO_NO_DISPONIBLE -> "Tu presencia ya fue registrada o la sesión ya no está disponible."
                     null -> "No se pudo procesar el QR."
                 },
             )
