@@ -242,7 +242,7 @@ function InicioPorRol() {
             {errorCoordinacion && <p role="alert">{errorCoordinacion}</p>}
             {resumenCoordinacion && (
               <section
-                className="role-home__summary"
+                className="role-home__summary role-home__summary--coordination"
                 aria-label="Resumen de coordinación"
               >
                 <p>
@@ -276,6 +276,14 @@ function InicioPorRol() {
                   {resumenCoordinacion.laboratorios} laboratorios disponibles ·{' '}
                   {resumenCoordinacion.planes.length} bloques planificados
                 </p>
+                <div className="role-home__level-progress" aria-label="Progreso por niveles">
+                  {Array.from({ length: 10 }, (_, index) => index + 1).map((value) => {
+                    const cantidad = resumenCoordinacion.planes.filter(
+                      (item) => (item.nivel ?? 1) === value,
+                    ).length
+                    return <span key={value}>{value}° <strong>{cantidad}</strong></span>
+                  })}
+                </div>
               </section>
             )}
             <Link to="/planificacion">Abrir planificación</Link>

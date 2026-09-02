@@ -79,6 +79,12 @@
   background: var(--color-primary, #174f78);
   color: #fff;
 }
+.weekly-planning__selectors button[data-progress='con bloques'] {
+  border-color: #d49b22;
+}
+.weekly-planning__selectors button[data-progress='completo'] {
+  border-color: #27805b;
+}
 .weekly-planning__summary div {
   display: grid;
   gap: 3px;

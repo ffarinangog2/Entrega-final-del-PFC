@@ -144,6 +144,43 @@ class PlanificacionAgregadaServiceTest {
     }
 
     @Test
+    void retirarPlanificacionEnRevisionConservaBloquesYVuelveABorrador() {
+        UUID planId = UUID.randomUUID();
+        PlanificacionAgregadaJpaEntity plan = plan(planId,
+                EstadoPlanificacionAgregada.EN_REVISION);
+        plan.setEnviadaEn(Instant.now());
+        PlanificacionJpaEntity bloque = bloque(planId, 4, UUID.randomUUID(),
+                UUID.randomUUID());
+        RevisionPlanificacionPisoJpaEntity revision = new RevisionPlanificacionPisoJpaEntity();
+        revision.setId(UUID.randomUUID());
+        revision.setPlanificacionId(planId);
+        revision.setEstado(EstadoRevisionPlanificacion.PENDIENTE);
+        when(planes.findById(planId)).thenReturn(Optional.of(plan));
+        when(revisiones.findByPlanificacionId(planId)).thenReturn(List.of(revision));
+        when(bloques.findByPlanificacionId(planId)).thenReturn(List.of(bloque));
+
+        var response = service.retirar(planId);
+
+        assertThat(response.estado()).isEqualTo("BORRADOR");
+        assertThat(response.bloques()).hasSize(1);
+        assertThat(plan.getEnviadaEn()).isNull();
+        verify(observaciones).deleteByRevisionId(revision.getId());
+        verify(revisiones).deleteAll(List.of(revision));
+    }
+
+    @Test
+    void retirarNoPermiteModificarUnaPlanificacionAprobada() {
+        UUID planId = UUID.randomUUID();
+        when(planes.findById(planId)).thenReturn(Optional.of(
+                plan(planId, EstadoPlanificacionAgregada.APROBADA)));
+
+        assertThatThrownBy(() -> service.retirar(planId))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("en revision");
+        verify(revisiones, never()).deleteAll(any());
+    }
+
+    @Test
     void enviarDetectaLaboratorioSolapadoEntreNiveles() {
         UUID planId = UUID.randomUUID();
         UUID laboratorio = UUID.randomUUID();

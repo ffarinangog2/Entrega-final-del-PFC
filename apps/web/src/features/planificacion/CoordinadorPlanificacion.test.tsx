@@ -145,6 +145,10 @@ function preparar(
     ...aggregate,
     estado: 'EN_REVISION',
   })
+  vi.mocked(api.retirarPlanificacionCompleta).mockResolvedValue({
+    ...aggregate,
+    estado: 'BORRADOR',
+  })
 }
 
 function renderPage() {
@@ -299,6 +303,20 @@ describe('CoordinadorPlanificacion', () => {
     renderPage()
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'Servicio temporalmente no disponible',
+    )
+  })
+  it('permite retirar una planificación en revisión', async () => {
+    preparar([base], 'EN_REVISION')
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    const user = userEvent.setup()
+    renderPage()
+    await user.click(
+      await screen.findByRole('button', { name: 'Retirar para corregir' }),
+    )
+    await waitFor(() =>
+      expect(api.retirarPlanificacionCompleta).toHaveBeenCalledWith(
+        'aggregate-1',
+      ),
     )
   })
 })

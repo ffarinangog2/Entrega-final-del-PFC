@@ -7,6 +7,11 @@
 .reservas-panel__message { padding: 42px 12px; color: #60756d; text-align: center; }
 .reservas-panel__message--error { color: #9b3f34; }
 .reservas-list { display: grid; gap: 14px; margin-top: 24px; }
+.reservas-list--availability {
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+}
+.reserva-card--availability { min-height: 0; padding: 16px; }
+.reserva-card--availability h2 { margin-bottom: 8px; font-size: 1rem; }
 .reserva-card { padding: 20px; border: 1px solid #dce6e1; border-radius: 10px; background: #fff; }
 .reserva-card h2 { margin: 5px 0 0; font-size: 18px; }.reserva-card__code { color: #718780; font-size: 12px; font-weight: 700; }
 .reserva-card__status { padding: 6px 9px; border-radius: 999px; background: #e4eee9; color: #315e54; font-size: 11px; font-weight: 700; }.reserva-card__status--cancelada, .reserva-card__status--no_asistida { background: #fae9e5; color: #9b3f34; }

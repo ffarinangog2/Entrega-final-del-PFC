@@ -144,6 +144,25 @@ public class PlanificacionAgregadaService {
     }
 
     @Transactional
+    public PlanificacionAgregadaResponse retirar(UUID id) {
+        PlanificacionAgregadaJpaEntity plan = propia(id);
+        if (plan.getEstado() != EstadoPlanificacionAgregada.EN_REVISION) {
+            throw new IllegalStateException("Solo puede retirarse una planificacion en revision");
+        }
+        List<RevisionPlanificacionPisoJpaEntity> actuales = revisiones.findByPlanificacionId(id);
+        if (actuales.stream().anyMatch(item ->
+                item.getEstado() != EstadoRevisionPlanificacion.PENDIENTE)) {
+            throw new IllegalStateException("La revision ya fue atendida por un piso");
+        }
+        actuales.forEach(item -> observaciones.deleteByRevisionId(item.getId()));
+        revisiones.deleteAll(actuales);
+        plan.setEstado(EstadoPlanificacionAgregada.BORRADOR);
+        plan.setEnviadaEn(null);
+        plan.setActualizadaEn(Instant.now());
+        return map(planes.saveAndFlush(plan));
+    }
+
+    @Transactional
     public PlanificacionAgregadaResponse aprobarPiso(UUID id) {
         ActorAutenticado actor = actores.obtener();
         UUID pisoId = ambitoLaboratorio.pisoGestionado();

@@ -357,6 +357,28 @@
 .role-home__summary p {
   margin: 4px 0;
 }
+.role-home__summary--coordination {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px 18px;
+}
+.role-home__summary--coordination p { margin: 0; }
+.role-home__level-progress {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(10, minmax(42px, 1fr));
+  gap: 6px;
+}
+.role-home__level-progress span {
+  padding: 7px 4px;
+  border: 1px solid #d9e0e7;
+  border-radius: 7px;
+  text-align: center;
+}
+@media (max-width: 760px) {
+  .role-home__summary--coordination { grid-template-columns: 1fr; }
+  .role-home__level-progress { grid-template-columns: repeat(5, 1fr); }
+}
 .role-home__links a,
 .my-week header a {
   padding: 10px 14px;

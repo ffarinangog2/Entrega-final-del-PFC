@@ -33,6 +33,9 @@ public class PlanificacionAgregadaController {
     @PostMapping("/{id}/enviar")
     public PlanificacionAgregadaResponse enviar(@PathVariable UUID id) { return service.enviar(id); }
 
+    @PostMapping("/{id}/retirar")
+    public PlanificacionAgregadaResponse retirar(@PathVariable UUID id) { return service.retirar(id); }
+
     @PostMapping("/{id}/revisiones/mi-piso/aprobar")
     public PlanificacionAgregadaResponse aprobarPiso(@PathVariable UUID id) { return service.aprobarPiso(id); }
 

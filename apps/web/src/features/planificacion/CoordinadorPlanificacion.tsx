@@ -36,6 +36,9 @@ const etiquetas: Record<api.EstadoPlanificacion, string> = {
   RECHAZADA: 'Rechazada',
   CANCELADA: 'Retirada',
 }
+const cicloHabilitado = (periodo?: academico.PeriodoLectivo) =>
+  Boolean(periodo?.fechaInicio) &&
+  new Date(`${periodo!.fechaInicio}T00:00:00`).getTime() <= Date.now()
 
 export function CoordinadorPlanificacion() {
   const [items, setItems] = useState<api.Planificacion[]>([])
@@ -56,6 +59,7 @@ export function CoordinadorPlanificacion() {
   const [cargando, setCargando] = useState(true)
   const [guardando, setGuardando] = useState(false)
   const [enviando, setEnviando] = useState(false)
+  const [retirando, setRetirando] = useState(false)
   const [editorAbierto, setEditorAbierto] = useState(false)
   const [confirmando, setConfirmando] = useState(false)
   const [error, setError] = useState('')
@@ -90,7 +94,10 @@ export function CoordinadorPlanificacion() {
       const ciclosPpa = ciclos.filter(
         (item) => item.ppaCodigo === 'REGULAR-2026-2027-PPA',
       )
-      const cicloId = ciclosPpa[0]?.id || ciclos[0]?.id || ''
+      const cicloInicial = [...(ciclosPpa.length > 0 ? ciclosPpa : ciclos)]
+        .filter(cicloHabilitado)
+        .sort((left, right) => right.fechaInicio.localeCompare(left.fechaInicio))[0]
+      const cicloId = cicloInicial?.id || ciclosPpa[0]?.id || ciclos[0]?.id || ''
       const periodo = ciclos.find((item) => item.id === cicloId)
       if (!periodo) throw new Error('No existe un ciclo académico disponible.')
       const planActual =
@@ -146,8 +153,9 @@ export function CoordinadorPlanificacion() {
   )
 
   function seleccionarPeriodo(id: string) {
-    setPeriodoId(id)
     const periodo = periodos.find((item) => item.id === id)
+    if (!cicloHabilitado(periodo)) return
+    setPeriodoId(id)
     const actual = planesAgregados.find((item) => item.periodoId === id) ?? null
     setCatalogos((value) => ({ ...value, periodo }))
     setPlan(actual)
@@ -164,7 +172,7 @@ export function CoordinadorPlanificacion() {
   const editables = visibles.filter((item) =>
     ['BORRADOR', 'PROPUESTA_CAMBIO'].includes(item.estado),
   )
-  const estadoGeneral = visibles.some(
+  const estadoBloques = visibles.some(
     (item) => item.estado === 'PROPUESTA_CAMBIO',
   )
     ? 'PROPUESTA_CAMBIO'
@@ -178,10 +186,18 @@ export function CoordinadorPlanificacion() {
           : visibles.length > 0
             ? 'BORRADOR'
             : null
+  const estadoGeneral: api.EstadoPlanificacion | null = plan?.estado === 'EN_REVISION'
+    ? 'ENVIADA'
+    : plan?.estado === 'REQUIERE_CAMBIOS'
+      ? 'PROPUESTA_CAMBIO'
+      : plan?.estado === 'APROBADA' || plan?.estado === 'FINALIZADA'
+        ? 'CONFIRMADA'
+        : estadoBloques
   const soloLectura =
     plan?.estado === 'EN_REVISION' ||
     plan?.estado === 'APROBADA' ||
     plan?.estado === 'FINALIZADA'
+  const cicloDisponible = cicloHabilitado(catalogos.periodo)
   const materia = (id: string) =>
     catalogos.materias.find((item) => item.id === id)
   const docente = (id: string | null) =>
@@ -324,8 +340,32 @@ export function CoordinadorPlanificacion() {
     }
   }
 
+  async function retirarCompleta() {
+    if (retirando || !plan || plan.estado !== 'EN_REVISION') return
+    if (!confirm('¿Retirar la planificación para volver a corregirla?')) return
+    setRetirando(true)
+    setError('')
+    try {
+      const retirada = await api.retirarPlanificacionCompleta(plan.id)
+      setPlan(retirada)
+      setPlanesAgregados((actuales) =>
+        actuales.map((item) => (item.id === retirada.id ? retirada : item)),
+      )
+      setItems(retirada.bloques)
+      setMensaje('Planificación retirada. Puede volver a editar el borrador.')
+    } catch (cause) {
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : 'No fue posible retirar la planificación.',
+      )
+    } finally {
+      setRetirando(false)
+    }
+  }
+
   async function iniciarPlanificacion() {
-    if (!periodoId || guardando) return
+    if (!periodoId || guardando || !cicloDisponible) return
     setGuardando(true)
     setError('')
     try {
@@ -361,6 +401,9 @@ export function CoordinadorPlanificacion() {
       .size,
     laboratorios: new Set(visibles.map((item) => item.laboratorioId)).size,
   }
+  const bloquesPorNivel = Array.from({ length: 10 }, (_, index) =>
+    visibles.filter((item) => (item.nivel ?? 1) === index + 1).length,
+  )
   return (
     <DashboardLayout breadcrumb="Planificación semanal">
       <main className="weekly-planning">
@@ -416,7 +459,11 @@ export function CoordinadorPlanificacion() {
                   onChange={(event) => seleccionarPeriodo(event.target.value)}
                 >
                   {periodos.map((item) => (
-                    <option key={item.id} value={item.id}>
+                    <option
+                      key={item.id}
+                      value={item.id}
+                      disabled={!cicloHabilitado(item)}
+                    >
                       {item.cicloAcademico === 1
                         ? 'Mayo–Septiembre'
                         : item.cicloAcademico === 2
@@ -428,15 +475,25 @@ export function CoordinadorPlanificacion() {
               </label>
               <div role="group" aria-label="Nivel académico">
                 {Array.from({ length: 10 }, (_, index) => index + 1).map(
-                  (value) => (
+                  (value) => {
+                    const cantidad = bloquesPorNivel[value - 1]
+                    const progreso = cantidad === 0
+                      ? 'vacío'
+                      : soloLectura
+                        ? 'completo'
+                        : 'con bloques'
+                    return (
                     <button
                       key={value}
                       aria-pressed={nivel === value}
+                      data-progress={progreso}
+                      aria-label={`${value}° nivel: ${progreso}`}
                       onClick={() => setNivel(value)}
                     >
                       {value}°
                     </button>
-                  ),
+                    )
+                  },
                 )}
               </div>
             </section>
@@ -476,10 +533,13 @@ export function CoordinadorPlanificacion() {
                 {!iniciado && (
                   <button
                     onClick={() => void iniciarPlanificacion()}
-                    disabled={guardando}
+                    disabled={guardando || !cicloDisponible}
                   >
                     Iniciar planificación
                   </button>
+                )}
+                {!cicloDisponible && (
+                  <p>Este ciclo se habilitará automáticamente en su fecha de inicio.</p>
                 )}
                 {iniciado && (
                   <p>Seleccione un bloque de la cuadrícula para comenzar.</p>
@@ -579,6 +639,17 @@ export function CoordinadorPlanificacion() {
               <div className="weekly-planning__send">
                 <button onClick={() => setConfirmando(true)}>
                   Enviar planificación completa
+                </button>
+              </div>
+            )}
+            {plan?.estado === 'EN_REVISION' && (
+              <div className="weekly-planning__send">
+                <button
+                  type="button"
+                  onClick={() => void retirarCompleta()}
+                  disabled={retirando}
+                >
+                  {retirando ? 'Retirando…' : 'Retirar para corregir'}
                 </button>
               </div>
             )}

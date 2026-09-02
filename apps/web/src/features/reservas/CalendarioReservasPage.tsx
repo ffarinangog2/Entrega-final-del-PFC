@@ -93,12 +93,12 @@ export function CalendarioReservasPage() {
           </div>
         </header>
         {coordinador ? (
-          <div className="reservas-list">
+          <div className="reservas-list reservas-list--availability">
             {laboratorios.length === 0 ? (
               <p>No hay laboratorios disponibles para consultar.</p>
             ) : (
               laboratorios.map((lab) => (
-                <article className="reserva-card" key={lab.id}>
+                <article className="reserva-card reserva-card--availability" key={lab.id}>
                   <h2>
                     {lab.codigo} — {lab.nombre}
                   </h2>
