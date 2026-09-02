@@ -104,6 +104,9 @@ describe('DashboardLayout por permisos', () => {
     expect(
       screen.getByRole('link', { name: /^Asistencia$/ }),
     ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('link', { name: /Laboratorios/ }),
+    ).not.toBeInTheDocument()
   })
   it('ESTUDIANTE ve registro y perfil, no operaciones sin datos académicos seguros', () => {
     menu(['ESTUDIANTE'], ['ACADEMICO_LEER'])

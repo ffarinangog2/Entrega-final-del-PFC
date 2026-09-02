@@ -89,6 +89,20 @@ describe('MainPage', () => {
     expect(academico.obtenerDocentePorPerfil).toHaveBeenCalledWith('perfil-1')
   })
 
+  it('destaca las clases de hoy sin permitir editar la planificación base', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    vi.setSystemTime(new Date('2026-09-07T08:00:00'))
+    render(
+      <MemoryRouter>
+        <MainPage />
+      </MemoryRouter>,
+    )
+    expect(await screen.findByRole('heading', { name: 'Hoy' })).toBeInTheDocument()
+    expect(screen.getByText('Programada')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Editar/ })).not.toBeInTheDocument()
+    vi.useRealTimers()
+  })
+
   it('no consulta catálogos globales para un estudiante', () => {
     usuario = { perfilId: 'perfil-2', roles: ['ESTUDIANTE'], permisos: [] }
     render(

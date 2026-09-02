@@ -38,6 +38,7 @@ import ec.edu.uteq.scli.mobile.features.institutional.presentation.HistorialAsis
 import ec.edu.uteq.scli.mobile.features.institutional.presentation.InstitutionalViewModel
 import ec.edu.uteq.scli.mobile.features.institutional.presentation.PlanificacionesScreen
 import ec.edu.uteq.scli.mobile.features.institutional.presentation.AdministracionGlobalScreen
+import ec.edu.uteq.scli.mobile.features.institutional.presentation.HorarioDocenteScreen
 import ec.edu.uteq.scli.mobile.features.auth.presentation.AuthViewModel
 import ec.edu.uteq.scli.mobile.features.auth.presentation.LoginScreen
 import ec.edu.uteq.scli.mobile.features.profile.presentation.ProfileScreen
@@ -65,6 +66,7 @@ private sealed class AppDestination(val route: String) {
     data object Planificacion : AppDestination("planificacion")
     data object Asistencia : AppDestination("asistencia")
     data object Administracion : AppDestination("administracion")
+    data object HorarioDocente : AppDestination("mi-horario")
     data object NuevaReserva : AppDestination("reservas/nueva")
     data object SolicitudDetalle : AppDestination("solicitudes/{solicitudId}") { fun crearRuta(id: String) = "solicitudes/$id" }
     data object ReservaDetalle : AppDestination("reservas/{reservaId}") {
@@ -80,12 +82,14 @@ internal data class MobileNavigationAccess(
     val planificacion: Boolean,
     val estudiante: Boolean,
     val administrador: Boolean,
+    val docente: Boolean,
 )
 
 internal fun navigationAccess(user: AuthUserResponse): MobileNavigationAccess {
     val coordinador = user.hasRole("COORDINADOR")
     val estudiante = user.hasRole("ESTUDIANTE")
     val administrador = user.hasRole("ADMINISTRADOR")
+    val docente = user.hasRole("DOCENTE")
     return MobileNavigationAccess(
         coordinador = coordinador,
         reservas = !coordinador && user.hasAnyPermission("RESERVA_LEER", "SOLICITUD_LEER"),
@@ -94,6 +98,7 @@ internal fun navigationAccess(user: AuthUserResponse): MobileNavigationAccess {
         planificacion = user.hasAnyPermission("PLANIFICACION_GESTIONAR", "SOLICITUD_APROBAR"),
         estudiante = estudiante,
         administrador = administrador,
+        docente = docente,
     )
 }
 
@@ -141,6 +146,12 @@ fun AppNavHost(application: ScliMobileApplication) {
                     onClick = { navController.navigateToTab(AppDestination.Administracion.route) },
                     icon = { Icon(Icons.Filled.Person, contentDescription = null) },
                     label = { Text("Inicio") },
+                )
+                if (access.docente) NavigationBarItem(
+                    selected = currentDestination.isRoute(AppDestination.HorarioDocente),
+                    onClick = { navController.navigateToTab(AppDestination.HorarioDocente.route) },
+                    icon = { Icon(Icons.Filled.Event, contentDescription = null) },
+                    label = { Text("Horario") },
                 )
                 if (puedeVerIncidentes) NavigationBarItem(
                     selected = currentDestination.isRoute(AppDestination.Incidentes),
@@ -193,6 +204,7 @@ fun AppNavHost(application: ScliMobileApplication) {
             navController = navController,
             startDestination = when {
                 access.administrador -> AppDestination.Administracion.route
+                access.docente -> AppDestination.HorarioDocente.route
                 puedeVerReservas -> AppDestination.Reservas.route
                 puedeVerPlanificacion -> AppDestination.Planificacion.route
                 puedeVerAsistencia -> AppDestination.Asistencia.route
@@ -207,6 +219,13 @@ fun AppNavHost(application: ScliMobileApplication) {
                     factory = viewModelFactory { initializer { InstitutionalViewModel(container.institutionalRepository) } },
                 )
                 AdministracionGlobalScreen(viewModel)
+            }
+            composable(AppDestination.HorarioDocente.route) {
+                if (!access.docente) { Text("No tienes permisos para realizar esta acción."); return@composable }
+                val viewModel: InstitutionalViewModel = viewModel(
+                    factory = viewModelFactory { initializer { InstitutionalViewModel(container.institutionalRepository) } },
+                )
+                HorarioDocenteScreen(viewModel, user.perfilId)
             }
             composable(AppDestination.Incidentes.route) {
                 if (!puedeVerIncidentes) { Text("No tienes permisos para realizar esta acción."); return@composable }

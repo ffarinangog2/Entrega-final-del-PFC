@@ -32,7 +32,7 @@ data class MateriaPlanificacionDto(
 
 data class DocentePlanificacionDto(
     val id: String,
-    val codigoDocente: String,
+    val codigoDocente: String?,
 )
 
 data class LaboratorioPlanificacionDto(
@@ -45,6 +45,13 @@ data class LaboratorioPlanificacionDto(
 data class CarreraPlanificacionDto(val id: String, val codigo: String, val nombre: String)
 data class PeriodoPlanificacionDto(val id: String, val codigo: String, val nombre: String, val estado: String)
 data class PerfilAdminDto(val id: String, val nombres: String, val apellidos: String, val emailInstitucional: String, val activo: Boolean)
+data class HorarioDocenteDto(val id: String, val materiaId: String, val periodoLectivoId: String, val laboratorioId: String?, val docenteId: String, val diaSemana: String, val horaInicio: String, val horaFin: String, val activo: Boolean)
+data class DocenciaData(
+    val horarios: List<HorarioDocenteDto>,
+    val materias: List<MateriaPlanificacionDto>,
+    val laboratorios: List<LaboratorioPlanificacionDto>,
+    val periodo: PeriodoPlanificacionDto,
+)
 data class AdministracionData(
     val perfiles: List<PerfilAdminDto>,
     val laboratorios: List<LaboratorioPlanificacionDto>,
@@ -88,6 +95,12 @@ data class SesionAsistenciaDto(
 interface InstitutionalApi {
     @GET("api/v1/perfiles")
     suspend fun listarPerfiles(@Query("page") page: Int, @Query("size") size: Int): PageResponse<PerfilAdminDto>
+
+    @GET("api/v1/docentes/perfil/{perfilId}")
+    suspend fun docentePorPerfil(@Path("perfilId") perfilId: String): DocentePlanificacionDto
+
+    @GET("api/v1/horarios/docente/{docenteId}")
+    suspend fun horariosDocente(@Path("docenteId") docenteId: String): List<HorarioDocenteDto>
     @GET("api/v1/planificaciones")
     suspend fun listarPlanificaciones(): List<PlanificacionDto>
 
@@ -156,6 +169,15 @@ interface InstitutionalApi {
 }
 
 class InstitutionalRepository(private val api: InstitutionalApi) {
+    suspend fun docencia(perfilId: String): DocenciaData {
+        val docente = api.docentePorPerfil(perfilId)
+        return DocenciaData(
+            horarios = api.horariosDocente(docente.id).filter { it.activo },
+            materias = todasLasPaginas(api::listarMaterias),
+            laboratorios = todasLasPaginas(api::listarLaboratorios),
+            periodo = api.periodoActual(),
+        )
+    }
     suspend fun administracion() = AdministracionData(
         perfiles = todasLasPaginas(api::listarPerfiles),
         laboratorios = todasLasPaginas(api::listarLaboratorios),

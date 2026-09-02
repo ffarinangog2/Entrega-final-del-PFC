@@ -406,3 +406,37 @@ fun AdministracionGlobalScreen(viewModel: InstitutionalViewModel) {
         }
     }
 }
+
+@Composable
+fun HorarioDocenteScreen(viewModel: InstitutionalViewModel, perfilId: String) {
+    val state by viewModel.uiState.collectAsState()
+    var dia by remember { mutableStateOf("LUNES") }
+    LaunchedEffect(perfilId) { viewModel.cargarDocencia(perfilId) }
+    LazyColumn(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        item { Text("Mi semana", style = MaterialTheme.typography.headlineMedium) }
+        if (state.cargando && state.docencia == null) item { CircularProgressIndicator() }
+        state.error?.let { item {
+            Text("No fue posible cargar tu horario.", color = MaterialTheme.colorScheme.error)
+            OutlinedButton(onClick = { viewModel.cargarDocencia(perfilId) }) { Text("Reintentar") }
+        } }
+        state.docencia?.let { data ->
+            item { Text("Periodo ${data.periodo.nombre}") }
+            item { Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                diasPlanificacion.forEach { value -> FilterChip(selected = dia == value, onClick = { dia = value }, label = { Text(value.take(3)) }) }
+            } }
+            val materias = data.materias.associateBy { it.id }
+            val laboratorios = data.laboratorios.associateBy { it.id }
+            val clases = data.horarios.filter { it.diaSemana == dia }
+            if (clases.isEmpty()) item { Text("No tienes clases programadas para este día.") }
+            items(clases, key = { it.id }) { clase ->
+                Card(Modifier.fillMaxWidth()) { Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                    Text("${clase.horaInicio}–${clase.horaFin}", style = MaterialTheme.typography.titleMedium)
+                    Text(materias[clase.materiaId]?.nombre ?: "Materia asignada")
+                    Text(clase.laboratorioId?.let { laboratorios[it]?.let { lab -> "${lab.codigo} — ${lab.nombre}" } } ?: "Aula por confirmar")
+                    Text("Planificación base · Solo lectura")
+                } }
+            }
+            item { Text("Los cambios de una fecha concreta se gestionan como solicitudes y no modifican este horario base.") }
+        }
+    }
+}

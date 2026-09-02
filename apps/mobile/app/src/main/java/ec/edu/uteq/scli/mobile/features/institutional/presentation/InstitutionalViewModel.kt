@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import ec.edu.uteq.scli.mobile.features.institutional.data.InstitutionalRepository
 import ec.edu.uteq.scli.mobile.features.institutional.data.PlanificacionDto
 import ec.edu.uteq.scli.mobile.features.institutional.data.AdministracionData
+import ec.edu.uteq.scli.mobile.features.institutional.data.DocenciaData
 import ec.edu.uteq.scli.mobile.features.institutional.data.RegistroAsistenciaDto
 import ec.edu.uteq.scli.mobile.features.institutional.data.SesionAsistenciaDto
 import ec.edu.uteq.scli.mobile.features.institutional.data.CoordinacionData
@@ -20,6 +21,7 @@ data class InstitutionalUiState(
     val sesion: SesionAsistenciaDto? = null,
     val sesionesAbiertas: List<SesionAsistenciaDto> = emptyList(),
     val administracion: AdministracionData? = null,
+    val docencia: DocenciaData? = null,
     val asistentes: List<RegistroAsistenciaDto> = emptyList(),
     val mensaje: String? = null,
     val error: String? = null,
@@ -36,6 +38,7 @@ class InstitutionalViewModel(private val repository: InstitutionalRepository) : 
     }
     fun cargarHistorial() = ejecutar { copy(historial = repository.historial()) }
     fun cargarAdministracion() = ejecutar { copy(administracion = repository.administracion()) }
+    fun cargarDocencia(perfilId: String) = ejecutar { copy(docencia = repository.docencia(perfilId)) }
     fun cargarEstudiante() = ejecutar {
         copy(
             sesionesAbiertas = repository.sesionesAbiertas(),

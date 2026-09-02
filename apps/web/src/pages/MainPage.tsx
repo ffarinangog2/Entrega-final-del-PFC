@@ -73,6 +73,10 @@ function MiSemana({ perfilId }: { perfilId: string }) {
       new Map(laboratorios.map((laboratorio) => [laboratorio.id, laboratorio])),
     [laboratorios],
   )
+  const diaActual = dias[new Date().getDay() - 1]
+  const clasesHoy = horarios.filter(
+    (horario) => horario.diaSemana === diaActual,
+  )
 
   return (
     <section className="my-week" aria-labelledby="mi-semana-title">
@@ -93,39 +97,69 @@ function MiSemana({ perfilId }: { perfilId: string }) {
         <p>No tiene clases asignadas en el periodo actual.</p>
       )}
       {!cargando && !error && horarios.length > 0 && (
-        <div className="my-week__grid">
-          {dias.map((dia) => {
-            const clases = horarios
-              .filter((horario) => horario.diaSemana === dia)
-              .sort((a, b) => a.horaInicio.localeCompare(b.horaInicio))
-            return (
-              <section key={dia} className="my-week__day">
-                <h2>{dia.charAt(0) + dia.slice(1).toLowerCase()}</h2>
-                {clases.length === 0 ? (
-                  <p>Sin clases</p>
-                ) : (
-                  clases.map((clase) => (
-                    <article key={clase.id}>
-                      <time>
-                        {clase.horaInicio}–{clase.horaFin}
-                      </time>
-                      <strong>
-                        {materiaPorId.get(clase.materiaId)?.nombre ??
-                          'Materia asignada'}
-                      </strong>
-                      <span>
-                        {clase.laboratorioId
-                          ? (laboratorioPorId.get(clase.laboratorioId)
-                              ?.nombre ?? 'Laboratorio asignado')
-                          : 'Aula por confirmar'}
-                      </span>
-                    </article>
-                  ))
-                )}
-              </section>
-            )
-          })}
-        </div>
+        <>
+          <section
+            className="my-week__today"
+            aria-labelledby="clases-hoy-title"
+          >
+            <h2 id="clases-hoy-title">Hoy</h2>
+            {clasesHoy.length === 0 ? (
+              <p>No tienes clases programadas para hoy.</p>
+            ) : (
+              clasesHoy.map((clase) => (
+                <article key={clase.id}>
+                  <time>
+                    {clase.horaInicio}–{clase.horaFin}
+                  </time>
+                  <strong>
+                    {materiaPorId.get(clase.materiaId)?.nombre ??
+                      'Materia asignada'}
+                  </strong>
+                  <span>
+                    {clase.laboratorioId
+                      ? (laboratorioPorId.get(clase.laboratorioId)?.nombre ??
+                        'Laboratorio asignado')
+                      : 'Aula por confirmar'}
+                  </span>
+                  <span>Programada</span>
+                </article>
+              ))
+            )}
+          </section>
+          <div className="my-week__grid">
+            {dias.map((dia) => {
+              const clases = horarios
+                .filter((horario) => horario.diaSemana === dia)
+                .sort((a, b) => a.horaInicio.localeCompare(b.horaInicio))
+              return (
+                <section key={dia} className="my-week__day">
+                  <h2>{dia.charAt(0) + dia.slice(1).toLowerCase()}</h2>
+                  {clases.length === 0 ? (
+                    <p>Sin clases</p>
+                  ) : (
+                    clases.map((clase) => (
+                      <article key={clase.id}>
+                        <time>
+                          {clase.horaInicio}–{clase.horaFin}
+                        </time>
+                        <strong>
+                          {materiaPorId.get(clase.materiaId)?.nombre ??
+                            'Materia asignada'}
+                        </strong>
+                        <span>
+                          {clase.laboratorioId
+                            ? (laboratorioPorId.get(clase.laboratorioId)
+                                ?.nombre ?? 'Laboratorio asignado')
+                            : 'Aula por confirmar'}
+                        </span>
+                      </article>
+                    ))
+                  )}
+                </section>
+              )
+            })}
+          </div>
+        </>
       )}
     </section>
   )

@@ -26,6 +26,7 @@ class MobileNavigationAccessTest {
         assertTrue(access.calendario)
         assertTrue(access.incidentes)
         assertFalse(access.planificacion)
+        assertTrue(access.docente)
     }
 
     @Test

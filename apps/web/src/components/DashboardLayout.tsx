@@ -25,10 +25,7 @@ export function DashboardLayout({
   const docente = hasRole(usuario, 'DOCENTE')
   const estudiante = hasRole(usuario, 'ESTUDIANTE')
   const verLaboratorios =
-    (administrador ||
-      administradorPiso ||
-      coordinador ||
-      docente) &&
+    (administrador || administradorPiso || coordinador) &&
     hasAnyPermission(usuario, ['ACADEMICO_LEER', 'LABORATORIO_LEER'])
   const verReservas =
     (administrador || administradorPiso || docente) &&

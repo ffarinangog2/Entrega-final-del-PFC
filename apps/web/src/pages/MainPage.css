@@ -518,3 +518,15 @@
 .admin-overview__metrics small {
   color: #52606d;
 }
+.my-week__today {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--border-color, #d9e0e8);
+  border-radius: 0.75rem;
+}
+.my-week__today article {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
