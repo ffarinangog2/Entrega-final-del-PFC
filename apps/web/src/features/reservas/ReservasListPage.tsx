@@ -64,7 +64,7 @@ export function ReservasListPage() {
     } catch (cause) {
       if (cause instanceof ApiError && cause.status === 403)
         setError(
-          'No tiene un piso operativo asignado o no posee permisos para consultar este ámbito.',
+          'No tiene autorización para consultar las reservas de este piso.',
         )
       else
         setError(

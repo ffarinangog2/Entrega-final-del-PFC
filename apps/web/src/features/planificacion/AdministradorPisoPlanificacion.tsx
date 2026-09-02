@@ -194,7 +194,7 @@ export function AdministradorPisoPlanificacion() {
             {mensaje}
           </p>
         )}
-        {!cargando && paquetes.length === 0 && (
+        {!cargando && !error && paquetes.length === 0 && (
           <p>
             No existe una planificación enviada para los laboratorios de su
             piso.

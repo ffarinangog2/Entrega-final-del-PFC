@@ -124,7 +124,7 @@ describe('ReservasListPage', () => {
       </MemoryRouter>,
     )
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      'No tiene un piso operativo asignado',
+      'No tiene autorización para consultar las reservas de este piso.',
     )
   })
 })

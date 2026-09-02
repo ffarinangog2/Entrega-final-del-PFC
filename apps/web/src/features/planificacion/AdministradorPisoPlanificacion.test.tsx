@@ -156,6 +156,11 @@ describe('AdministradorPisoPlanificacion', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'No tiene un piso institucional asignado.',
     )
+    expect(
+      screen.queryByText(
+        'No existe una planificación enviada para los laboratorios de su piso.',
+      ),
+    ).not.toBeInTheDocument()
   })
 
   it('mantiene etiquetas coherentes de estado del paquete', () => {

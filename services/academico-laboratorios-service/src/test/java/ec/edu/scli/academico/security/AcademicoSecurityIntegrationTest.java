@@ -9,6 +9,7 @@ import ec.edu.scli.academico.enums.EstadoPeriodo;
 import ec.edu.scli.academico.infrastructure.audit.AuditLogger;
 import ec.edu.scli.academico.infrastructure.observability.HttpMetricsFilter;
 import ec.edu.scli.academico.presentation.controller.InternalController;
+import ec.edu.scli.academico.presentation.controller.MateriaController;
 import ec.edu.scli.academico.presentation.controller.PeriodoLectivoController;
 import ec.edu.scli.academico.presentation.dto.periodolectivo.PeriodoLectivoResponse;
 import io.jsonwebtoken.Jwts;
@@ -41,7 +42,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
 @WebMvcTest(
-        controllers = {PeriodoLectivoController.class, InternalController.class},
+        controllers = {PeriodoLectivoController.class, MateriaController.class, InternalController.class},
         excludeFilters = @ComponentScan.Filter(
                 type = FilterType.ASSIGNABLE_TYPE, classes = HttpMetricsFilter.class))
 @Import({SecurityConfig.class, JwtAuthenticationFilter.class, JwtTokenProvider.class})
@@ -65,6 +66,9 @@ class AcademicoSecurityIntegrationTest {
 
     @MockitoBean
     private MateriaService materiaService;
+
+    @MockitoBean
+    private PoliticaAmbitoAcademico politicaAmbitoAcademico;
 
     @MockitoBean
     private AuditLogger auditLogger;
@@ -91,6 +95,14 @@ class AcademicoSecurityIntegrationTest {
         mockMvc.perform(get("/api/v1/periodos-lectivos/actual")
                         .header("Authorization", bearer(
                                 List.of("COORDINADOR"), List.of("PLANIFICACION_GESTIONAR"))))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void administradorPisoConAcademicoLeerPuedeConsultarMaterias() throws Exception {
+        mockMvc.perform(get("/api/v1/materias")
+                        .header("Authorization", bearer(
+                                List.of("ADMINISTRADOR_PISO"), List.of("ACADEMICO_LEER"))))
                 .andExpect(status().isOk());
     }
 

@@ -64,6 +64,9 @@ public class SecurityConfig {
                                 "/api/v1/horarios/**", "/api/v1/periodos-lectivos/**")
                                 .hasAnyAuthority(
                                         "ACADEMICO_LEER", "PLANIFICACION_GESTIONAR", "ROLE_ADMINISTRADOR")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/materias/**")
+                                .hasAnyAuthority(
+                                        "ACADEMICO_LEER", "PLANIFICACION_GESTIONAR", "ROLE_ADMINISTRADOR")
                         .requestMatchers(HttpMethod.POST, "/api/v1/laboratorios/**")
                                 .hasAnyAuthority("LABORATORIO_GESTIONAR", "ROLE_ADMINISTRADOR")
                         .requestMatchers(HttpMethod.PUT, "/api/v1/laboratorios/**")
