@@ -145,6 +145,7 @@ public class MateriaServiceImpl implements MateriaService {
                 materia.getCodigo(),
                 materia.getNombre(),
                 materia.getNumeroHoras(),
+                materia.getNivel(),
                 materia.isActivo(),
                 materia.getCreadoEn(),
                 materia.getActualizadoEn()

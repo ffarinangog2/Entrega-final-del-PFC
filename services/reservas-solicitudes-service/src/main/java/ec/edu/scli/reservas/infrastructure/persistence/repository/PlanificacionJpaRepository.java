@@ -14,6 +14,7 @@ import java.util.UUID;
 
 public interface PlanificacionJpaRepository extends JpaRepository<PlanificacionJpaEntity, UUID> {
     List<PlanificacionJpaEntity> findByCarreraId(UUID carreraId);
+    List<PlanificacionJpaEntity> findByPlanificacionId(UUID planificacionId);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("""

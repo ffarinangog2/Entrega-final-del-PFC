@@ -1,6 +1,7 @@
 package ec.edu.scli.reservas.application.service;
 
 import ec.edu.scli.reservas.client.AcademicoLaboratoriosClient;
+import ec.edu.scli.reservas.client.UsuariosClient;
 import ec.edu.scli.reservas.client.dto.LaboratorioExternoResponse;
 import ec.edu.scli.reservas.domain.model.ActorAutenticado;
 import ec.edu.scli.reservas.domain.model.ContextoInstitucional;
@@ -9,7 +10,10 @@ import ec.edu.scli.reservas.domain.port.out.ActorActualPort;
 import ec.edu.scli.reservas.domain.port.out.ContextoInstitucionalPort;
 import ec.edu.scli.reservas.domain.port.out.DocenteInstitucionalPort;
 import ec.edu.scli.reservas.infrastructure.persistence.entity.PlanificacionJpaEntity;
+import ec.edu.scli.reservas.infrastructure.persistence.entity.PlanificacionAgregadaJpaEntity;
 import ec.edu.scli.reservas.infrastructure.persistence.repository.PlanificacionJpaRepository;
+import ec.edu.scli.reservas.infrastructure.persistence.repository.PlanificacionAgregadaJpaRepository;
+import ec.edu.scli.reservas.domain.model.EstadoPlanificacionAgregada;
 import ec.edu.scli.reservas.presentation.dto.request.GuardarPlanificacionRequest;
 import ec.edu.scli.reservas.presentation.dto.request.ProponerPlanificacionRequest;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,6 +43,10 @@ class PlanificacionServiceTest {
     private NotificacionService notificaciones;
     private PlanificacionService service;
     private DocenteInstitucionalPort docentes;
+    private PlanificacionAgregadaJpaRepository planesAgregados;
+    private UsuariosClient usuarios;
+    private final UUID planId = UUID.randomUUID();
+    private final UUID periodoId = UUID.randomUUID();
 
     @BeforeEach
     void preparar() {
@@ -49,7 +57,10 @@ class PlanificacionServiceTest {
         academico = mock(AcademicoLaboratoriosClient.class);
         notificaciones = mock(NotificacionService.class);
         docentes = mock(DocenteInstitucionalPort.class);
-        service = new PlanificacionService(repository, actores, contextos, ambito, academico, notificaciones, docentes);
+        planesAgregados = mock(PlanificacionAgregadaJpaRepository.class);
+        usuarios = mock(UsuariosClient.class);
+        service = new PlanificacionService(repository, actores, contextos, ambito, academico, notificaciones,
+                docentes, planesAgregados, usuarios);
         when(repository.save(any())).thenAnswer(i -> i.getArgument(0));
         when(repository.saveAndFlush(any())).thenAnswer(i -> i.getArgument(0));
         when(academico.existePeriodoLectivo(any())).thenReturn(true);
@@ -57,6 +68,11 @@ class PlanificacionServiceTest {
                 new ec.edu.scli.reservas.client.dto.MateriaContextoExternoResponse(i.getArgument(0), carrera, true, true));
         when(docentes.obtenerPorDocenteId(any())).thenAnswer(i ->
                 new ec.edu.scli.reservas.domain.model.DocenteInstitucional(i.getArgument(0), UUID.randomUUID(), true));
+        when(usuarios.docentePerteneceCarrera(any(), any())).thenReturn(true);
+        PlanificacionAgregadaJpaEntity plan = new PlanificacionAgregadaJpaEntity();
+        plan.setId(planId); plan.setCarreraId(carrera); plan.setPeriodoId(periodoId);
+        plan.setEstado(EstadoPlanificacionAgregada.BORRADOR);
+        when(planesAgregados.findById(planId)).thenReturn(Optional.of(plan));
         when(academico.obtenerLaboratorio(any())).thenReturn(
                 new LaboratorioExternoResponse(laboratorio, UUID.randomUUID(), true, true, "ACTIVO", 30));
         coordinador(carrera);
@@ -130,7 +146,7 @@ class PlanificacionServiceTest {
     }
 
     private GuardarPlanificacionRequest request(UUID carreraId, UUID laboratorioId) {
-        return new GuardarPlanificacionRequest(UUID.randomUUID(), carreraId, UUID.randomUUID(), UUID.randomUUID(),
+        return new GuardarPlanificacionRequest(planId, 1, periodoId, carreraId, UUID.randomUUID(), UUID.randomUUID(),
                 laboratorioId, "LUNES", LocalTime.of(8, 0), LocalTime.of(10, 0), "plan semestral");
     }
 

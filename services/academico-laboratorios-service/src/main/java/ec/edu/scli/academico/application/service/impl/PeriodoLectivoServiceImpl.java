@@ -119,6 +119,9 @@ public class PeriodoLectivoServiceImpl implements PeriodoLectivoService {
                 periodo.getFechaInicio(),
                 periodo.getFechaFin(),
                 periodo.getEstado(),
+                periodo.getPpaCodigo(),
+                periodo.getPpaNombre(),
+                periodo.getCicloAcademico(),
                 periodo.getCreadoEn(),
                 periodo.getActualizadoEn()
         );

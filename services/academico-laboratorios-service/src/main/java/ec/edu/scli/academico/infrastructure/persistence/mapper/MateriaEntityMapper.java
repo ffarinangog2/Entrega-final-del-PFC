@@ -14,6 +14,7 @@ public class MateriaEntityMapper {
         entidad.setCodigo(dominio.getCodigo());
         entidad.setNombre(dominio.getNombre());
         entidad.setNumeroHoras(dominio.getNumeroHoras());
+        entidad.setNivel(dominio.getNivel());
         entidad.setActivo(dominio.isActivo());
         entidad.setCreadoEn(dominio.getCreadoEn());
         entidad.setActualizadoEn(dominio.getActualizadoEn());
@@ -30,6 +31,7 @@ public class MateriaEntityMapper {
                 entidad.getNumeroHoras()
         );
         dominio.setActivo(entidad.isActivo());
+        dominio.setNivel(entidad.getNivel());
         dominio.setCreadoEn(entidad.getCreadoEn());
         dominio.setActualizadoEn(entidad.getActualizadoEn());
         return dominio;

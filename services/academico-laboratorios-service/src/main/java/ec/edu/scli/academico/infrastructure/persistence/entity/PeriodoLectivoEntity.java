@@ -40,6 +40,15 @@ public class PeriodoLectivoEntity {
     @Column(name = "estado", nullable = false, length = 20)
     private EstadoPeriodo estado = EstadoPeriodo.PLANIFICADO;
 
+    @Column(name = "ppa_codigo", length = 40)
+    private String ppaCodigo;
+
+    @Column(name = "ppa_nombre", length = 120)
+    private String ppaNombre;
+
+    @Column(name = "ciclo_academico")
+    private Integer cicloAcademico;
+
     @Column(name = "creado_en", nullable = false, updatable = false)
     private OffsetDateTime creadoEn;
 
@@ -107,6 +116,13 @@ public class PeriodoLectivoEntity {
     public void setEstado(EstadoPeriodo estado) {
         this.estado = estado;
     }
+
+    public String getPpaCodigo() { return ppaCodigo; }
+    public void setPpaCodigo(String value) { ppaCodigo = value; }
+    public String getPpaNombre() { return ppaNombre; }
+    public void setPpaNombre(String value) { ppaNombre = value; }
+    public Integer getCicloAcademico() { return cicloAcademico; }
+    public void setCicloAcademico(Integer value) { cicloAcademico = value; }
 
     public OffsetDateTime getCreadoEn() {
         return creadoEn;

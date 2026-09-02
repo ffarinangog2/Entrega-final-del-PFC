@@ -12,6 +12,7 @@ import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
 
 import java.util.UUID;
+import java.util.List;
 import java.util.function.Supplier;
 
 /** Cliente REST para consultar perfiles en el microservicio de usuarios. */
@@ -58,10 +59,26 @@ public class UsuariosClient {
                 .retrieve().body(DocenteExternoResponse.class));
     }
 
+    public boolean docentePerteneceCarrera(UUID docenteId, UUID carreraId) {
+        Boolean response = executeWithReadRetries(() -> restClient.get()
+                .uri("/api/v1/internal/docentes/{docenteId}/carreras/{carreraId}/exists",
+                        docenteId, carreraId)
+                .retrieve().body(Boolean.class));
+        return Boolean.TRUE.equals(response);
+    }
+
     public EstudianteExternoResponse obtenerEstudiantePorPerfil(UUID perfilId) {
         return executeWithReadRetries(() -> restClient.get()
                 .uri("/api/v1/internal/estudiantes/perfil/{perfilId}", perfilId)
                 .retrieve().body(EstudianteExternoResponse.class));
+    }
+
+    public List<UUID> obtenerAdministradoresPorPiso(UUID pisoId) {
+        UUID[] perfiles = executeWithReadRetries(() -> restClient.get()
+                .uri(uri -> uri.path("/api/v1/internal/administradores/por-piso")
+                        .queryParam("pisoId", pisoId).build())
+                .retrieve().body(UUID[].class));
+        return perfiles == null ? List.of() : List.of(perfiles);
     }
 
     public boolean existeDocenteActivo(UUID perfilId) {

@@ -11,6 +11,7 @@ public class Materia {
     private String codigo;
     private String nombre;
     private Integer numeroHoras;
+    private Integer nivel;
     private boolean activo;
     private OffsetDateTime creadoEn;
     private OffsetDateTime actualizadoEn;
@@ -61,6 +62,14 @@ public class Materia {
 
     public Integer getNumeroHoras() {
         return numeroHoras;
+    }
+
+    public Integer getNivel() {
+        return nivel;
+    }
+
+    public void setNivel(Integer nivel) {
+        this.nivel = nivel;
     }
 
     public boolean isActivo() {

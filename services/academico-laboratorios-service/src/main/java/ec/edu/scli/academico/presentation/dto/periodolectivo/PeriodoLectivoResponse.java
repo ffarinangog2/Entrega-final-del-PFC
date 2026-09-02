@@ -20,9 +20,19 @@ public record PeriodoLectivoResponse(
 
         EstadoPeriodo estado,
 
+        String ppaCodigo,
+
+        String ppaNombre,
+
+        Integer cicloAcademico,
+
         OffsetDateTime creadoEn,
 
         OffsetDateTime actualizadoEn
 
 ) {
+    public PeriodoLectivoResponse(UUID id, String codigo, String nombre, LocalDate fechaInicio,
+            LocalDate fechaFin, EstadoPeriodo estado, OffsetDateTime creadoEn, OffsetDateTime actualizadoEn) {
+        this(id, codigo, nombre, fechaInicio, fechaFin, estado, null, null, null, creadoEn, actualizadoEn);
+    }
 }

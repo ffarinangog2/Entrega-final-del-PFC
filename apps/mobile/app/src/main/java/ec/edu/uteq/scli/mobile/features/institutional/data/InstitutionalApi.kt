@@ -21,6 +21,8 @@ data class PlanificacionDto(
     val horaFin: String,
     val estado: String,
     val observacion: String?,
+    val planificacionId: String? = null,
+    val nivel: Int? = null,
 )
 
 data class MateriaPlanificacionDto(
@@ -28,6 +30,7 @@ data class MateriaPlanificacionDto(
     val carreraId: String,
     val codigo: String,
     val nombre: String,
+    val nivel: Int? = null,
 )
 
 data class DocentePlanificacionDto(
@@ -40,10 +43,20 @@ data class LaboratorioPlanificacionDto(
     val codigo: String,
     val nombre: String,
     val estado: String,
+    val pisoId: String? = null,
 )
 
 data class CarreraPlanificacionDto(val id: String, val codigo: String, val nombre: String)
-data class PeriodoPlanificacionDto(val id: String, val codigo: String, val nombre: String, val estado: String)
+data class PeriodoPlanificacionDto(val id: String, val codigo: String, val nombre: String, val estado: String, val ppaNombre: String? = null, val cicloAcademico: Int? = null)
+data class RevisionPlanificacionDto(val id: String, val pisoId: String, val estado: String, val observacion: String?)
+data class PlanificacionAgregadaDto(
+    val id: String,
+    val carreraId: String,
+    val periodoId: String,
+    val estado: String,
+    val bloques: List<PlanificacionDto>,
+    val revisiones: List<RevisionPlanificacionDto>,
+)
 data class PerfilAdminDto(val id: String, val nombres: String, val apellidos: String, val emailInstitucional: String, val activo: Boolean)
 data class HorarioDocenteDto(val id: String, val materiaId: String, val periodoLectivoId: String, val laboratorioId: String?, val docenteId: String, val diaSemana: String, val horaInicio: String, val horaFin: String, val activo: Boolean)
 data class DocenciaData(
@@ -65,6 +78,9 @@ data class CoordinacionData(
     val laboratorios: List<LaboratorioPlanificacionDto>,
     val carreras: List<CarreraPlanificacionDto>,
     val periodo: PeriodoPlanificacionDto,
+    val periodos: List<PeriodoPlanificacionDto> = listOf(periodo),
+    val planificacion: PlanificacionAgregadaDto? = null,
+    val planificacionesAgregadas: List<PlanificacionAgregadaDto> = emptyList(),
 )
 
 data class ObservacionRequest(val observacion: String?)
@@ -104,11 +120,17 @@ interface InstitutionalApi {
     @GET("api/v1/planificaciones")
     suspend fun listarPlanificaciones(): List<PlanificacionDto>
 
+    @GET("api/v1/planificaciones-agregadas")
+    suspend fun listarPlanificacionesAgregadas(): List<PlanificacionAgregadaDto>
+
     @GET("api/v1/materias")
     suspend fun listarMaterias(@Query("page") page: Int, @Query("size") size: Int): PageResponse<MateriaPlanificacionDto>
 
     @GET("api/v1/docentes")
     suspend fun listarDocentes(@Query("page") page: Int, @Query("size") size: Int): PageResponse<DocentePlanificacionDto>
+
+    @GET("api/v1/docentes/planificacion")
+    suspend fun listarDocentesPlanificacion(): List<DocentePlanificacionDto>
 
     @GET("api/v1/laboratorios")
     suspend fun listarLaboratorios(@Query("page") page: Int, @Query("size") size: Int): PageResponse<LaboratorioPlanificacionDto>
@@ -118,6 +140,9 @@ interface InstitutionalApi {
 
     @GET("api/v1/periodos-lectivos/actual")
     suspend fun periodoActual(): PeriodoPlanificacionDto
+
+    @GET("api/v1/periodos-lectivos")
+    suspend fun listarPeriodos(@Query("page") page: Int, @Query("size") size: Int): PageResponse<PeriodoPlanificacionDto>
 
     @POST("api/v1/planificaciones/{id}/aceptar")
     suspend fun aceptarPlanificacion(@Path("id") id: String): PlanificacionDto
@@ -187,14 +212,23 @@ class InstitutionalRepository(private val api: InstitutionalApi) {
         planificaciones = api.listarPlanificaciones(),
     )
     suspend fun planificaciones() = api.listarPlanificaciones()
-    suspend fun coordinacion() = CoordinacionData(
-        planificaciones = api.listarPlanificaciones(),
-        materias = todasLasPaginas(api::listarMaterias),
-        docentes = todasLasPaginas(api::listarDocentes),
-        laboratorios = todasLasPaginas(api::listarLaboratorios),
-        carreras = todasLasPaginas(api::listarCarreras),
-        periodo = api.periodoActual(),
-    )
+    suspend fun coordinacion(): CoordinacionData {
+        val agregadas = api.listarPlanificacionesAgregadas()
+        val periodos = todasLasPaginas(api::listarPeriodos)
+        val periodo = periodos.firstOrNull { it.cicloAcademico == 1 } ?: api.periodoActual()
+        val plan = agregadas.firstOrNull { it.periodoId == periodo.id }
+        return CoordinacionData(
+            planificaciones = plan?.bloques.orEmpty(),
+            materias = todasLasPaginas(api::listarMaterias),
+            docentes = api.listarDocentesPlanificacion(),
+            laboratorios = todasLasPaginas(api::listarLaboratorios),
+            carreras = todasLasPaginas(api::listarCarreras),
+            periodo = periodo,
+            periodos = periodos,
+            planificacion = plan,
+            planificacionesAgregadas = agregadas,
+        )
+    }
     suspend fun aceptar(id: String) = api.aceptarPlanificacion(id)
     suspend fun rechazar(id: String, motivo: String?) = api.rechazarPlanificacion(id, ObservacionRequest(motivo))
     suspend fun proponer(id: String, observacion: String) =

@@ -32,6 +32,9 @@ public class MateriaEntity {
     @Column(name = "numero_horas", nullable = false)
     private Integer numeroHoras = 0;
 
+    @Column(name = "nivel")
+    private Integer nivel;
+
     @Column(name = "activo", nullable = false)
     private boolean activo = true;
 
@@ -93,6 +96,14 @@ public class MateriaEntity {
 
     public void setNumeroHoras(Integer numeroHoras) {
         this.numeroHoras = numeroHoras;
+    }
+
+    public Integer getNivel() {
+        return nivel;
+    }
+
+    public void setNivel(Integer nivel) {
+        this.nivel = nivel;
     }
 
     public boolean isActivo() {

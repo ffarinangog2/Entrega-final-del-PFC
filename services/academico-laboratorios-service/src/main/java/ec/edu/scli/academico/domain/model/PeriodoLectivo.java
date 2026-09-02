@@ -16,6 +16,9 @@ public class PeriodoLectivo {
     private LocalDate fechaInicio;
     private LocalDate fechaFin;
     private EstadoPeriodo estado;
+    private String ppaCodigo;
+    private String ppaNombre;
+    private Integer cicloAcademico;
     private OffsetDateTime creadoEn;
     private OffsetDateTime actualizadoEn;
 
@@ -90,6 +93,13 @@ public class PeriodoLectivo {
     public void setEstado(EstadoPeriodo estado) {
         this.estado = estado;
     }
+
+    public String getPpaCodigo() { return ppaCodigo; }
+    public void setPpaCodigo(String value) { ppaCodigo = value; }
+    public String getPpaNombre() { return ppaNombre; }
+    public void setPpaNombre(String value) { ppaNombre = value; }
+    public Integer getCicloAcademico() { return cicloAcademico; }
+    public void setCicloAcademico(Integer value) { cicloAcademico = value; }
 
     public OffsetDateTime getCreadoEn() {
         return creadoEn;

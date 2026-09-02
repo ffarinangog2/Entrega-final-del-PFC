@@ -1,12 +1,16 @@
 package ec.edu.scli.reservas.application.service;
 
 import ec.edu.scli.reservas.client.AcademicoLaboratoriosClient;
+import ec.edu.scli.reservas.client.UsuariosClient;
 import ec.edu.scli.reservas.domain.model.ActorAutenticado;
 import ec.edu.scli.reservas.domain.model.EstadoPlanificacion;
+import ec.edu.scli.reservas.domain.model.EstadoPlanificacionAgregada;
 import ec.edu.scli.reservas.domain.port.out.ActorActualPort;
 import ec.edu.scli.reservas.domain.port.out.ContextoInstitucionalPort;
 import ec.edu.scli.reservas.domain.port.out.DocenteInstitucionalPort;
 import ec.edu.scli.reservas.infrastructure.persistence.entity.PlanificacionJpaEntity;
+import ec.edu.scli.reservas.infrastructure.persistence.entity.PlanificacionAgregadaJpaEntity;
+import ec.edu.scli.reservas.infrastructure.persistence.repository.PlanificacionAgregadaJpaRepository;
 import ec.edu.scli.reservas.infrastructure.persistence.repository.PlanificacionJpaRepository;
 import ec.edu.scli.reservas.presentation.dto.request.GuardarPlanificacionRequest;
 import ec.edu.scli.reservas.presentation.dto.request.ProponerPlanificacionRequest;
@@ -31,11 +35,14 @@ public class PlanificacionService {
     private final AcademicoLaboratoriosClient academico;
     private final NotificacionService notificaciones;
     private final DocenteInstitucionalPort docentes;
+    private final PlanificacionAgregadaJpaRepository planesAgregados;
+    private final UsuariosClient usuarios;
 
     public PlanificacionService(PlanificacionJpaRepository repository, ActorActualPort actores,
             ContextoInstitucionalPort contextos, PoliticaAmbitoLaboratorio ambitoLaboratorio,
             AcademicoLaboratoriosClient academico, NotificacionService notificaciones,
-            DocenteInstitucionalPort docentes) {
+            DocenteInstitucionalPort docentes, PlanificacionAgregadaJpaRepository planesAgregados,
+            UsuariosClient usuarios) {
         this.repository = repository;
         this.actores = actores;
         this.contextos = contextos;
@@ -43,6 +50,8 @@ public class PlanificacionService {
         this.academico = academico;
         this.notificaciones = notificaciones;
         this.docentes = docentes;
+        this.planesAgregados = planesAgregados;
+        this.usuarios = usuarios;
     }
 
     @Transactional
@@ -50,8 +59,11 @@ public class PlanificacionService {
         ActorAutenticado actor = coordinador();
         validarCarrera(actor, request.carreraId());
         validarDatos(request);
+        var plan = validarPlanAgregadoEditable(request.planificacionId(), actor, request.periodoId());
         PlanificacionJpaEntity entity = new PlanificacionJpaEntity();
         copiar(request, entity);
+        entity.setPlanificacionId(plan.getId());
+        entity.setNivel(request.nivel());
         entity.setEstado(EstadoPlanificacion.BORRADOR);
         entity.setCreadoPorPerfilId(actor.perfilId());
         Instant now = Instant.now();
@@ -95,6 +107,7 @@ public class PlanificacionService {
             throw new IllegalStateException("Solo puede editarse un borrador o una propuesta de cambio");
         }
         validarDatos(request);
+        validarPlanAgregadoEditable(entity.getPlanificacionId(), actor, request.periodoId());
         copiar(request, entity);
         entity.setActualizadaEn(Instant.now());
         return map(repository.save(entity));
@@ -224,13 +237,22 @@ public class PlanificacionService {
     }
 
     private void validarDatos(GuardarPlanificacionRequest request) {
+        if (request.nivel() == null || request.nivel() < 1 || request.nivel() > 10) {
+            throw new IllegalArgumentException("El nivel debe estar entre 1 y 10");
+        }
         if (!academico.existePeriodoLectivo(request.periodoId())) throw new IllegalArgumentException("El periodo no existe");
         var materia = academico.obtenerContextoMateria(request.materiaId());
         if (materia == null || !materia.existe() || !materia.activo()) throw new IllegalArgumentException("La materia no existe o esta inactiva");
         if (!request.carreraId().equals(materia.carreraId())) throw new IllegalArgumentException("La materia no pertenece a la carrera");
+        if (materia.nivel() != null && !materia.nivel().equals(request.nivel())) {
+            throw new IllegalArgumentException("La materia no pertenece al nivel seleccionado");
+        }
         if (request.docenteId() != null) {
             var docente = docentes.obtenerPorDocenteId(request.docenteId());
             if (docente == null || !docente.activo()) throw new IllegalArgumentException("El docente no existe o esta inactivo");
+            if (!usuarios.docentePerteneceCarrera(request.docenteId(), request.carreraId())) {
+                throw new IllegalArgumentException("El docente no pertenece a la carrera planificada");
+            }
         }
         var laboratorio = academico.obtenerLaboratorio(request.laboratorioId());
         if (laboratorio == null || !laboratorio.existe()) throw new IllegalArgumentException("El laboratorio no existe");
@@ -292,9 +314,24 @@ public class PlanificacionService {
     }
 
     private PlanificacionResponse map(PlanificacionJpaEntity p) {
-        return new PlanificacionResponse(p.getId(), p.getPeriodoId(), p.getCarreraId(), p.getMateriaId(),
+        return new PlanificacionResponse(p.getId(), p.getPlanificacionId(), p.getNivel(), p.getPeriodoId(),
+                p.getCarreraId(), p.getMateriaId(),
                 p.getDocenteId(), p.getLaboratorioId(), p.getDiaSemana(), p.getHoraInicio(), p.getHoraFin(),
                 p.getEstado().name(), p.getObservacion(), p.getCreadoPorPerfilId(), p.getCreadaEn(),
                 p.getActualizadaEn(), p.getVersion());
+    }
+
+    private PlanificacionAgregadaJpaEntity validarPlanAgregadoEditable(UUID id, ActorAutenticado actor,
+            UUID periodoId) {
+        if (id == null) throw new IllegalArgumentException("Debe iniciar la planificacion antes de agregar bloques");
+        PlanificacionAgregadaJpaEntity plan = planesAgregados.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Planificacion agregada no encontrada"));
+        validarCarrera(actor, plan.getCarreraId());
+        if (!plan.getPeriodoId().equals(periodoId)
+                || (plan.getEstado() != EstadoPlanificacionAgregada.BORRADOR
+                    && plan.getEstado() != EstadoPlanificacionAgregada.REQUIERE_CAMBIOS)) {
+            throw new IllegalStateException("La planificacion no se encuentra editable para este ciclo");
+        }
+        return plan;
     }
 }

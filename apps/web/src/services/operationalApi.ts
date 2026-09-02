@@ -9,6 +9,8 @@ export type EstadoPlanificacion =
   | 'CANCELADA'
 export interface Planificacion {
   id: string
+  planificacionId?: string | null
+  nivel?: number | null
   periodoId: string
   carreraId: string
   materiaId: string
@@ -22,6 +24,8 @@ export interface Planificacion {
   version: number
 }
 export interface GuardarPlanificacion {
+  planificacionId?: string
+  nivel?: number
   periodoId: string
   carreraId: string
   materiaId: string
@@ -32,6 +36,11 @@ export interface GuardarPlanificacion {
   horaFin: string
   observacion: string
 }
+export type EstadoPlanificacionAgregada = 'BORRADOR' | 'EN_REVISION' | 'REQUIERE_CAMBIOS' | 'APROBADA' | 'FINALIZADA'
+export interface PlanificacionAgregada { id: string; carreraId: string; periodoId: string; estado: EstadoPlanificacionAgregada; bloques: Planificacion[]; revisiones: { id: string; pisoId: string; estado: string; observacion: string | null }[] }
+export const listarPlanificacionesAgregadas = () => apiRequest<PlanificacionAgregada[]>('/api/v1/planificaciones-agregadas')
+export const iniciarPlanificacion = (periodoId: string) => apiRequest<PlanificacionAgregada>('/api/v1/planificaciones-agregadas', { method: 'POST', body: JSON.stringify({ periodoId }) })
+export const enviarPlanificacionCompleta = (id: string) => apiRequest<PlanificacionAgregada>(`/api/v1/planificaciones-agregadas/${encodeURIComponent(id)}/enviar`, { method: 'POST' })
 export const listarPlanificaciones = () =>
   apiRequest<Planificacion[]>('/api/v1/planificaciones')
 export const crearPlanificacion = (body: GuardarPlanificacion) =>

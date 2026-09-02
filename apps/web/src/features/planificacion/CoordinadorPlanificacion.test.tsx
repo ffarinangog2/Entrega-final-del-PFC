@@ -16,6 +16,8 @@ vi.mock('../../components/DashboardLayout', () => ({
 
 const base: api.Planificacion = {
   id: 'plan-1',
+  planificacionId: 'aggregate-1',
+  nivel: 1,
   periodoId: 'periodo-1',
   carreraId: 'carrera-1',
   materiaId: 'materia-1',
@@ -38,16 +40,32 @@ const segunda: api.Planificacion = {
   horaFin: '11:30',
 }
 
-function preparar(items: api.Planificacion[] = [base, segunda]) {
-  vi.mocked(api.listarPlanificaciones).mockResolvedValue(items)
-  vi.mocked(academico.obtenerPeriodoActual).mockResolvedValue({
+function preparar(
+  items: api.Planificacion[] = [base, segunda],
+  estado: api.EstadoPlanificacionAgregada = 'BORRADOR',
+) {
+  const aggregate: api.PlanificacionAgregada = {
+    id: 'aggregate-1',
+    carreraId: 'carrera-1',
+    periodoId: 'periodo-1',
+    estado,
+    bloques: items,
+    revisiones: [],
+  }
+  vi.mocked(api.listarPlanificacionesAgregadas).mockResolvedValue(
+    items.length === 0 ? [] : [aggregate],
+  )
+  vi.mocked(academico.obtenerPeriodos).mockResolvedValue([{
     id: 'periodo-1',
-    codigo: '2026-B',
-    nombre: 'Periodo 2026-B',
+    codigo: 'PPA-2026-2027-C1',
+    nombre: 'Ciclo académico Mayo–Septiembre',
     fechaInicio: '2026-08-01',
     fechaFin: '2027-01-31',
     estado: 'ACTIVO',
-  })
+    ppaCodigo: 'REGULAR-2026-2027-PPA',
+    ppaNombre: 'REGULAR - 2026-2027 PPA',
+    cicloAcademico: 1,
+  }])
   vi.mocked(academico.obtenerCarreras).mockResolvedValue([
     {
       id: 'carrera-1',
@@ -75,7 +93,7 @@ function preparar(items: api.Planificacion[] = [base, segunda]) {
       activo: true,
     },
   ])
-  vi.mocked(academico.obtenerDocentes).mockResolvedValue([
+  vi.mocked(academico.obtenerDocentesPlanificacion).mockResolvedValue([
     {
       id: 'docente-1',
       perfilId: 'perfil-1',
@@ -114,6 +132,11 @@ function preparar(items: api.Planificacion[] = [base, segunda]) {
   vi.mocked(api.accionPlanificacion).mockResolvedValue({
     ...base,
     estado: 'ENVIADA',
+  })
+  vi.mocked(api.iniciarPlanificacion).mockResolvedValue(aggregate)
+  vi.mocked(api.enviarPlanificacionCompleta).mockResolvedValue({
+    ...aggregate,
+    estado: 'EN_REVISION',
   })
 }
 
@@ -219,7 +242,7 @@ describe('CoordinadorPlanificacion', () => {
     renderPage()
     await screen.findByText('Programación')
     await user.click(
-      screen.getByRole('button', { name: 'Enviar planificación' }),
+      screen.getByRole('button', { name: 'Enviar planificación completa' }),
     )
     expect(
       screen.getByRole('heading', { name: 'Confirmar envío' }),
@@ -229,24 +252,23 @@ describe('CoordinadorPlanificacion', () => {
     ).toHaveTextContent('2')
     await user.click(screen.getByRole('button', { name: 'Confirmar envío' }))
     await waitFor(() =>
-      expect(api.accionPlanificacion).toHaveBeenCalledTimes(2),
+      expect(api.enviarPlanificacionCompleta).toHaveBeenCalledTimes(1),
     )
-    expect(api.accionPlanificacion).toHaveBeenCalledWith('plan-1', 'enviar')
-    expect(api.accionPlanificacion).toHaveBeenCalledWith('plan-2', 'enviar')
+    expect(api.enviarPlanificacionCompleta).toHaveBeenCalledWith('aggregate-1')
   })
 
   it('muestra una planificación aprobada en consulta y controla errores API', async () => {
-    preparar([{ ...base, estado: 'CONFIRMADA' }])
+    preparar([{ ...base, estado: 'CONFIRMADA' }], 'APROBADA')
     const { unmount } = renderPage()
     expect(await screen.findByText('Aprobada')).toBeInTheDocument()
     expect(
-      screen.queryByRole('button', { name: 'Enviar planificación' }),
+      screen.queryByRole('button', { name: 'Enviar planificación completa' }),
     ).not.toBeInTheDocument()
     expect(
       screen.queryByRole('button', { name: 'Editar' }),
     ).not.toBeInTheDocument()
     unmount()
-    vi.mocked(api.listarPlanificaciones).mockRejectedValue(
+    vi.mocked(api.listarPlanificacionesAgregadas).mockRejectedValue(
       new Error('Servicio temporalmente no disponible'),
     )
     renderPage()

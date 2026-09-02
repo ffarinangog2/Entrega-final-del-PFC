@@ -15,6 +15,8 @@ public record MateriaResponse(
 
         Integer numeroHoras,
 
+        Integer nivel,
+
         Boolean activo,
 
         OffsetDateTime creadoEn,
@@ -22,4 +24,8 @@ public record MateriaResponse(
         OffsetDateTime actualizadoEn
 
 ) {
+    public MateriaResponse(UUID id, UUID carreraId, String codigo, String nombre,
+            Integer numeroHoras, Boolean activo, OffsetDateTime creadoEn, OffsetDateTime actualizadoEn) {
+        this(id, carreraId, codigo, nombre, numeroHoras, null, activo, creadoEn, actualizadoEn);
+    }
 }

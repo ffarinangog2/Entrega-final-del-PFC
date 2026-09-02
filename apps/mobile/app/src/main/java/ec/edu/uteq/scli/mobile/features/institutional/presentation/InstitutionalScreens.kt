@@ -27,12 +27,14 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import ec.edu.uteq.scli.mobile.features.institutional.data.CoordinacionData
 import ec.edu.uteq.scli.mobile.features.institutional.data.PlanificacionDto
+import ec.edu.uteq.scli.mobile.features.institutional.data.PeriodoPlanificacionDto
 
 @Composable
 fun PlanificacionesScreen(
@@ -97,7 +99,14 @@ fun AdministradorPisoPlanificacionScreen(viewModel: InstitutionalViewModel) {
         state.error?.let { item { Text(it, color = MaterialTheme.colorScheme.error) } }
         state.mensaje?.let { item { Text(it, color = MaterialTheme.colorScheme.primary) } }
         data?.let { paquete ->
-            item { ResumenCoordinacion(paquete) }
+            item {
+                ResumenCoordinacion(
+                    paquete,
+                    paquete.periodo,
+                    paquete.planificacion?.estado,
+                    paquete.planificaciones.size,
+                )
+            }
             item {
                 Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     diasPlanificacion.forEach { value ->
@@ -168,6 +177,8 @@ fun CoordinacionScreen(viewModel: InstitutionalViewModel) {
 @Composable
 internal fun CoordinacionContent(state: InstitutionalUiState) {
     var diaSeleccionado by remember { mutableStateOf("LUNES") }
+    var nivelSeleccionado by remember { mutableIntStateOf(1) }
+    var periodoSeleccionado by remember { mutableStateOf<String?>(null) }
     var mostrarLaboratorios by remember { mutableStateOf(false) }
     val data = state.coordinacion
 
@@ -182,7 +193,35 @@ internal fun CoordinacionContent(state: InstitutionalUiState) {
         if (state.cargando && data == null) item { CircularProgressIndicator() }
         state.error?.let { item { Text(it, color = MaterialTheme.colorScheme.error) } }
         data?.let { coordinacion ->
-            item { ResumenCoordinacion(coordinacion) }
+            val periodoId = periodoSeleccionado ?: coordinacion.periodo.id
+            val periodo = coordinacion.periodos.find { it.id == periodoId } ?: coordinacion.periodo
+            val planAgregado = coordinacion.planificacionesAgregadas.find { it.periodoId == periodoId }
+            val planes = planAgregado?.bloques ?: coordinacion.planificaciones
+            item { ResumenCoordinacion(coordinacion, periodo, planAgregado?.estado, planes.size) }
+            item {
+                Text("Ciclo académico")
+                Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())) {
+                    coordinacion.periodos.filter { it.cicloAcademico != null }.forEach { ciclo ->
+                        FilterChip(
+                            selected = periodoId == ciclo.id,
+                            onClick = { periodoSeleccionado = ciclo.id },
+                            label = { Text(if (ciclo.cicloAcademico == 1) "Mayo–Septiembre" else "Noviembre–Abril") },
+                        )
+                    }
+                }
+            }
+            item {
+                Text("Nivel académico")
+                Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())) {
+                    (1..10).forEach { value ->
+                        FilterChip(
+                            selected = nivelSeleccionado == value,
+                            onClick = { nivelSeleccionado = value },
+                            label = { Text("$value°") },
+                        )
+                    }
+                }
+            }
             item {
                 Row(
                     Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
@@ -197,8 +236,11 @@ internal fun CoordinacionContent(state: InstitutionalUiState) {
                     }
                 }
             }
-            val planesDia = coordinacion.planificaciones
-                .filter { it.diaSemana == diaSeleccionado && it.estado != "CANCELADA" }
+            val planesDia = planes
+                .filter {
+                    it.diaSemana == diaSeleccionado && it.estado != "CANCELADA" &&
+                        (it.nivel ?: 1) == nivelSeleccionado
+                }
                 .sortedBy { it.horaInicio }
             if (planesDia.isEmpty()) item { Text("No hay asignaciones para ${etiquetaDia(diaSeleccionado)}.") }
             items(planesDia, key = { it.id }) { plan ->
@@ -230,15 +272,17 @@ internal fun CoordinacionContent(state: InstitutionalUiState) {
 }
 
 @Composable
-private fun ResumenCoordinacion(data: CoordinacionData) {
-    val carreraId = data.planificaciones.firstOrNull()?.carreraId ?: data.materias.firstOrNull()?.carreraId
+private fun ResumenCoordinacion(data: CoordinacionData, periodo: PeriodoPlanificacionDto,
+    estado: String?, totalBloques: Int) {
+    val carreraId = data.planificacion?.carreraId ?: data.materias.firstOrNull()?.carreraId
     val carrera = data.carreras.find { it.id == carreraId }
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text("Carrera: ${carrera?.nombre ?: "Mi carrera institucional"}")
-            Text("Periodo: ${data.periodo.codigo}")
-            Text("Estado de planificación: ${estadoGeneral(data.planificaciones)}")
-            Text("${data.planificaciones.count { it.estado != "CANCELADA" }} asignaciones")
+            Text("Periodo: ${periodo.ppaNombre ?: periodo.codigo}")
+            Text("Ciclo académico: ${if (periodo.cicloAcademico == 1) "Mayo–Septiembre" else "Noviembre–Abril"}")
+            Text("Estado de planificación: ${estado ?: estadoGeneral(data.planificaciones)}")
+            Text("$totalBloques asignaciones")
         }
     }
 }

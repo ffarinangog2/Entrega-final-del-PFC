@@ -15,6 +15,9 @@ public class PeriodoLectivoEntityMapper {
         entidad.setFechaInicio(dominio.getFechaInicio());
         entidad.setFechaFin(dominio.getFechaFin());
         entidad.setEstado(dominio.getEstado());
+        entidad.setPpaCodigo(dominio.getPpaCodigo());
+        entidad.setPpaNombre(dominio.getPpaNombre());
+        entidad.setCicloAcademico(dominio.getCicloAcademico());
         entidad.setCreadoEn(dominio.getCreadoEn());
         entidad.setActualizadoEn(dominio.getActualizadoEn());
         return entidad;
@@ -30,6 +33,9 @@ public class PeriodoLectivoEntityMapper {
                 entidad.getFechaFin()
         );
         dominio.setEstado(entidad.getEstado());
+        dominio.setPpaCodigo(entidad.getPpaCodigo());
+        dominio.setPpaNombre(entidad.getPpaNombre());
+        dominio.setCicloAcademico(entidad.getCicloAcademico());
         dominio.setCreadoEn(entidad.getCreadoEn());
         dominio.setActualizadoEn(entidad.getActualizadoEn());
         return dominio;

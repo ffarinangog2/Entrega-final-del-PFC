@@ -88,9 +88,9 @@ public class InternalController {
         try {
             var materia = materiaService.obtenerPorId(id);
             return ResponseEntity.ok(new MateriaContextoResponse(
-                    materia.id(), materia.carreraId(), true, Boolean.TRUE.equals(materia.activo())));
+                    materia.id(), materia.carreraId(), materia.nivel(), true, Boolean.TRUE.equals(materia.activo())));
         } catch (ec.edu.scli.academico.domain.exception.ResourceNotFoundException exception) {
-            return ResponseEntity.ok(new MateriaContextoResponse(id, null, false, false));
+            return ResponseEntity.ok(new MateriaContextoResponse(id, null, null, false, false));
         }
     }
 

@@ -16,6 +16,8 @@ const horas = Array.from(
   (_, index) => `${String(index + 7).padStart(2, '0')}:30`,
 )
 const inicial: api.GuardarPlanificacion = {
+  planificacionId: '',
+  nivel: 1,
   periodoId: '',
   carreraId: '',
   materiaId: '',
@@ -37,6 +39,11 @@ const etiquetas: Record<api.EstadoPlanificacion, string> = {
 
 export function CoordinadorPlanificacion() {
   const [items, setItems] = useState<api.Planificacion[]>([])
+  const [plan, setPlan] = useState<api.PlanificacionAgregada | null>(null)
+  const [planesAgregados, setPlanesAgregados] = useState<api.PlanificacionAgregada[]>([])
+  const [nivel, setNivel] = useState(1)
+  const [periodos, setPeriodos] = useState<academico.PeriodoLectivo[]>([])
+  const [periodoId, setPeriodoId] = useState('')
   const [form, setForm] = useState(inicial)
   const [editandoId, setEditandoId] = useState<string | null>(null)
   const [catalogos, setCatalogos] = useState<{
@@ -59,12 +66,12 @@ export function CoordinadorPlanificacion() {
     setCargando(true)
     setError('')
     try {
-      const [planes, periodo, materias, docentes, laboratorios, carreras] =
+      const [planes, ciclos, materias, docentes, laboratorios, carreras] =
         await Promise.all([
-          api.listarPlanificaciones(),
-          academico.obtenerPeriodoActual(),
+          api.listarPlanificacionesAgregadas(),
+          academico.obtenerPeriodos(),
           academico.obtenerMaterias(),
-          academico.obtenerDocentes(),
+          academico.obtenerDocentesPlanificacion(),
           academico.obtenerLaboratorios(),
           academico.obtenerCarreras(),
         ])
@@ -80,8 +87,20 @@ export function CoordinadorPlanificacion() {
         throw new Error(
           'No se encontró la carrera institucional del coordinador.',
         )
-      setItems(planes)
-      setIniciado(planes.length > 0)
+      const ciclosPpa = ciclos.filter(
+        (item) => item.ppaCodigo === 'REGULAR-2026-2027-PPA',
+      )
+      const cicloId = ciclosPpa[0]?.id || ciclos[0]?.id || ''
+      const periodo = ciclos.find((item) => item.id === cicloId)
+      if (!periodo) throw new Error('No existe un ciclo académico disponible.')
+      const planActual =
+        planes.find((item) => item.periodoId === cicloId) ?? null
+      setPeriodos(ciclosPpa.length > 0 ? ciclosPpa : ciclos)
+      setPeriodoId(cicloId)
+      setPlan(planActual)
+      setPlanesAgregados(planes)
+      setItems(planActual?.bloques ?? [])
+      setIniciado(planActual !== null)
       setCatalogos({
         periodo,
         carrera,
@@ -93,6 +112,8 @@ export function CoordinadorPlanificacion() {
         ...actual,
         periodoId: periodo.id,
         carreraId: carrera.id,
+        planificacionId: planActual?.id ?? '',
+        nivel: 1,
       }))
     } catch (cause) {
       setError(
@@ -112,6 +133,27 @@ export function CoordinadorPlanificacion() {
     () => items.filter((item) => item.estado !== 'CANCELADA'),
     [items],
   )
+  const visiblesNivel = useMemo(
+    () => visibles.filter((item) => (item.nivel ?? 1) === nivel),
+    [nivel, visibles],
+  )
+  const materiasNivel = useMemo(
+    () =>
+      catalogos.materias.filter(
+        (item) => item.nivel == null || item.nivel === nivel,
+      ),
+    [catalogos.materias, nivel],
+  )
+
+  function seleccionarPeriodo(id: string) {
+    setPeriodoId(id)
+    const periodo = periodos.find((item) => item.id === id)
+    const actual = planesAgregados.find((item) => item.periodoId === id) ?? null
+    setCatalogos((value) => ({ ...value, periodo }))
+    setPlan(actual)
+    setItems(actual?.bloques ?? [])
+    setIniciado(actual !== null)
+  }
   const editables = visibles.filter((item) =>
     ['BORRADOR', 'PROPUESTA_CAMBIO'].includes(item.estado),
   )
@@ -130,7 +172,9 @@ export function CoordinadorPlanificacion() {
             ? 'BORRADOR'
             : null
   const soloLectura =
-    estadoGeneral === 'ENVIADA' || estadoGeneral === 'CONFIRMADA'
+    plan?.estado === 'EN_REVISION' ||
+    plan?.estado === 'APROBADA' ||
+    plan?.estado === 'FINALIZADA'
   const materia = (id: string) =>
     catalogos.materias.find((item) => item.id === id)
   const docente = (id: string | null) =>
@@ -144,6 +188,8 @@ export function CoordinadorPlanificacion() {
     setError('')
     setForm({
       ...inicial,
+      planificacionId: plan?.id ?? '',
+      nivel,
       periodoId: catalogos.periodo?.id ?? '',
       carreraId: catalogos.carrera?.id ?? '',
       diaSemana,
@@ -156,6 +202,8 @@ export function CoordinadorPlanificacion() {
     setEditandoId(item.id)
     setError('')
     setForm({
+      planificacionId: item.planificacionId ?? plan?.id ?? '',
+      nivel: item.nivel ?? nivel,
       periodoId: item.periodoId,
       carreraId: item.carreraId,
       materiaId: item.materiaId,
@@ -242,18 +290,11 @@ export function CoordinadorPlanificacion() {
     }
   }
   async function enviarCompleta() {
-    if (enviando || editables.length === 0) return
+    if (enviando || !plan || editables.length === 0) return
     setEnviando(true)
     setError('')
     try {
-      await Promise.all(
-        editables.map((item) =>
-          api.accionPlanificacion(
-            item.id,
-            item.estado === 'PROPUESTA_CAMBIO' ? 'reenviar' : 'enviar',
-          ),
-        ),
-      )
+      await api.enviarPlanificacionCompleta(plan.id)
       setConfirmando(false)
       setMensaje('Planificación enviada correctamente para revisión.')
       await cargar()
@@ -265,6 +306,27 @@ export function CoordinadorPlanificacion() {
       )
     } finally {
       setEnviando(false)
+    }
+  }
+
+  async function iniciarPlanificacion() {
+    if (!periodoId || guardando) return
+    setGuardando(true)
+    setError('')
+    try {
+      const creada = await api.iniciarPlanificacion(periodoId)
+      setPlan(creada)
+      setItems(creada.bloques)
+      setIniciado(true)
+      setMensaje('Planificación iniciada en borrador.')
+    } catch (cause) {
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : 'No fue posible iniciar la planificación.',
+      )
+    } finally {
+      setGuardando(false)
     }
   }
 
@@ -283,7 +345,7 @@ export function CoordinadorPlanificacion() {
             <h1>Planificación semanal</h1>
             <span>
               {catalogos.carrera?.nombre ?? 'Mi carrera'} ·{' '}
-              {catalogos.periodo?.nombre ?? 'Periodo activo'}
+              {catalogos.periodo?.ppaNombre ?? catalogos.periodo?.nombre ?? 'Periodo activo'}
             </span>
           </div>
           <div>
@@ -311,6 +373,48 @@ export function CoordinadorPlanificacion() {
           <p role="status">Cargando planificación...</p>
         ) : (
           <>
+            <section
+              className="weekly-planning__selectors"
+              aria-label="Periodo, ciclo y nivel"
+            >
+              <label>
+                Periodo
+                <input
+                  readOnly
+                  value={catalogos.periodo?.ppaNombre ?? 'REGULAR - 2026-2027 PPA'}
+                />
+              </label>
+              <label>
+                Ciclo académico
+                <select
+                  value={periodoId}
+                  onChange={(event) => seleccionarPeriodo(event.target.value)}
+                >
+                  {periodos.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.cicloAcademico === 1
+                        ? 'Mayo–Septiembre'
+                        : item.cicloAcademico === 2
+                          ? 'Noviembre–Abril'
+                          : item.nombre}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <div role="group" aria-label="Nivel académico">
+                {Array.from({ length: 10 }, (_, index) => index + 1).map(
+                  (value) => (
+                    <button
+                      key={value}
+                      aria-pressed={nivel === value}
+                      onClick={() => setNivel(value)}
+                    >
+                      {value}°
+                    </button>
+                  ),
+                )}
+              </div>
+            </section>
             {estadoGeneral === 'PROPUESTA_CAMBIO' && (
               <aside className="weekly-planning__notice">
                 <strong>Planificación devuelta con observaciones.</strong>
@@ -325,7 +429,7 @@ export function CoordinadorPlanificacion() {
               aria-label="Resumen de planificación"
             >
               <div>
-                <strong>{catalogos.materias.length}</strong>
+                <strong>{materiasNivel.length}</strong>
                 <span>Materias disponibles</span>
               </div>
               <div>
@@ -345,7 +449,10 @@ export function CoordinadorPlanificacion() {
               <div className="weekly-planning__empty">
                 <p>La planificación todavía no tiene bloques.</p>
                 {!iniciado && (
-                  <button onClick={() => setIniciado(true)}>
+                  <button
+                    onClick={() => void iniciarPlanificacion()}
+                    disabled={guardando}
+                  >
                     Iniciar planificación
                   </button>
                 )}
@@ -377,7 +484,7 @@ export function CoordinadorPlanificacion() {
                       </th>
                       {dias.map((dia) => {
                         const siguienteHora = `${String(Number(hora.slice(0, 2)) + 1).padStart(2, '0')}:30`
-                        const bloques = visibles.filter(
+                        const bloques = visiblesNivel.filter(
                           (item) =>
                             item.diaSemana === dia &&
                             item.horaInicio >= hora &&
@@ -446,7 +553,7 @@ export function CoordinadorPlanificacion() {
             {!soloLectura && editables.length > 0 && (
               <div className="weekly-planning__send">
                 <button onClick={() => setConfirmando(true)}>
-                  Enviar planificación
+                  Enviar planificación completa
                 </button>
               </div>
             )}
@@ -473,7 +580,7 @@ export function CoordinadorPlanificacion() {
                   }
                 >
                   <option value="">Seleccione una materia</option>
-                  {catalogos.materias.map((item) => (
+                  {materiasNivel.map((item) => (
                     <option key={item.id} value={item.id}>
                       {item.codigo} — {item.nombre}
                     </option>
