@@ -4,7 +4,9 @@ import { hasRole, useAuth } from '../../auth'
 import { DashboardLayout } from '../../components/DashboardLayout'
 import {
   obtenerLaboratorios,
+  obtenerPisos,
   type Laboratorio,
+  type Piso,
 } from '../../services/academicoApi'
 import { obtenerCalendario, type Reserva } from './reservasApi'
 import './Reservas.css'
@@ -23,9 +25,12 @@ function iso(fecha: Date) {
 export function CalendarioReservasPage() {
   const { usuario } = useAuth()
   const coordinador = hasRole(usuario, 'COORDINADOR')
+  const administrador = hasRole(usuario, 'ADMINISTRADOR')
   const [inicio, setInicio] = useState(() => inicioSemana(new Date()))
   const [reservas, setReservas] = useState<Reserva[]>([])
   const [laboratorios, setLaboratorios] = useState<Laboratorio[]>([])
+  const [pisos, setPisos] = useState<Piso[]>([])
+  const [filtros, setFiltros] = useState({ piso: '', laboratorio: '' })
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const fin = new Date(inicio)
@@ -56,6 +61,9 @@ export function CalendarioReservasPage() {
       .then(setLaboratorios)
       .catch(() => setLaboratorios([]))
   }, [])
+  useEffect(() => {
+    if (administrador) void obtenerPisos().then(setPisos).catch(() => setPisos([]))
+  }, [administrador])
   const mover = (cantidad: number) =>
     setInicio((actual) => {
       const siguiente = new Date(actual)
@@ -92,6 +100,10 @@ export function CalendarioReservasPage() {
             <button onClick={() => mover(7)}>Semana siguiente</button>
           </div>
         </header>
+        {administrador && <div className="reservas-filters">
+          <label>Piso<select value={filtros.piso} onChange={(e) => setFiltros({ piso: e.target.value, laboratorio: '' })}><option value="">Todos</option>{pisos.map((piso) => <option key={piso.id} value={piso.id}>Piso {piso.numero}</option>)}</select></label>
+          <label>Laboratorio<select value={filtros.laboratorio} onChange={(e) => setFiltros({ ...filtros, laboratorio: e.target.value })}><option value="">Todos</option>{laboratorios.filter((lab) => !filtros.piso || lab.pisoId === filtros.piso).map((lab) => <option key={lab.id} value={lab.id}>{lab.codigo} — {lab.nombre}</option>)}</select></label>
+        </div>}
         {coordinador ? (
           <div className="reservas-list reservas-list--availability">
             {laboratorios.length === 0 ? (
@@ -139,6 +151,8 @@ export function CalendarioReservasPage() {
                       })}
                     </h2>
                     {reservas
+                      .filter((reserva) => !filtros.laboratorio || reserva.laboratorioId === filtros.laboratorio)
+                      .filter((reserva) => !filtros.piso || laboratorios.find((lab) => lab.id === reserva.laboratorioId)?.pisoId === filtros.piso)
                       .filter((reserva) => reserva.fechaReserva === iso(dia))
                       .map((reserva) => {
                         const lab = laboratorios.find(

@@ -56,7 +56,7 @@ describe('AdminDashboard', () => {
     vi.mocked(reservas.obtenerReservas).mockResolvedValue([])
     vi.mocked(reservas.obtenerSolicitudes).mockResolvedValue([])
     vi.mocked(operational.listarIncidentes).mockResolvedValue([])
-    vi.mocked(operational.listarPlanificaciones).mockResolvedValue([])
+    vi.mocked(operational.listarPlanificacionesAgregadas).mockResolvedValue([])
   })
 
   it('muestra métricas globales y accesos humanos sin UUID', async () => {

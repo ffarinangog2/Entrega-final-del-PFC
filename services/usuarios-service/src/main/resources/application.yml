@@ -74,6 +74,11 @@ app:
     data-encryption-key: ${DATA_ENCRYPTION_KEY:MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=}
     data-hash-key: ${DATA_HASH_KEY:MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=}
 
+auth:
+  service:
+    url: ${AUTH_SERVICE_URL:http://auth-service:8081}
+    timeout-ms: ${AUTH_SERVICE_TIMEOUT_MS:3000}
+
 logging:
   structured:
     format:

@@ -1,103 +1,73 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import * as usuariosApi from '../services/usuariosApi'
-import { UsuariosApiError } from '../services/usuariosApi'
+import * as usuarios from '../services/usuariosApi'
+import * as auth from '../services/authApi'
+import * as academico from '../services/academicoApi'
 import { UsuariosPage } from './UsuariosPage'
-import type { Perfil } from '../services/usuariosApi'
 
-vi.mock('../services/usuariosApi', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('../services/usuariosApi')>()),
-  listarPerfiles: vi.fn(),
-  crearPerfil: vi.fn(),
-}))
-vi.mock('../components/DashboardLayout', () => ({
-  DashboardLayout: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-}))
+vi.mock('../services/usuariosApi')
+vi.mock('../services/authApi')
+vi.mock('../services/academicoApi')
+vi.mock('../components/DashboardLayout', () => ({ DashboardLayout: ({ children }: { children: React.ReactNode }) => <>{children}</> }))
 
-const perfilMock: Perfil = {
-  id: '11111111-1111-1111-1111-111111111111',
-  identificacion: '0102030405',
-  nombres: 'Ana',
-  apellidos: 'Gómez',
-  emailInstitucional: 'ana.gomez@uteq.edu.ec',
-  emailPersonal: 'ana.gomez@gmail.com',
-  telefono: '0999999999',
-  direccion: 'Av. Principal 123',
-  fechaNacimiento: '1995-05-20',
-  fotoUrl: null,
-  activo: true,
-  creadoEn: '2026-08-18T10:00:00Z',
-  actualizadoEn: '2026-08-18T10:00:00Z',
-}
+const perfil = { id: 'perfil-1', identificacion: '0102030405', nombres: 'Ana', apellidos: 'Gómez', emailInstitucional: 'ana@uteq.edu.ec', emailPersonal: null, telefono: null, direccion: null, fechaNacimiento: null, fotoUrl: null, activo: true, creadoEn: '', actualizadoEn: '' }
+const cuenta: auth.UsuarioInstitucional = { id: 'auth-1', perfilId: 'perfil-1', username: 'ana.gomez', email: 'ana@uteq.edu.ec', rol: 'COORDINADOR', activo: true }
 
-function renderPage() {
-  render(
-    <MemoryRouter>
-      <UsuariosPage />
-    </MemoryRouter>,
-  )
-}
+function renderPage() { render(<MemoryRouter><UsuariosPage /></MemoryRouter>) }
 
-describe('UsuariosPage', () => {
-  beforeEach(() => vi.resetAllMocks())
-
-  it('muestra loading mientras consulta el listado', () => {
-    vi.mocked(usuariosApi.listarPerfiles).mockReturnValue(new Promise(() => {}))
-    renderPage()
-    expect(screen.getByText('Cargando perfiles...')).toBeInTheDocument()
+describe('UsuariosPage administrativa', () => {
+  beforeEach(() => {
+    vi.resetAllMocks()
+    vi.mocked(usuarios.listarPerfiles).mockResolvedValue([perfil])
+    vi.mocked(auth.listarUsuariosInstitucionales).mockResolvedValue([cuenta])
+    vi.mocked(usuarios.obtenerAsociacionRol).mockResolvedValue({ pisoId: null, carreraId: 'carrera-1' })
+    vi.mocked(academico.obtenerPisos).mockResolvedValue([{ id: 'piso-2', bloqueId: 'b1', numero: 2, descripcion: '', activo: true }])
+    vi.mocked(academico.obtenerCarreras).mockResolvedValue([{ id: 'carrera-1', facultadId: 'f1', codigo: 'IS', nombre: 'Ingeniería de Software', activo: true }])
   })
 
-  it('renderiza la tabla con los perfiles reales', async () => {
-    vi.mocked(usuariosApi.listarPerfiles).mockResolvedValue([perfilMock])
-    renderPage()
-
-    expect(await screen.findByText('Ana')).toBeInTheDocument()
-    expect(screen.getByText('Gómez')).toBeInTheDocument()
-    expect(screen.getByText('ana.gomez@uteq.edu.ec')).toBeInTheDocument()
-    expect(screen.getByText('Sí')).toBeInTheDocument()
+  it('lista y filtra cuentas por rol y estado', async () => {
+    const user = userEvent.setup(); renderPage()
+    expect(await screen.findByText('ana.gomez')).toBeInTheDocument()
+    await user.selectOptions(screen.getAllByLabelText('Rol')[0], 'DOCENTE')
+    expect(screen.getByText('No existen usuarios para los filtros seleccionados.')).toBeInTheDocument()
   })
 
-  it('crea un perfil exitosamente y muestra el aviso de éxito', async () => {
+  it('crea perfil, asociación de piso y credenciales reales', async () => {
     const user = userEvent.setup()
-    vi.mocked(usuariosApi.listarPerfiles).mockResolvedValue([])
-    vi.mocked(usuariosApi.crearPerfil).mockResolvedValue(perfilMock)
-    renderPage()
-
-    await screen.findByText('No hay perfiles registrados.')
-
-    await user.type(screen.getByLabelText('Nombres'), 'Ana')
-    await user.type(screen.getByLabelText('Apellidos'), 'Gómez')
-    await user.type(screen.getByLabelText('Email institucional'), 'ana.gomez@uteq.edu.ec')
-    await user.click(screen.getByRole('button', { name: 'Crear perfil' }))
-
-    expect(await screen.findByText('Perfil creado correctamente.')).toBeInTheDocument()
-    expect(usuariosApi.crearPerfil).toHaveBeenCalledWith(
-      expect.objectContaining({
-        nombres: 'Ana',
-        apellidos: 'Gómez',
-        emailInstitucional: 'ana.gomez@uteq.edu.ec',
-      }),
-    )
-    expect(await screen.findByText('Ana')).toBeInTheDocument()
+    vi.mocked(usuarios.listarPerfiles).mockResolvedValue([]); vi.mocked(auth.listarUsuariosInstitucionales).mockResolvedValue([])
+    vi.mocked(usuarios.crearUsuarioInstitucionalCompleto).mockResolvedValue(perfil)
+    renderPage(); await screen.findByText('No existen usuarios para los filtros seleccionados.')
+    await user.type(screen.getByLabelText('Identificación'), '0102030405'); await user.type(screen.getByLabelText('Nombres'), 'Ana')
+    await user.type(screen.getByLabelText('Apellidos'), 'Gómez'); await user.type(screen.getByLabelText('Correo institucional'), 'ana@uteq.edu.ec')
+    await user.type(screen.getByLabelText('Nombre de usuario'), 'ana.gomez'); await user.type(screen.getByLabelText('Contraseña inicial'), 'ClaveSegura1!')
+    const roles = screen.getAllByLabelText('Rol')
+    await user.selectOptions(roles[roles.length - 1], 'ADMINISTRADOR_PISO'); await user.selectOptions(screen.getByLabelText('Piso'), 'piso-2')
+    await user.click(screen.getByRole('button', { name: 'Crear usuario' }))
+    await waitFor(() => expect(usuarios.crearUsuarioInstitucionalCompleto).toHaveBeenCalledWith(expect.objectContaining({ rol: 'ADMINISTRADOR_PISO', pisoId: 'piso-2', carreraId: null })))
   })
 
-  it('muestra el error de validación al crear', async () => {
+  it('cambia rol y asociación de carrera al editar', async () => {
+    const user = userEvent.setup(); vi.mocked(usuarios.actualizarUsuarioInstitucionalCompleto).mockResolvedValue(perfil)
+    renderPage(); await user.click(await screen.findByRole('button', { name: 'Editar' }))
+    await waitFor(() => expect(screen.getByLabelText('Carrera')).toHaveValue('carrera-1'))
+    const roles = screen.getAllByLabelText('Rol')
+    await user.selectOptions(roles[roles.length - 1], 'COORDINADOR'); await user.selectOptions(screen.getByLabelText('Carrera'), 'carrera-1')
+    await user.click(screen.getByRole('button', { name: 'Guardar cambios' }))
+    await waitFor(() => expect(usuarios.actualizarUsuarioInstitucionalCompleto).toHaveBeenCalledWith('perfil-1', expect.objectContaining({ rol: 'COORDINADOR', pisoId: null, carreraId: 'carrera-1' })))
+  })
+
+  it('activa o desactiva la cuenta en Auth', async () => {
+    const user = userEvent.setup(); vi.mocked(usuarios.actualizarUsuarioInstitucionalCompleto).mockResolvedValue({ ...perfil, activo: false })
+    renderPage(); await user.click(await screen.findByRole('button', { name: 'Desactivar' }))
+    await waitFor(() => expect(usuarios.actualizarUsuarioInstitucionalCompleto).toHaveBeenCalledWith('perfil-1', expect.objectContaining({ activo: false })))
+  })
+
+  it('muestra el fallo atómico si backend rechaza la desactivación', async () => {
     const user = userEvent.setup()
-    vi.mocked(usuariosApi.listarPerfiles).mockResolvedValue([])
-    vi.mocked(usuariosApi.crearPerfil).mockRejectedValue(
-      new UsuariosApiError(400, 'Los datos enviados no son válidos'),
-    )
-    renderPage()
-
-    await screen.findByText('No hay perfiles registrados.')
-
-    await user.type(screen.getByLabelText('Nombres'), 'Ana')
-    await user.type(screen.getByLabelText('Apellidos'), 'Gómez')
-    await user.type(screen.getByLabelText('Email institucional'), 'no-es-un-email')
-    await user.click(screen.getByRole('button', { name: 'Crear perfil' }))
-
-    expect(await screen.findByRole('alert')).toHaveTextContent('Los datos enviados no son válidos')
+    vi.mocked(usuarios.actualizarUsuarioInstitucionalCompleto).mockRejectedValue(new Error('Auth no disponible'))
+    renderPage(); await user.click(await screen.findByRole('button', { name: 'Desactivar' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('Auth no disponible')
   })
 })

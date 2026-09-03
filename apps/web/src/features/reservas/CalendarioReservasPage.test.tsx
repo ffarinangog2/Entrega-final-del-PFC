@@ -120,4 +120,18 @@ describe('CalendarioReservasPage', () => {
     expect(await screen.findByText('LAB-A — Redes')).toBeInTheDocument()
     expect(api.obtenerCalendario).not.toHaveBeenCalled()
   })
+  it('administrador filtra la ocupación global por piso y laboratorio', async () => {
+    roles = ['ADMINISTRADOR']
+    vi.mocked(academico.obtenerPisos).mockResolvedValue([
+      { id: 'p1', bloqueId: 'b1', numero: 1, descripcion: '', activo: true },
+    ])
+    vi.mocked(api.obtenerCalendario).mockImplementation(async (desde) => [
+      { ...reserva, fechaReserva: desde },
+    ])
+    render(<MemoryRouter><CalendarioReservasPage /></MemoryRouter>)
+    expect(await screen.findByText(/RES-1/)).toBeInTheDocument()
+    fireEvent.change(screen.getByLabelText('Piso'), { target: { value: 'p1' } })
+    fireEvent.change(screen.getByLabelText('Laboratorio'), { target: { value: 'lab-1' } })
+    expect(screen.getByText(/RES-1/)).toBeInTheDocument()
+  })
 })

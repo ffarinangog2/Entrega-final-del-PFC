@@ -43,7 +43,7 @@ export function DashboardLayout({
     (administrador || administradorPiso || coordinador) &&
     hasAnyPermission(usuario, ['PLANIFICACION_GESTIONAR', 'SOLICITUD_APROBAR'])
   const verAsistencia =
-    (administrador || docente || estudiante) &&
+    (docente || estudiante) &&
     hasAnyPermission(usuario, ['RESERVA_LEER', 'ACADEMICO_LEER'])
   const verIncidentes =
     (administrador || administradorPiso || docente) &&
@@ -94,7 +94,7 @@ export function DashboardLayout({
               {t('dashboard.nav.home')}
             </NavLink>
             {verLaboratorios && (
-              <NavLink className="dashboard__nav-item" to="/main">
+              <NavLink className="dashboard__nav-item" to={administrador ? '/laboratorios' : '/main'}>
                 <span aria-hidden="true">L</span>
                 {t('dashboard.nav.labs')}
               </NavLink>
@@ -153,6 +153,16 @@ export function DashboardLayout({
               <NavLink className="dashboard__nav-item" to="/administracion">
                 <span aria-hidden="true">G</span>
                 Catálogos y asignaciones
+              </NavLink>
+            )}
+            {administrador && (
+              <NavLink className="dashboard__nav-item" to="/pisos">
+                <span aria-hidden="true">P</span>Pisos
+              </NavLink>
+            )}
+            {administrador && (
+              <NavLink className="dashboard__nav-item" to="/equipos">
+                <span aria-hidden="true">E</span>Equipos
               </NavLink>
             )}
             <NavLink className="dashboard__nav-item" to="/perfil">

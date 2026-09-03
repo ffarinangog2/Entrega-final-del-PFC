@@ -16,9 +16,10 @@ vi.mock('../../components/DashboardLayout', () => ({
     <>{children}</>
   ),
 }))
+let roles = ['DOCENTE']
 vi.mock('../../auth', async (original) => ({
   ...(await original<typeof import('../../auth')>()),
-  useAuth: () => ({ usuario: { roles: ['DOCENTE'] } }),
+  useAuth: () => ({ usuario: { roles } }),
 }))
 
 const reserva = {
@@ -63,6 +64,7 @@ const solicitud = {
 describe('ReservasListPage', () => {
   beforeEach(() => {
     vi.resetAllMocks()
+    roles = ['DOCENTE']
     vi.mocked(api.obtenerReservas).mockResolvedValue([reserva])
     vi.mocked(api.obtenerSolicitudes).mockResolvedValue([solicitud])
     vi.mocked(academico.obtenerLaboratorios).mockResolvedValue([
@@ -126,5 +128,18 @@ describe('ReservasListPage', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'No tiene autorización para consultar las reservas de este piso.',
     )
+  })
+  it('ADMIN filtra globalmente por piso, laboratorio, estado y fecha', async () => {
+    roles = ['ADMINISTRADOR']
+    vi.mocked(academico.obtenerPisos).mockResolvedValue([{ id: 'p1', bloqueId: 'b1', numero: 1, descripcion: '', activo: true }])
+    render(<MemoryRouter><ReservasListPage /></MemoryRouter>)
+    await screen.findByText('MAT-A — Redes I')
+    fireEvent.change(screen.getByLabelText('Piso'), { target: { value: 'p1' } })
+    fireEvent.change(screen.getByLabelText('Laboratorio'), { target: { value: 'lab-1' } })
+    fireEvent.change(screen.getByLabelText('Estado'), { target: { value: 'EN_REVISION' } })
+    fireEvent.change(screen.getByLabelText('Fecha'), { target: { value: '2026-08-20' } })
+    expect(screen.getByText('MAT-A — Redes I')).toBeInTheDocument()
+    fireEvent.change(screen.getByLabelText('Fecha'), { target: { value: '2026-08-21' } })
+    expect(screen.getByText('No hay solicitudes registradas.')).toBeInTheDocument()
   })
 })

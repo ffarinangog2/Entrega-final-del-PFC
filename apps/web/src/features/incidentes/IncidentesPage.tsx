@@ -8,7 +8,8 @@ export function IncidentesPage() {
   const { usuario } = useAuth(),
     gestor = hasPermission(usuario, 'INCIDENTE_GESTIONAR'),
     puedeCrear = hasPermission(usuario, 'INCIDENTE_CREAR'),
-    administradorPiso = hasRole(usuario, 'ADMINISTRADOR_PISO')
+    administradorPiso = hasRole(usuario, 'ADMINISTRADOR_PISO'),
+    administrador = hasRole(usuario, 'ADMINISTRADOR')
   const [items, setItems] = useState<api.Incidente[]>([]),
     [laboratorios, setLaboratorios] = useState<Laboratorio[]>([]),
     [form, setForm] = useState({
@@ -20,6 +21,7 @@ export function IncidentesPage() {
     [error, setError] = useState(''),
     [mensaje, setMensaje] = useState(''),
     [loading, setLoading] = useState(true)
+  const [filtros, setFiltros] = useState({ laboratorio: '', prioridad: '', estado: '' })
   const cargar = useCallback(async () => {
     setLoading(true)
     try {
@@ -32,12 +34,16 @@ export function IncidentesPage() {
   }, [])
   useEffect(() => {
     void cargar()
-    if (administradorPiso) {
+    if (administradorPiso || administrador) {
       void Promise.resolve(obtenerLaboratorios())
         .then((items) => setLaboratorios(items ?? []))
         .catch(() => setLaboratorios([]))
     }
-  }, [administradorPiso, cargar])
+  }, [administrador, administradorPiso, cargar])
+  const visibles = items.filter((item) =>
+    (!filtros.laboratorio || item.laboratorioEquipo === filtros.laboratorio)
+    && (!filtros.prioridad || item.prioridad === filtros.prioridad)
+    && (!filtros.estado || item.estado === filtros.estado))
   async function crear(e: FormEvent) {
     e.preventDefault()
     try {
@@ -63,8 +69,8 @@ export function IncidentesPage() {
       <div className="operations">
         <header>
           <div>
-            <h1>Incidentes</h1>
-            <p>Seguimiento operacional dentro de su ámbito autorizado.</p>
+            <h1>{administrador ? 'Supervisión global de incidentes' : 'Incidentes'}</h1>
+            <p>{administrador ? 'Incidentes asociados al catálogo institucional de laboratorios.' : 'Seguimiento operacional dentro de su ámbito autorizado.'}</p>
           </div>
           <button onClick={() => void cargar()}>Actualizar</button>
         </header>
@@ -82,7 +88,7 @@ export function IncidentesPage() {
           <form className="operations__form" onSubmit={crear}>
             <label>
               Laboratorio o equipo
-              {administradorPiso ? (
+              {administradorPiso || administrador ? (
                 <select
                   required
                   value={form.laboratorioEquipo}
@@ -133,10 +139,15 @@ export function IncidentesPage() {
             <button>Reportar incidente</button>
           </form>
         )}
+        {administrador && <div className="operations__form">
+          <label>Laboratorio<select value={filtros.laboratorio} onChange={(e) => setFiltros({ ...filtros, laboratorio: e.target.value })}><option value="">Todos</option>{laboratorios.map((lab) => <option key={lab.id} value={lab.codigo}>{lab.codigo} — {lab.nombre}</option>)}</select></label>
+          <label>Prioridad<select value={filtros.prioridad} onChange={(e) => setFiltros({ ...filtros, prioridad: e.target.value })}><option value="">Todas</option><option>BAJA</option><option>MEDIA</option><option>ALTA</option></select></label>
+          <label>Estado<select value={filtros.estado} onChange={(e) => setFiltros({ ...filtros, estado: e.target.value })}><option value="">Todos</option><option>REPORTADO</option><option>EN_REVISION</option><option>RESUELTO</option></select></label>
+        </div>}
         <div className="operations__table-wrap">
           {loading ? (
             <p>Cargando…</p>
-          ) : items.length === 0 ? (
+          ) : visibles.length === 0 ? (
             <p className="operations__empty">No existen incidentes.</p>
           ) : (
             <table>
@@ -150,7 +161,7 @@ export function IncidentesPage() {
                 </tr>
               </thead>
               <tbody>
-                {items.map((x) => (
+                {visibles.map((x) => (
                   <tr key={x.id}>
                     <td>{x.laboratorioEquipo}</td>
                     <td>{x.descripcion}</td>

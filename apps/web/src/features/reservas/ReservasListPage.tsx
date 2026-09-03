@@ -5,8 +5,10 @@ import { hasRole, useAuth } from '../../auth'
 import {
   obtenerLaboratorios,
   obtenerMaterias,
+  obtenerPisos,
   type Laboratorio,
   type Materia,
+  type Piso,
 } from '../../services/academicoApi'
 import { ApiError } from '../../services/apiClient'
 import {
@@ -38,13 +40,16 @@ export function ReservasListPage() {
   const { usuario } = useAuth()
   const docente = hasRole(usuario, 'DOCENTE')
   const administradorPiso = hasRole(usuario, 'ADMINISTRADOR_PISO')
+  const administrador = hasRole(usuario, 'ADMINISTRADOR')
   const [tab, setTab] = useState<'solicitudes' | 'reservas'>('solicitudes')
   const [solicitudes, setSolicitudes] = useState<SolicitudReserva[]>([])
   const [reservas, setReservas] = useState<Reserva[]>([])
   const [laboratorios, setLaboratorios] = useState<Laboratorio[]>([])
   const [materias, setMaterias] = useState<Materia[]>([])
+  const [pisosCatalogo, setPisosCatalogo] = useState<Piso[]>([])
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [filtros, setFiltros] = useState({ piso: '', laboratorio: '', estado: '', fecha: '' })
 
   const cargar = useCallback(async () => {
     setCargando(true)
@@ -79,6 +84,9 @@ export function ReservasListPage() {
   useEffect(() => {
     void cargar()
   }, [cargar])
+  useEffect(() => {
+    if (administrador) void obtenerPisos().then(setPisosCatalogo).catch(() => setPisosCatalogo([]))
+  }, [administrador])
 
   const laboratorioPorId = useMemo(
     () => new Map(laboratorios.map((item) => [item.id, item])),
@@ -92,6 +100,16 @@ export function ReservasListPage() {
     const item = laboratorioPorId.get(id)
     return item ? `${item.codigo} — ${item.nombre}` : 'Laboratorio'
   }
+  const coincide = (laboratorioId: string, estadoItem: string, fecha: string) => {
+    const lab = laboratorioPorId.get(laboratorioId)
+    return (!filtros.piso || lab?.pisoId === filtros.piso)
+      && (!filtros.laboratorio || laboratorioId === filtros.laboratorio)
+      && (!filtros.estado || estadoItem === filtros.estado)
+      && (!filtros.fecha || fecha === filtros.fecha)
+  }
+  const solicitudesVisibles = solicitudes.filter((item) => coincide(item.laboratorioId, item.estado, item.fechaReserva))
+  const reservasVisibles = reservas.filter((item) => coincide(item.laboratorioId, item.estado, item.fechaReserva))
+  const pisos = [...new Set(laboratorios.map((item) => item.pisoId))]
 
   const titulo = docente
     ? 'Mis solicitudes y reservas'
@@ -136,6 +154,12 @@ export function ReservasListPage() {
             Reservas
           </button>
         </div>
+        {administrador && <div className="reservas-filters">
+          <label>Piso<select value={filtros.piso} onChange={(e) => setFiltros({ ...filtros, piso: e.target.value })}><option value="">Todos</option>{pisos.map((id) => <option key={id} value={id}>Piso {pisosCatalogo.find((piso) => piso.id === id)?.numero ?? 'sin nombre'}</option>)}</select></label>
+          <label>Laboratorio<select value={filtros.laboratorio} onChange={(e) => setFiltros({ ...filtros, laboratorio: e.target.value })}><option value="">Todos</option>{laboratorios.filter((lab) => !filtros.piso || lab.pisoId === filtros.piso).map((lab) => <option key={lab.id} value={lab.id}>{lab.codigo} — {lab.nombre}</option>)}</select></label>
+          <label>Estado<select value={filtros.estado} onChange={(e) => setFiltros({ ...filtros, estado: e.target.value })}><option value="">Todos</option>{(tab === 'solicitudes' ? Object.keys(solicitudLabel) : Object.keys(reservaLabel)).map((estado) => <option key={estado}>{estado}</option>)}</select></label>
+          <label>Fecha<input type="date" value={filtros.fecha} onChange={(e) => setFiltros({ ...filtros, fecha: e.target.value })} /></label>
+        </div>}
         {cargando && (
           <p role="status" className="reservas-panel__message">
             Cargando información...
@@ -154,12 +178,12 @@ export function ReservasListPage() {
         )}
         {!cargando && !error && tab === 'solicitudes' && (
           <div className="reservas-list">
-            {solicitudes.length === 0 && (
+            {solicitudesVisibles.length === 0 && (
               <p className="reservas-panel__message">
                 No hay solicitudes registradas.
               </p>
             )}
-            {solicitudes.map((solicitud) => {
+            {solicitudesVisibles.map((solicitud) => {
               const materia = materiaPorId.get(solicitud.materiaId)
               return (
                 <article className="reserva-card" key={solicitud.id}>
@@ -202,12 +226,12 @@ export function ReservasListPage() {
         )}
         {!cargando && !error && tab === 'reservas' && (
           <div className="reservas-list">
-            {reservas.length === 0 && (
+            {reservasVisibles.length === 0 && (
               <p className="reservas-panel__message">
                 No hay reservas registradas.
               </p>
             )}
-            {reservas.map((reserva) => (
+            {reservasVisibles.map((reserva) => (
               <article className="reserva-card" key={reserva.id}>
                 <div className="reserva-card__heading">
                   <div>

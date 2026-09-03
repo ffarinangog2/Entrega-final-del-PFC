@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as academico from '../../services/academicoApi'
 import * as usuarios from '../../services/usuariosApi'
@@ -24,6 +24,8 @@ describe('AdminInstitutionPage', () => {
     vi.mocked(academico.obtenerCarreras).mockResolvedValue([])
     vi.mocked(academico.obtenerMaterias).mockResolvedValue([])
     vi.mocked(academico.obtenerPeriodos).mockResolvedValue([])
+    vi.mocked(academico.obtenerBloques).mockResolvedValue([])
+    vi.mocked(academico.obtenerFacultades).mockResolvedValue([])
     vi.mocked(usuarios.listarAdministradores).mockResolvedValue([
       { id: 'admin-1', perfilId: 'perfil-1', codigoAdministrador: 'adminpiso.01', cargo: 'Administrador de piso', pisoId: 'piso-1', activo: true },
     ])
@@ -40,20 +42,29 @@ describe('AdminInstitutionPage', () => {
   })
 
   it('crea un laboratorio usando un piso real y sin pedir UUID', async () => {
+    const lab09 = {
+      id: 'lab-9', pisoId: 'piso-2', codigo: 'LAB-09', nombre: 'Inteligencia Artificial',
+      capacidad: 30, descripcion: '', estado: 'DISPONIBLE' as const, activo: true, creadoEn: '', actualizadoEn: '',
+    }
+    vi.mocked(academico.obtenerLaboratorios).mockResolvedValueOnce([]).mockResolvedValue([lab09])
     vi.mocked(academico.crearLaboratorio).mockResolvedValue({
-      id: 'lab-9', pisoId: 'piso-1', codigo: 'LAB-09', nombre: 'Inteligencia Artificial',
+      id: 'lab-9', pisoId: 'piso-2', codigo: 'LAB-09', nombre: 'Inteligencia Artificial',
       capacidad: 30, descripcion: '', estado: 'DISPONIBLE', activo: true, creadoEn: '', actualizadoEn: '',
     })
     render(<AdminInstitutionPage />)
     await screen.findByText('adminpiso.01')
-    fireEvent.change(screen.getByLabelText('Código'), { target: { value: 'LAB-09' } })
-    fireEvent.change(screen.getByLabelText('Nombre'), { target: { value: 'Inteligencia Artificial' } })
-    fireEvent.change(screen.getByLabelText('Piso'), { target: { value: 'piso-1' } })
-    fireEvent.change(screen.getByLabelText('Capacidad'), { target: { value: '30' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Crear laboratorio' }))
+    const seccion = screen.getByRole('heading', { name: 'Laboratorios' }).closest('section')!
+    fireEvent.change(within(seccion).getByLabelText('Código'), { target: { value: 'LAB-09' } })
+    fireEvent.change(within(seccion).getByLabelText('Nombre'), { target: { value: 'Inteligencia Artificial' } })
+    fireEvent.change(within(seccion).getByLabelText('Piso'), { target: { value: 'piso-2' } })
+    fireEvent.change(within(seccion).getByLabelText('Capacidad'), { target: { value: '30' } })
+    fireEvent.click(within(seccion).getByRole('button', { name: 'Crear laboratorio' }))
     await waitFor(() => expect(academico.crearLaboratorio).toHaveBeenCalledWith(expect.objectContaining({
-      pisoId: 'piso-1', codigo: 'LAB-09', capacidad: 30,
+      pisoId: 'piso-2', codigo: 'LAB-09', capacidad: 30,
     })))
+    const piso2 = screen.getByText('Piso 2', { selector: 'strong' }).closest('article')!
+    fireEvent.click(within(piso2).getByRole('button', { name: 'Ver laboratorios' }))
+    expect(await within(piso2).findByText(/LAB-09/)).toBeInTheDocument()
     expect(screen.queryByLabelText(/UUID/i)).not.toBeInTheDocument()
   })
 
@@ -82,10 +93,12 @@ describe('AdminInstitutionPage', () => {
       descripcion: 'Principal', estado: 'INACTIVO', activo: true, creadoEn: '', actualizadoEn: '',
     })
     render(<AdminInstitutionPage />)
-    fireEvent.click(await screen.findByRole('button', { name: 'Editar' }))
-    fireEvent.change(screen.getByLabelText('Nombre'), { target: { value: 'Software II' } })
-    fireEvent.change(screen.getByLabelText('Piso'), { target: { value: 'piso-2' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }))
+    await screen.findByText('adminpiso.01')
+    const seccion = screen.getByRole('heading', { name: 'Laboratorios' }).closest('section')!
+    fireEvent.click(within(seccion).getByRole('button', { name: 'Editar' }))
+    fireEvent.change(within(seccion).getByLabelText('Nombre'), { target: { value: 'Software II' } })
+    fireEvent.change(within(seccion).getByLabelText('Piso'), { target: { value: 'piso-2' } })
+    fireEvent.click(within(seccion).getByRole('button', { name: 'Guardar cambios' }))
     await waitFor(() => expect(academico.actualizarLaboratorio).toHaveBeenCalledWith(
       'lab-1', expect.objectContaining({ pisoId: 'piso-2', nombre: 'Software II' }),
     ))
@@ -133,9 +146,11 @@ describe('AdminInstitutionPage', () => {
       descripcion: '', estado: 'DISPONIBLE', activo: true, creadoEn: '', actualizadoEn: '',
     })
     render(<AdminInstitutionPage />)
-    fireEvent.click(await screen.findByRole('button', { name: 'Editar' }))
-    expect(screen.getByRole('button', { name: 'Cancelar' })).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }))
+    await screen.findByText('adminpiso.01')
+    const seccion = screen.getByRole('heading', { name: 'Laboratorios' }).closest('section')!
+    fireEvent.click(within(seccion).getByRole('button', { name: 'Editar' }))
+    expect(within(seccion).getByRole('button', { name: 'Cancelar' })).toBeInTheDocument()
+    fireEvent.click(within(seccion).getByRole('button', { name: 'Cancelar' }))
     expect(screen.queryByRole('button', { name: 'Guardar cambios' })).not.toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Activar' }))
     await waitFor(() => expect(academico.cambiarEstadoLaboratorio).toHaveBeenCalledWith('lab-2', 'DISPONIBLE'))
@@ -145,10 +160,11 @@ describe('AdminInstitutionPage', () => {
     vi.mocked(academico.crearLaboratorio).mockRejectedValue(new Error('El código ya existe'))
     render(<AdminInstitutionPage />)
     await screen.findByText('adminpiso.01')
-    fireEvent.change(screen.getByLabelText('Código'), { target: { value: 'LAB-01' } })
-    fireEvent.change(screen.getByLabelText('Nombre'), { target: { value: 'Duplicado' } })
-    fireEvent.change(screen.getByLabelText('Piso'), { target: { value: 'piso-1' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Crear laboratorio' }))
+    const seccion = screen.getByRole('heading', { name: 'Laboratorios' }).closest('section')!
+    fireEvent.change(within(seccion).getByLabelText('Código'), { target: { value: 'LAB-01' } })
+    fireEvent.change(within(seccion).getByLabelText('Nombre'), { target: { value: 'Duplicado' } })
+    fireEvent.change(within(seccion).getByLabelText('Piso'), { target: { value: 'piso-1' } })
+    fireEvent.click(within(seccion).getByRole('button', { name: 'Crear laboratorio' }))
     expect(await screen.findByRole('alert')).toHaveTextContent('El código ya existe')
   })
 
@@ -160,5 +176,45 @@ describe('AdminInstitutionPage', () => {
     expect(usuarios.actualizarAdministrador).toHaveBeenCalledWith(
       expect.objectContaining({ id: 'admin-1' }), null,
     )
+  })
+
+  it('crea catálogos académicos conservando sus relaciones', async () => {
+    vi.mocked(academico.obtenerBloques).mockResolvedValue([{ id: 'bloque-1', campusId: 'campus-1', codigo: 'B1', nombre: 'Bloque 1', activo: true }])
+    vi.mocked(academico.obtenerFacultades).mockResolvedValue([{ id: 'fac-1', codigo: 'F1', nombre: 'Facultad', descripcion: '', activo: true }])
+    vi.mocked(academico.obtenerCampus).mockResolvedValue([{ id: 'campus-1', codigo: 'C1', nombre: 'Central', direccion: '', activo: true }])
+    vi.mocked(academico.obtenerCarreras).mockResolvedValue([{ id: 'carrera-1', facultadId: 'fac-1', codigo: 'IS', nombre: 'Software', activo: true }])
+    vi.mocked(academico.crearPiso).mockResolvedValue({ id: 'piso-3', bloqueId: 'bloque-1', numero: 3, descripcion: '', activo: true })
+    vi.mocked(academico.crearCampus).mockResolvedValue({ id: 'campus-2', codigo: 'C2', nombre: 'Norte', direccion: '', activo: true })
+    vi.mocked(academico.crearCarrera).mockResolvedValue({ id: 'carrera-2', facultadId: 'fac-1', codigo: 'TI', nombre: 'TI', activo: true })
+    vi.mocked(academico.crearMateria).mockResolvedValue({ id: 'materia-2', carreraId: 'carrera-1', codigo: 'MAT2', nombre: 'Redes', numeroHoras: 3, nivel: 3, activo: true })
+    render(<AdminInstitutionPage />)
+    await screen.findByText('adminpiso.01')
+
+    const pisosSection = screen.getByRole('heading', { name: 'Gestión de pisos' }).closest('section')!
+    fireEvent.change(within(pisosSection).getByLabelText('Bloque / campus'), { target: { value: 'bloque-1' } })
+    fireEvent.change(within(pisosSection).getByLabelText('Número'), { target: { value: '3' } })
+    fireEvent.click(within(pisosSection).getByRole('button', { name: 'Crear piso' }))
+    await waitFor(() => expect(academico.crearPiso).toHaveBeenCalledWith(expect.objectContaining({ bloqueId: 'bloque-1', numero: 3 })))
+
+    const campusSection = screen.getByRole('heading', { name: 'Gestionar campus' }).closest('section')!
+    fireEvent.change(within(campusSection).getByLabelText('Código'), { target: { value: 'C2' } })
+    fireEvent.change(within(campusSection).getByLabelText('Nombre'), { target: { value: 'Norte' } })
+    fireEvent.click(within(campusSection).getByRole('button', { name: 'Crear campus' }))
+    await waitFor(() => expect(academico.crearCampus).toHaveBeenCalled())
+
+    const carreraSection = screen.getByRole('heading', { name: 'Gestionar carreras' }).closest('section')!
+    fireEvent.change(within(carreraSection).getByLabelText('Facultad'), { target: { value: 'fac-1' } })
+    fireEvent.change(within(carreraSection).getByLabelText('Código'), { target: { value: 'TI' } })
+    fireEvent.change(within(carreraSection).getByLabelText('Nombre'), { target: { value: 'TI' } })
+    fireEvent.click(within(carreraSection).getByRole('button', { name: 'Crear carrera' }))
+    await waitFor(() => expect(academico.crearCarrera).toHaveBeenCalled())
+
+    const materiaSection = screen.getByRole('heading', { name: 'Gestionar materias' }).closest('section')!
+    fireEvent.change(within(materiaSection).getByLabelText('Carrera'), { target: { value: 'carrera-1' } })
+    fireEvent.change(within(materiaSection).getByLabelText('Código'), { target: { value: 'MAT2' } })
+    fireEvent.change(within(materiaSection).getByLabelText('Nombre'), { target: { value: 'Redes' } })
+    fireEvent.change(within(materiaSection).getByLabelText('Nivel'), { target: { value: '3' } })
+    fireEvent.click(within(materiaSection).getByRole('button', { name: 'Crear materia' }))
+    await waitFor(() => expect(academico.crearMateria).toHaveBeenCalledWith(expect.objectContaining({ carreraId: 'carrera-1', nivel: 3 })))
   })
 })

@@ -49,6 +49,11 @@ export interface AdministradorInstitucional {
   activo: boolean
 }
 
+export interface AsociacionRolInstitucional {
+  pisoId: string | null
+  carreraId: string | null
+}
+
 interface PageResponse<T> {
   content: T[]
   totalElements: number
@@ -96,6 +101,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     throw new UsuariosApiError(response.status, message)
   }
 
+  if (response.status === 204) return undefined as T
   return (await response.json()) as T
 }
 
@@ -165,5 +171,49 @@ export function actualizarAdministrador(
       pisoId,
       activo: administrador.activo,
     }),
+  })
+}
+
+export function actualizarAsociacionRol(
+  perfilId: string,
+  datos: { rol: string; pisoId: string | null; carreraId: string | null },
+): Promise<void> {
+  return request<void>(`/api/v1/perfiles/${encodeURIComponent(perfilId)}/asociacion-rol`, {
+    method: 'PUT',
+    body: JSON.stringify(datos),
+  })
+}
+
+export function obtenerAsociacionRol(
+  perfilId: string,
+): Promise<AsociacionRolInstitucional> {
+  return request<AsociacionRolInstitucional>(`/api/v1/perfiles/${encodeURIComponent(perfilId)}/asociacion-rol`)
+}
+
+interface CredencialInstitucionalRequest {
+  username: string
+  email: string
+  rol: string
+  activo?: boolean
+  pisoId: string | null
+  carreraId: string | null
+}
+
+export function crearUsuarioInstitucionalCompleto(datos: CrearPerfilRequest & CredencialInstitucionalRequest & { passwordInicial: string }): Promise<Perfil> {
+  const { username, email, passwordInicial, rol, pisoId, carreraId, ...perfil } = datos
+  return request<Perfil>('/api/v1/perfiles/administracion-usuarios', {
+    method: 'POST',
+    body: JSON.stringify({ perfil, username, email, passwordInicial, rol, pisoId, carreraId }),
+  })
+}
+
+export function actualizarUsuarioInstitucionalCompleto(
+  perfilId: string,
+  datos: ActualizarPerfilRequest & CredencialInstitucionalRequest & { authId: string; activo: boolean },
+): Promise<Perfil> {
+  const { authId, username, email, rol, activo, pisoId, carreraId, ...perfil } = datos
+  return request<Perfil>(`/api/v1/perfiles/administracion-usuarios/${encodeURIComponent(perfilId)}`, {
+    method: 'PUT',
+    body: JSON.stringify({ authId, perfil, username, email, rol, activo, pisoId, carreraId }),
   })
 }

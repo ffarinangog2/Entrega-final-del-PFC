@@ -34,10 +34,13 @@ export function AppRoutes() {
         <Route element={<ProtectedRoute roles={['ADMINISTRADOR']} permissions={['USUARIO_LEER']} />}>
           <Route path="/usuarios" element={<UsuariosPage />} />
           <Route path="/administracion" element={<AdminInstitutionPage />} />
+          <Route path="/laboratorios" element={<AdminInstitutionPage />} />
+          <Route path="/pisos" element={<AdminInstitutionPage />} />
+          <Route path="/equipos" element={<AdminInstitutionPage />} />
         </Route>
         <Route path="/perfil" element={<ProfilePage />} />
         <Route element={<ProtectedRoute roles={['ADMINISTRADOR', 'ADMINISTRADOR_PISO', 'COORDINADOR']} permissions={['PLANIFICACION_GESTIONAR', 'SOLICITUD_APROBAR']} />}><Route path="/planificacion" element={<PlanificacionPage />} /></Route>
-        <Route element={<ProtectedRoute roles={['ADMINISTRADOR', 'DOCENTE', 'ESTUDIANTE']} permissions={['RESERVA_LEER', 'ACADEMICO_LEER']} />}><Route path="/asistencia" element={<AsistenciaPage />} /></Route>
+        <Route element={<ProtectedRoute roles={['DOCENTE', 'ESTUDIANTE']} permissions={['RESERVA_LEER', 'ACADEMICO_LEER']} />}><Route path="/asistencia" element={<AsistenciaPage />} /></Route>
         <Route element={<ProtectedRoute roles={['ADMINISTRADOR', 'ADMINISTRADOR_PISO', 'DOCENTE']} permissions={['INCIDENTE_LEER', 'INCIDENTE_CREAR', 'INCIDENTE_GESTIONAR']} />}><Route path="/incidentes" element={<IncidentesPage />} /></Route>
         <Route element={<ProtectedRoute roles={['ADMINISTRADOR', 'ADMINISTRADOR_PISO', 'DOCENTE']} permissions={['RESERVA_LEER', 'SOLICITUD_LEER']} />}>
           <Route path="/reservas" element={<ReservasListPage />} />

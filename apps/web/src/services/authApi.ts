@@ -3,6 +3,17 @@ import type {
   LoginResponse,
   RefreshTokenRequest,
 } from '../types/auth'
+import { apiRequest } from './apiClient'
+
+export type RolInstitucional = 'ADMINISTRADOR' | 'ADMINISTRADOR_PISO' | 'COORDINADOR' | 'DOCENTE' | 'ESTUDIANTE'
+export interface UsuarioInstitucional {
+  id: string
+  perfilId: string
+  username: string
+  email: string
+  rol: RolInstitucional
+  activo: boolean
+}
 
 const API_URL = (import.meta.env.VITE_API_URL || '').replace(
   /\/$/,
@@ -82,5 +93,25 @@ export function forgotPassword(identifier: string) {
 export function resetPassword(token: string, newPassword: string, confirmPassword: string) {
   return request<{ message: string }>('/api/v1/auth/reset-password', {
     method: 'POST', body: JSON.stringify({ token, newPassword, confirmPassword }),
+  })
+}
+
+export function listarUsuariosInstitucionales() {
+  return apiRequest<UsuarioInstitucional[]>('/api/v1/auth/admin/usuarios')
+}
+
+export function crearUsuarioInstitucional(body: {
+  perfilId: string; username: string; email: string; passwordInicial: string; rol: RolInstitucional
+}) {
+  return apiRequest<UsuarioInstitucional>('/api/v1/auth/admin/usuarios', {
+    method: 'POST', body: JSON.stringify(body),
+  })
+}
+
+export function actualizarUsuarioInstitucional(id: string, body: {
+  username: string; email: string; rol: RolInstitucional; activo: boolean
+}) {
+  return apiRequest<UsuarioInstitucional>(`/api/v1/auth/admin/usuarios/${encodeURIComponent(id)}`, {
+    method: 'PUT', body: JSON.stringify(body),
   })
 }

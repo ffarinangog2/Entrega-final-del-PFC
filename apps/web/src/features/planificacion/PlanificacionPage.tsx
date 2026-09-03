@@ -6,6 +6,7 @@ import * as api from '../../services/operationalApi'
 import '../operaciones/Operations.css'
 import { CoordinadorPlanificacion } from './CoordinadorPlanificacion'
 import { AdministradorPisoPlanificacion } from './AdministradorPisoPlanificacion'
+import { AdministradorPlanificacionGlobal } from './AdministradorPlanificacionGlobal'
 
 const inicial: api.GuardarPlanificacion = {
   periodoId: '',
@@ -24,6 +25,7 @@ export function PlanificacionPage() {
   if (coordinador) return <CoordinadorPlanificacion />
   if (hasRole(usuario, 'ADMINISTRADOR_PISO'))
     return <AdministradorPisoPlanificacion />
+  if (hasRole(usuario, 'ADMINISTRADOR')) return <AdministradorPlanificacionGlobal />
   return <PlanificacionOperativa />
 }
 

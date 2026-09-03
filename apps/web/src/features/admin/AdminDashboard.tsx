@@ -9,7 +9,7 @@ import {
 } from '../../services/academicoApi'
 import {
   listarIncidentes,
-  listarPlanificaciones,
+  listarPlanificacionesAgregadas,
 } from '../../services/operationalApi'
 import { listarAdministradores, listarPerfiles } from '../../services/usuariosApi'
 import { obtenerReservas, obtenerSolicitudes } from '../reservas/reservasApi'
@@ -51,7 +51,7 @@ export function AdminDashboard() {
       obtenerReservas(),
       obtenerSolicitudes(),
       listarIncidentes(),
-      listarPlanificaciones(),
+      listarPlanificacionesAgregadas(),
     ])
       .then(
         ([

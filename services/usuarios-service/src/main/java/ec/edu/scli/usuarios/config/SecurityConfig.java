@@ -47,6 +47,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/docentes/perfil/*").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/v1/perfiles/**").hasAuthority("USUARIO_LEER")
                         .requestMatchers(HttpMethod.POST, "/api/v1/perfiles").hasAuthority("USUARIO_CREAR")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/perfiles/administracion-usuarios").hasAuthority("USUARIO_CREAR")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/perfiles/administracion-usuarios/**").hasAuthority("USUARIO_EDITAR")
                         .requestMatchers(HttpMethod.PUT, "/api/v1/perfiles/**").hasAuthority("USUARIO_EDITAR")
                         .requestMatchers(HttpMethod.PATCH, "/api/v1/perfiles/*/estado").hasAuthority("USUARIO_DESACTIVAR")
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/perfiles/**").hasAuthority("USUARIO_DESACTIVAR")

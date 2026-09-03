@@ -1,384 +1,104 @@
-import { useEffect, useState, type FormEvent } from 'react'
-import { useTranslation } from 'react-i18next'
+import { useCallback, useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react'
 import { DashboardLayout } from '../components/DashboardLayout'
-import '../i18n'
-import {
-  actualizarPerfil,
-  cambiarEstadoPerfil,
-  crearPerfil,
-  listarPerfiles,
-  UsuariosApiError,
-  type CrearPerfilRequest,
-  type Perfil,
-} from '../services/usuariosApi'
+import { obtenerCarreras, obtenerPisos, type Carrera, type Piso } from '../services/academicoApi'
+import { listarUsuariosInstitucionales, type RolInstitucional, type UsuarioInstitucional } from '../services/authApi'
+import { actualizarUsuarioInstitucionalCompleto, crearUsuarioInstitucionalCompleto, listarPerfiles, obtenerAsociacionRol, type Perfil } from '../services/usuariosApi'
 import './UsuariosPage.css'
 
-const FORM_INICIAL: CrearPerfilRequest = {
-  identificacion: '',
-  nombres: '',
-  apellidos: '',
-  emailInstitucional: '',
-  emailPersonal: '',
-  telefono: '',
-  direccion: '',
-  fechaNacimiento: '',
-}
+const ROLES: RolInstitucional[] = ['ADMINISTRADOR', 'ADMINISTRADOR_PISO', 'COORDINADOR', 'DOCENTE', 'ESTUDIANTE']
+type Formulario = { perfilId: string; authId: string; identificacion: string; nombres: string; apellidos: string; email: string; username: string; password: string; rol: RolInstitucional; activo: boolean; pisoId: string; carreraId: string }
+const inicial: Formulario = { perfilId: '', authId: '', identificacion: '', nombres: '', apellidos: '', email: '', username: '', password: '', rol: 'ESTUDIANTE', activo: true, pisoId: '', carreraId: '' }
 
 export function UsuariosPage() {
-  const { t } = useTranslation()
-  const [perfiles, setPerfiles] = useState<Perfil[] | null>(null)
-  const [loadError, setLoadError] = useState('')
-  const [form, setForm] = useState<CrearPerfilRequest>(FORM_INICIAL)
-  const [enviando, setEnviando] = useState(false)
-  const [submitError, setSubmitError] = useState('')
-  const [submitStatus, setSubmitStatus] = useState('')
+  const [perfiles, setPerfiles] = useState<Perfil[]>([])
+  const [cuentas, setCuentas] = useState<UsuarioInstitucional[]>([])
+  const [pisos, setPisos] = useState<Piso[]>([])
+  const [carreras, setCarreras] = useState<Carrera[]>([])
+  const [form, setForm] = useState<Formulario>(inicial)
   const [busqueda, setBusqueda] = useState('')
-  const [estado, setEstado] = useState<'TODOS' | 'ACTIVOS' | 'INACTIVOS'>(
-    'TODOS',
-  )
-  const [seleccionado, setSeleccionado] = useState<Perfil | null>(null)
+  const [filtroRol, setFiltroRol] = useState('TODOS')
+  const [filtroEstado, setFiltroEstado] = useState('TODOS')
+  const [cargando, setCargando] = useState(true)
+  const [guardando, setGuardando] = useState(false)
+  const [error, setError] = useState('')
+  const [mensaje, setMensaje] = useState('')
 
-  function cargarPerfiles() {
-    setPerfiles(null)
-    setLoadError('')
-    listarPerfiles()
-      .then(setPerfiles)
-      .catch((error: unknown) => {
-        const message =
-          error instanceof UsuariosApiError
-            ? error.message
-            : t('usuarios.errorLoad')
-        setLoadError(message)
-      })
-  }
-
-  useEffect(() => {
-    cargarPerfiles()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  const cargar = useCallback(async () => {
+    setCargando(true); setError('')
+    try {
+      const [p, u, pisosData, carrerasData] = await Promise.all([listarPerfiles(), listarUsuariosInstitucionales(), obtenerPisos(), obtenerCarreras()])
+      setPerfiles(p ?? []); setCuentas(u ?? []); setPisos(pisosData ?? []); setCarreras(carrerasData ?? [])
+    } catch (cause) { setError(cause instanceof Error ? cause.message : 'No fue posible cargar los usuarios institucionales.') }
+    finally { setCargando(false) }
   }, [])
+  useEffect(() => void cargar(), [cargar])
 
-  function onCampoChange(campo: keyof CrearPerfilRequest, valor: string) {
-    setForm((actual) => ({ ...actual, [campo]: valor }))
-  }
+  const perfilPorId = useMemo(() => new Map(perfiles.map((item) => [item.id, item])), [perfiles])
+  const filas = useMemo(() => cuentas.filter((cuenta) => {
+    const perfil = perfilPorId.get(cuenta.perfilId)
+    const texto = `${perfil?.nombres ?? ''} ${perfil?.apellidos ?? ''} ${cuenta.username} ${cuenta.email}`.toLowerCase()
+    return texto.includes(busqueda.toLowerCase()) && (filtroRol === 'TODOS' || cuenta.rol === filtroRol) && (filtroEstado === 'TODOS' || cuenta.activo === (filtroEstado === 'ACTIVO'))
+  }), [busqueda, cuentas, filtroEstado, filtroRol, perfilPorId])
 
-  async function onSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    setEnviando(true)
-    setSubmitError('')
-    setSubmitStatus('')
+  async function editar(cuenta: UsuarioInstitucional) {
+    const perfil = perfilPorId.get(cuenta.perfilId)
+    if (!perfil) return
+    setMensaje(''); setError('')
     try {
-      const guardado = seleccionado
-        ? await actualizarPerfil(seleccionado.id, {
-            ...form,
-            fotoUrl: seleccionado.fotoUrl,
-          })
-        : await crearPerfil(form)
-      setPerfiles((actual) =>
-        actual
-          ? seleccionado
-            ? actual.map((item) => (item.id === guardado.id ? guardado : item))
-            : [...actual, guardado]
-          : [guardado],
-      )
-      setForm(FORM_INICIAL)
-      setSeleccionado(null)
-      setSubmitStatus(
-        seleccionado
-          ? 'Perfil actualizado correctamente.'
-          : t('usuarios.form.success'),
-      )
-    } catch (error) {
-      const message =
-        error instanceof UsuariosApiError
-          ? error.message
-          : t('usuarios.form.error')
-      setSubmitError(message)
-    } finally {
-      setEnviando(false)
-    }
-  }
-  function editar(perfil: Perfil) {
-    setSeleccionado(perfil)
-    setForm({
-      identificacion: perfil.identificacion,
-      nombres: perfil.nombres,
-      apellidos: perfil.apellidos,
-      emailInstitucional: perfil.emailInstitucional,
-      emailPersonal: perfil.emailPersonal ?? '',
-      telefono: perfil.telefono ?? '',
-      direccion: perfil.direccion ?? '',
-      fechaNacimiento: perfil.fechaNacimiento ?? '',
-    })
-  }
-  async function cambiarEstado(perfil: Perfil) {
-    try {
-      const actualizado = await cambiarEstadoPerfil(perfil.id, !perfil.activo)
-      setPerfiles(
-        (actual) =>
-          actual?.map((item) =>
-            item.id === actualizado.id ? actualizado : item,
-          ) ?? [],
-      )
-      if (seleccionado?.id === actualizado.id) setSeleccionado(actualizado)
-    } catch (error) {
-      setLoadError(
-        error instanceof Error
-          ? error.message
-          : 'No se pudo cambiar el estado.',
-      )
+      const asociacion = await obtenerAsociacionRol(perfil.id)
+      setForm({ perfilId: perfil.id, authId: cuenta.id, identificacion: perfil.identificacion, nombres: perfil.nombres, apellidos: perfil.apellidos, email: cuenta.email, username: cuenta.username, password: '', rol: cuenta.rol, activo: cuenta.activo, pisoId: asociacion.pisoId ?? '', carreraId: asociacion.carreraId ?? '' })
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'No se pudo consultar la asociación institucional.')
     }
   }
 
-  return (
-    <DashboardLayout breadcrumb={t('usuarios.title')}>
-      <div className="usuarios-page">
-        <h1>{t('usuarios.title')}</h1>
-        <p className="usuarios-page__subtitle">{t('usuarios.subtitle')}</p>
+  async function guardar(event: FormEvent) {
+    event.preventDefault(); setGuardando(true); setError(''); setMensaje('')
+    try {
+      if (form.authId) {
+        await actualizarUsuarioInstitucionalCompleto(form.perfilId, { authId: form.authId, identificacion: form.identificacion, nombres: form.nombres, apellidos: form.apellidos, emailInstitucional: form.email, emailPersonal: '', telefono: '', direccion: '', fechaNacimiento: '', fotoUrl: null, username: form.username, email: form.email, rol: form.rol, activo: form.activo, pisoId: form.pisoId || null, carreraId: form.carreraId || null })
+      } else {
+        await crearUsuarioInstitucionalCompleto({ identificacion: form.identificacion, nombres: form.nombres, apellidos: form.apellidos, emailInstitucional: form.email, emailPersonal: '', telefono: '', direccion: '', fechaNacimiento: '', username: form.username, email: form.email, passwordInicial: form.password, rol: form.rol, pisoId: form.pisoId || null, carreraId: form.carreraId || null })
+      }
+      setForm(inicial); setMensaje(form.authId ? 'Usuario actualizado correctamente.' : 'Usuario institucional creado correctamente.'); await cargar()
+    } catch (cause) { setError(cause instanceof Error ? cause.message : 'No se pudo guardar el usuario institucional.') }
+    finally { setGuardando(false) }
+  }
 
-        <section className="usuarios-page__section">
-          <div className="usuarios-page__search">
-            <label htmlFor="buscar-usuario">Buscar usuarios</label>
-            <input
-              id="buscar-usuario"
-              value={busqueda}
-              onChange={(event) => setBusqueda(event.target.value)}
-              placeholder="Nombre, apellido o correo"
-            />
-            <label htmlFor="estado-usuario">Estado</label>
-            <select
-              id="estado-usuario"
-              value={estado}
-              onChange={(event) =>
-                setEstado(event.target.value as typeof estado)
-              }
-            >
-              <option value="TODOS">Todos</option>
-              <option value="ACTIVOS">Activos</option>
-              <option value="INACTIVOS">Inactivos</option>
-            </select>
-          </div>
-          {loadError ? (
-            <>
-              <p className="usuarios-page__alert" role="alert">
-                {loadError}
-              </p>
-              <button
-                type="button"
-                className="usuarios-page__retry"
-                onClick={cargarPerfiles}
-              >
-                {t('usuarios.retry')}
-              </button>
-            </>
-          ) : perfiles === null ? (
-            <p>{t('usuarios.loading')}</p>
-          ) : perfiles.length === 0 ? (
-            <p>{t('usuarios.empty')}</p>
-          ) : (
-            <div className="usuarios-page__table-wrap">
-              <table className="usuarios-page__table">
-                <thead>
-                  <tr>
-                    <th scope="col">{t('usuarios.table.nombres')}</th>
-                    <th scope="col">{t('usuarios.table.apellidos')}</th>
-                    <th scope="col">
-                      {t('usuarios.table.emailInstitucional')}
-                    </th>
-                    <th scope="col">{t('usuarios.table.activo')}</th>
-                    <th scope="col">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {perfiles
-                    .filter((perfil) => {
-                      const coincideEstado =
-                        estado === 'TODOS' ||
-                        (estado === 'ACTIVOS' ? perfil.activo : !perfil.activo)
-                      return (
-                        coincideEstado &&
-                        `${perfil.nombres} ${perfil.apellidos} ${perfil.emailInstitucional} ${perfil.identificacion}`
-                          .toLowerCase()
-                          .includes(busqueda.toLowerCase())
-                      )
-                    })
-                    .map((perfil) => (
-                      <tr key={perfil.id}>
-                        <td>{perfil.nombres}</td>
-                        <td>{perfil.apellidos}</td>
-                        <td>{perfil.emailInstitucional}</td>
-                        <td>
-                          {perfil.activo
-                            ? t('usuarios.table.si')
-                            : t('usuarios.table.no')}
-                        </td>
-                        <td>
-                          <button type="button" onClick={() => editar(perfil)}>
-                            Ver / editar
-                          </button>{' '}
-                          <button
-                            type="button"
-                            onClick={() => void cambiarEstado(perfil)}
-                          >
-                            {perfil.activo ? 'Desactivar' : 'Activar'}
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </section>
+  async function alternar(cuenta: UsuarioInstitucional) {
+    try {
+      const nuevoEstado = !cuenta.activo
+      const perfil = perfilPorId.get(cuenta.perfilId)
+      if (!perfil) throw new Error('No se encontró el perfil institucional de la cuenta.')
+      const asociacion = await obtenerAsociacionRol(cuenta.perfilId)
+      await actualizarUsuarioInstitucionalCompleto(cuenta.perfilId, { authId: cuenta.id, identificacion: perfil.identificacion, nombres: perfil.nombres, apellidos: perfil.apellidos, emailInstitucional: cuenta.email, emailPersonal: perfil.emailPersonal ?? '', telefono: perfil.telefono ?? '', direccion: perfil.direccion ?? '', fechaNacimiento: perfil.fechaNacimiento ?? '', fotoUrl: perfil.fotoUrl, username: cuenta.username, email: cuenta.email, rol: cuenta.rol, activo: nuevoEstado, pisoId: asociacion.pisoId, carreraId: asociacion.carreraId })
+      await cargar()
+    }
+    catch (cause) { setError(cause instanceof Error ? cause.message : 'No se pudo cambiar el estado.') }
+  }
 
-        <section className="usuarios-page__section">
-          <h2>
-            {seleccionado
-              ? `Editar perfil de ${seleccionado.nombres} ${seleccionado.apellidos}`
-              : t('usuarios.form.title')}
-          </h2>
-          {submitError && (
-            <p className="usuarios-page__alert" role="alert">
-              {submitError}
-            </p>
-          )}
-          <form className="usuarios-page__form" onSubmit={onSubmit} noValidate>
-            <div className="usuarios-page__field">
-              <label htmlFor="usuario-identificacion">
-                {t('usuarios.form.identificacion')}
-              </label>
-              <input
-                id="usuario-identificacion"
-                value={form.identificacion}
-                onChange={(event) =>
-                  onCampoChange('identificacion', event.target.value)
-                }
-              />
-            </div>
-            <div className="usuarios-page__field">
-              <label htmlFor="usuario-nombres">
-                {t('usuarios.form.nombres')}
-              </label>
-              <input
-                id="usuario-nombres"
-                required
-                value={form.nombres}
-                onChange={(event) =>
-                  onCampoChange('nombres', event.target.value)
-                }
-              />
-            </div>
-            <div className="usuarios-page__field">
-              <label htmlFor="usuario-apellidos">
-                {t('usuarios.form.apellidos')}
-              </label>
-              <input
-                id="usuario-apellidos"
-                required
-                value={form.apellidos}
-                onChange={(event) =>
-                  onCampoChange('apellidos', event.target.value)
-                }
-              />
-            </div>
-            <div className="usuarios-page__field">
-              <label htmlFor="usuario-email-institucional">
-                {t('usuarios.form.emailInstitucional')}
-              </label>
-              <input
-                id="usuario-email-institucional"
-                type="email"
-                required
-                value={form.emailInstitucional}
-                onChange={(event) =>
-                  onCampoChange('emailInstitucional', event.target.value)
-                }
-              />
-            </div>
-            <div className="usuarios-page__field">
-              <label htmlFor="usuario-email-personal">
-                {t('usuarios.form.emailPersonal')}
-              </label>
-              <input
-                id="usuario-email-personal"
-                type="email"
-                value={form.emailPersonal}
-                onChange={(event) =>
-                  onCampoChange('emailPersonal', event.target.value)
-                }
-              />
-            </div>
-            <div className="usuarios-page__field">
-              <label htmlFor="usuario-telefono">
-                {t('usuarios.form.telefono')}
-              </label>
-              <input
-                id="usuario-telefono"
-                type="tel"
-                value={form.telefono}
-                onChange={(event) =>
-                  onCampoChange('telefono', event.target.value)
-                }
-              />
-            </div>
-            <div className="usuarios-page__field">
-              <label htmlFor="usuario-direccion">
-                {t('usuarios.form.direccion')}
-              </label>
-              <input
-                id="usuario-direccion"
-                value={form.direccion}
-                onChange={(event) =>
-                  onCampoChange('direccion', event.target.value)
-                }
-              />
-            </div>
-            <div className="usuarios-page__field">
-              <label htmlFor="usuario-fecha-nacimiento">
-                {t('usuarios.form.fechaNacimiento')}
-              </label>
-              <input
-                id="usuario-fecha-nacimiento"
-                type="date"
-                value={form.fechaNacimiento}
-                onChange={(event) =>
-                  onCampoChange('fechaNacimiento', event.target.value)
-                }
-              />
-            </div>
-            <div className="usuarios-page__form-actions">
-              <button
-                type="submit"
-                className="usuarios-page__submit"
-                disabled={enviando}
-              >
-                {enviando
-                  ? t('usuarios.form.submitting')
-                  : seleccionado
-                    ? 'Guardar cambios'
-                    : t('usuarios.form.submit')}
-              </button>
-              {seleccionado && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSeleccionado(null)
-                    setForm(FORM_INICIAL)
-                  }}
-                >
-                  Cancelar edición
-                </button>
-              )}
-              <p
-                className="usuarios-page__status"
-                role="status"
-                aria-live="polite"
-              >
-                {submitStatus}
-              </p>
-            </div>
-          </form>
-        </section>
-      </div>
-    </DashboardLayout>
-  )
+  return <DashboardLayout breadcrumb="Usuarios"><div className="usuarios-page">
+    <h1>Usuarios institucionales</h1><p className="usuarios-page__subtitle">Credenciales, rol y asociación institucional.</p>
+    {error && <p role="alert" className="usuarios-page__alert">{error}</p>}{mensaje && <p role="status">{mensaje}</p>}
+    <section className="usuarios-page__section"><div className="usuarios-page__search">
+      <label>Buscar<input value={busqueda} onChange={(e) => setBusqueda(e.target.value)} placeholder="Nombre, usuario o correo" /></label>
+      <label>Rol<select value={filtroRol} onChange={(e) => setFiltroRol(e.target.value)}><option>TODOS</option>{ROLES.map((rol) => <option key={rol}>{rol}</option>)}</select></label>
+      <label>Estado<select value={filtroEstado} onChange={(e) => setFiltroEstado(e.target.value)}><option>TODOS</option><option>ACTIVO</option><option>INACTIVO</option></select></label>
+    </div>{cargando ? <p role="status">Cargando usuarios...</p> : filas.length === 0 ? <p>No existen usuarios para los filtros seleccionados.</p> : <div className="usuarios-page__table-wrap"><table className="usuarios-page__table"><thead><tr><th>Nombre</th><th>Usuario</th><th>Correo</th><th>Rol</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>{filas.map((cuenta) => { const perfil = perfilPorId.get(cuenta.perfilId); return <tr key={cuenta.id}><td>{perfil ? `${perfil.nombres} ${perfil.apellidos}` : 'Perfil institucional'}</td><td>{cuenta.username}</td><td>{cuenta.email}</td><td>{cuenta.rol}</td><td>{cuenta.activo ? 'Activo' : 'Inactivo'}</td><td><button onClick={() => editar(cuenta)}>Editar</button> <button onClick={() => void alternar(cuenta)}>{cuenta.activo ? 'Desactivar' : 'Activar'}</button></td></tr> })}</tbody></table></div>}</section>
+    <section className="usuarios-page__section"><h2>{form.authId ? 'Editar usuario' : 'Crear usuario institucional'}</h2><form className="usuarios-page__form" onSubmit={guardar}>
+      <Field label="Identificación"><input required pattern="[0-9]{10}" value={form.identificacion} onChange={(e) => setForm({ ...form, identificacion: e.target.value })} /></Field>
+      <Field label="Nombres"><input required value={form.nombres} onChange={(e) => setForm({ ...form, nombres: e.target.value })} /></Field>
+      <Field label="Apellidos"><input required value={form.apellidos} onChange={(e) => setForm({ ...form, apellidos: e.target.value })} /></Field>
+      <Field label="Correo institucional"><input required type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></Field>
+      <Field label="Nombre de usuario"><input required value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} /></Field>
+      {!form.authId && <Field label="Contraseña inicial"><input required type="password" autoComplete="new-password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} /></Field>}
+      <Field label="Rol"><select value={form.rol} onChange={(e) => setForm({ ...form, rol: e.target.value as RolInstitucional, pisoId: '', carreraId: '' })}>{ROLES.map((rol) => <option key={rol}>{rol}</option>)}</select></Field>
+      {form.rol === 'ADMINISTRADOR_PISO' && <Field label="Piso"><select required value={form.pisoId} onChange={(e) => setForm({ ...form, pisoId: e.target.value })}><option value="">Seleccione un piso</option>{pisos.map((piso) => <option key={piso.id} value={piso.id}>Piso {piso.numero}</option>)}</select></Field>}
+      {form.rol === 'COORDINADOR' && <Field label="Carrera"><select required value={form.carreraId} onChange={(e) => setForm({ ...form, carreraId: e.target.value })}><option value="">Seleccione una carrera</option>{carreras.map((carrera) => <option key={carrera.id} value={carrera.id}>{carrera.nombre}</option>)}</select></Field>}
+      {form.authId && <label className="usuarios-page__field"><span>Estado</span><input type="checkbox" checked={form.activo} onChange={(e) => setForm({ ...form, activo: e.target.checked })} /> Cuenta activa</label>}
+      <div className="usuarios-page__form-actions"><button className="usuarios-page__submit" disabled={guardando}>{guardando ? 'Guardando...' : form.authId ? 'Guardar cambios' : 'Crear usuario'}</button>{form.authId && <button type="button" onClick={() => setForm(inicial)}>Cancelar</button>}</div>
+    </form></section>
+  </div></DashboardLayout>
 }
+
+function Field({ label, children }: { label: string; children: ReactNode }) { return <label className="usuarios-page__field"><span>{label}</span>{children}</label> }

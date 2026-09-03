@@ -43,7 +43,8 @@ public class MateriaServiceImpl implements MateriaService {
                 request.carreraId(),
                 request.codigo(),
                 request.nombre(),
-                request.numeroHoras()
+                request.numeroHoras(),
+                request.nivel()
         );
 
         Materia guardada = materiaRepositoryPort.guardar(materia);
@@ -90,7 +91,8 @@ public class MateriaServiceImpl implements MateriaService {
                 request.carreraId(),
                 request.codigo(),
                 request.nombre(),
-                request.numeroHoras()
+                request.numeroHoras(),
+                request.nivel()
         );
 
         Materia actualizada = materiaRepositoryPort.guardar(materia);

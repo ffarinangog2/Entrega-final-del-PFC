@@ -9,6 +9,7 @@ class GatewayRoutesTest {
     @Test
     void reconoceRutasCanonicasDeTodosLosServicios() {
         assertThat(GatewayRoutes.esRutaAuth("/api/v1/auth/login")).isTrue();
+        assertThat(GatewayRoutes.esRutaAuth("/api/v1/auth/admin/usuarios")).isTrue();
         assertThat(GatewayRoutes.esRutaUsuarios("/api/v1/perfiles/123")).isTrue();
         assertThat(GatewayRoutes.esRutaUsuarios("/api/v1/docentes")).isTrue();
         assertThat(GatewayRoutes.esRutaAcademica("/api/v1/laboratorios/123")).isTrue();

@@ -29,11 +29,22 @@ public class Materia {
         return materia;
     }
 
+    public static Materia nueva(UUID carreraId, String codigo, String nombre, Integer numeroHoras, Integer nivel) {
+        Materia materia = nueva(carreraId, codigo, nombre, numeroHoras);
+        materia.nivel = nivel;
+        return materia;
+    }
+
     public void actualizarDatos(UUID carreraId, String codigo, String nombre, Integer numeroHoras) {
         this.carreraId = carreraId;
         this.codigo = codigo;
         this.nombre = nombre;
         this.numeroHoras = numeroHoras;
+    }
+
+    public void actualizarDatos(UUID carreraId, String codigo, String nombre, Integer numeroHoras, Integer nivel) {
+        actualizarDatos(carreraId, codigo, nombre, numeroHoras);
+        this.nivel = nivel;
     }
 
     public void desactivar() {
