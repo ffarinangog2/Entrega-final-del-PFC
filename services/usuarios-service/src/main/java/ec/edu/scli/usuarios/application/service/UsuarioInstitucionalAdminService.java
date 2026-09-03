@@ -36,11 +36,11 @@ public class UsuarioInstitucionalAdminService {
 
     @Transactional
     public PerfilResponse actualizar(UUID perfilId, UsuarioInstitucionalUpdateRequest request) {
-        AuthUsuarioResponse estadoAuthAnterior = auth.obtener(request.authId());
         PerfilResponse perfil = perfiles.actualizar(perfilId, request.perfil());
         asociaciones.asociar(perfilId, asociacion(request.rol(), request.pisoId(), request.carreraId()));
         if (!request.activo()) perfiles.cambiarEstado(perfilId, false);
         else if (!Boolean.TRUE.equals(perfil.activo())) perfiles.cambiarEstado(perfilId, true);
+        AuthUsuarioResponse estadoAuthAnterior = auth.obtener(request.authId());
         auth.actualizar(request.authId(), new AuthUsuarioUpdateRequest(
                 request.username(), request.email(), request.rol(), request.activo()));
         compensaciones.registrarRestauracion(estadoAuthAnterior);
