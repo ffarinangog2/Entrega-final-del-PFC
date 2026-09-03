@@ -35,6 +35,10 @@ describe('AdminDashboard', () => {
     vi.mocked(academico.obtenerDocentes).mockResolvedValue([
       { id: 'd1', perfilId: 'p2', codigoDocente: 'D1', activo: true },
     ])
+    vi.mocked(usuarios.listarAdministradores).mockResolvedValue([])
+    vi.mocked(academico.obtenerCarreras).mockResolvedValue([])
+    vi.mocked(academico.obtenerPisos).mockResolvedValue([])
+    vi.mocked(academico.obtenerEquipos).mockResolvedValue([])
     vi.mocked(academico.obtenerLaboratorios).mockResolvedValue([
       {
         id: 'l1',

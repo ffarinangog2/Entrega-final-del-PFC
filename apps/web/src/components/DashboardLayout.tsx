@@ -149,6 +149,12 @@ export function DashboardLayout({
                 {t('dashboard.nav.usuarios')}
               </NavLink>
             )}
+            {administrador && (
+              <NavLink className="dashboard__nav-item" to="/administracion">
+                <span aria-hidden="true">G</span>
+                Catálogos y asignaciones
+              </NavLink>
+            )}
             <NavLink className="dashboard__nav-item" to="/perfil">
               <span aria-hidden="true">●</span>Mi perfil
             </NavLink>

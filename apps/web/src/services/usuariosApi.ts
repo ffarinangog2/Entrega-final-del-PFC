@@ -40,6 +40,14 @@ export interface ActualizarPerfilPropioRequest {
   direccion: string | null
   fotoUrl: string | null
 }
+export interface AdministradorInstitucional {
+  id: string
+  perfilId: string
+  codigoAdministrador: string
+  cargo: string | null
+  pisoId: string | null
+  activo: boolean
+}
 
 interface PageResponse<T> {
   content: T[]
@@ -137,5 +145,25 @@ export function actualizarPerfilPropio(
   return request<Perfil>('/api/v1/perfiles/me', {
     method: 'PATCH',
     body: JSON.stringify(datos),
+  })
+}
+
+export async function listarAdministradores(): Promise<AdministradorInstitucional[]> {
+  return (await request<PageResponse<AdministradorInstitucional>>('/api/v1/administradores?size=100')).content
+}
+
+export function actualizarAdministrador(
+  administrador: AdministradorInstitucional,
+  pisoId: string | null,
+): Promise<AdministradorInstitucional> {
+  return request<AdministradorInstitucional>(`/api/v1/administradores/${encodeURIComponent(administrador.id)}`, {
+    method: 'PUT',
+    body: JSON.stringify({
+      perfilId: administrador.perfilId,
+      codigoAdministrador: administrador.codigoAdministrador,
+      cargo: administrador.cargo,
+      pisoId,
+      activo: administrador.activo,
+    }),
   })
 }

@@ -2,20 +2,28 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   obtenerDocentes,
+  obtenerCarreras,
+  obtenerEquipos,
   obtenerLaboratorios,
+  obtenerPisos,
 } from '../../services/academicoApi'
 import {
   listarIncidentes,
   listarPlanificaciones,
 } from '../../services/operationalApi'
-import { listarPerfiles } from '../../services/usuariosApi'
+import { listarAdministradores, listarPerfiles } from '../../services/usuariosApi'
 import { obtenerReservas, obtenerSolicitudes } from '../reservas/reservasApi'
 
 interface Resumen {
   usuarios: number
   usuariosActivos: number
+  usuariosInactivos: number
   docentes: number
+  administradoresPiso: number
+  carreras: number
+  pisos: number
   laboratorios: number
+  equipos: number
   disponibles: number
   ocupados: number
   fueraServicio: number
@@ -35,7 +43,11 @@ export function AdminDashboard() {
     Promise.all([
       listarPerfiles(),
       obtenerDocentes(),
+      listarAdministradores(),
+      obtenerCarreras(),
+      obtenerPisos(),
       obtenerLaboratorios(),
+      obtenerEquipos(),
       obtenerReservas(),
       obtenerSolicitudes(),
       listarIncidentes(),
@@ -45,7 +57,11 @@ export function AdminDashboard() {
         ([
           usuarios,
           docentes,
+          administradores,
+          carreras,
+          pisos,
           laboratorios,
+          equipos,
           reservas,
           solicitudes,
           incidentes,
@@ -55,8 +71,13 @@ export function AdminDashboard() {
           setResumen({
             usuarios: usuarios.length,
             usuariosActivos: usuarios.filter((item) => item.activo).length,
+            usuariosInactivos: usuarios.filter((item) => !item.activo).length,
             docentes: docentes.filter((item) => item.activo).length,
+            administradoresPiso: administradores.filter((item) => item.activo).length,
+            carreras: carreras.filter((item) => item.activo).length,
+            pisos: pisos.filter((item) => item.activo).length,
             laboratorios: laboratorios.length,
+            equipos: equipos.filter((item) => item.activo).length,
             disponibles: laboratorios.filter(
               (item) => item.estado === 'DISPONIBLE',
             ).length,
@@ -111,12 +132,17 @@ export function AdminDashboard() {
               value={resumen.usuariosActivos}
               detail={`${resumen.usuarios} perfiles registrados`}
             />
+            <Metric label="Usuarios inactivos" value={resumen.usuariosInactivos} />
             <Metric label="Docentes activos" value={resumen.docentes} />
+            <Metric label="Administradores de piso" value={resumen.administradoresPiso} />
+            <Metric label="Carreras" value={resumen.carreras} />
+            <Metric label="Pisos" value={resumen.pisos} />
             <Metric
               label="Laboratorios"
               value={resumen.laboratorios}
               detail={`${resumen.disponibles} disponibles · ${resumen.ocupados} ocupados · ${resumen.fueraServicio} fuera de servicio`}
             />
+            <Metric label="Equipos" value={resumen.equipos} />
             <Metric label="Reservas de hoy" value={resumen.reservasHoy} />
             <Metric
               label="Solicitudes pendientes"
@@ -142,7 +168,7 @@ export function AdminDashboard() {
       )}
       <nav className="role-home__links" aria-label="Accesos de supervisión">
         <Link to="/usuarios">Gestionar usuarios</Link>
-        <Link to="/main">Laboratorios y monitoreo</Link>
+        <Link to="/administracion">Catálogos, laboratorios y asignaciones</Link>
         <Link to="/planificacion">Planificación global</Link>
         <Link to="/reservas">Reservas</Link>
         <Link to="/incidentes">Incidentes</Link>

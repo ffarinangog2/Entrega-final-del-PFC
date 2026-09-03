@@ -17,6 +17,7 @@ import { AsistenciaPage } from '../features/asistencia/AsistenciaPage'
 import { IncidentesPage } from '../features/incidentes/IncidentesPage'
 import { ProfilePage } from '../pages/ProfilePage'
 import { NotFoundPage, RouteErrorBoundary } from './RouteFeedback'
+import { AdminInstitutionPage } from '../features/admin/AdminInstitutionPage'
 
 export function AppRoutes() {
   return (
@@ -32,6 +33,7 @@ export function AppRoutes() {
         </Route>
         <Route element={<ProtectedRoute roles={['ADMINISTRADOR']} permissions={['USUARIO_LEER']} />}>
           <Route path="/usuarios" element={<UsuariosPage />} />
+          <Route path="/administracion" element={<AdminInstitutionPage />} />
         </Route>
         <Route path="/perfil" element={<ProfilePage />} />
         <Route element={<ProtectedRoute roles={['ADMINISTRADOR', 'ADMINISTRADOR_PISO', 'COORDINADOR']} permissions={['PLANIFICACION_GESTIONAR', 'SOLICITUD_APROBAR']} />}><Route path="/planificacion" element={<PlanificacionPage />} /></Route>
