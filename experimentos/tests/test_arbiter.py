@@ -3,7 +3,9 @@ from pathlib import Path
 import sys
 import threading
 import tempfile
+from types import SimpleNamespace
 from unittest.mock import patch
+from unittest.mock import Mock
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -18,6 +20,7 @@ from generar_evidencia_arbiter import manifests, sha256sums
 from planificar_arbiter import build_plan
 from caida_coordinador import execute_s4_failure
 from generador_rafagas import run_burst
+from ejecutar_campana_arbiter import Campaign, execute_campaign, validate_plan, write_runtime_mode
 
 
 def request(index=1, equipment="eq-1", user=None):
@@ -198,6 +201,40 @@ class OracleAndStatisticsTest(unittest.TestCase):
         self.assertEqual(sum(r["scenario"] == "esc3" for r in plan), 50)
         self.assertEqual(sum(r["scenario"] == "esc4" for r in plan), 20)
         self.assertEqual(sum(r["analysis"] for r in plan), 104)
+        validate_plan(plan)
+
+    def test_runtime_mode_is_unique_and_restorable_without_touching_other_values(self):
+        original = "SECRET=preserved\nEXPERIMENTAL_ARBITER_ENABLED=false\nARBITER=\n"
+        with tempfile.TemporaryDirectory() as directory:
+            env_file = Path(directory) / ".env"
+            env_file.write_text(original, encoding="utf-8")
+            write_runtime_mode(env_file, original, True, "s3")
+            changed = env_file.read_text(encoding="utf-8")
+            self.assertIn("SECRET=preserved", changed)
+            self.assertEqual(changed.count("EXPERIMENTAL_ARBITER_ENABLED=true"), 1)
+            self.assertEqual(changed.count("ARBITER=s3"), 1)
+            env_file.write_text(original, encoding="utf-8")
+            self.assertEqual(env_file.read_text(encoding="utf-8"), original)
+
+    def test_plan_validation_rejects_incomplete_campaign(self):
+        with self.assertRaisesRegex(RuntimeError, "Matriz inválida"):
+            validate_plan(build_plan()[:-1])
+
+    def test_abort_in_smoke_always_restores_and_never_starts_full_campaign(self):
+        campaign = Mock()
+        campaign.smoke.side_effect = RuntimeError("smoke failed")
+        args = SimpleNamespace(smoke=True, precheck_negative_control=False)
+        with self.assertRaisesRegex(RuntimeError, "smoke failed"):
+            execute_campaign(campaign, args)
+        campaign.restore.assert_called_once_with()
+        campaign.full.assert_not_called()
+        campaign.finalize.assert_not_called()
+
+    def test_s4_failure_is_fail_closed_for_unapproved_command(self):
+        campaign = Campaign.__new__(Campaign)
+        campaign.args = SimpleNamespace(s4_failure_command="docker stop reservas-db-node-1")
+        with self.assertRaisesRegex(RuntimeError, "falla cerrada"):
+            campaign.s4_halfway()
 
     def test_raw_parser_requires_metadata_and_hashes_without_touching_historical_manifest(self):
         with tempfile.TemporaryDirectory() as directory:
