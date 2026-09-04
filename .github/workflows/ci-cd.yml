@@ -38,6 +38,25 @@ jobs:
       - name: ESLint - apps/web
         working-directory: apps/web
         run: npm run lint
+
+  test-arbiter-experiment:
+    name: Test - ARBITER experimental harness
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Compile experimental scripts
+        run: python -m py_compile experimentos/*.py experimentos/tests/test_arbiter.py
+
+      - name: Run experimental unit tests
+        run: python -m unittest discover -s experimentos/tests -p "test_*.py" -v
+
   test-backend:
     name: Build and test - ${{ matrix.service }}
     runs-on: ubuntu-latest
@@ -538,7 +557,7 @@ jobs:
   build-images:
     name: Build and publish image - ${{ matrix.name }}
     runs-on: ubuntu-latest
-    needs: [lint, test-backend, test-web, test-mobile, test-mobile-instrumented, build-mobile-apk, crdb-tests, integration]
+    needs: [lint, test-arbiter-experiment, test-backend, test-web, test-mobile, test-mobile-instrumented, build-mobile-apk, crdb-tests, integration]
     if: ${{ github.event_name == 'push' }}
     permissions:
       contents: read
