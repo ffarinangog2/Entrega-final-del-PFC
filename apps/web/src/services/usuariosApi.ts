@@ -53,6 +53,16 @@ export interface AsociacionRolInstitucional {
   pisoId: string | null
   carreraId: string | null
 }
+export interface ContextoAcademicoEstudiante {
+  id: string
+  estudianteId: string
+  carreraId: string
+  periodoId: string
+  nivel: number
+  activo: boolean
+  creadoEn: string
+}
+export interface DocenteResumen { id:string; nombres:string; apellidos:string; codigoDocente:string|null }
 
 interface PageResponse<T> {
   content: T[]
@@ -154,6 +164,17 @@ export function actualizarPerfilPropio(
   })
 }
 
+export const obtenerMiContextoAcademico = () =>
+  request<ContextoAcademicoEstudiante>('/api/v1/estudiantes/mi-contexto')
+
+export const obtenerMisContextosAcademicos = () =>
+  request<ContextoAcademicoEstudiante[]>('/api/v1/estudiantes/mis-contextos')
+export const obtenerContextosAcademicos = (perfilId: string) =>
+  request<ContextoAcademicoEstudiante[]>(`/api/v1/estudiantes/perfil/${encodeURIComponent(perfilId)}/contextos`)
+export const asignarContextoAcademico = (perfilId: string, body: { carreraId: string; periodoId: string; nivel: number }) =>
+  request<ContextoAcademicoEstudiante>(`/api/v1/estudiantes/perfil/${encodeURIComponent(perfilId)}/contextos`, { method: 'POST', body: JSON.stringify(body) })
+export const obtenerDocenteResumen = (id:string) => request<DocenteResumen>(`/api/v1/docentes/${encodeURIComponent(id)}/resumen`)
+
 export async function listarAdministradores(): Promise<AdministradorInstitucional[]> {
   return (await request<PageResponse<AdministradorInstitucional>>('/api/v1/administradores?size=100')).content
 }
@@ -197,6 +218,8 @@ interface CredencialInstitucionalRequest {
   activo?: boolean
   pisoId: string | null
   carreraId: string | null
+  periodoId?: string | null
+  nivel?: number | null
 }
 
 export function crearUsuarioInstitucionalCompleto(datos: CrearPerfilRequest & CredencialInstitucionalRequest & { passwordInicial: string }): Promise<Perfil> {

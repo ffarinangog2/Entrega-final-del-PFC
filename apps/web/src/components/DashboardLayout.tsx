@@ -5,6 +5,7 @@ import { hasAnyPermission, hasPermission, hasRole, useAuth } from '../auth'
 import '../i18n'
 import { LogoutButton } from './LogoutButton'
 import '../pages/MainPage.css'
+import { StudentNotificationBell } from '../features/estudiante/StudentNotificationBell'
 
 export function DashboardLayout({
   breadcrumb,
@@ -25,7 +26,7 @@ export function DashboardLayout({
   const docente = hasRole(usuario, 'DOCENTE')
   const estudiante = hasRole(usuario, 'ESTUDIANTE')
   const verLaboratorios =
-    (administrador || administradorPiso || coordinador) &&
+    (administrador || administradorPiso || coordinador || estudiante) &&
     hasAnyPermission(usuario, ['ACADEMICO_LEER', 'LABORATORIO_LEER'])
   const verReservas =
     (administrador || administradorPiso || docente) &&
@@ -71,6 +72,7 @@ export function DashboardLayout({
           </div>
         </div>
         <div className="dashboard__account">
+          {estudiante && <StudentNotificationBell />}
           <div className="dashboard__avatar" aria-hidden="true">
             {nombre.charAt(0).toUpperCase()}
           </div>
@@ -93,8 +95,13 @@ export function DashboardLayout({
               <span aria-hidden="true">⌂</span>
               {t('dashboard.nav.home')}
             </NavLink>
+            {estudiante && (
+              <NavLink className="dashboard__nav-item" to="/mi-horario">
+                <span aria-hidden="true">H</span>Mi horario
+              </NavLink>
+            )}
             {verLaboratorios && (
-              <NavLink className="dashboard__nav-item" to={administrador ? '/laboratorios' : '/main'}>
+              <NavLink className="dashboard__nav-item" to={administrador || estudiante ? '/laboratorios' : '/main'}>
                 <span aria-hidden="true">L</span>
                 {t('dashboard.nav.labs')}
               </NavLink>
@@ -131,6 +138,11 @@ export function DashboardLayout({
               <NavLink className="dashboard__nav-item" to="/asistencia">
                 <span aria-hidden="true">A</span>
                 {estudiante ? 'Registro e historial' : 'Asistencia'}
+              </NavLink>
+            )}
+            {estudiante && (
+              <NavLink className="dashboard__nav-item" to="/historial">
+                <span aria-hidden="true">R</span>Historial
               </NavLink>
             )}
             {verIncidentes && (

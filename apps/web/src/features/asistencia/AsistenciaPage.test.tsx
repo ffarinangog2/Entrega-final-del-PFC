@@ -44,6 +44,10 @@ describe('AsistenciaPage para estudiante', () => {
     vi.mocked(api.listarSesionesAbiertas).mockResolvedValue([sesion])
     vi.mocked(api.historialAsistencia).mockResolvedValue([])
     vi.mocked(api.registrarAsistenciaPropia).mockResolvedValue(registro)
+    vi.mocked(api.obtenerMiHorario).mockResolvedValue([])
+    vi.mocked(api.obtenerClasesDocenteHoy).mockResolvedValue([])
+    vi.mocked(academico.obtenerLaboratorios).mockResolvedValue([])
+    vi.mocked(academico.obtenerMaterias).mockResolvedValue([])
   })
 
   it('muestra registro disponible sin UUID ni token y usa identidad autenticada', async () => {

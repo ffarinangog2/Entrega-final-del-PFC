@@ -41,7 +41,7 @@ class DocenteControllerTest {
 
     @BeforeEach
     void setUp() {
-        controller = new DocenteController(docenteService);
+        controller = new DocenteController(docenteService, org.mockito.Mockito.mock(ec.edu.scli.usuarios.application.usecase.PerfilService.class));
 
         docenteId = UUID.randomUUID();
         perfilId = UUID.randomUUID();

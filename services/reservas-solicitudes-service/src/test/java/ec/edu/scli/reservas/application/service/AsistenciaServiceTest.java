@@ -11,6 +11,9 @@ import ec.edu.scli.reservas.domain.port.out.EstudianteInstitucionalPort;
 import ec.edu.scli.reservas.domain.port.out.ReservaRepositoryPort;
 import ec.edu.scli.reservas.domain.port.out.SolicitudReservaRepositoryPort;
 import ec.edu.scli.reservas.client.AcademicoLaboratoriosClient;
+import ec.edu.scli.reservas.client.UsuariosClient;
+import ec.edu.scli.reservas.infrastructure.persistence.repository.PlanificacionJpaRepository;
+import ec.edu.scli.reservas.infrastructure.persistence.repository.PlanificacionAgregadaJpaRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.access.AccessDeniedException;
@@ -24,6 +27,9 @@ import java.util.List;
 import ec.edu.scli.reservas.domain.model.Reserva;
 import ec.edu.scli.reservas.domain.model.SolicitudReserva;
 import ec.edu.scli.reservas.client.dto.MateriaContextoExternoResponse;
+import ec.edu.scli.reservas.infrastructure.persistence.entity.PlanificacionJpaEntity;
+import ec.edu.scli.reservas.infrastructure.persistence.entity.PlanificacionAgregadaJpaEntity;
+import ec.edu.scli.reservas.domain.model.EstadoPlanificacionAgregada;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.*;
@@ -39,6 +45,9 @@ class AsistenciaServiceTest {
     private ReservaRepositoryPort reservaRepository;
     private SolicitudReservaRepositoryPort solicitudRepository;
     private AcademicoLaboratoriosClient academico;
+    private PlanificacionJpaRepository bloques;
+    private PlanificacionAgregadaJpaRepository planes;
+    private UsuariosClient usuarios;
 
     @BeforeEach void preparar() {
         sesiones = mock(SesionAsistenciaJpaRepository.class);
@@ -48,9 +57,10 @@ class AsistenciaServiceTest {
         reservaRepository = mock(ReservaRepositoryPort.class);
         solicitudRepository = mock(SolicitudReservaRepositoryPort.class);
         academico = mock(AcademicoLaboratoriosClient.class);
+        bloques = mock(PlanificacionJpaRepository.class); planes = mock(PlanificacionAgregadaJpaRepository.class); usuarios=mock(UsuariosClient.class);
         when(estudiantes.resolverEstudianteActivo(any())).thenAnswer(i -> i.getArgument(0));
         service = new AsistenciaService(sesiones, registros, reservas, estudiantes,
-                reservaRepository, solicitudRepository, academico, 15);
+                reservaRepository, solicitudRepository, academico, bloques, planes, usuarios, 15);
         when(sesiones.save(any())).thenAnswer(i -> i.getArgument(0));
         when(registros.save(any())).thenAnswer(i -> i.getArgument(0));
     }
@@ -106,7 +116,8 @@ class AsistenciaServiceTest {
         sesion.setReservaId(reservaId);
         Reserva reserva = new Reserva(); reserva.setId(reservaId); reserva.setSolicitudId(solicitudId);
         SolicitudReserva solicitud = new SolicitudReserva(); solicitud.setId(solicitudId); solicitud.setMateriaId(materiaId);
-        when(estudiantes.resolverCarreraActiva(perfil)).thenReturn(carrera);
+        when(estudiantes.resolverContextoActivo(perfil)).thenReturn(new EstudianteInstitucionalPort.Contexto(
+                estudiante, perfil, carrera, UUID.randomUUID(), 7));
         when(estudiantes.resolverEstudianteActivo(perfil)).thenReturn(estudiante);
         when(sesiones.findByEstado(EstadoSesionAsistencia.ABIERTA)).thenReturn(List.of(sesion));
         when(sesiones.findById(sesionId)).thenReturn(Optional.of(sesion));
@@ -118,6 +129,23 @@ class AsistenciaServiceTest {
         assertThat(service.sesionesAbiertas(perfil)).hasSize(1);
         assertThat(service.registrarPropia(sesionId, perfil)).isNotNull();
         verify(registros).save(any());
+    }
+
+    @Test void sesionPlanificadaExigeMismaCarreraNivelYCiclo() throws Exception {
+        UUID perfil=UUID.randomUUID(), estudiante=UUID.randomUUID(), carrera=UUID.randomUUID(), periodo=UUID.randomUUID();
+        UUID bloqueId=UUID.randomUUID(), planId=UUID.randomUUID(), sesionId=UUID.randomUUID();
+        var bloque=new PlanificacionJpaEntity();bloque.setId(bloqueId);bloque.setPlanificacionId(planId);bloque.setNivel(7);
+        var plan=new PlanificacionAgregadaJpaEntity();plan.setId(planId);plan.setCarreraId(carrera);plan.setPeriodoId(periodo);plan.setEstado(EstadoPlanificacionAgregada.APROBADA);
+        var sesion=sesion(sesionId,"interno",Instant.now().plusSeconds(60));sesion.setBloquePlanificacionId(bloqueId);
+        when(sesiones.findByEstado(EstadoSesionAsistencia.ABIERTA)).thenReturn(List.of(sesion));when(sesiones.findById(sesionId)).thenReturn(Optional.of(sesion));
+        when(bloques.findById(bloqueId)).thenReturn(Optional.of(bloque));when(planes.findById(planId)).thenReturn(Optional.of(plan));
+        when(estudiantes.resolverContextoActivo(perfil)).thenReturn(new EstudianteInstitucionalPort.Contexto(estudiante,perfil,carrera,periodo,7));
+        when(estudiantes.resolverEstudianteActivo(perfil)).thenReturn(estudiante);
+        assertThat(service.sesionesAbiertas(perfil)).hasSize(1);assertThat(service.registrarPropia(sesionId,perfil)).isNotNull();
+        UUID otro=UUID.randomUUID();when(estudiantes.resolverContextoActivo(otro)).thenReturn(new EstudianteInstitucionalPort.Contexto(UUID.randomUUID(),otro,carrera,periodo,8));
+        assertThat(service.sesionesAbiertas(otro)).isEmpty();assertThatThrownBy(()->service.registrarPropia(sesionId,otro)).isInstanceOf(AccessDeniedException.class);
+        UUID otraCarrera=UUID.randomUUID();when(estudiantes.resolverContextoActivo(otro)).thenReturn(new EstudianteInstitucionalPort.Contexto(UUID.randomUUID(),otro,otraCarrera,periodo,7));
+        assertThat(service.sesionesAbiertas(otro)).isEmpty();
     }
 
     private SesionAsistenciaJpaEntity sesion(UUID id, String token, Instant expira) throws Exception {

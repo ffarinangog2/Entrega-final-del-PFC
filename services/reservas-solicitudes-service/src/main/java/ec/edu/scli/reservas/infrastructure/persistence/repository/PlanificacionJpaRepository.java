@@ -15,6 +15,7 @@ import java.util.UUID;
 public interface PlanificacionJpaRepository extends JpaRepository<PlanificacionJpaEntity, UUID> {
     List<PlanificacionJpaEntity> findByCarreraId(UUID carreraId);
     List<PlanificacionJpaEntity> findByPlanificacionId(UUID planificacionId);
+    List<PlanificacionJpaEntity> findByDocenteIdAndDiaSemana(UUID docenteId, String diaSemana);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("""

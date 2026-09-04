@@ -58,7 +58,6 @@ public class UsuariosClient {
                 .uri("/api/v1/internal/docentes/{docenteId}", docenteId)
                 .retrieve().body(DocenteExternoResponse.class));
     }
-
     public boolean docentePerteneceCarrera(UUID docenteId, UUID carreraId) {
         Boolean response = executeWithReadRetries(() -> restClient.get()
                 .uri("/api/v1/internal/docentes/{docenteId}/carreras/{carreraId}/exists",
@@ -70,6 +69,11 @@ public class UsuariosClient {
     public EstudianteExternoResponse obtenerEstudiantePorPerfil(UUID perfilId) {
         return executeWithReadRetries(() -> restClient.get()
                 .uri("/api/v1/internal/estudiantes/perfil/{perfilId}", perfilId)
+                .retrieve().body(EstudianteExternoResponse.class));
+    }
+    public EstudianteExternoResponse obtenerContextoEstudiante(UUID perfilId, UUID periodoId) {
+        return executeWithReadRetries(() -> restClient.get()
+                .uri("/api/v1/internal/estudiantes/perfil/{perfilId}/periodo/{periodoId}",perfilId,periodoId)
                 .retrieve().body(EstudianteExternoResponse.class));
     }
 

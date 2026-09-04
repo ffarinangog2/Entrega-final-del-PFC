@@ -7,6 +7,7 @@ import ec.edu.scli.usuarios.infrastructure.persistence.entity.Perfil;
 import ec.edu.scli.usuarios.infrastructure.persistence.jpa.AdministradorRepository;
 import ec.edu.scli.usuarios.infrastructure.persistence.jpa.AdscripcionInstitucionalRepository;
 import ec.edu.scli.usuarios.infrastructure.persistence.jpa.PerfilRepository;
+import ec.edu.scli.usuarios.infrastructure.persistence.jpa.EstudianteRepository;
 import ec.edu.scli.usuarios.presentation.dto.usuarios.AsociacionRolRequest;
 import ec.edu.scli.usuarios.presentation.dto.usuarios.AsociacionRolResponse;
 import org.springframework.stereotype.Service;
@@ -20,12 +21,14 @@ public class AsociacionRolService {
     private final PerfilRepository perfiles;
     private final AdministradorRepository administradores;
     private final AdscripcionInstitucionalRepository adscripciones;
+    private final EstudianteRepository estudiantes;
 
     public AsociacionRolService(PerfilRepository perfiles, AdministradorRepository administradores,
-            AdscripcionInstitucionalRepository adscripciones) {
+            AdscripcionInstitucionalRepository adscripciones, EstudianteRepository estudiantes) {
         this.perfiles = perfiles;
         this.administradores = administradores;
         this.adscripciones = adscripciones;
+        this.estudiantes = estudiantes;
     }
 
     @Transactional(readOnly = true)
@@ -60,6 +63,7 @@ public class AsociacionRolService {
             item.setActivo(false);
             adscripciones.save(item);
         });
+        estudiantes.findByPerfilId(perfilId).ifPresent(item -> { item.setActivo("ESTUDIANTE".equals(rol)); estudiantes.save(item); });
 
         if ("ADMINISTRADOR_PISO".equals(rol) && administradores.findByPerfilId(perfilId).isEmpty()) {
             Administrador admin = new Administrador();
@@ -80,6 +84,10 @@ public class AsociacionRolService {
             adscripcion.setAmbitoId(request.carreraId());
             adscripcion.setActivo(true);
             adscripciones.save(adscripcion);
+        } else if ("ESTUDIANTE".equals(rol) && estudiantes.findByPerfilId(perfilId).isEmpty()) {
+            ec.edu.scli.usuarios.infrastructure.persistence.entity.Estudiante estudiante = new ec.edu.scli.usuarios.infrastructure.persistence.entity.Estudiante();
+            estudiante.setPerfil(perfil); estudiante.setMatricula("SCLI-" + perfilId.toString().substring(0, 8).toUpperCase(Locale.ROOT)); estudiante.setActivo(true);
+            estudiantes.save(estudiante);
         }
     }
 }

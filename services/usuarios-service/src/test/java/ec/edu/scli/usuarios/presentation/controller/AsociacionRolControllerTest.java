@@ -35,7 +35,8 @@ class AsociacionRolControllerTest {
 
     @BeforeEach
     void setUp() {
-        service = new AsociacionRolService(perfiles, administradores, adscripciones);
+        service = new AsociacionRolService(perfiles, administradores, adscripciones,
+                org.mockito.Mockito.mock(ec.edu.scli.usuarios.infrastructure.persistence.jpa.EstudianteRepository.class));
         perfilId = UUID.randomUUID();
         perfil = new Perfil();
         when(perfiles.findById(perfilId)).thenReturn(Optional.of(perfil));

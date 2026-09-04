@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { DashboardLayout } from '../components/DashboardLayout'
 import { LaboratoriosPanel } from '../features/laboratorios/LaboratoriosPanel'
 import { MonitoreoPanel } from '../features/monitoreo/MonitoreoPanel'
+import { StudentHome } from '../features/estudiante/StudentHome'
 import { AdminDashboard } from '../features/admin/AdminDashboard'
 import { hasRole, useAuth } from '../auth'
 import {
@@ -315,6 +316,7 @@ export function MainPage() {
   const administrador = hasRole(usuario, 'ADMINISTRADOR')
   const administradorPiso = hasRole(usuario, 'ADMINISTRADOR_PISO')
   const docente = hasRole(usuario, 'DOCENTE')
+  const estudiante = hasRole(usuario, 'ESTUDIANTE')
   return (
     <DashboardLayout breadcrumb="Inicio">
       {administrador && (
@@ -325,7 +327,8 @@ export function MainPage() {
       )}
       {administradorPiso && <LaboratoriosPanel />}
       {docente && usuario?.perfilId && <MiSemana perfilId={usuario.perfilId} />}
-      {!administrador && !docente && <InicioPorRol />}
+      {estudiante && <StudentHome />}
+      {!administrador && !docente && !estudiante && <InicioPorRol />}
     </DashboardLayout>
   )
 }

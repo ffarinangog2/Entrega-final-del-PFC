@@ -3,6 +3,7 @@ import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as academico from '../services/academicoApi'
 import * as operational from '../services/operationalApi'
+import * as usuarios from '../services/usuariosApi'
 import { MainPage } from './MainPage'
 
 let usuario = { perfilId: 'perfil-1', roles: ['DOCENTE'], permisos: [] }
@@ -13,6 +14,7 @@ vi.mock('../auth', async (original) => ({
 }))
 vi.mock('../services/academicoApi')
 vi.mock('../services/operationalApi')
+vi.mock('../services/usuariosApi')
 vi.mock('../components/DashboardLayout', () => ({
   DashboardLayout: ({ children }: { children: React.ReactNode }) => (
     <>{children}</>
@@ -76,6 +78,12 @@ describe('MainPage', () => {
         actualizadoEn: '',
       },
     ])
+    vi.mocked(academico.obtenerCarreras).mockResolvedValue([])
+    vi.mocked(academico.obtenerPeriodos).mockResolvedValue([])
+    vi.mocked(academico.obtenerPisos).mockResolvedValue([])
+    vi.mocked(operational.listarSesionesAbiertas).mockResolvedValue([])
+    vi.mocked(operational.obtenerMiHorario).mockResolvedValue([])
+    vi.mocked(usuarios.obtenerMiContextoAcademico).mockResolvedValue({ id:'ctx',estudianteId:'e',carreraId:'c-1',periodoId:'p-1',nivel:7,activo:true,creadoEn:'' })
   })
 
   it('muestra al docente únicamente su horario con nombres humanos', async () => {
@@ -103,8 +111,14 @@ describe('MainPage', () => {
     vi.useRealTimers()
   })
 
-  it('no consulta catálogos globales para un estudiante', () => {
+  it('carga el contexto y horario aprobados para un estudiante', async () => {
     usuario = { perfilId: 'perfil-2', roles: ['ESTUDIANTE'], permisos: [] }
+    vi.mocked(academico.obtenerCarreras).mockResolvedValue([{ id: 'c-1', facultadId: 'f', codigo: 'IS', nombre: 'Ingeniería de Software', activo: true }])
+    vi.mocked(academico.obtenerPeriodos).mockResolvedValue([{ id: 'p-1', codigo: 'C1', nombre: 'Ciclo actual', fechaInicio: '', fechaFin: '', estado: 'ACTIVO' }])
+    vi.mocked(academico.obtenerPisos).mockResolvedValue([{ id: 'piso-1', bloqueId: 'b', numero: 2, descripcion: '', activo: true }])
+    vi.mocked(operational.obtenerMiHorario).mockResolvedValue([{ id: 'plan-1', planificacionId: 'plan', nivel: 7, periodoId: 'p-1', carreraId: 'c-1', materiaId: 'm-1', docenteId: 'doc-1', laboratorioId: 'l-1', diaSemana: 'LUNES', horaInicio: '07:30', horaFin: '09:30', estado: 'CONFIRMADA', observacion: null, version: 0 }])
+    vi.mocked(operational.listarSesionesAbiertas).mockResolvedValue([{ id: 'sesion', reservaId: null, bloqueId: 'plan-1', fechaClase: '', abiertaEn: '', expiraEn: '2026-09-03T15:00:00Z', estado: 'ABIERTA', token: null }])
+    vi.mocked(usuarios.obtenerDocenteResumen).mockResolvedValue({ id: 'doc-1', nombres: 'Carlos', apellidos: 'Pérez', codigoDocente: 'DOC-1' })
     render(
       <MemoryRouter>
         <MainPage />
@@ -113,7 +127,11 @@ describe('MainPage', () => {
     expect(
       screen.getByRole('heading', { name: 'Mi información académica' }),
     ).toBeInTheDocument()
-    expect(academico.obtenerLaboratorios).not.toHaveBeenCalled()
+    expect((await screen.findByText(/Nivel:/)).closest('p')).toHaveTextContent('Nivel: 7')
+    expect(screen.getByText(/LAB-1 · Piso 2/)).toBeInTheDocument()
+    expect(screen.getByText('Carlos Pérez')).toBeInTheDocument()
+    expect(screen.getByText(/Asistencia habilitada/)).toBeInTheDocument()
+    expect(operational.obtenerMiHorario).toHaveBeenCalledWith('p-1')
   })
 
   it('muestra al coordinador carrera, periodo y estado de planificación', async () => {

@@ -26,13 +26,14 @@ class UsuarioInstitucionalAdminServiceTest {
     @Mock AsociacionRolService asociaciones;
     @Mock AuthAdminClient auth;
     @Mock CompensacionAuthTransaccional compensaciones;
+    @Mock ContextoAcademicoEstudianteService contextos;
     private UsuarioInstitucionalAdminService service;
     private UUID perfilId;
     private PerfilResponse perfil;
 
     @BeforeEach
     void setUp() {
-        service = new UsuarioInstitucionalAdminService(perfiles, asociaciones, auth, compensaciones);
+        service = new UsuarioInstitucionalAdminService(perfiles, asociaciones, auth, compensaciones, contextos);
         perfilId = UUID.randomUUID();
         perfil = new PerfilResponse(perfilId, "0102030405", "Ana", "Piso", "ana@scli.edu.ec",
                 null, null, null, null, null, true, null, null);
@@ -58,6 +59,21 @@ class UsuarioInstitucionalAdminServiceTest {
 
         assertThatThrownBy(() -> service.crear(crearRequest("COORDINADOR", null, UUID.randomUUID())))
                 .hasMessage("Carrera inválida");
+        verifyNoInteractions(auth);
+    }
+
+    @Test
+    void contextoEstudiantilFallidoImpideCrearAuth() {
+        when(perfiles.crear(any())).thenReturn(perfil);
+        UUID carreraId = UUID.randomUUID();
+        UUID periodoId = UUID.randomUUID();
+        doThrow(new IllegalArgumentException("Contexto inválido")).when(contextos)
+                .asignarPorPerfil(eq(perfilId), any());
+        var base = crearRequest("ESTUDIANTE", null, carreraId);
+        var request = new UsuarioInstitucionalCreateRequest(base.perfil(), base.username(), base.email(),
+                base.passwordInicial(), base.rol(), null, carreraId, periodoId, 7);
+
+        assertThatThrownBy(() -> service.crear(request)).hasMessage("Contexto inválido");
         verifyNoInteractions(auth);
     }
 

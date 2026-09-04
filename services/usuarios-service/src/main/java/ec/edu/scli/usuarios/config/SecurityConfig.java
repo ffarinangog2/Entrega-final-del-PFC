@@ -45,6 +45,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/perfiles/me").authenticated()
                         .requestMatchers(HttpMethod.PATCH, "/api/v1/perfiles/me").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/v1/docentes/perfil/*").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/docentes/*/resumen").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/estudiantes/mi-contexto", "/api/v1/estudiantes/mis-contextos").hasRole("ESTUDIANTE")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/estudiantes/perfil/*/contextos").hasAuthority("USUARIO_LEER")
                         .requestMatchers(HttpMethod.GET, "/api/v1/perfiles/**").hasAuthority("USUARIO_LEER")
                         .requestMatchers(HttpMethod.POST, "/api/v1/perfiles").hasAuthority("USUARIO_CREAR")
                         .requestMatchers(HttpMethod.POST, "/api/v1/perfiles/administracion-usuarios").hasAuthority("USUARIO_CREAR")
@@ -58,6 +61,8 @@ public class SecurityConfig {
                                 "/api/v1/administradores/**").hasAuthority("USUARIO_LEER")
                         .requestMatchers(HttpMethod.POST, "/api/v1/docentes", "/api/v1/estudiantes",
                                 "/api/v1/administradores").hasAuthority("USUARIO_CREAR")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/estudiantes/*/contextos").hasAuthority("USUARIO_EDITAR")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/estudiantes/perfil/*/contextos").hasAuthority("USUARIO_EDITAR")
                         .requestMatchers(HttpMethod.PUT, "/api/v1/docentes/**", "/api/v1/estudiantes/**",
                                 "/api/v1/administradores/**").hasAuthority("USUARIO_EDITAR")
                         .anyRequest().authenticated())

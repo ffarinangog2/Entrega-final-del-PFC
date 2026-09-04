@@ -23,6 +23,8 @@ export function AsistenciaPage() {
   const docente = hasRole(usuario, 'DOCENTE')
   const estudiante = hasRole(usuario, 'ESTUDIANTE')
   const [clases, setClases] = useState<ClaseDocente[]>([])
+  const [bloquesDocente, setBloquesDocente] = useState<api.Planificacion[]>([])
+  const [horarioEstudiante, setHorarioEstudiante] = useState<api.Planificacion[]>([])
   const [laboratorios, setLaboratorios] = useState<Laboratorio[]>([])
   const [materias, setMaterias] = useState<Materia[]>([])
   const [sesion, setSesion] = useState<api.SesionAsistencia | null>(null)
@@ -39,10 +41,11 @@ export function AsistenciaPage() {
     async function cargar() {
       try {
         if (docente) {
-          const [reservas, labs, materiasData] = await Promise.all([
+          const [reservas, labs, materiasData, bloques] = await Promise.all([
             obtenerReservas(),
             obtenerLaboratorios(),
             obtenerMaterias(),
+            api.obtenerClasesDocenteHoy().catch(() => []),
           ])
           const reservasHoy = reservas.filter(
             (item) =>
@@ -61,15 +64,22 @@ export function AsistenciaPage() {
             )
             setLaboratorios(labs)
             setMaterias(materiasData)
+            setBloquesDocente(bloques)
           }
         } else if (estudiante) {
-          const [sesiones, historial] = await Promise.all([
+          const [sesiones, historial, horario, labs, materiasData] = await Promise.all([
             api.listarSesionesAbiertas(),
             api.historialAsistencia(),
+            api.obtenerMiHorario(),
+            obtenerLaboratorios(),
+            obtenerMaterias(),
           ])
           if (active) {
             setAbiertas(sesiones)
             setRegistros(historial)
+            setHorarioEstudiante(horario)
+            setLaboratorios(labs)
+            setMaterias(materiasData)
           }
         }
       } catch (cause) {
@@ -111,6 +121,11 @@ export function AsistenciaPage() {
           : 'No se pudo habilitar la asistencia.',
       )
     }
+  }
+  async function habilitarBloque(bloqueId: string) {
+    setError(''); setMensaje('')
+    try { setSesion(await api.abrirAsistenciaBloque(bloqueId)); setMensaje('Asistencia habilitada para esta clase planificada.') }
+    catch(cause){setError(cause instanceof Error?cause.message:'No se pudo habilitar la asistencia.')}
   }
   async function actualizar() {
     if (!sesion) return
@@ -190,7 +205,7 @@ export function AsistenciaPage() {
             {docente && (
               <section>
                 <h2>Mis clases de hoy</h2>
-                {clases.length === 0 ? (
+                {clases.length === 0 && bloquesDocente.length === 0 ? (
                   <p className="operations__empty">
                     No tiene clases programadas para hoy.
                   </p>
@@ -221,6 +236,12 @@ export function AsistenciaPage() {
                     ))}
                   </div>
                 )}
+                {bloquesDocente.map((bloque) => <article className="operations__card" key={bloque.id}>
+                  <h3>{materiasPorId.get(bloque.materiaId)?.nombre ?? 'Clase planificada'}</h3>
+                  <p><strong>{bloque.horaInicio}–{bloque.horaFin}</strong></p>
+                  <p>{labs.get(bloque.laboratorioId)?.nombre ?? 'Laboratorio asignado'}</p>
+                  <button onClick={() => void habilitarBloque(bloque.id)} disabled={sesion?.bloqueId===bloque.id}>Habilitar asistencia</button>
+                </article>)}
               </section>
             )}
             {docente && sesion && (
@@ -254,7 +275,8 @@ export function AsistenciaPage() {
                 ) : (
                   abiertas.map((item) => (
                     <article className="operations__card" key={item.id}>
-                      <h3>Registro habilitado</h3>
+                      <h3>{materiasPorId.get(horarioEstudiante.find(b=>b.id===item.bloqueId)?.materiaId??'')?.nombre ?? 'Registro habilitado'}</h3>
+                      {item.bloqueId && <p>{labs.get(horarioEstudiante.find(b=>b.id===item.bloqueId)?.laboratorioId??'')?.nombre ?? 'Laboratorio asignado'}</p>}
                       <p>
                         Disponible hasta{' '}
                         {new Date(item.expiraEn).toLocaleTimeString([], {

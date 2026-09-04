@@ -114,14 +114,14 @@ describe('DashboardLayout por permisos', () => {
       screen.queryByRole('link', { name: /Laboratorios/ }),
     ).not.toBeInTheDocument()
   })
-  it('ESTUDIANTE ve registro y perfil, no operaciones sin datos académicos seguros', () => {
+  it('ESTUDIANTE ve horario, registro, laboratorios, historial y perfil sin operaciones administrativas', () => {
     menu(['ESTUDIANTE'], ['ACADEMICO_LEER'])
     expect(
       screen.getByRole('link', { name: /Registro e historial/ }),
     ).toBeInTheDocument()
-    expect(
-      screen.queryByRole('link', { name: /Mi horario/ }),
-    ).not.toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /Mi horario/ })).toHaveAttribute('href', '/mi-horario')
+    expect(screen.getByRole('link', { name: /Laboratorios/ })).toHaveAttribute('href', '/laboratorios')
+    expect(screen.getByRole('link', { name: /Historial/ })).toHaveAttribute('href', '/historial')
     expect(
       screen.queryByRole('link', { name: /Reservas/ }),
     ).not.toBeInTheDocument()
@@ -130,9 +130,6 @@ describe('DashboardLayout por permisos', () => {
     ).not.toBeInTheDocument()
     expect(
       screen.queryByRole('link', { name: /Incidentes/ }),
-    ).not.toBeInTheDocument()
-    expect(
-      screen.queryByRole('link', { name: /Laboratorios/ }),
     ).not.toBeInTheDocument()
   })
 })

@@ -9,6 +9,7 @@ import ec.edu.scli.reservas.presentation.dto.request.AbrirSesionAsistenciaReques
 import ec.edu.scli.reservas.presentation.dto.request.RegistrarAsistenciaRequest;
 import ec.edu.scli.reservas.presentation.dto.response.RegistroAsistenciaResponse;
 import ec.edu.scli.reservas.presentation.dto.response.SesionAsistenciaResponse;
+import ec.edu.scli.reservas.presentation.dto.response.PlanificacionResponse;
 import ec.edu.scli.reservas.presentation.exception.ResourceNotFoundException;
 import ec.edu.scli.reservas.domain.port.out.EstudianteInstitucionalPort;
 import ec.edu.scli.reservas.domain.port.out.ReservaRepositoryPort;
@@ -23,6 +24,9 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.Base64;
 import java.util.HexFormat;
 import java.util.List;
@@ -38,6 +42,9 @@ public class AsistenciaService {
     private final ReservaRepositoryPort reservaRepository;
     private final SolicitudReservaRepositoryPort solicitudRepository;
     private final AcademicoLaboratoriosClient academico;
+    private final ec.edu.scli.reservas.infrastructure.persistence.repository.PlanificacionJpaRepository bloques;
+    private final ec.edu.scli.reservas.infrastructure.persistence.repository.PlanificacionAgregadaJpaRepository planes;
+    private final ec.edu.scli.reservas.client.UsuariosClient usuarios;
     private final SecureRandom random = new SecureRandom();
 
     public AsistenciaService(SesionAsistenciaJpaRepository sesiones, RegistroAsistenciaJpaRepository registros,
@@ -45,6 +52,9 @@ public class AsistenciaService {
             ReservaRepositoryPort reservaRepository,
             SolicitudReservaRepositoryPort solicitudRepository,
             AcademicoLaboratoriosClient academico,
+            ec.edu.scli.reservas.infrastructure.persistence.repository.PlanificacionJpaRepository bloques,
+            ec.edu.scli.reservas.infrastructure.persistence.repository.PlanificacionAgregadaJpaRepository planes,
+            ec.edu.scli.reservas.client.UsuariosClient usuarios,
             @Value("${app.asistencia.window-minutes:15}") long minutos) {
         this.sesiones = sesiones;
         this.registros = registros;
@@ -54,10 +64,15 @@ public class AsistenciaService {
         this.reservaRepository = reservaRepository;
         this.solicitudRepository = solicitudRepository;
         this.academico = academico;
+        this.bloques = bloques;
+        this.planes = planes;
+        this.usuarios = usuarios;
     }
 
     @Transactional
     public SesionAsistenciaResponse abrir(AbrirSesionAsistenciaRequest request, UUID actor) {
+        if (request.bloqueId() != null) return abrirBloque(request.bloqueId(), actor);
+        if (request.reservaId() == null) throw new IllegalArgumentException("Debe seleccionar una clase planificada");
         var reserva = reservas.buscarPorId(request.reservaId());
         if (!actor.equals(reserva.responsableId())) throw new AccessDeniedException("La reserva no pertenece al docente");
         sesiones.findFirstByReservaIdAndEstado(request.reservaId(), EstadoSesionAsistencia.ABIERTA)
@@ -71,6 +86,26 @@ public class AsistenciaService {
         entity.setExpiraEn(now.plusSeconds(minutos * 60));
         entity.setTokenHash(hash(token));
         return response(sesiones.save(entity), token);
+    }
+
+    private SesionAsistenciaResponse abrirBloque(UUID bloqueId, UUID actor) {
+        var bloque = bloques.findById(bloqueId).orElseThrow(() -> new ResourceNotFoundException("Bloque de planificación no encontrado"));
+        var plan = planes.findById(bloque.getPlanificacionId()).orElseThrow(() -> new ResourceNotFoundException("Planificación no encontrada"));
+        if (plan.getEstado() != ec.edu.scli.reservas.domain.model.EstadoPlanificacionAgregada.APROBADA)
+            throw new IllegalStateException("La planificación todavía no está aprobada");
+        var docente=usuarios.obtenerDocentePorId(bloque.getDocenteId());
+        if (docente==null || !actor.equals(docente.perfilId())) throw new AccessDeniedException("El bloque no pertenece al docente autenticado");
+        ZoneId zona = ZoneId.of("America/Guayaquil");
+        LocalDate fecha = LocalDate.now(zona);
+        if (!dia(fecha).equalsIgnoreCase(bloque.getDiaSemana())) throw new IllegalStateException("La clase no corresponde al día actual");
+        LocalTime hora = LocalTime.now(zona);
+        if (hora.isBefore(bloque.getHoraInicio()) || hora.isAfter(bloque.getHoraFin())) throw new IllegalStateException("La clase no está dentro de su horario");
+        sesiones.findFirstByBloquePlanificacionIdAndFechaClaseAndEstado(bloqueId, fecha, EstadoSesionAsistencia.ABIERTA)
+                .ifPresent(s -> { throw new IllegalStateException("La clase ya tiene una sesión abierta"); });
+        Instant now=Instant.now(); String token=tokenSeguro(); var entity=new SesionAsistenciaJpaEntity();
+        entity.setBloquePlanificacionId(bloqueId); entity.setFechaClase(fecha); entity.setDocenteId(actor);
+        entity.setAbiertaEn(now); entity.setExpiraEn(now.plusSeconds(minutos*60)); entity.setTokenHash(hash(token));
+        return response(sesiones.save(entity),token);
     }
 
     @Transactional
@@ -96,21 +131,21 @@ public class AsistenciaService {
 
     @Transactional(readOnly = true)
     public List<SesionAsistenciaResponse> sesionesAbiertas(UUID perfilEstudiante) {
-        UUID carreraId = estudiantes.resolverCarreraActiva(perfilEstudiante);
+        var contexto = estudiantes.resolverContextoActivo(perfilEstudiante);
         Instant now = Instant.now();
         return sesiones.findByEstado(EstadoSesionAsistencia.ABIERTA).stream()
                 .filter(sesion -> !now.isAfter(sesion.getExpiraEn()))
-                .filter(sesion -> perteneceCarrera(sesion, carreraId))
+                .filter(sesion -> perteneceContexto(sesion, contexto))
                 .map(sesion -> response(sesion, null))
                 .toList();
     }
 
     @Transactional
     public RegistroAsistenciaResponse registrarPropia(UUID sesionId, UUID perfilEstudiante) {
-        UUID carreraId = estudiantes.resolverCarreraActiva(perfilEstudiante);
+        var contexto = estudiantes.resolverContextoActivo(perfilEstudiante);
         SesionAsistenciaJpaEntity sesion = obtener(sesionId);
-        if (!perteneceCarrera(sesion, carreraId)) {
-            throw new AccessDeniedException("La sesión no corresponde a la carrera del estudiante");
+        if (!perteneceContexto(sesion, contexto)) {
+            throw new AccessDeniedException("La sesión no corresponde al contexto académico del estudiante");
         }
         return crearRegistro(sesion, estudiantes.resolverEstudianteActivo(perfilEstudiante));
     }
@@ -137,6 +172,35 @@ public class AsistenciaService {
         UUID estudiante = estudiantes.resolverEstudianteActivo(perfilEstudiante);
         return registros.findByEstudianteId(estudiante).stream().map(this::map).toList();
     }
+    @Transactional(readOnly = true)
+    public List<RegistroAsistenciaResponse> historial(UUID perfilEstudiante, UUID periodoId) {
+        if (periodoId == null) return historial(perfilEstudiante);
+        var contexto = estudiantes.resolverContexto(perfilEstudiante, periodoId);
+        UUID estudiante = estudiantes.resolverEstudianteActivo(perfilEstudiante);
+        return registros.findByEstudianteId(estudiante).stream()
+                .filter(registro -> sesiones.findById(registro.getSesionId()).map(sesion -> perteneceContexto(sesion, contexto)).orElse(false))
+                .map(this::map).toList();
+    }
+    @Transactional(readOnly = true)
+    public List<PlanificacionResponse> horario(UUID perfilEstudiante, UUID periodoId) {
+        var contexto = periodoId == null ? estudiantes.resolverContextoActivo(perfilEstudiante)
+                : estudiantes.resolverContexto(perfilEstudiante, periodoId);
+        var plan = planes.findByCarreraIdAndPeriodoId(contexto.carreraId(), contexto.periodoId()).orElse(null);
+        if (plan == null || plan.getEstado() != ec.edu.scli.reservas.domain.model.EstadoPlanificacionAgregada.APROBADA) return List.of();
+        return bloques.findByPlanificacionId(plan.getId()).stream().filter(b -> contexto.nivel().equals(b.getNivel()))
+                .map(b -> new PlanificacionResponse(b.getId(),b.getPlanificacionId(),b.getNivel(),b.getPeriodoId(),b.getCarreraId(),
+                        b.getMateriaId(),b.getDocenteId(),b.getLaboratorioId(),b.getDiaSemana(),b.getHoraInicio(),b.getHoraFin(),
+                        b.getEstado().name(),b.getObservacion(),b.getCreadoPorPerfilId(),b.getCreadaEn(),b.getActualizadaEn(),b.getVersion())).toList();
+    }
+    @Transactional(readOnly = true)
+    public List<PlanificacionResponse> clasesDocenteHoy(UUID docenteId) {
+        var docente=usuarios.obtenerDocentePorPerfil(docenteId);
+        if(docente==null||!docente.activo()) throw new AccessDeniedException("No existe docente activo para el perfil autenticado");
+        return bloques.findByDocenteIdAndDiaSemana(docente.docenteId(),dia(LocalDate.now(ZoneId.of("America/Guayaquil")))).stream()
+                .filter(b -> b.getPlanificacionId()!=null).filter(b -> planes.findById(b.getPlanificacionId())
+                        .map(p -> p.getEstado()==ec.edu.scli.reservas.domain.model.EstadoPlanificacionAgregada.APROBADA).orElse(false))
+                .map(b -> new PlanificacionResponse(b.getId(),b.getPlanificacionId(),b.getNivel(),b.getPeriodoId(),b.getCarreraId(),b.getMateriaId(),b.getDocenteId(),b.getLaboratorioId(),b.getDiaSemana(),b.getHoraInicio(),b.getHoraFin(),b.getEstado().name(),b.getObservacion(),b.getCreadoPorPerfilId(),b.getCreadaEn(),b.getActualizadaEn(),b.getVersion())).toList();
+    }
 
     private SesionAsistenciaJpaEntity sesionPropia(UUID id, UUID actor) {
         return sesiones.findByIdAndDocenteId(id, actor)
@@ -152,6 +216,16 @@ public class AsistenciaService {
         if (solicitud == null) return false;
         var materia = academico.obtenerContextoMateria(solicitud.getMateriaId());
         return materia != null && materia.existe() && carreraId.equals(materia.carreraId());
+    }
+    private boolean perteneceContexto(SesionAsistenciaJpaEntity sesion, EstudianteInstitucionalPort.Contexto contexto) {
+        if (sesion.getBloquePlanificacionId() != null) {
+            var bloque=bloques.findById(sesion.getBloquePlanificacionId()).orElse(null);
+            if (bloque==null || !contexto.nivel().equals(bloque.getNivel())) return false;
+            var plan=planes.findById(bloque.getPlanificacionId()).orElse(null);
+            return plan!=null && plan.getEstado()==ec.edu.scli.reservas.domain.model.EstadoPlanificacionAgregada.APROBADA
+                    && contexto.carreraId().equals(plan.getCarreraId()) && contexto.periodoId().equals(plan.getPeriodoId());
+        }
+        return perteneceCarrera(sesion, contexto.carreraId());
     }
     private RegistroAsistenciaResponse crearRegistro(SesionAsistenciaJpaEntity sesion, UUID estudiante) {
         Instant now = Instant.now();
@@ -173,10 +247,11 @@ public class AsistenciaService {
         return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
     }
     private SesionAsistenciaResponse response(SesionAsistenciaJpaEntity e, String token) {
-        return new SesionAsistenciaResponse(e.getId(), e.getReservaId(), e.getAbiertaEn(), e.getExpiraEn(), e.getEstado().name(), token);
+        return new SesionAsistenciaResponse(e.getId(), e.getReservaId(), e.getBloquePlanificacionId(), e.getFechaClase(), e.getAbiertaEn(), e.getExpiraEn(), e.getEstado().name(), token);
     }
     private RegistroAsistenciaResponse map(RegistroAsistenciaJpaEntity e) {
-        return new RegistroAsistenciaResponse(e.getId(), e.getSesionId(), e.getEstudianteId(), e.getRegistradaEn(), e.getEstado());
+        UUID bloqueId = sesiones.findById(e.getSesionId()).map(SesionAsistenciaJpaEntity::getBloquePlanificacionId).orElse(null);
+        return new RegistroAsistenciaResponse(e.getId(), e.getSesionId(), e.getEstudianteId(), bloqueId, e.getRegistradaEn(), e.getEstado());
     }
     private String hash(String value) {
         try {
@@ -184,5 +259,10 @@ public class AsistenciaService {
         } catch (java.security.NoSuchAlgorithmException exception) {
             throw new IllegalStateException("SHA-256 no esta disponible", exception);
         }
+    }
+    private String dia(LocalDate fecha) {
+        return switch (fecha.getDayOfWeek()) { case MONDAY -> "LUNES"; case TUESDAY -> "MARTES";
+            case WEDNESDAY -> "MIERCOLES"; case THURSDAY -> "JUEVES"; case FRIDAY -> "VIERNES";
+            case SATURDAY -> "SABADO"; case SUNDAY -> "DOMINGO"; };
     }
 }

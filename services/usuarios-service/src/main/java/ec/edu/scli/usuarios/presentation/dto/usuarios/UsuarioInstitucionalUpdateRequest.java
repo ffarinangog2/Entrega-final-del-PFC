@@ -16,5 +16,8 @@ public record UsuarioInstitucionalUpdateRequest(
         @NotBlank String rol,
         boolean activo,
         UUID pisoId,
-        UUID carreraId) {
+        UUID carreraId,
+        UUID periodoId,
+        Integer nivel) {
+    public UsuarioInstitucionalUpdateRequest(UUID authId,PerfilUpdateRequest perfil,String username,String email,String rol,boolean activo,UUID pisoId,UUID carreraId){this(authId,perfil,username,email,rol,activo,pisoId,carreraId,null,null);}
 }

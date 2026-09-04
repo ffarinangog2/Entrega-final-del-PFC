@@ -25,6 +25,13 @@ import {
   AdminOverviewPage,
   AdminPisosPage,
 } from '../features/admin/AdminInstitutionPage'
+import { MiHorarioPage, StudentHistorialPage, StudentLaboratoriosPage } from '../features/estudiante/StudentAcademicPage'
+import { hasRole, useAuth } from '../auth'
+
+function LaboratoriosRolePage() {
+  const { usuario } = useAuth()
+  return hasRole(usuario, 'ESTUDIANTE') ? <StudentLaboratoriosPage /> : <AdminLaboratoriosPage />
+}
 
 export function AppRoutes() {
   return (
@@ -41,11 +48,17 @@ export function AppRoutes() {
         <Route element={<ProtectedRoute roles={['ADMINISTRADOR']} permissions={['USUARIO_LEER']} />}>
           <Route path="/usuarios" element={<UsuariosPage />} />
           <Route path="/administracion" element={<AdminOverviewPage />} />
-          <Route path="/laboratorios" element={<AdminLaboratoriosPage />} />
           <Route path="/pisos" element={<AdminPisosPage />} />
           <Route path="/equipos" element={<AdminEquiposPage />} />
           <Route path="/catalogos" element={<AdminCatalogosPage />} />
           <Route path="/asignaciones" element={<AdminAsignacionesPage />} />
+        </Route>
+        <Route element={<ProtectedRoute roles={['ADMINISTRADOR', 'ESTUDIANTE']} permissions={['USUARIO_LEER', 'ACADEMICO_LEER']} />}>
+          <Route path="/laboratorios" element={<LaboratoriosRolePage />} />
+        </Route>
+        <Route element={<ProtectedRoute roles={['ESTUDIANTE']} permissions={['ACADEMICO_LEER']} />}>
+          <Route path="/mi-horario" element={<MiHorarioPage />} />
+          <Route path="/historial" element={<StudentHistorialPage />} />
         </Route>
         <Route path="/perfil" element={<ProfilePage />} />
         <Route element={<ProtectedRoute roles={['ADMINISTRADOR', 'ADMINISTRADOR_PISO', 'COORDINADOR']} permissions={['PLANIFICACION_GESTIONAR', 'SOLICITUD_APROBAR']} />}><Route path="/planificacion" element={<PlanificacionPage />} /></Route>

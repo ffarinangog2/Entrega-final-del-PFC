@@ -87,7 +87,9 @@ export const proponerPlanificacion = (
 
 export interface SesionAsistencia {
   id: string
-  reservaId: string
+  reservaId: string | null
+  bloqueId?: string | null
+  fechaClase?: string | null
   abiertaEn: string
   expiraEn: string
   estado: string
@@ -97,6 +99,7 @@ export interface RegistroAsistencia {
   id: string
   sesionId: string
   estudianteId: string
+  bloqueId?: string | null
   registradaEn: string
   estado: string
 }
@@ -105,6 +108,13 @@ export const abrirAsistencia = (reservaId: string) =>
     method: 'POST',
     body: JSON.stringify({ reservaId }),
   })
+export const abrirAsistenciaBloque = (bloqueId: string) =>
+  apiRequest<SesionAsistencia>('/api/v1/asistencias/sesiones', {
+    method: 'POST', body: JSON.stringify({ bloqueId }),
+  })
+export const obtenerClasesDocenteHoy = () => apiRequest<Planificacion[]>('/api/v1/asistencias/mis-clases-hoy')
+export const obtenerMiHorario = (periodoId?: string) =>
+  apiRequest<Planificacion[]>(`/api/v1/asistencias/mi-horario${periodoId ? `?periodoId=${encodeURIComponent(periodoId)}` : ''}`)
 export const consultarAsistencia = (id: string) =>
   apiRequest<SesionAsistencia>(
     `/api/v1/asistencias/sesiones/${encodeURIComponent(id)}`,
@@ -123,8 +133,8 @@ export const registrarAsistencia = (id: string, token: string) =>
     `/api/v1/asistencias/sesiones/${encodeURIComponent(id)}/registros`,
     { method: 'POST', body: JSON.stringify({ token }) },
   )
-export const historialAsistencia = () =>
-  apiRequest<RegistroAsistencia[]>('/api/v1/asistencias/historial')
+export const historialAsistencia = (periodoId?: string) =>
+  apiRequest<RegistroAsistencia[]>(`/api/v1/asistencias/historial${periodoId ? `?periodoId=${encodeURIComponent(periodoId)}` : ''}`)
 export const listarSesionesAbiertas = () =>
   apiRequest<SesionAsistencia[]>('/api/v1/asistencias/sesiones/abiertas')
 export const registrarAsistenciaPropia = (id: string) =>

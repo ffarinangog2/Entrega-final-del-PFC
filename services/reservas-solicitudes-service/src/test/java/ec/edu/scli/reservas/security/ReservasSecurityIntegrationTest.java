@@ -8,6 +8,8 @@ import ec.edu.scli.reservas.presentation.controller.SolicitudReservaController;
 import ec.edu.scli.reservas.application.service.SolicitudReservaService;
 import ec.edu.scli.reservas.application.service.PlanificacionService;
 import ec.edu.scli.reservas.presentation.controller.PlanificacionController;
+import ec.edu.scli.reservas.presentation.controller.AsistenciaController;
+import ec.edu.scli.reservas.application.service.AsistenciaService;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.junit.jupiter.api.Test;
@@ -32,7 +34,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import org.springframework.security.access.AccessDeniedException;
 
-@WebMvcTest({DisponibilidadController.class, SolicitudReservaController.class, PlanificacionController.class})
+@WebMvcTest({DisponibilidadController.class, SolicitudReservaController.class, PlanificacionController.class, AsistenciaController.class})
 @Import({SecurityConfig.class, JwtAuthenticationFilter.class, JwtTokenProvider.class})
 @TestPropertySource(properties = {
         "security.jwt.issuer=scli-auth-service",
@@ -44,6 +46,7 @@ class ReservasSecurityIntegrationTest {
     @MockitoBean private SolicitudReservaService solicitudService;
     @MockitoBean private AuditLogger auditLogger;
     @MockitoBean private PlanificacionService planificacionService;
+    @MockitoBean private AsistenciaService asistenciaService;
 
     @Test
     void sinTokenResponde401() throws Exception {
@@ -141,6 +144,22 @@ class ReservasSecurityIntegrationTest {
                         .header("Authorization", "Bearer " + token("refresh", "COORDINADOR", UUID.randomUUID(),
                                 List.of("PLANIFICACION_GESTIONAR"))))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test void estudianteSoloConsultaSuHorarioYNoPuedeAbrirSesiones() throws Exception {
+        String token=token("access","ESTUDIANTE",UUID.randomUUID(),List.of("ACADEMICO_LEER"));
+        mockMvc.perform(get("/api/v1/asistencias/mi-horario").header("Authorization","Bearer "+token)).andExpect(status().isOk());
+        mockMvc.perform(post("/api/v1/asistencias/sesiones").header("Authorization","Bearer "+token)
+                .contentType("application/json").content("{\"bloqueId\":\""+UUID.randomUUID()+"\"}"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test void docentePuedeAbrirPeroNoConsultarHorarioDeEstudiante() throws Exception {
+        String token=token("access","DOCENTE",UUID.randomUUID(),List.of("RESERVA_LEER"));
+        mockMvc.perform(post("/api/v1/asistencias/sesiones").header("Authorization","Bearer "+token)
+                .contentType("application/json").content("{\"bloqueId\":\""+UUID.randomUUID()+"\"}"))
+                .andExpect(status().isCreated());
+        mockMvc.perform(get("/api/v1/asistencias/mi-horario").header("Authorization","Bearer "+token)).andExpect(status().isForbidden());
     }
 
     private String planificacionJson() {

@@ -23,8 +23,10 @@ describe('UsuariosPage administrativa', () => {
     vi.mocked(usuarios.listarPerfiles).mockResolvedValue([perfil])
     vi.mocked(auth.listarUsuariosInstitucionales).mockResolvedValue([cuenta])
     vi.mocked(usuarios.obtenerAsociacionRol).mockResolvedValue({ pisoId: null, carreraId: 'carrera-1' })
+    vi.mocked(usuarios.obtenerContextosAcademicos).mockResolvedValue([])
     vi.mocked(academico.obtenerPisos).mockResolvedValue([{ id: 'piso-2', bloqueId: 'b1', numero: 2, descripcion: '', activo: true }])
     vi.mocked(academico.obtenerCarreras).mockResolvedValue([{ id: 'carrera-1', facultadId: 'f1', codigo: 'IS', nombre: 'Ingeniería de Software', activo: true }])
+    vi.mocked(academico.obtenerPeriodos).mockResolvedValue([{ id: 'periodo-1', codigo: 'C1', nombre: 'Ciclo actual', fechaInicio: '2026-05-01', fechaFin: '2026-09-18', estado: 'ACTIVO' }])
   })
 
   it('lista y filtra cuentas por rol y estado', async () => {
@@ -69,5 +71,17 @@ describe('UsuariosPage administrativa', () => {
     vi.mocked(usuarios.actualizarUsuarioInstitucionalCompleto).mockRejectedValue(new Error('Auth no disponible'))
     renderPage(); await user.click(await screen.findByRole('button', { name: 'Desactivar' }))
     expect(await screen.findByRole('alert')).toHaveTextContent('Auth no disponible')
+  })
+
+  it('conserva carrera, ciclo y nivel al cambiar el estado de un estudiante', async () => {
+    const user = userEvent.setup()
+    vi.mocked(auth.listarUsuariosInstitucionales).mockResolvedValue([{ ...cuenta, rol: 'ESTUDIANTE' }])
+    vi.mocked(usuarios.obtenerContextosAcademicos).mockResolvedValue([{ id: 'ctx-1', estudianteId: 'est-1', carreraId: 'carrera-1', periodoId: 'periodo-1', nivel: 7, activo: true, creadoEn: '' }])
+    vi.mocked(usuarios.actualizarUsuarioInstitucionalCompleto).mockResolvedValue({ ...perfil, activo: false })
+    renderPage()
+    await user.click(await screen.findByRole('button', { name: 'Desactivar' }))
+    await waitFor(() => expect(usuarios.actualizarUsuarioInstitucionalCompleto).toHaveBeenCalledWith('perfil-1', expect.objectContaining({
+      rol: 'ESTUDIANTE', activo: false, carreraId: 'carrera-1', periodoId: 'periodo-1', nivel: 7,
+    })))
   })
 })

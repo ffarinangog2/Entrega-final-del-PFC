@@ -3,6 +3,8 @@ package ec.edu.scli.usuarios.presentation.controller;
 import ec.edu.scli.usuarios.presentation.dto.docente.DocenteRequest;
 import ec.edu.scli.usuarios.presentation.dto.docente.DocenteResponse;
 import ec.edu.scli.usuarios.application.usecase.DocenteService;
+import ec.edu.scli.usuarios.application.usecase.PerfilService;
+import ec.edu.scli.usuarios.presentation.dto.docente.DocenteResumenResponse;
 import ec.edu.scli.usuarios.security.JwtPrincipal;
 
 import jakarta.validation.Valid;
@@ -22,9 +24,17 @@ import java.util.UUID;
 public class DocenteController {
 
     private final DocenteService docenteService;
+    private final PerfilService perfilService;
 
-    public DocenteController(DocenteService docenteService) {
+    public DocenteController(DocenteService docenteService, PerfilService perfilService) {
         this.docenteService = docenteService;
+        this.perfilService = perfilService;
+    }
+
+    @GetMapping("/{id}/resumen")
+    public DocenteResumenResponse resumen(@PathVariable UUID id) {
+        var docente=docenteService.obtenerPorId(id); var perfil=perfilService.obtenerPorId(docente.perfilId());
+        return new DocenteResumenResponse(docente.id(),perfil.nombres(),perfil.apellidos(),docente.codigoDocente());
     }
 
     @PostMapping

@@ -1,19 +1,20 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react'
 import { DashboardLayout } from '../components/DashboardLayout'
-import { obtenerCarreras, obtenerPisos, type Carrera, type Piso } from '../services/academicoApi'
+import { obtenerCarreras, obtenerPeriodos, obtenerPisos, type Carrera, type PeriodoLectivo, type Piso } from '../services/academicoApi'
 import { listarUsuariosInstitucionales, type RolInstitucional, type UsuarioInstitucional } from '../services/authApi'
-import { actualizarUsuarioInstitucionalCompleto, crearUsuarioInstitucionalCompleto, listarPerfiles, obtenerAsociacionRol, type Perfil } from '../services/usuariosApi'
+import { actualizarUsuarioInstitucionalCompleto, crearUsuarioInstitucionalCompleto, listarPerfiles, obtenerAsociacionRol, obtenerContextosAcademicos, type Perfil } from '../services/usuariosApi'
 import './UsuariosPage.css'
 
 const ROLES: RolInstitucional[] = ['ADMINISTRADOR', 'ADMINISTRADOR_PISO', 'COORDINADOR', 'DOCENTE', 'ESTUDIANTE']
-type Formulario = { perfilId: string; authId: string; identificacion: string; nombres: string; apellidos: string; email: string; username: string; password: string; rol: RolInstitucional; activo: boolean; pisoId: string; carreraId: string }
-const inicial: Formulario = { perfilId: '', authId: '', identificacion: '', nombres: '', apellidos: '', email: '', username: '', password: '', rol: 'ESTUDIANTE', activo: true, pisoId: '', carreraId: '' }
+type Formulario = { perfilId: string; authId: string; identificacion: string; nombres: string; apellidos: string; email: string; username: string; password: string; rol: RolInstitucional; activo: boolean; pisoId: string; carreraId: string; periodoId: string; nivel: string }
+const inicial: Formulario = { perfilId: '', authId: '', identificacion: '', nombres: '', apellidos: '', email: '', username: '', password: '', rol: 'ESTUDIANTE', activo: true, pisoId: '', carreraId: '', periodoId: '', nivel: '1' }
 
 export function UsuariosPage() {
   const [perfiles, setPerfiles] = useState<Perfil[]>([])
   const [cuentas, setCuentas] = useState<UsuarioInstitucional[]>([])
   const [pisos, setPisos] = useState<Piso[]>([])
   const [carreras, setCarreras] = useState<Carrera[]>([])
+  const [periodos, setPeriodos] = useState<PeriodoLectivo[]>([])
   const [form, setForm] = useState<Formulario>(inicial)
   const [busqueda, setBusqueda] = useState('')
   const [filtroRol, setFiltroRol] = useState('TODOS')
@@ -26,8 +27,8 @@ export function UsuariosPage() {
   const cargar = useCallback(async () => {
     setCargando(true); setError('')
     try {
-      const [p, u, pisosData, carrerasData] = await Promise.all([listarPerfiles(), listarUsuariosInstitucionales(), obtenerPisos(), obtenerCarreras()])
-      setPerfiles(p ?? []); setCuentas(u ?? []); setPisos(pisosData ?? []); setCarreras(carrerasData ?? [])
+      const [p, u, pisosData, carrerasData, periodosData] = await Promise.all([listarPerfiles(), listarUsuariosInstitucionales(), obtenerPisos(), obtenerCarreras(), obtenerPeriodos()])
+      setPerfiles(p ?? []); setCuentas(u ?? []); setPisos(pisosData ?? []); setCarreras(carrerasData ?? []); setPeriodos(periodosData ?? [])
     } catch (cause) { setError(cause instanceof Error ? cause.message : 'No fue posible cargar los usuarios institucionales.') }
     finally { setCargando(false) }
   }, [])
@@ -46,7 +47,8 @@ export function UsuariosPage() {
     setMensaje(''); setError('')
     try {
       const asociacion = await obtenerAsociacionRol(perfil.id)
-      setForm({ perfilId: perfil.id, authId: cuenta.id, identificacion: perfil.identificacion, nombres: perfil.nombres, apellidos: perfil.apellidos, email: cuenta.email, username: cuenta.username, password: '', rol: cuenta.rol, activo: cuenta.activo, pisoId: asociacion.pisoId ?? '', carreraId: asociacion.carreraId ?? '' })
+      const contexto = cuenta.rol === 'ESTUDIANTE' ? (await obtenerContextosAcademicos(perfil.id)).find(item => item.activo) : undefined
+      setForm({ perfilId: perfil.id, authId: cuenta.id, identificacion: perfil.identificacion, nombres: perfil.nombres, apellidos: perfil.apellidos, email: cuenta.email, username: cuenta.username, password: '', rol: cuenta.rol, activo: cuenta.activo, pisoId: asociacion.pisoId ?? '', carreraId: contexto?.carreraId ?? asociacion.carreraId ?? '', periodoId: contexto?.periodoId ?? '', nivel: String(contexto?.nivel ?? 1) })
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'No se pudo consultar la asociación institucional.')
     }
@@ -56,9 +58,9 @@ export function UsuariosPage() {
     event.preventDefault(); setGuardando(true); setError(''); setMensaje('')
     try {
       if (form.authId) {
-        await actualizarUsuarioInstitucionalCompleto(form.perfilId, { authId: form.authId, identificacion: form.identificacion, nombres: form.nombres, apellidos: form.apellidos, emailInstitucional: form.email, emailPersonal: '', telefono: '', direccion: '', fechaNacimiento: '', fotoUrl: null, username: form.username, email: form.email, rol: form.rol, activo: form.activo, pisoId: form.pisoId || null, carreraId: form.carreraId || null })
+        await actualizarUsuarioInstitucionalCompleto(form.perfilId, { authId: form.authId, identificacion: form.identificacion, nombres: form.nombres, apellidos: form.apellidos, emailInstitucional: form.email, emailPersonal: '', telefono: '', direccion: '', fechaNacimiento: '', fotoUrl: null, username: form.username, email: form.email, rol: form.rol, activo: form.activo, pisoId: form.pisoId || null, carreraId: ['COORDINADOR','ESTUDIANTE'].includes(form.rol) ? form.carreraId || null : null, periodoId:form.rol==='ESTUDIANTE'?form.periodoId:null,nivel:form.rol==='ESTUDIANTE'?Number(form.nivel):null })
       } else {
-        await crearUsuarioInstitucionalCompleto({ identificacion: form.identificacion, nombres: form.nombres, apellidos: form.apellidos, emailInstitucional: form.email, emailPersonal: '', telefono: '', direccion: '', fechaNacimiento: '', username: form.username, email: form.email, passwordInicial: form.password, rol: form.rol, pisoId: form.pisoId || null, carreraId: form.carreraId || null })
+        await crearUsuarioInstitucionalCompleto({ identificacion: form.identificacion, nombres: form.nombres, apellidos: form.apellidos, emailInstitucional: form.email, emailPersonal: '', telefono: '', direccion: '', fechaNacimiento: '', username: form.username, email: form.email, passwordInicial: form.password, rol: form.rol, pisoId: form.pisoId || null, carreraId: ['COORDINADOR','ESTUDIANTE'].includes(form.rol) ? form.carreraId || null : null, periodoId:form.rol==='ESTUDIANTE'?form.periodoId:null,nivel:form.rol==='ESTUDIANTE'?Number(form.nivel):null })
       }
       setForm(inicial); setMensaje(form.authId ? 'Usuario actualizado correctamente.' : 'Usuario institucional creado correctamente.'); await cargar()
     } catch (cause) { setError(cause instanceof Error ? cause.message : 'No se pudo guardar el usuario institucional.') }
@@ -71,7 +73,10 @@ export function UsuariosPage() {
       const perfil = perfilPorId.get(cuenta.perfilId)
       if (!perfil) throw new Error('No se encontró el perfil institucional de la cuenta.')
       const asociacion = await obtenerAsociacionRol(cuenta.perfilId)
-      await actualizarUsuarioInstitucionalCompleto(cuenta.perfilId, { authId: cuenta.id, identificacion: perfil.identificacion, nombres: perfil.nombres, apellidos: perfil.apellidos, emailInstitucional: cuenta.email, emailPersonal: perfil.emailPersonal ?? '', telefono: perfil.telefono ?? '', direccion: perfil.direccion ?? '', fechaNacimiento: perfil.fechaNacimiento ?? '', fotoUrl: perfil.fotoUrl, username: cuenta.username, email: cuenta.email, rol: cuenta.rol, activo: nuevoEstado, pisoId: asociacion.pisoId, carreraId: asociacion.carreraId })
+      const contexto = cuenta.rol === 'ESTUDIANTE'
+        ? (await obtenerContextosAcademicos(cuenta.perfilId)).find((item) => item.activo)
+        : undefined
+      await actualizarUsuarioInstitucionalCompleto(cuenta.perfilId, { authId: cuenta.id, identificacion: perfil.identificacion, nombres: perfil.nombres, apellidos: perfil.apellidos, emailInstitucional: cuenta.email, emailPersonal: perfil.emailPersonal ?? '', telefono: perfil.telefono ?? '', direccion: perfil.direccion ?? '', fechaNacimiento: perfil.fechaNacimiento ?? '', fotoUrl: perfil.fotoUrl, username: cuenta.username, email: cuenta.email, rol: cuenta.rol, activo: nuevoEstado, pisoId: asociacion.pisoId, carreraId: contexto?.carreraId ?? asociacion.carreraId, periodoId: contexto?.periodoId ?? null, nivel: contexto?.nivel ?? null })
       await cargar()
     }
     catch (cause) { setError(cause instanceof Error ? cause.message : 'No se pudo cambiar el estado.') }
@@ -95,6 +100,7 @@ export function UsuariosPage() {
       <Field label="Rol"><select value={form.rol} onChange={(e) => setForm({ ...form, rol: e.target.value as RolInstitucional, pisoId: '', carreraId: '' })}>{ROLES.map((rol) => <option key={rol}>{rol}</option>)}</select></Field>
       {form.rol === 'ADMINISTRADOR_PISO' && <Field label="Piso"><select required value={form.pisoId} onChange={(e) => setForm({ ...form, pisoId: e.target.value })}><option value="">Seleccione un piso</option>{pisos.map((piso) => <option key={piso.id} value={piso.id}>Piso {piso.numero}</option>)}</select></Field>}
       {form.rol === 'COORDINADOR' && <Field label="Carrera"><select required value={form.carreraId} onChange={(e) => setForm({ ...form, carreraId: e.target.value })}><option value="">Seleccione una carrera</option>{carreras.map((carrera) => <option key={carrera.id} value={carrera.id}>{carrera.nombre}</option>)}</select></Field>}
+      {form.rol === 'ESTUDIANTE' && <><Field label="Carrera"><select required value={form.carreraId} onChange={(e) => setForm({ ...form, carreraId: e.target.value })}><option value="">Seleccione una carrera</option>{carreras.map((carrera) => <option key={carrera.id} value={carrera.id}>{carrera.nombre}</option>)}</select></Field><Field label="Ciclo académico"><select required value={form.periodoId} onChange={(e) => setForm({ ...form, periodoId: e.target.value })}><option value="">Seleccione un ciclo</option>{periodos.map((periodo) => <option key={periodo.id} value={periodo.id}>{periodo.nombre}</option>)}</select></Field><Field label="Nivel"><select value={form.nivel} onChange={(e) => setForm({ ...form, nivel: e.target.value })}>{Array.from({length:10},(_,i)=><option key={i+1}>{i+1}</option>)}</select></Field></>}
       {form.authId && <label className="usuarios-page__field"><span>Estado</span><input type="checkbox" checked={form.activo} onChange={(e) => setForm({ ...form, activo: e.target.checked })} /> Cuenta activa</label>}
       <div className="usuarios-page__form-actions"><button className="usuarios-page__submit" disabled={guardando}>{guardando ? 'Guardando...' : form.authId ? 'Guardar cambios' : 'Crear usuario'}</button>{form.authId && <button type="button" onClick={() => setForm(inicial)}>Cancelar</button>}</div>
     </form></section>

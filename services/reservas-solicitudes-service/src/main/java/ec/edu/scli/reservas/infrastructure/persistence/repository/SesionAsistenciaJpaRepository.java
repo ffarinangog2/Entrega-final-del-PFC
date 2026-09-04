@@ -8,5 +8,6 @@ import java.util.UUID;
 public interface SesionAsistenciaJpaRepository extends JpaRepository<SesionAsistenciaJpaEntity,UUID>{
  Optional<SesionAsistenciaJpaEntity> findByIdAndDocenteId(UUID id,UUID docenteId);
  Optional<SesionAsistenciaJpaEntity> findFirstByReservaIdAndEstado(UUID reservaId, EstadoSesionAsistencia estado);
+ Optional<SesionAsistenciaJpaEntity> findFirstByBloquePlanificacionIdAndFechaClaseAndEstado(UUID bloqueId, java.time.LocalDate fecha, EstadoSesionAsistencia estado);
  List<SesionAsistenciaJpaEntity> findByEstado(EstadoSesionAsistencia estado);
 }

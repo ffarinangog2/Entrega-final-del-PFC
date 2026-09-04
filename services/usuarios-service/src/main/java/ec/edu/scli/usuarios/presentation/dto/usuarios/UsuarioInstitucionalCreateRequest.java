@@ -15,5 +15,8 @@ public record UsuarioInstitucionalCreateRequest(
         @NotBlank String passwordInicial,
         @NotBlank String rol,
         UUID pisoId,
-        UUID carreraId) {
+        UUID carreraId,
+        UUID periodoId,
+        Integer nivel) {
+    public UsuarioInstitucionalCreateRequest(PerfilCreateRequest perfil,String username,String email,String passwordInicial,String rol,UUID pisoId,UUID carreraId){this(perfil,username,email,passwordInicial,rol,pisoId,carreraId,null,null);}
 }
