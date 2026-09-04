@@ -63,7 +63,22 @@ contenedores, el repositorio verifica:
 | Android | compile/target SDK 34, minSdk 26 |
 | Python | 3.12 en CI para Locust; PySpark requiere entorno compatible |
 
-## Entorno y ejecución local
+## Flujo operativo actual del equipo
+
+El flujo oficial de trabajo y despliegue es:
+
+```text
+PC de desarrollo → código y Git
+GitHub Actions → CI/CD y pruebas pesadas
+VM → ejecución del sistema desplegado
+```
+
+Los contenedores, CockroachDB, Testcontainers, Playwright y las campañas de
+carga se validan en GitHub Actions o en el entorno de despliegue autorizado. El
+equipo no usa el levantamiento completo con Docker Compose en los PC como flujo
+operativo cotidiano ni modifica archivos directamente en la VM.
+
+## Alternativa técnica de ejecución local
 
 Copie el ejemplo y complete los valores requeridos. `.env` contiene valores locales
 o reales y nunca debe versionarse:
@@ -150,9 +165,10 @@ cd apps/mobile
 ./gradlew assembleDebug
 ```
 
-En Windows use `gradlew.bat`. CI ejecuta unitarias y lint y publica el APK debug
-como artifact por SHA. Las pruebas `src/androidTest` existen, pero no son gate:
-requieren emulador estable. Firebase permanece pendiente de `google-services.json`,
+En Windows use `gradlew.bat`. CI ejecuta unitarias, lint y las pruebas
+`src/androidTest` en un emulador API 29; estas pruebas instrumentadas forman parte
+del gate previo al APK. El APK debug se publica como artifact por SHA. Firebase
+permanece pendiente de `google-services.json`,
 configuración FCM y emisor backend; no está completamente operativo.
 
 ## Pruebas
@@ -241,6 +257,38 @@ hace pull, levanta el stack y exige Gateway `UP`. El administrador configura
 El rollback usa un SHA anterior y preserva volúmenes CockroachDB.
 
 ## Documentación
+
+El documento oficial de la Entrega 4 es
+[`docs/entrega-4/main.tex`](docs/entrega-4/main.tex). El árbol formado por
+`docs/main.tex`, `docs/Referencias.bib`, `docs/secciones/` y
+`docs/Informe_E3_SCLI_LATEX.pdf` se conserva como documentación histórica y
+trazabilidad de la Entrega 3; no es el entregable principal de E4.
+
+### Compilación reproducible del informe oficial
+
+El informe utiliza `pdflatex` y BibTeX. Desde la raíz del repositorio:
+
+```bash
+cd docs/entrega-4
+pdflatex main.tex
+bibtex main
+pdflatex main.tex
+pdflatex main.tex
+```
+
+La primera pasada genera los auxiliares, BibTeX procesa `referencias.bib`, y
+las dos pasadas finales resuelven citas y referencias cruzadas. El resultado
+esperado es `docs/entrega-4/main.pdf`.
+
+### Declaración de uso de IA generativa
+
+El equipo utilizó IA generativa como apoyo para revisar redacción, explorar
+alternativas técnicas y asistir en tareas de implementación. Toda propuesta fue
+revisada por integrantes del equipo y contrastada mediante inspección, pruebas
+y evidencia del repositorio. La responsabilidad por el código, el informe, las
+decisiones y sus limitaciones corresponde al equipo. Ningún contenido generado
+se acepta automáticamente como resultado experimental: solo se reportan datos
+producidos por ejecuciones trazables y artefactos verificables.
 
 - [ADR](docs/adr/)
 - [Diagramas C4](docs/diagrams/)
