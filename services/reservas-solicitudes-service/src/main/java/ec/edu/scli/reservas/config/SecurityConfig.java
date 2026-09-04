@@ -48,6 +48,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/actuator/health", "/actuator/info", "/actuator/prometheus").permitAll()
+                        .requestMatchers("/api/v1/internal/experimentos/arbiter/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/incidentes").hasAuthority("INCIDENTE_CREAR")
                         .requestMatchers(HttpMethod.GET, "/api/v1/incidentes/**").hasAnyAuthority("INCIDENTE_LEER", "INCIDENTE_GESTIONAR")
                         .requestMatchers(HttpMethod.PATCH, "/api/v1/incidentes/*/estado").hasAuthority("INCIDENTE_GESTIONAR")

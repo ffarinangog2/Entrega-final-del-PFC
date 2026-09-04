@@ -95,6 +95,10 @@ app:
     expiration-check-ms: ${RESERVA_EXPIRATION_CHECK_MS:60000}
   asistencia:
     window-minutes: ${ASISTENCIA_WINDOW_MINUTES:15}
+  experimental:
+    arbiter:
+      enabled: ${EXPERIMENTAL_ARBITER_ENABLED:false}
+      strategy: ${ARBITER:}
 
   services:
     usuarios:
