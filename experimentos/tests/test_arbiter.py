@@ -20,7 +20,8 @@ from generar_evidencia_arbiter import manifests, sha256sums
 from planificar_arbiter import build_plan
 from caida_coordinador import execute_s4_failure
 from generador_rafagas import run_burst
-from ejecutar_campana_arbiter import Campaign, execute_campaign, validate_plan, write_runtime_mode
+from ejecutar_campana_arbiter import (Campaign, execute_campaign, extract_internal_api_key,
+                                      validate_plan, write_runtime_mode)
 
 
 def request(index=1, equipment="eq-1", user=None):
@@ -235,6 +236,34 @@ class OracleAndStatisticsTest(unittest.TestCase):
         campaign.args = SimpleNamespace(s4_failure_command="docker stop reservas-db-node-1")
         with self.assertRaisesRegex(RuntimeError, "falla cerrada"):
             campaign.s4_halfway()
+
+    def test_internal_key_uses_effective_container_value_not_raw_dotenv_syntax(self):
+        secret = " value with spaces # and 'quotes' "
+        self.assertEqual(extract_internal_api_key(["OTHER=x", f"INTERNAL_API_KEY={secret}"]), secret)
+        with self.assertRaisesRegex(RuntimeError, "efectiva única"):
+            extract_internal_api_key(["OTHER=x"])
+
+    def test_experimental_and_restore_subprocess_environments_are_isolated(self):
+        campaign = Campaign.__new__(Campaign)
+        campaign.original_process_env = {"PRESERVED": "yes", "ARBITER": "original"}
+        experimental = campaign.compose_environment(True, "s2")
+        restored = campaign.compose_environment(False, "")
+        self.assertEqual(experimental["EXPERIMENTAL_ARBITER_ENABLED"], "true")
+        self.assertEqual(experimental["ARBITER"], "s2")
+        self.assertEqual(restored["EXPERIMENTAL_ARBITER_ENABLED"], "false")
+        self.assertEqual(restored["ARBITER"], "")
+        self.assertEqual(campaign.original_process_env,
+                         {"PRESERVED": "yes", "ARBITER": "original"})
+
+    def test_secret_is_not_embedded_in_errors_or_runtime_files(self):
+        secret = "never-log-this-secret"
+        self.assertNotIn(secret, str(extract_internal_api_key([f"INTERNAL_API_KEY={secret}"]).__class__))
+        with tempfile.TemporaryDirectory() as directory:
+            env_file = Path(directory) / ".env"
+            original = "OTHER=value\n"
+            env_file.write_text(original, encoding="utf-8")
+            write_runtime_mode(env_file, original, True, "s1")
+            self.assertNotIn(secret, env_file.read_text(encoding="utf-8"))
 
     def test_raw_parser_requires_metadata_and_hashes_without_touching_historical_manifest(self):
         with tempfile.TemporaryDirectory() as directory:

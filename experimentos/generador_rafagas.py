@@ -28,10 +28,12 @@ def git_sha() -> str:
 def run_burst(strategy_name: str, scenario: str, repetition: int, seed: int,
               equipment_id: str, laboratory_id: str, starts_at: str, ends_at: str,
               output: Path, endpoint: str | None = None, internal_api_key: str | None = None,
-              on_halfway=None, http_post=None, agents_override: int | None = None) -> dict:
-    if os.getenv("EXPERIMENTAL_ARBITER_ENABLED", "false").lower() != "true":
+              on_halfway=None, http_post=None, agents_override: int | None = None,
+              environment: dict[str, str] | None = None) -> dict:
+    environment = os.environ if environment is None else environment
+    if environment.get("EXPERIMENTAL_ARBITER_ENABLED", "false").lower() != "true":
         raise RuntimeError("EXPERIMENTAL_ARBITER_ENABLED=true es obligatorio")
-    if os.getenv("ARBITER", "").lower() != strategy_name:
+    if environment.get("ARBITER", "").lower() != strategy_name:
         raise ValueError("ARBITER no coincide con --strategy")
     if scenario not in SCENARIOS:
         raise ValueError("El generador solo admite esc2, esc3 y esc4")
@@ -40,8 +42,8 @@ def run_burst(strategy_name: str, scenario: str, repetition: int, seed: int,
     agents = agents_override or SCENARIOS[scenario]
     if agents < 1 or agents > SCENARIOS[scenario]:
         raise ValueError("agents_override debe estar entre 1 y el tamaño oficial del escenario")
-    endpoint = endpoint or os.getenv("RESERVAS_EXPERIMENTAL_URL")
-    internal_api_key = internal_api_key or os.getenv("INTERNAL_API_KEY")
+    endpoint = endpoint or environment.get("RESERVAS_EXPERIMENTAL_URL")
+    internal_api_key = internal_api_key or environment.get("INTERNAL_API_KEY")
     if not endpoint or not internal_api_key:
         raise RuntimeError("RESERVAS_EXPERIMENTAL_URL e INTERNAL_API_KEY son obligatorios")
     run_id = f"{scenario}-{strategy_name}-r{repetition:02d}-{uuid.uuid4().hex[:8]}"

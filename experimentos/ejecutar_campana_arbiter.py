@@ -42,14 +42,13 @@ def validate_plan(plan: list[dict]) -> None:
         raise RuntimeError("La matriz no contiene exactamente 104 muestras analíticas")
 
 
-def read_env(path: Path) -> tuple[str, dict[str, str]]:
-    original = path.read_text(encoding="utf-8")
-    values = {}
-    for line in original.splitlines():
-        if line and not line.lstrip().startswith("#") and "=" in line:
-            key, value = line.split("=", 1)
-            values[key] = value
-    return original, values
+def extract_internal_api_key(effective_environment: list[str]) -> str:
+    """Extrae el valor ya interpretado por Compose, nunca el texto dotenv crudo."""
+    prefix = "INTERNAL_API_KEY="
+    matches = [entry[len(prefix):] for entry in effective_environment if entry.startswith(prefix)]
+    if len(matches) != 1 or not matches[0]:
+        raise RuntimeError("El contenedor de Reservas no expone una INTERNAL_API_KEY efectiva única")
+    return matches[0]
 
 
 def write_runtime_mode(path: Path, original: str, enabled: bool, strategy: str) -> None:
@@ -78,19 +77,38 @@ class Campaign:
         self.logs = self.root / "logs"
         self.checkpoint_path = self.root / "manifest" / "checkpoint.json"
         self.fixture = json.loads(args.equipment_fixture.read_text(encoding="utf-8"))
-        self.original_env, self.runtime_values = read_env(args.runtime_env)
+        self.original_env = args.runtime_env.read_text(encoding="utf-8")
+        self.original_process_env = os.environ.copy()
         self.current_mode = None
         for directory in (self.raw, self.oracle, self.logs, self.checkpoint_path.parent,
                           self.root / "summary", self.root / "analysis"):
             directory.mkdir(parents=True, exist_ok=True)
+        self.internal_api_key = self.effective_internal_api_key()
 
-    def command(self, *parts: str, capture=False) -> subprocess.CompletedProcess:
+    def command(self, *parts: str, capture=False, env=None) -> subprocess.CompletedProcess:
         result = self.run_command(list(parts), cwd=self.args.repo, check=False,
-                                  capture_output=capture, text=True)
+                                  capture_output=capture, text=True,
+                                  env=self.original_process_env.copy() if env is None else env)
         if result.returncode:
             detail = (result.stderr or result.stdout or "")[-2000:] if capture else ""
             raise RuntimeError(f"Comando falló ({result.returncode}): {' '.join(parts)} {detail}")
         return result
+
+    def effective_internal_api_key(self) -> str:
+        service_id = self.command("docker", "compose", "-p", self.args.compose_project,
+                                  "-f", str(self.args.compose_file), "ps", "-q",
+                                  "reservas-solicitudes-service", capture=True).stdout.strip()
+        if not service_id:
+            raise RuntimeError("No se encontró el contenedor de Reservas")
+        effective = json.loads(self.command("docker", "inspect", "--format",
+                               "{{json .Config.Env}}", service_id, capture=True).stdout)
+        return extract_internal_api_key(effective)
+
+    def compose_environment(self, enabled: bool, strategy: str) -> dict[str, str]:
+        environment = self.original_process_env.copy()
+        environment["EXPERIMENTAL_ARBITER_ENABLED"] = "true" if enabled else "false"
+        environment["ARBITER"] = strategy
+        return environment
 
     def set_mode(self, enabled: bool, strategy: str = "") -> None:
         target = (enabled, strategy)
@@ -99,9 +117,10 @@ class Campaign:
         if enabled and strategy not in {"s0", "s1", "s2", "s3", "s4"}:
             raise ValueError("Estrategia experimental inválida")
         write_runtime_mode(self.args.runtime_env, self.original_env, enabled, strategy)
+        environment = self.compose_environment(enabled, strategy)
         self.command("docker", "compose", "-p", self.args.compose_project, "-f",
                      str(self.args.compose_file), "up", "-d", "--no-deps", "--force-recreate",
-                     "reservas-solicitudes-service")
+                     "reservas-solicitudes-service", env=environment)
         self.wait_health(self.runtime_url(self.args.reservas_health_url))
         self.current_mode = target
 
@@ -153,13 +172,12 @@ class Campaign:
 
     def burst(self, strategy: str, scenario: str, rep: int, seed: int,
               output: Path, agents=None, halfway=None) -> dict:
-        os.environ["EXPERIMENTAL_ARBITER_ENABLED"] = "true"
-        os.environ["ARBITER"] = strategy
+        environment = self.compose_environment(True, strategy)
         return run_burst(strategy, scenario, rep, seed, self.args.equipment_id,
                          self.args.laboratory_id, self.args.starts_at, self.args.ends_at,
                          output, self.runtime_url(self.args.endpoint),
-                         self.runtime_values["INTERNAL_API_KEY"],
-                         on_halfway=halfway, agents_override=agents)
+                         self.internal_api_key, on_halfway=halfway,
+                         agents_override=agents, environment=environment)
 
     def evaluate_manifest(self, manifest: dict) -> dict:
         result = evaluate(manifest, self.fixture)
@@ -322,9 +340,10 @@ class Campaign:
     def restore(self) -> None:
         self.args.runtime_env.write_text(self.original_env, encoding="utf-8")
         self.current_mode = None
+        environment = self.compose_environment(False, "")
         self.command("docker", "compose", "-p", self.args.compose_project, "-f",
                      str(self.args.compose_file), "up", "-d", "--no-deps", "--force-recreate",
-                     "reservas-solicitudes-service")
+                     "reservas-solicitudes-service", env=environment)
         self.wait_health(self.runtime_url(self.args.reservas_health_url))
 
 
