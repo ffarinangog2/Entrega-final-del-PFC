@@ -1,104 +1,35 @@
-# ISO/IEC 25010 — Mantenibilidad: usuarios-service
+# ISO/IEC 25010 — Mantenibilidad
 
-## Qué se midió
+**Fecha de revisión:** 2026-09-04
 
-La guía de la Entrega 4 exige, para la característica de **Mantenibilidad**, dos métricas objetivas por
-microservicio:
+**HEAD auditado:** `cd61b64325480cbe132af7e56328f7fa5d8b99ef`
 
-1. **Complejidad ciclomática media por método** (umbral: < 10).
-2. **Cobertura de pruebas** (umbral: >= 70%).
+## Metodología
 
-Ambas se midieron sobre `services/usuarios-service` con las herramientas ya usadas en el resto del
-proyecto: Checkstyle (módulo `CyclomaticComplexity`) y JaCoCo, ambos configurados como plugins Maven en
-`pom.xml`.
+Se contrastaron las reglas JaCoCo de cada POM, Vitest/V8, JaCoCo Android, Checkstyle, ESLint/lint y los jobs del workflow con los resultados accesibles del HEAD. Una configuración de umbral se informa como gate, no como porcentaje ejecutado. Cuando no existe reporte cuantitativo actual de complejidad o cobertura, se declara no concluyente.
 
-## Cómo — complejidad ciclomática
+No se ejecutaron suites pesadas. Los runs consultados fueron [push 33838233548](https://github.com/ffarinangog2/Entrega-final-del-PFC/actions/runs/33838233548) y [pull request 33838236394](https://github.com/ffarinangog2/Entrega-final-del-PFC/actions/runs/33838236394).
 
-**Configuración agregada:** `services/usuarios-service/checkstyle.xml` (nuevo archivo) con el módulo
-`CyclomaticComplexity` en `max=10`, y el plugin `maven-checkstyle-plugin` (versión 3.6.0, misma versión que
-`academico-laboratorios-service`) agregado a `services/usuarios-service/pom.xml`.
+## Resultados actuales
 
-**Comando exacto ejecutado** (desde `services/usuarios-service`):
+| Componente | Cobertura disponible | Umbral configurado | Complejidad disponible | Gate CI del HEAD | Estado sustentable |
+|---|---|---|---|---|---|
+| Auth | El job `mvn verify` del HEAD pasó; por la regla implica líneas >=70%, sin porcentaje persistido | JaCoCo LINE >=70% | Sin medición global versionada | Backend: verde | PARCIAL |
+| Usuarios | Medición histórica: 83,81% líneas; no es atribuible al HEAD actual | JaCoCo LINE >=70% | Histórica: media 1,16 y máximo 6; Checkstyle no es gate CI para este servicio | Backend: rojo | NO CONCLUYENTE |
+| Académico | El job `mvn verify` del HEAD pasó; implica líneas >=70%, sin porcentaje persistido | JaCoCo LINE >=70% | Checkstyle configurado y lint CI verde; sin media global persistida | Backend y Checkstyle: verdes | PARCIAL |
+| Reservas | Sin porcentaje válido del HEAD porque `mvn verify` falló | JaCoCo LINE >=80%; BRANCH >=48% | Sin medición global versionada | Backend: rojo | NO CONCLUYENTE |
+| Gateway | El job `mvn verify` del HEAD pasó; implica líneas >=70%, sin porcentaje persistido | JaCoCo LINE >=70% | Sin medición global versionada | Backend: verde | PARCIAL |
+| Web | Reporte local actual: líneas 86,55%, statements 82,96%, functions 74,81%, branches 70,33%; `Test web` y ESLint verdes en CI | Vitest: 70% en líneas, statements, functions y branches | Sin complejidad ciclomática global | Web y ESLint: verdes | PARCIAL |
+| Android | Reporte JaCoCo actual: líneas 45,69%, branches 12,92% | No existe umbral JaCoCo que falle el build | Sin complejidad global | Unit tests/lint verdes; instrumentado verde en push y rojo en PR | PARCIAL |
 
-```
-./mvnw.cmd checkstyle:check
-```
+## Interpretación
 
-Con `max=10` en el `checkstyle.xml` real (el que queda commiteado), la salida no reporta ninguna
-violación `[CyclomaticComplexity]` — el build falla solo por 38 violaciones preexistentes de
-`LineLength` y `AvoidStarImport` (no relacionadas con complejidad, fuera del alcance de esta tarea).
+Los gates de Auth, Académico, Gateway y Web acreditan sus mínimos configurados en el run de push. No se publica el reporte JaCoCo Backend como artifact, por lo que no se asignan porcentajes exactos. Usuarios y Reservas fallaron en `mvn verify`; aunque sus causas puedan ser pruebas concretas y no cobertura, un job rojo no demuestra cumplimiento del HEAD.
 
-Para conocer la complejidad **real** de cada método (no solo si supera o no el umbral), se corrió
-además una medición puntual con una copia temporal del `checkstyle.xml` con `max=0` (severidad `info`,
-sin afectar el archivo final commiteado), lo que hace que Checkstyle reporte la complejidad real de cada
-método analizado:
+La cifra de Usuarios (83,81% de líneas, complejidad media 1,16 y máximo 6) se conserva como medición histórica documentada, no como resultado actual. En CI solo Académico ejecuta Checkstyle desde el job `lint`; Usuarios tiene configuración Checkstyle, pero el workflow actual no la invoca explícitamente.
 
-```
-./mvnw.cmd checkstyle:check -Dcheckstyle.violationSeverity=info -Dcheckstyle.failOnViolation=false
-```
-
-## Resultado — complejidad ciclomática
-
-- **Métodos analizados:** 445 (todo `src/main/java`, incluye getters/setters de las entidades JPA y
-  clases de dominio, no solo lógica de negocio).
-- **Métodos que superan complejidad 10:** **0**.
-- **Complejidad máxima encontrada:** **6**, en
-  `infrastructure/persistence/specification/PerfilSpecification.java:102`.
-- **Complejidad media:** **≈1.16** (445 métodos, mayoría getters/setters/constructores con
-  complejidad 1; los métodos de negocio en `*ServiceImpl` rondan complejidad 3–5).
-
-**Comparación contra el umbral de la guía (< 10 de complejidad media):** ✅ cumple, con amplio margen
-(1.16 vs. el umbral de 10, y ningún método individual supera 10; el máximo individual, 6, tampoco lo
-supera).
-
-## Cómo — cobertura de pruebas (JaCoCo)
-
-JaCoCo ya estaba configurado en `services/usuarios-service/pom.xml` (plugin `jacoco-maven-plugin`
-0.8.13, con `prepare-agent`, `report` y una regla `check` de `LINE COVEREDRATIO >= 0.70` en fase
-`verify`), no se modificó.
-
-**Comando exacto ejecutado** (desde `services/usuarios-service`):
-
-```
-./mvnw.cmd clean verify -Dtest='!CockroachFlywayIntegrationTest' -DfailIfNoTests=false
-```
-
-Se excluyó únicamente `CockroachFlywayIntegrationTest` porque requiere Docker (Testcontainers levanta un
-contenedor real de CockroachDB) y Docker no estaba disponible al momento de la ejecución
-(`docker info` responde que no se pudo encontrar un entorno Docker válido). El resto de la suite —136
-tests, entre ellos unitarios de `application/service`, `infrastructure/persistence` y
-`presentation/controller`— se ejecutó sin exclusiones ni cambios de código.
-
-## Resultado — cobertura
-
-```
-Tests run: 136, Failures: 0, Errors: 0, Skipped: 0
-[INFO] --- jacoco:0.8.13:check (check) @ usuarios-service ---
-[INFO] All coverage checks have been met.
-```
-
-De `target/site/jacoco/jacoco.csv` (agregado por líneas, todas las clases del bundle
-`usuarios-service`):
-
-- **Cobertura de líneas (LINE):** **83.81%** (1123 líneas cubiertas / 1340 líneas totales).
-- Cobertura de instrucciones (INSTRUCTION): 83.36% (referencia adicional, no es la métrica de la regla).
-- Cobertura de ramas (BRANCH): 60.53% (referencia adicional, no es la métrica de la regla).
-
-**Comparación contra el umbral de la guía (>= 70% de cobertura):** ✅ cumple — 83.81% de cobertura de
-líneas, 13.81 puntos por encima del mínimo exigido. La propia regla JaCoCo del `pom.xml`
-(`LINE COVEREDRATIO >= 0.70`) también lo confirma automáticamente en cada `mvn verify`.
-
-**Nota sobre `CockroachFlywayIntegrationTest`:** al quedar excluida de esta medición por no contar con
-Docker disponible, la cobertura obtenida en un entorno CI con Docker (que sí puede levantar
-Testcontainers) puede ser igual o levemente superior a 83.81%, nunca inferior, ya que esa clase solo
-suma cobertura adicional sobre `PerfilRepositoryAdapter` y las migraciones Flyway.
+Web supera sus cuatro umbrales en el reporte actual disponible. Android produce y publica cobertura, pero carece de gate mínimo y su cobertura de líneas 45,69% está por debajo del objetivo documental de 70%; no debe presentarse como cumplimiento.
 
 ## Conclusión
 
-Ambas métricas de Mantenibilidad exigidas por la guía se cumplen según lo medido con las herramientas
-configuradas, sin necesidad de refactorizar lógica de negocio:
-
-| Métrica | Umbral guía | Resultado | Cumple |
-|---|---|---|---|
-| Complejidad ciclomática media | < 10 | ≈1.16 (máx. individual: 6) | ✅ |
-| Cobertura de líneas | >= 70% | 83.81% | ✅ |
+**Mantenibilidad: PARCIAL.** Hay automatización y umbrales efectivos en Backend y Web, lint en Web/Android y Checkstyle en Académico. No obstante, faltan reportes cuantitativos persistidos para todo Backend, no existe complejidad comparable en todos los módulos, Android permanece bajo 70% y dos servicios Backend no completaron su gate en el HEAD. Una conclusión global de cumplimiento no está sustentada.

@@ -1,66 +1,52 @@
 # ISO/IEC 25010:2023 — Compatibilidad
 
-**Responsable:** Harold Vinueza
-**Fecha de ejecución:** 24/08/2026
+**Fecha de revisión:** 2026-09-04
 
-## Alcance
+**Rama:** `feature/entrega-4`
 
-Según la Tabla 2 de la Guía Integral de la Entrega 4, la característica de Compatibilidad se mide verificando que:
-- La aplicación web funcione en Chrome, Firefox y Safari.
-- La aplicación móvil funcione en Android API 26+.
-- Umbral objetivo: la suite E2E pasa.
+**HEAD auditado:** `cd61b64325480cbe132af7e56328f7fa5d8b99ef`
 
-## Protocolo
+## Alcance y método
 
-### Web
+La evidencia distingue configuración, ejecución histórica y ejecución verificable del HEAD. La mera presencia de un proyecto Playwright o de un nivel SDK no demuestra que la aplicación haya funcionado correctamente en ese entorno. No se ejecutaron Playwright, Docker ni emuladores localmente durante esta actualización.
 
-Se amplió `apps/web/playwright.config.ts` para ejecutar la suite E2E existente (`e2e/auth.spec.ts`, 5 pruebas: login válido, login inválido, redirección de ruta protegida, logout, persistencia de sesión tras recargar) contra los 3 motores de navegador soportados por Playwright:
+## Web
 
-| Proyecto Playwright | Motor real   | Navegador que representa |
-|----------------------|--------------|---------------------------|
-| `chromium`            | Blink/Chromium | Google Chrome / Edge |
-| `firefox`              | Gecko          | Mozilla Firefox |
-| `webkit`               | WebKit         | Safari |
+`apps/web/playwright.config.ts` configura tres proyectos:
 
-Se usó WebKit (el motor de renderizado de Safari, distribuido por Playwright) como sustituto verificable de Safari real, dado que el equipo no cuenta con hardware macOS disponible. WebKit es el estándar de la industria para pruebas automatizadas de compatibilidad con Safari cuando no se dispone de un Mac físico.
+| Proyecto | Motor | Estado en HEAD |
+|---|---|---|
+| `chromium` | Chromium/Blink | CONFIGURADO; sin ejecución del HEAD porque `integration` fue omitido |
+| `firefox` | Firefox/Gecko | CONFIGURADO; sin ejecución del HEAD porque `integration` fue omitido |
+| `webkit` | WebKit | CONFIGURADO; sin ejecución del HEAD porque `integration` fue omitido |
 
-Backend real levantado con `docker compose up -d` (auth-service, api-gateway, academico-laboratorios-service, usuarios-service, reservas-solicitudes-service, sus bases CockroachDB, y Prometheus).
+La suite actual contiene `auth.spec.ts`, `reservas-freddy.spec.ts` y `settings-theme-i18n.spec.ts`, además de sus fixtures. El workflow instala Chromium, Firefox y WebKit y ejecuta `npm run test:e2e` dentro del job `integration`.
 
-### Móvil
+Para el HEAD auditado existen dos ejecuciones CI consultables:
 
-- `minSdk = 26` declarado en `apps/mobile/app/build.gradle.kts`, cumpliendo el piso mínimo exigido.
-- Suite instrumentada (`androidTest`) ejecutada en emulador Android API 34 (Pixel 8): `QrFlowTest` (3 pruebas, feature QR), `IncidentesFlowTest`, `ReservaDaoTest`, `ReservasFlowTest`, `AppDatabaseMigrationTest` — todas en verde.
+- push: [run 33838233548](https://github.com/ffarinangog2/Entrega-final-del-PFC/actions/runs/33838233548);
+- pull request: [run 33838236394](https://github.com/ffarinangog2/Entrega-final-del-PFC/actions/runs/33838236394).
 
-## Resultados — Web (15 ejecuciones: 5 pruebas × 3 navegadores)
+Ambas concluyeron con fallo. `Test web` y `Lint - backend and web` sí terminaron correctamente, pero fallaron jobs Backend y el job `integration` quedó omitido por sus dependencias. En consecuencia, el HEAD no aporta una ejecución Playwright verde en los tres motores. El resultado histórico 9/15 del 24/08/2026 no se atribuye al HEAD ni permite declarar compatibilidad total.
 
-| Prueba | chromium | firefox | webkit |
-|---|---|---|---|
-| Login con credenciales válidas | ❌ | ❌ | ❌ |
-| Error con credenciales incorrectas | ✅ | ✅ | ✅ |
-| Redirección de ruta protegida sin sesión | ✅ | ✅ | ✅ |
-| Logout y limpieza de sesión | ✅ | ✅ | ✅ |
-| Persistencia de sesión tras recargar | ❌ | ❌ | ❌ |
+**Estado Web: PARCIAL.** La matriz de tres motores está configurada y las pruebas unitarias/build Web del HEAD pasaron en CI, pero falta una ejecución E2E verde y trazable para este SHA.
 
-**9 de 15 pasaron. El patrón de las 6 fallas es idéntico en los tres navegadores**, sin ninguna excepción cruzada (ningún caso donde un navegador pase y otro falle en la misma prueba). Esto es evidencia directa de compatibilidad: el comportamiento de la SPA frente a los 3 motores es consistente, tanto en los casos exitosos como en los fallidos.
+## Android
 
-### Análisis de las 6 fallas
+La configuración actual declara:
 
-Las dos pruebas que fallan comparten una causa común: ambas verifican `getByText('Monitoreo de laboratorios')`, texto que solo se renderiza si la petición a `academico-laboratorios-service` (vía Gateway) se resuelve con éxito. El snapshot de la página en el momento del fallo (`error-context.md` generado por Playwright) muestra:
+- `minSdk = 26`;
+- `targetSdk = 34`;
+- `compileSdk = 34`.
 
-```No se pudo conectar con el servicio academico: Failed to fetch```
-```No se pudo conectar con el servicio de metricas: Failed to fetch```
+El job instrumentado usa Android API 29 (`google_apis`, x86_64, perfil Pixel 2), no API 34. Las pruebas instrumentadas versionadas incluyen QR, Incidentes, Reservas, DAO y migración Room.
 
-Se descartó una causa de backend o de CORS: una petición manual (`curl -i -H "Origin: http://localhost:5173" http://localhost:8080/api/v1/laboratorios`) contra el mismo endpoint, en la misma ventana de tiempo, respondió `HTTP 200` con los datos correctos y con el header `Access-Control-Allow-Origin` correcto. Dado que un proceso nativo de Windows (`curl.exe`) sí completa la conexión mientras que los navegadores automatizados recién descargados por Playwright no, la causa más probable es una interferencia de red local (firewall/antivirus de Windows) específica a los binarios de navegador de Playwright en esta máquina — no una incompatibilidad de la aplicación con ningún motor de navegador en particular.
+En el run de push 33838233548, `Test mobile`, `Test mobile instrumented` y `Build mobile APK` terminaron correctamente. Se publicaron los artifacts `mobile-coverage-cd61b...`, `mobile-instrumented-results-cd61b...` y `pfc-debug-apk-cd61b...`. En el run paralelo de pull request, la prueba instrumentada falló; por ello la evidencia no es uniforme entre ambas ejecuciones concurrentes.
 
-## Resultados — Móvil
+La configuración y una ejecución verde en API 29 sostienen funcionamiento observado dentro del rango API 26–34, pero no prueban cada versión, fabricante o dispositivo. El APK producido es debug, no una distribución release firmada.
 
-| Verificación | Resultado |
-|---|---|
-| `minSdk = 26` declarado | ✅ |
-| Suite instrumentada en emulador API 34 | ✅ 3/3 QrFlowTest + suites preexistentes en verde |
+**Estado Android: PARCIAL.** Existe evidencia CI real para API 29 y configuración compatible desde API 26, pero no una matriz de APIs/dispositivos ni una ejecución uniforme en ambos eventos.
 
 ## Conclusión
 
-La aplicación web demuestra **compatibilidad consistente entre Chrome, Firefox y Safari (WebKit)**: en las 15 ejecuciones no hubo ni un solo caso de comportamiento distinto entre navegadores para la misma prueba. Las 6 fallas observadas están acotadas a un problema de conectividad de red local entre los binarios de prueba y el backend, reproducible por igual en los tres motores, y no reflejan una falla de compatibilidad de la aplicación en sí.
-
-**Pendiente de seguimiento (no bloqueante para esta entrega):** investigar la causa de la interferencia de red entre los navegadores automatizados de Playwright y `localhost:8080` en el entorno de desarrollo de Windows (firewall/antivirus), para lograr 15/15 en una futura ejecución.
+**Compatibilidad: PARCIAL.** Web configura Chromium, Firefox y WebKit, pero el HEAD no llegó a ejecutar el job E2E. Android sí cuenta con una corrida instrumentada verde en API 29 y artifact debug para el run de push, aunque el run de PR paralelo falló y no existe una matriz completa. Para cerrar la característica se requiere una ejecución CI integral verde del mismo SHA y conservar sus reportes por motor/API.
