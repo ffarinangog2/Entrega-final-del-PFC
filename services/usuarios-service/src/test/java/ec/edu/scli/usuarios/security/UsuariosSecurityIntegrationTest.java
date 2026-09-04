@@ -1,6 +1,7 @@
 package ec.edu.scli.usuarios.security;
 
 import ec.edu.scli.usuarios.application.usecase.DocenteService;
+import ec.edu.scli.usuarios.application.usecase.PerfilService;
 import ec.edu.scli.usuarios.config.SecurityConfig;
 import ec.edu.scli.usuarios.infrastructure.audit.AuditLogger;
 import ec.edu.scli.usuarios.presentation.controller.DocenteController;
@@ -59,6 +60,9 @@ class UsuariosSecurityIntegrationTest {
 
     @MockitoBean
     private DocenteService docenteService;
+
+    @MockitoBean
+    private PerfilService perfilService;
 
     @MockitoBean
     private AuditLogger auditLogger;

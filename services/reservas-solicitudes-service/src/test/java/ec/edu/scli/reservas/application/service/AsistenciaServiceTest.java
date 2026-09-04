@@ -21,6 +21,9 @@ import org.springframework.security.access.AccessDeniedException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.HexFormat;
 import java.util.Optional;
 import java.util.List;
@@ -30,6 +33,9 @@ import ec.edu.scli.reservas.client.dto.MateriaContextoExternoResponse;
 import ec.edu.scli.reservas.infrastructure.persistence.entity.PlanificacionJpaEntity;
 import ec.edu.scli.reservas.infrastructure.persistence.entity.PlanificacionAgregadaJpaEntity;
 import ec.edu.scli.reservas.domain.model.EstadoPlanificacionAgregada;
+import ec.edu.scli.reservas.domain.model.EstadoPlanificacion;
+import ec.edu.scli.reservas.client.dto.DocenteExternoResponse;
+import ec.edu.scli.reservas.infrastructure.persistence.entity.RegistroAsistenciaJpaEntity;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.*;
@@ -146,6 +152,161 @@ class AsistenciaServiceTest {
         assertThat(service.sesionesAbiertas(otro)).isEmpty();assertThatThrownBy(()->service.registrarPropia(sesionId,otro)).isInstanceOf(AccessDeniedException.class);
         UUID otraCarrera=UUID.randomUUID();when(estudiantes.resolverContextoActivo(otro)).thenReturn(new EstudianteInstitucionalPort.Contexto(UUID.randomUUID(),otro,otraCarrera,periodo,7));
         assertThat(service.sesionesAbiertas(otro)).isEmpty();
+    }
+
+    @Test void abrirReservaValidaSeleccionResponsableYDuplicado() {
+        UUID reservaId = UUID.randomUUID(), docente = UUID.randomUUID();
+        assertThatThrownBy(() -> service.abrir(new AbrirSesionAsistenciaRequest(null, null), docente))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("planificada");
+        when(reservas.buscarPorId(reservaId)).thenReturn(reserva(reservaId, docente));
+        when(sesiones.findFirstByReservaIdAndEstado(reservaId, EstadoSesionAsistencia.ABIERTA))
+                .thenReturn(Optional.of(new SesionAsistenciaJpaEntity()));
+        assertThatThrownBy(() -> service.abrir(new AbrirSesionAsistenciaRequest(reservaId), docente))
+                .isInstanceOf(IllegalStateException.class).hasMessageContaining("sesion abierta");
+    }
+
+    @Test void abrirBloqueValidaPlanDocenteHorarioYDuplicado() {
+        UUID bloqueId = UUID.randomUUID(), planId = UUID.randomUUID(), docenteId = UUID.randomUUID(), perfil = UUID.randomUUID();
+        assertThatThrownBy(() -> service.abrir(new AbrirSesionAsistenciaRequest(null, bloqueId), perfil))
+                .isInstanceOf(ec.edu.scli.reservas.presentation.exception.ResourceNotFoundException.class);
+
+        PlanificacionJpaEntity bloque = bloque(bloqueId, planId, 7);
+        when(bloques.findById(bloqueId)).thenReturn(Optional.of(bloque));
+        assertThatThrownBy(() -> service.abrir(new AbrirSesionAsistenciaRequest(null, bloqueId), perfil))
+                .isInstanceOf(ec.edu.scli.reservas.presentation.exception.ResourceNotFoundException.class);
+
+        PlanificacionAgregadaJpaEntity plan = plan(planId, UUID.randomUUID(), UUID.randomUUID(), EstadoPlanificacionAgregada.BORRADOR);
+        when(planes.findById(planId)).thenReturn(Optional.of(plan));
+        assertThatThrownBy(() -> service.abrir(new AbrirSesionAsistenciaRequest(null, bloqueId), perfil))
+                .isInstanceOf(IllegalStateException.class).hasMessageContaining("aprobada");
+
+        plan.setEstado(EstadoPlanificacionAgregada.APROBADA);
+        bloque.setDocenteId(docenteId);
+        when(usuarios.obtenerDocentePorId(docenteId)).thenReturn(new DocenteExternoResponse(docenteId, UUID.randomUUID(), true));
+        assertThatThrownBy(() -> service.abrir(new AbrirSesionAsistenciaRequest(null, bloqueId), perfil))
+                .isInstanceOf(AccessDeniedException.class);
+
+        when(usuarios.obtenerDocentePorId(docenteId)).thenReturn(new DocenteExternoResponse(docenteId, perfil, true));
+        bloque.setDiaSemana(diaActual()); bloque.setHoraInicio(LocalTime.MIN); bloque.setHoraFin(LocalTime.MAX);
+        when(sesiones.findFirstByBloquePlanificacionIdAndFechaClaseAndEstado(eq(bloqueId), any(), eq(EstadoSesionAsistencia.ABIERTA)))
+                .thenReturn(Optional.of(new SesionAsistenciaJpaEntity()));
+        assertThatThrownBy(() -> service.abrir(new AbrirSesionAsistenciaRequest(null, bloqueId), perfil))
+                .isInstanceOf(IllegalStateException.class).hasMessageContaining("abierta");
+
+        when(sesiones.findFirstByBloquePlanificacionIdAndFechaClaseAndEstado(eq(bloqueId), any(), eq(EstadoSesionAsistencia.ABIERTA)))
+                .thenReturn(Optional.empty());
+        assertThat(service.abrir(new AbrirSesionAsistenciaRequest(null, bloqueId), perfil).token()).isNotBlank();
+    }
+
+    @Test void sesionesAbiertasDescartanVencidasYContextosIncompletos() throws Exception {
+        UUID perfil = UUID.randomUUID(), carrera = UUID.randomUUID(), periodo = UUID.randomUUID();
+        var contexto = new EstudianteInstitucionalPort.Contexto(UUID.randomUUID(), perfil, carrera, periodo, 7);
+        when(estudiantes.resolverContextoActivo(perfil)).thenReturn(contexto);
+        var vencida = sesion(UUID.randomUUID(), "a", Instant.now().minusSeconds(1));
+        var sinReserva = sesion(UUID.randomUUID(), "b", Instant.now().plusSeconds(60)); sinReserva.setReservaId(UUID.randomUUID());
+        var sinBloque = sesion(UUID.randomUUID(), "c", Instant.now().plusSeconds(60)); sinBloque.setBloquePlanificacionId(UUID.randomUUID());
+        when(sesiones.findByEstado(EstadoSesionAsistencia.ABIERTA)).thenReturn(List.of(vencida, sinReserva, sinBloque));
+        assertThat(service.sesionesAbiertas(perfil)).isEmpty();
+    }
+
+    @Test void cerrarRespetaEstadosYOwnership() {
+        UUID id = UUID.randomUUID(), docente = UUID.randomUUID();
+        var sesion = new SesionAsistenciaJpaEntity(); sesion.setId(id); sesion.setDocenteId(docente);
+        when(sesiones.findByIdAndDocenteId(id, docente)).thenReturn(Optional.of(sesion));
+        sesion.setEstado(EstadoSesionAsistencia.CERRADA);
+        service.cerrar(id, docente);
+        verify(sesiones, never()).save(any());
+        sesion.setEstado(EstadoSesionAsistencia.VENCIDA);
+        assertThatThrownBy(() -> service.cerrar(id, docente)).isInstanceOf(IllegalStateException.class).hasMessageContaining("vencida");
+        sesion.setEstado(EstadoSesionAsistencia.ABIERTA);
+        service.cerrar(id, docente);
+        assertThat(sesion.getEstado()).isEqualTo(EstadoSesionAsistencia.CERRADA);
+        assertThat(sesion.getCerradaEn()).isNotNull();
+        verify(sesiones).save(sesion);
+    }
+
+    @Test void historialPorPeriodoFiltraSesionesDelContextoYMapeaBloque() {
+        UUID perfil = UUID.randomUUID(), estudiante = UUID.randomUUID(), carrera = UUID.randomUUID(), periodo = UUID.randomUUID();
+        UUID sesionValidaId = UUID.randomUUID(), sesionAjenaId = UUID.randomUUID(), bloqueId = UUID.randomUUID(), planId = UUID.randomUUID();
+        when(estudiantes.resolverContexto(perfil, periodo)).thenReturn(new EstudianteInstitucionalPort.Contexto(estudiante, perfil, carrera, periodo, 7));
+        when(estudiantes.resolverEstudianteActivo(perfil)).thenReturn(estudiante);
+        var valido = registro(UUID.randomUUID(), sesionValidaId, estudiante);
+        var ajeno = registro(UUID.randomUUID(), sesionAjenaId, estudiante);
+        when(registros.findByEstudianteId(estudiante)).thenReturn(List.of(valido, ajeno));
+        var sesionValida = new SesionAsistenciaJpaEntity(); sesionValida.setId(sesionValidaId); sesionValida.setBloquePlanificacionId(bloqueId);
+        when(sesiones.findById(sesionValidaId)).thenReturn(Optional.of(sesionValida));
+        when(sesiones.findById(sesionAjenaId)).thenReturn(Optional.empty());
+        var bloque = bloque(bloqueId, planId, 7); when(bloques.findById(bloqueId)).thenReturn(Optional.of(bloque));
+        when(planes.findById(planId)).thenReturn(Optional.of(plan(planId, carrera, periodo, EstadoPlanificacionAgregada.APROBADA)));
+        assertThat(service.historial(perfil, periodo)).singleElement().extracting(r -> r.bloqueId()).isEqualTo(bloqueId);
+        service.historial(perfil, null);
+        verify(registros, times(2)).findByEstudianteId(estudiante);
+    }
+
+    @Test void horarioSoloExponePlanAprobadoYNivelDelContexto() {
+        UUID perfil = UUID.randomUUID(), carrera = UUID.randomUUID(), periodo = UUID.randomUUID(), planId = UUID.randomUUID();
+        when(estudiantes.resolverContexto(perfil, periodo)).thenReturn(new EstudianteInstitucionalPort.Contexto(UUID.randomUUID(), perfil, carrera, periodo, 7));
+        when(planes.findByCarreraIdAndPeriodoId(carrera, periodo)).thenReturn(Optional.empty());
+        assertThat(service.horario(perfil, periodo)).isEmpty();
+        var plan = plan(planId, carrera, periodo, EstadoPlanificacionAgregada.BORRADOR);
+        when(planes.findByCarreraIdAndPeriodoId(carrera, periodo)).thenReturn(Optional.of(plan));
+        assertThat(service.horario(perfil, periodo)).isEmpty();
+        plan.setEstado(EstadoPlanificacionAgregada.APROBADA);
+        when(bloques.findByPlanificacionId(planId)).thenReturn(List.of(bloque(UUID.randomUUID(), planId, 7), bloque(UUID.randomUUID(), planId, 8)));
+        assertThat(service.horario(perfil, periodo)).hasSize(1).allMatch(b -> b.nivel() == 7);
+    }
+
+    @Test void clasesDocenteHoyExigeDocenteActivoYPlanAprobado() {
+        UUID perfil = UUID.randomUUID(), docenteId = UUID.randomUUID(), planId = UUID.randomUUID();
+        assertThatThrownBy(() -> service.clasesDocenteHoy(perfil)).isInstanceOf(AccessDeniedException.class);
+        when(usuarios.obtenerDocentePorPerfil(perfil)).thenReturn(new DocenteExternoResponse(docenteId, perfil, false));
+        assertThatThrownBy(() -> service.clasesDocenteHoy(perfil)).isInstanceOf(AccessDeniedException.class);
+        when(usuarios.obtenerDocentePorPerfil(perfil)).thenReturn(new DocenteExternoResponse(docenteId, perfil, true));
+        var sinPlan = bloque(UUID.randomUUID(), null, 7);
+        var noAprobado = bloque(UUID.randomUUID(), UUID.randomUUID(), 7);
+        var aprobado = bloque(UUID.randomUUID(), planId, 7);
+        when(bloques.findByDocenteIdAndDiaSemana(docenteId, diaActual())).thenReturn(List.of(sinPlan, noAprobado, aprobado));
+        when(planes.findById(noAprobado.getPlanificacionId())).thenReturn(Optional.of(plan(noAprobado.getPlanificacionId(), UUID.randomUUID(), UUID.randomUUID(), EstadoPlanificacionAgregada.BORRADOR)));
+        when(planes.findById(planId)).thenReturn(Optional.of(plan(planId, UUID.randomUUID(), UUID.randomUUID(), EstadoPlanificacionAgregada.APROBADA)));
+        assertThat(service.clasesDocenteHoy(perfil)).singleElement().extracting(r -> r.id()).isEqualTo(aprobado.getId());
+    }
+
+    @Test void registrarPropiaRechazaSesionCerradaYDuplicada() throws Exception {
+        UUID perfil = UUID.randomUUID(), estudiante = UUID.randomUUID(), carrera = UUID.randomUUID(), periodo = UUID.randomUUID();
+        UUID sesionId = UUID.randomUUID(), bloqueId = UUID.randomUUID(), planId = UUID.randomUUID();
+        var contexto = new EstudianteInstitucionalPort.Contexto(estudiante, perfil, carrera, periodo, 7);
+        when(estudiantes.resolverContextoActivo(perfil)).thenReturn(contexto); when(estudiantes.resolverEstudianteActivo(perfil)).thenReturn(estudiante);
+        var sesion = sesion(sesionId, "x", Instant.now().plusSeconds(60)); sesion.setBloquePlanificacionId(bloqueId);
+        when(sesiones.findById(sesionId)).thenReturn(Optional.of(sesion));
+        when(bloques.findById(bloqueId)).thenReturn(Optional.of(bloque(bloqueId, planId, 7)));
+        when(planes.findById(planId)).thenReturn(Optional.of(plan(planId, carrera, periodo, EstadoPlanificacionAgregada.APROBADA)));
+        sesion.setEstado(EstadoSesionAsistencia.CERRADA);
+        assertThatThrownBy(() -> service.registrarPropia(sesionId, perfil)).isInstanceOf(IllegalStateException.class).hasMessageContaining("abierta");
+        sesion.setEstado(EstadoSesionAsistencia.ABIERTA); when(registros.existsBySesionIdAndEstudianteId(sesionId, estudiante)).thenReturn(true);
+        assertThatThrownBy(() -> service.registrarPropia(sesionId, perfil)).isInstanceOf(IllegalStateException.class).hasMessageContaining("registrada");
+    }
+
+    private PlanificacionJpaEntity bloque(UUID id, UUID planId, int nivel) {
+        var b = new PlanificacionJpaEntity(); b.setId(id); b.setPlanificacionId(planId); b.setNivel(nivel);
+        b.setPeriodoId(UUID.randomUUID()); b.setCarreraId(UUID.randomUUID()); b.setMateriaId(UUID.randomUUID());
+        b.setDocenteId(UUID.randomUUID()); b.setLaboratorioId(UUID.randomUUID()); b.setDiaSemana(diaActual());
+        b.setHoraInicio(LocalTime.of(8, 0)); b.setHoraFin(LocalTime.of(10, 0)); b.setEstado(EstadoPlanificacion.BORRADOR);
+        return b;
+    }
+
+    private PlanificacionAgregadaJpaEntity plan(UUID id, UUID carrera, UUID periodo, EstadoPlanificacionAgregada estado) {
+        var p = new PlanificacionAgregadaJpaEntity(); p.setId(id); p.setCarreraId(carrera); p.setPeriodoId(periodo); p.setEstado(estado); return p;
+    }
+
+    private RegistroAsistenciaJpaEntity registro(UUID id, UUID sesionId, UUID estudiante) {
+        var r = new RegistroAsistenciaJpaEntity(); r.setId(id); r.setSesionId(sesionId); r.setEstudianteId(estudiante); r.setRegistradaEn(Instant.now()); return r;
+    }
+
+    private String diaActual() {
+        return switch (LocalDate.now(ZoneId.of("America/Guayaquil")).getDayOfWeek()) {
+            case MONDAY -> "LUNES"; case TUESDAY -> "MARTES"; case WEDNESDAY -> "MIERCOLES";
+            case THURSDAY -> "JUEVES"; case FRIDAY -> "VIERNES"; case SATURDAY -> "SABADO"; case SUNDAY -> "DOMINGO";
+        };
     }
 
     private SesionAsistenciaJpaEntity sesion(UUID id, String token, Instant expira) throws Exception {
