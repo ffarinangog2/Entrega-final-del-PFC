@@ -134,3 +134,130 @@ Por cada repetición se deben guardar:
 
 Los artefactos deben usar nombres con escenario y número de repetición. La plantilla
 versionada no constituye evidencia ni resultado.
+
+## Pre-registro ARBITER S0--S4
+
+### Estado y aislamiento
+
+Este apartado pre-registra el experimento exigido por la guía FUVV, secciones
+5.1--5.6. A la fecha existen **0 de 130 corridas ejecutadas**. No contiene
+resultados. El producto reserva laboratorios; como el experimento requiere un
+equipo concreto, se utiliza un estado experimental separado con `equipmentId`,
+franja, agente, estado, versión, `runId` y marcas temporales. No se modifica la
+API ni la persistencia productiva.
+
+El subsistema solo se habilita con `EXPERIMENTAL_ARBITER_ENABLED=true`, un valor
+válido de `ARBITER` y la clave interna. Sin esas tres condiciones no se inicia.
+`ARBITER` ausente no selecciona ninguna estrategia y el flujo productivo sigue
+usando su implementación actual (`SERIALIZABLE`, reintentos, idempotencia,
+mutex de agenda y validación de disponibilidad). S0 nunca es predeterminado.
+
+### Tratamientos predefinidos
+
+- **S0, escritura directa sin arbitraje:** control negativo exclusivamente
+  experimental; no hace atómica la decisión y permite confirmaciones solapadas.
+- **S1, bloqueo optimista:** lee versión y confirma mediante compare-and-set;
+  el perdedor observa la versión modificada.
+- **S2, bloqueo pesimista:** bloquea `equipmentId + inicio + fin` antes de
+  comprobar conflictos y decidir.
+- **S3, coordinador elegido:** tres nodos lógicos, algoritmo Bully (mayor ID
+  vivo), heartbeat/detección en el backend, reloj Lamport y sección serial del
+  líder. Lamport/Bully se reconstruyeron para E4 porque el artefacto E1 citado
+  por la guía no está presente en HEAD.
+- **S4, serializable por quórum:** transacción `SERIALIZABLE` y reintento por
+  `SerializationFailure` en CockroachDB real. Su liderazgo pertenece al
+  consenso del clúster; no es coordinador de aplicación ni usa Bully.
+
+El almacenamiento SQL es administrado por `reservas-solicitudes-service` y,
+solo con el modo experimental habilitado, crea el esquema `scli_experimental`;
+los tests usan dobles en memoria. El harness nunca escribe directamente en
+CockroachDB. Los equipos pueden
+leerse de Académico. `fixtures/equipos-experimentales.json` es una fixture
+sintética versionada y nunca representa inventario institucional.
+
+### Matriz oficial
+
+| Escenario | Configuraciones | Repeticiones | Corridas |
+|---|---:|---:|---:|
+| Esc-1, nominal: 50 usuarios/5 min | productiva | 10 | 10 |
+| Esc-2: 50 simultáneas, mismo equipo/franja | S0--S4 | 10 | 50 |
+| Esc-3: 200 simultáneas, mismo equipo/franja | S0--S4 | 10 | 50 |
+| Esc-4: 200 simultáneas, caída al 50 % | S3 y S4 | 10 | 20 |
+| **Total** | | | **130** |
+
+Se conserva toda repetición. Las repeticiones 1 y 10 se excluyen del análisis;
+2--9 forman ocho muestras candidatas. Se alternará el orden de estrategias
+entre bloques y se mantendrá la semilla registrada. S0+Esc-3 debe exhibir doble
+adjudicación; si no ocurre, se invalida el bloque comparativo y se revisan la
+barrera y la posible presencia accidental de arbitraje.
+
+### Generación, caída y recuperación
+
+`generador_rafagas.py` usa un `Barrier` para agentes y coordinador, y conserva
+`run_id`, SHA, semilla, tiempos de preparación/envío/respuesta y latencia. No se
+ejecutan ráfagas en el PC. En Esc-4, S3 desactiva el líder Bully al 50 % y
+registra la nueva elección. Para S4, `caida_coordinador.py` exige confirmación y
+un comando reversible específico de la VM para detener un nodo Cockroach sin
+borrar datos ni volúmenes. Se mide separadamente recuperación del líder de
+aplicación S3 y recuperación del servicio respaldado por consenso S4.
+
+### Oráculo y variables respuesta
+
+El oráculo verifica: (1) ausencia de confirmaciones solapadas por equipo; (2)
+exactamente un adjudicatario por confirmación; (3) ausencia de adjudicación
+sobre equipo en mantenimiento; (4) exactamente un `RELEASED` por `CANCELLED`;
+y (5) ningún `ACCESS_GRANTED` sin adjudicación vigente del mismo usuario,
+equipo y franja. Sin eventos de cancelación o acceso, esos invariantes se
+informan `NOT_OBSERVED`, no `PASS`. El quinto valida la regla experimental, no
+una integración con hardware universitario.
+
+La tasa principal es la proporción de franjas con más de un usuario confirmado,
+con intervalo binomial Wilson 95 %. Un rechazo es innecesario cuando no existe
+confirmación incompatible que lo justifique. Para Jain, `xi` es el número de
+adjudicaciones confirmadas de cada agente; se informa además el vector por
+equipo. El tiempo de recuperación va desde la marca de fallo hasta la vuelta
+funcional y conserva ambos timestamps.
+
+Por métrica se calcularán media, desviación muestral, IC95 y mediana. Las
+comparaciones predefinidas son S1--S4 contra S0 dentro del mismo escenario y,
+además, S1 vs S2, S2 vs S4 y S3 vs S4. Se usa Mann--Whitney bilateral y A12 con
+grupo A igual a la primera estrategia nombrada. A12 representa
+`P(A>B)+0.5P(A=B)`. Menor es favorable para dobles, rechazos, latencia y
+recuperación; mayor es favorable para Jain. Se usarán diagramas de caja.
+
+### Amenazas pre-registradas
+
+- Ruido del host y competencia: descarte analítico de primera/última repetición,
+  registro de entorno y alternancia del orden.
+- Sincronía artificial de la barrera: aumenta deliberadamente la contención y
+  no representa todas las llegadas reales.
+- Orden de tratamientos: se alterna entre bloques.
+- Cantidad sintética de equipos/laboratorios: limita generalización al campus.
+- Demanda sintética frente a picos reales: limita validez externa.
+
+La evidencia real irá a `resultados/arbiter/raw`, `oracle`, `summary` y
+`analysis`. Solo después de ejecutar se generará un `SHA256SUMS` separado, sin
+alterar el manifiesto histórico ISO 25010.
+
+### Preparación reproducible (no ejecutar en PC)
+
+En la VM autorizada se fija el SHA desplegado y se exportan, sin registrarlas,
+la clave y URL internas del servicio. S4 utiliza el datasource CockroachDB real
+configurado en `reservas-solicitudes-service`:
+
+```text
+EXPERIMENTAL_ARBITER_ENABLED=true
+ARBITER=s4
+INTERNAL_API_KEY=<secreto de la VM>
+RESERVAS_EXPERIMENTAL_URL=http://<reservas-interno>/api/v1/internal/experimentos/arbiter/adjudicar
+```
+
+El plan determinista se materializa con
+`python experimentos/planificar_arbiter.py --output <ruta>/plan.json`. Cada
+corrida Esc-2/3 se invoca con `generador_rafagas.py --strategy <sN>
+--scenario <esc2|esc3> --rep <1..10> --equipment-id <id> --laboratory-id <id>
+--starts-at <ISO-8601> --ends-at <ISO-8601>`. Esc-4/S4 añade el comando
+reversible y el health interno; exige el literal de confirmación
+`CONFIRM_EXPERIMENTAL_NODE_FAILURE`. El oráculo se ejecuta sobre cada manifiesto
+y la fixture/catálogo declarado. Ningún comando contiene credenciales en sus
+argumentos ni ejecuta las 130 corridas automáticamente.

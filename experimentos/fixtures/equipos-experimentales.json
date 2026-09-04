@@ -1,0 +1,19 @@
+{
+  "source": "synthetic-versioned-fixture",
+  "purpose": "Dataset sintético exclusivo del experimento ARBITER E4; no representa inventario institucional",
+  "version": 1,
+  "equipment": [
+    {
+      "equipmentId": "exp-equipment-operational-001",
+      "laboratoryId": "exp-laboratory-001",
+      "status": "OPERATIVO",
+      "active": true
+    },
+    {
+      "equipmentId": "exp-equipment-maintenance-001",
+      "laboratoryId": "exp-laboratory-001",
+      "status": "MANTENIMIENTO",
+      "active": true
+    }
+  ]
+}
