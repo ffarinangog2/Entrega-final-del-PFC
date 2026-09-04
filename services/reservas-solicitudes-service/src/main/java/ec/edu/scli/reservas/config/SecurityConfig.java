@@ -2,6 +2,7 @@ package ec.edu.scli.reservas.config;
 
 import ec.edu.scli.reservas.infrastructure.audit.AuditLogger;
 import ec.edu.scli.reservas.security.JwtAuthenticationFilter;
+import ec.edu.scli.reservas.security.ExperimentalInternalApiKeyFilter;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
@@ -22,6 +23,7 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http,
             JwtAuthenticationFilter jwtAuthenticationFilter,
+            ExperimentalInternalApiKeyFilter experimentalInternalApiKeyFilter,
             AuditLogger auditLogger) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
@@ -48,7 +50,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/actuator/health", "/actuator/info", "/actuator/prometheus").permitAll()
-                        .requestMatchers("/api/v1/internal/experimentos/arbiter/**").permitAll()
+                        .requestMatchers("/api/v1/internal/experimentos/arbiter/**")
+                        .hasAuthority(ExperimentalInternalApiKeyFilter.AUTHORITY)
                         .requestMatchers(HttpMethod.POST, "/api/v1/incidentes").hasAuthority("INCIDENTE_CREAR")
                         .requestMatchers(HttpMethod.GET, "/api/v1/incidentes/**").hasAnyAuthority("INCIDENTE_LEER", "INCIDENTE_GESTIONAR")
                         .requestMatchers(HttpMethod.PATCH, "/api/v1/incidentes/*/estado").hasAuthority("INCIDENTE_GESTIONAR")
@@ -83,6 +86,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/agenda/**").hasAnyAuthority("RESERVA_LEER", "AGENDA_GESTIONAR")
                         .requestMatchers("/api/v1/agenda/bloqueos/**").hasAuthority("AGENDA_GESTIONAR")
                         .anyRequest().authenticated())
+                .addFilterBefore(
+                        experimentalInternalApiKeyFilter,
+                        UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(
                         jwtAuthenticationFilter,
                         UsernamePasswordAuthenticationFilter.class);

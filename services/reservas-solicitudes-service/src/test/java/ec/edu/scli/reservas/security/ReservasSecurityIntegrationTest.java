@@ -35,7 +35,8 @@ import static org.mockito.Mockito.when;
 import org.springframework.security.access.AccessDeniedException;
 
 @WebMvcTest({DisponibilidadController.class, SolicitudReservaController.class, PlanificacionController.class, AsistenciaController.class})
-@Import({SecurityConfig.class, JwtAuthenticationFilter.class, JwtTokenProvider.class})
+@Import({SecurityConfig.class, JwtAuthenticationFilter.class, JwtTokenProvider.class,
+        ExperimentalInternalApiKeyFilter.class})
 @TestPropertySource(properties = {
         "security.jwt.issuer=scli-auth-service",
         "security.jwt.secret=MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY="

@@ -7,7 +7,6 @@ import ec.edu.scli.reservas.experimental.presentation.ExperimentalArbiterControl
 import ec.edu.scli.reservas.experimental.presentation.AdjudicacionExperimentalRequest;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.*;
 import java.util.List;
@@ -98,22 +97,16 @@ class ArbitrajeExperimentalTest {
     }
 
     @Test
-    void endpointExigeApiKeyInterna() {
-        var controller = new ExperimentalArbiterController(mock(ExperimentalArbiterService.class), "secret");
-        assertThrows(ResponseStatusException.class, () -> controller.fallarLider("incorrecta"));
-    }
-
-    @Test
     void endpointValidoDelegaYFalloLiderSoloAplicaAS3() {
         var service = mock(ExperimentalArbiterService.class);
         when(service.adjudicar(any(), eq("OPERATIVO"), eq(true))).thenReturn(resultado("s1"));
         when(service.selected()).thenReturn(mock(S1OptimistaStrategy.class));
-        var controller = new ExperimentalArbiterController(service, "secret");
+        var controller = new ExperimentalArbiterController(service);
         var request = new AdjudicacionExperimentalRequest(solicitud.runId(), solicitud.requestId(),
                 solicitud.equipmentId(), solicitud.laboratorioId(), solicitud.agenteId(), solicitud.inicio(),
                 solicitud.fin(), "OPERATIVO", true, "fixture");
-        assertEquals("CONFIRMED", controller.adjudicar("secret", request).getBody().estado());
-        assertEquals(409, controller.fallarLider("secret").getStatusCode().value());
+        assertEquals("CONFIRMED", controller.adjudicar(request).getBody().estado());
+        assertEquals(409, controller.fallarLider().getStatusCode().value());
     }
 
     @Test
@@ -121,7 +114,7 @@ class ArbitrajeExperimentalTest {
         ExperimentalAllocationStore store = mock(ExperimentalAllocationStore.class);
         var s3 = new S3BullyLamportStrategy(store, cluster());
         var service = new ExperimentalArbiterService(new ArbitrajeStrategyResolver(List.of(s3), "s3"));
-        var body = new ExperimentalArbiterController(service, "secret").fallarLider("secret").getBody();
+        var body = new ExperimentalArbiterController(service).fallarLider().getBody();
         assertNotNull(body);
         assertEquals(3, body.get("previousLeaderId"));
         assertEquals(2, body.get("leaderId"));
