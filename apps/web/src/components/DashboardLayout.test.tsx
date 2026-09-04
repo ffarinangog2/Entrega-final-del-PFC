@@ -54,6 +54,12 @@ describe('DashboardLayout por permisos', () => {
     expect(
       screen.getByRole('link', { name: /Configuración/ }),
     ).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /Administración/ })).toHaveAttribute('href', '/administracion')
+    expect(screen.getByRole('link', { name: /Laboratorios/ })).toHaveAttribute('href', '/laboratorios')
+    expect(screen.getByRole('link', { name: /Pisos/ })).toHaveAttribute('href', '/pisos')
+    expect(screen.getByRole('link', { name: /Equipos/ })).toHaveAttribute('href', '/equipos')
+    expect(screen.getByRole('link', { name: /Catálogos/ })).toHaveAttribute('href', '/catalogos')
+    expect(screen.getByRole('link', { name: /Asignaciones/ })).toHaveAttribute('href', '/asignaciones')
   })
   it('ADMINISTRADOR_PISO no ve asistencia ni configuración', () => {
     menu(

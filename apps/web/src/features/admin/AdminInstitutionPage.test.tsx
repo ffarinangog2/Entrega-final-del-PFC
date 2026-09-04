@@ -2,7 +2,15 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as academico from '../../services/academicoApi'
 import * as usuarios from '../../services/usuariosApi'
-import { AdminInstitutionPage } from './AdminInstitutionPage'
+import {
+  AdminAsignacionesPage,
+  AdminCatalogosPage,
+  AdminEquiposPage,
+  AdminInstitutionPage,
+  AdminLaboratoriosPage,
+  AdminOverviewPage,
+  AdminPisosPage,
+} from './AdminInstitutionPage'
 
 vi.mock('../../services/academicoApi')
 vi.mock('../../services/usuariosApi')
@@ -39,6 +47,20 @@ describe('AdminInstitutionPage', () => {
     expect(await screen.findByText('adminpiso.01')).toBeInTheDocument()
     expect(screen.getByText('Ana Piso')).toBeInTheDocument()
     expect(screen.getByLabelText('Piso de adminpiso.01')).toHaveValue('piso-1')
+  })
+
+  it.each([
+    [AdminOverviewPage, 'Administración institucional', [], ['Laboratorios', 'Gestión de pisos', 'Equipos', 'Estructura académica', 'Administradores de piso']],
+    [AdminLaboratoriosPage, 'Gestión de laboratorios', ['Laboratorios'], ['Gestión de pisos', 'Equipos', 'Estructura académica', 'Administradores de piso']],
+    [AdminPisosPage, 'Gestión de pisos', ['Gestión de pisos'], ['Laboratorios', 'Equipos', 'Estructura académica', 'Administradores de piso']],
+    [AdminEquiposPage, 'Gestión de equipos', ['Equipos', 'Inventario de equipos'], ['Laboratorios', 'Gestión de pisos', 'Estructura académica', 'Administradores de piso']],
+    [AdminCatalogosPage, 'Catálogos institucionales', ['Estructura académica', 'Gestionar campus', 'Gestionar carreras', 'Gestionar materias'], ['Laboratorios', 'Gestión de pisos', 'Equipos', 'Administradores de piso']],
+    [AdminAsignacionesPage, 'Asignaciones administrativas', ['Administradores de piso'], ['Laboratorios', 'Gestión de pisos', 'Equipos', 'Estructura académica']],
+  ])('aísla el módulo de %s', async (Page, title, headings, excludedHeadings) => {
+    render(<Page />)
+    expect(await screen.findByRole('heading', { name: title, level: 1 })).toBeInTheDocument()
+    headings.forEach((heading) => expect(screen.getByRole('heading', { name: heading, level: 2 })).toBeInTheDocument())
+    excludedHeadings.forEach((heading) => expect(screen.queryByRole('heading', { name: heading, level: 2 })).not.toBeInTheDocument())
   })
 
   it('crea un laboratorio usando un piso real y sin pedir UUID', async () => {

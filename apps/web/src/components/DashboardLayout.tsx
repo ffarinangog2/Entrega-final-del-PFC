@@ -152,7 +152,7 @@ export function DashboardLayout({
             {administrador && (
               <NavLink className="dashboard__nav-item" to="/administracion">
                 <span aria-hidden="true">G</span>
-                Catálogos y asignaciones
+                Administración
               </NavLink>
             )}
             {administrador && (
@@ -163,6 +163,16 @@ export function DashboardLayout({
             {administrador && (
               <NavLink className="dashboard__nav-item" to="/equipos">
                 <span aria-hidden="true">E</span>Equipos
+              </NavLink>
+            )}
+            {administrador && (
+              <NavLink className="dashboard__nav-item" to="/catalogos">
+                <span aria-hidden="true">C</span>Catálogos
+              </NavLink>
+            )}
+            {administrador && (
+              <NavLink className="dashboard__nav-item" to="/asignaciones">
+                <span aria-hidden="true">A</span>Asignaciones
               </NavLink>
             )}
             <NavLink className="dashboard__nav-item" to="/perfil">
