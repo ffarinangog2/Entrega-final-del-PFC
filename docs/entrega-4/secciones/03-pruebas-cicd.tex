@@ -47,35 +47,36 @@ necesario aislar puertos o clientes. Las suites cubren controladores, servicios,
 repositorios, validaciones y seguridad. En Reservas también se prueban las
 estrategias de disponibilidad y las transiciones State; en Auth se ejercitan JWT,
 rotación de sesión, bloqueo de acceso, recuperación de contraseña y auditoría.
-Los recuentos y la cobertura de líneas de la Tabla~\ref{tab:cobertura-backend}
-proceden de los reportes Surefire y JaCoCo generados para el árbol actual. La
-ejecución CI del mismo SHA confirmó que los cinco jobs finalizaron correctamente.
+La Tabla~\ref{tab:cobertura-backend} describe los controles verificables en el
+árbol actual. Los porcentajes y recuentos exactos pertenecen a cada ejecución y
+deben consultarse en sus reportes Surefire/JaCoCo de GitHub Actions; no se
+trasladan cifras de un SHA anterior como si describieran el HEAD actual.
 
 \begin{table}[ht]
   \centering
   \small
-  \caption{Resultado actual de pruebas y cobertura Backend.}
+  \caption{Controles de pruebas y cobertura Backend configurados.}
   \label{tab:cobertura-backend}
-  \begin{tabular}{|p{4.2cm}|p{2.7cm}|r|r|p{1.8cm}|}
+  \begin{tabular}{|p{4.2cm}|p{3.2cm}|p{3.0cm}|p{2.3cm}|}
     \hline
-    \textbf{Servicio} & \textbf{Herramienta} & \textbf{Tests} & \textbf{Líneas} & \textbf{Estado} \\
+    \textbf{Servicio} & \textbf{Herramienta} & \textbf{Fuente de resultado} & \textbf{Criterio} \\
     \hline
-    auth-service & JUnit/Mockito/JaCoCo & 81 & 88,66\% & $\geq 70\%$ \\
+    auth-service & JUnit/Mockito/JaCoCo & Surefire y JaCoCo del job Backend & Gate $\geq 70\%$ \\
     \hline
-    usuarios-service & JUnit/Mockito/JaCoCo & 149 & 72,11\% & $\geq 70\%$ \\
+    usuarios-service & JUnit/Mockito/JaCoCo & Surefire y JaCoCo del job Backend & Gate $\geq 70\%$ \\
     \hline
-    academico-laboratorios-service & JUnit/Mockito/JaCoCo & 259 & 83,99\% & $\geq 70\%$ \\
+    academico-laboratorios-service & JUnit/Mockito/JaCoCo & Surefire y JaCoCo del job Backend & Gate $\geq 70\%$ \\
     \hline
-    reservas-solicitudes-service & JUnit/Mockito/JaCoCo & 125 & 82,96\% & $\geq 70\%$ \\
+    reservas-solicitudes-service & JUnit/Mockito/JaCoCo & Surefire y JaCoCo del job Backend & Gate $\geq 70\%$ \\
     \hline
-    api-gateway & JUnit/Mockito/JaCoCo & 19 & 92,91\% & $\geq 70\%$ \\
+    api-gateway & JUnit/Mockito/JaCoCo & Surefire y JaCoCo del job Backend & Gate $\geq 70\%$ \\
     \hline
   \end{tabular}
 \end{table}
 
-Superar el umbral no significa que cada ruta esté probada ni que el sistema sea
-inmune a fallos. En particular, \texttt{usuarios-service} se encuentra próximo
-al límite, y la cobertura de líneas no sustituye la verificación de condiciones,
+Superar un umbral en una ejecución no significa que cada ruta esté probada ni
+que el sistema sea inmune a fallos. La cobertura de líneas no sustituye la
+verificación de condiciones,
 concurrencia o contratos. Por ello se conservan niveles de integración y E2E en
 el pipeline, coherentes con la necesidad de mantener pruebas a diferentes
 escalas \cite{winters2020softwareengineeringgoogle}.
@@ -107,40 +108,23 @@ distingue de los contenedores efímeros por servicio.
 \label{subsec:pruebas-web}
 
 Vitest y React Testing Library validan el comportamiento observable de la SPA.
-Las 19 unidades de archivo incluyen contexto de autenticación, revocación en
-logout, limpieza aun cuando falla el backend, rutas protegidas, cliente HTTP y
-renovación ante 401, API de dominio, formularios, reservas, usuarios, idioma y
-tema. La reejecución ligera efectuada durante esta redacción produjo 71 de 71
-casos aprobados y las siguientes cifras V8:
+El árbol actual contiene 31 archivos de prueba Web, que incluyen autenticación,
+rutas protegidas, cliente HTTP, renovación ante 401, APIs de dominio,
+formularios, reservas, administración y flujos por rol. Vitest/V8 aplica en
+\texttt{vite.config.ts} un umbral de 70\% a statements, branches, functions y
+lines. Los valores exactos deben obtenerse del job y del reporte del SHA
+evaluado; no se trasladan cifras de un árbol anterior como evidencia actual.
 
-\begin{table}[ht]
-  \centering
-  \small
-  \caption{Cobertura Web verificada con Vitest/V8.}
-  \label{tab:cobertura-web}
-  \begin{tabular}{|l|r|r|l|}
-    \hline
-    \textbf{Métrica} & \textbf{Cubierto} & \textbf{Total} & \textbf{Porcentaje} \\
-    \hline
-    Statements & 571 & 663 & 86,12\% \\
-    Branches & 270 & 368 & 73,36\% \\
-    Functions & 181 & 226 & 80,08\% \\
-    Lines & 458 & 502 & 91,23\% \\
-    \hline
-  \end{tabular}
-\end{table}
-
-Las cuatro métricas superan el umbral de 70\% configurado en Vite. El margen
-más estrecho está en branches, por lo que el resultado no debe resumirse solo
-con el 91,23\% de líneas. La advertencia de tamaño del bundle que puede emitir
-Vite corresponde a optimización de empaquetado y no invalida las pruebas.
+El pipeline ejecuta \texttt{npm run test:coverage} y \texttt{npm run build}; por
+tanto, una promoción solo continúa si los umbrales configurados y el build se
+satisfacen. La configuración demuestra el criterio exigido, mientras el reporte
+de la ejecución demuestra su resultado para un SHA concreto.
 
 \subsubsection{Compatibilidad E2E con Playwright}
 
-Playwright define ocho escenarios funcionales: login correcto e incorrecto,
-redirección de una ruta protegida, logout, persistencia de sesión, flujo de
-reserva de Docente, revisión/propuesta de Administrador de Piso y persistencia de
-idioma/tema. Cada escenario se proyecta sobre Chromium, Firefox y WebKit con un
+Playwright mantiene escenarios funcionales de autenticación, rutas protegidas,
+reservas, revisión y preferencias de interfaz. Cada escenario se proyecta sobre
+Chromium, Firefox y WebKit con un
 solo worker y hasta dos reintentos en CI. Los tres motores aportan evidencia
 práctica frente a diferencias de Chrome, Firefox y Safari, pero no representan
 todos los navegadores, sistemas operativos ni dispositivos.
@@ -157,14 +141,15 @@ Playwright dedicado.
 \label{subsec:pruebas-mobile}
 
 La suite local combina JUnit 4, MockK, \texttt{coroutines-test}, MockWebServer,
-Robolectric y utilidades de Compose. Sus 142 de 142 pruebas aprobadas ejercitan
+Robolectric y utilidades de Compose. Sus pruebas ejercitan
 ViewModels, sesión y refresh, almacenamiento cifrado, clasificación de errores,
 repositorios remotos y locales, caché, reservas, incidentes, disponibilidad y
-estados QR. JaCoCo 0.8.12 produjo 45,69\% de líneas (955 de 2090), 31,11\% de
-instrucciones (8653 de 27816) y 12,92\% de branches (222 de 1718).
+estados QR. La última evidencia versionada produjo 45,69\% de líneas; ese valor
+se conserva como antecedente, no como medición del HEAD actual sin su reporte.
 
-El resultado es parcial: existe una base amplia de casos, pero ninguna de las
-tres métricas globales alcanza 70\%. Compose, pantallas, navegación y wiring
+El resultado documentado es parcial: existe una base amplia de casos, pero la
+última evidencia versionada no alcanza 70\% de líneas. Compose, pantallas,
+navegación y wiring
 aportan una parte importante al denominador; aun así, esto no justifica ignorar
 el déficit. La configuración solo excluye artefactos Android generados habituales
 (por ejemplo, \texttt{R}, \texttt{BuildConfig} y manifest), no clases del
@@ -173,7 +158,8 @@ móvil no se presenta como cumplimiento total.
 
 \subsubsection{Pruebas instrumentadas y APK}
 
-El directorio \texttt{androidTest} contiene siete casos en cinco archivos.
+El directorio \texttt{androidTest} contiene cinco archivos de prueba; el número
+de casos ejecutados se obtiene del reporte instrumentado de cada SHA.
 Comprueba un flujo Compose de listado a detalle de reserva, DAO y actualización
 de caché, migración Room de versión 1 a 2, creación/listado de incidentes y tres
 estados del flujo QR. El job \emph{Test mobile instrumented} usa un emulador
@@ -190,9 +176,10 @@ usa la ejecución automatizada de CI como evidencia.
 \label{subsec:pact}
 
 Pact expresa el flujo consumidor $\rightarrow$ contrato $\rightarrow$
-verificación del proveedor. El reporte vigente contiene 15 de 15 casos de
-consumidor: cuatro para \texttt{scli-web}, cuatro para \texttt{scli-mobile},
-cuatro auxiliares de Reservas, dos de Usuarios y uno de Auth. Los contratos de
+verificación del proveedor. El árbol contiene contratos consumidores para Web,
+Mobile, Auth, Usuarios, Académico y Reservas, además de verificadores de
+proveedor en Académico, Reservas y Usuarios. El número aprobado pertenece al
+reporte del job de cada SHA y no se fija aquí como una cifra inmutable. Los contratos de
 Reservas representan listar, consultar detalle, cancelar y proponer una
 alternativa; incluyen método, ruta, encabezado Bearer y forma del cuerpo. Los
 proveedores \texttt{reservas-solicitudes-service} y
@@ -283,15 +270,15 @@ claves ni fingerprints en el informe.
     \hline
     \textbf{Requisito} & \textbf{Prueba} & \textbf{Job CI} & \textbf{Resultado/evidencia} \\
     \hline
-    Web $\geq 70\%$ & Vitest y V8 & Test web & 71/71; todas las métricas sobre 70\%. \\
+    Web $\geq 70\%$ & Vitest y V8 & Test web & Cuatro umbrales configurados en 70\%; resultado por SHA en CI. \\
     \hline
-    Calidad Mobile & JUnit/Robolectric, JaCoCo y emulador & Test mobile; Test mobile instrumented & 142/142 y siete instrumentadas; líneas 45,69\%, resultado parcial. \\
+    Calidad Mobile & JUnit/Robolectric, JaCoCo y emulador & Test mobile; Test mobile instrumented & Evidencia histórica de líneas 45,69\%; resultado actual por SHA en CI. \\
     \hline
-    Contratos compatibles & Pact consumer/provider & Matrices Backend & 15/15 consumidores; verificación de Reservas y Usuarios; sin Broker. \\
+    Contratos compatibles & Pact consumer/provider & Matrices Backend & Consumidores y verificadores versionados; resultado por SHA en CI; sin Broker. \\
     \hline
     Persistencia CockroachDB & Testcontainers/Flyway & Matrices Backend; CockroachDB E3 cluster tests & Auth, Usuarios y Reservas verificados; falta equivalente en Académico. \\
     \hline
-    Compatibilidad Web & Playwright & Compose integration tests & Ocho escenarios configurados en tres motores; ejecución CI. \\
+    Compatibilidad Web & Playwright & Compose integration tests & Escenarios versionados en tres motores; ejecución por SHA en CI. \\
     \hline
     Promoción trazable & Gates, GHCR y healthcheck & Build and publish image; Call production VM deployment & Imágenes y despliegue ligados al SHA completo. \\
     \hline

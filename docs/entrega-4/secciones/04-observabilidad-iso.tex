@@ -119,7 +119,7 @@ JSON reproducible.
 
 La evaluación usa el modelo de calidad de producto ISO/IEC 25010:2023
 \cite{iso25010_2023}, pero no pretende cubrir todas sus características. Se
-seleccionaron eficiencia de desempeño, fiabilidad, mantenibilidad y
+seleccionaron eficiencia de desempeño, fiabilidad, seguridad, mantenibilidad y
 compatibilidad. La disponibilidad se trata como parte de fiabilidad y exige
 observación temporal propia; no se infiere de una tasa puntual de errores.
 
@@ -142,18 +142,22 @@ proceso de prueba documentado y repetible \cite{iso29119_2_2021}.
 
 La evidencia se ejecutó en \texttt{servidor-proyectos} sobre el SHA
 \texttt{a47f0441f644bea5f52944b7a11216f37b2242de}, con Locust 2.31.6 y Python
-3.11.10. \texttt{iso25010.csv} contiene resultados procesados; los directorios
-\texttt{raw} conservan CSV canónicos, fallos, excepciones, logs, metadata,
+3.11.10. El protocolo está en
+\path{../../experimentos/protocolo-e4.md};
+\path{../../experimentos/resultados/iso25010.csv} contiene resultados
+procesados y \path{../../experimentos/resultados/raw} conserva CSV canónicos,
+fallos, excepciones, logs, metadata,
 consultas y respuestas Prometheus, salud y estadísticas de contenedores. Los
 historiales completos y HTML voluminosos permanecen en la VM, circunstancia
 registrada en el resumen de evidencia.
 
-El manifiesto \texttt{SHA256SUMS} enumera 195 archivos. La verificación durante
+El manifiesto \path{../../experimentos/resultados/SHA256SUMS} enumera 195
+archivos. La verificación durante
 esta redacción confirmó 195 coincidencias, sin archivos ausentes ni hashes
 distintos. SHA-256 permite detectar alteraciones respecto del manifiesto, pero
 no constituye una firma ni prueba autenticidad por sí solo. La procedencia se
 apoya adicionalmente en metadata, timestamps, SHA probado y el documento
-\texttt{RESUMEN-ISO25010-E4.md}.
+\path{../../experimentos/resultados/RESUMEN-ISO25010-E4.md}.
 
 \subsection{Eficiencia nominal: 50 usuarios durante cinco minutos}
 \label{subsec:eficiencia-nominal}
@@ -267,22 +271,24 @@ solo características con evidencia disponible.
     \hline
     Disponibilidad & Observación temporal & $\geq99,5\%$ & Fiabilidad 0/10; sin horas válidas & NO CONCLUYENTE \\
     \hline
-    Mantenibilidad & Cobertura por componente & $\geq70\%$ & Backend y Web superan; Mobile 45,69\% de líneas & PARCIAL \\
+    Seguridad & JWT, RBAC y matriz de endpoints & Acceso autenticado y autorizado & Evidencia estática en \path{../../docs/iso25010/}; cobertura integral no demostrada & PARCIAL \\
     \hline
-    Mantenibilidad & Complejidad ciclomática & $<10$ & Configuración/evidencia acotada a Usuarios; sin reporte global reproducible & PARCIAL \\
+    Mantenibilidad & Cobertura y complejidad & $\geq70\%$; complejidad $<10$ & Gates actuales; medición versionada acotada a Usuarios y evidencia Mobile histórica bajo 70\% & PARCIAL \\
     \hline
-    Compatibilidad & Motores Web y Android & Chromium, Firefox, WebKit; API 26+ & Playwright en tres motores; minSdk 26, targetSdk 34 y emulador API 29 & CUMPLE en matriz declarada \\
+    Compatibilidad & Motores Web y Android & Chromium, Firefox, WebKit; API 26+ & Matriz y jobs configurados; sin artefacto actual consolidado de toda la matriz & PARCIAL \\
     \hline
   \end{tabular}
 \end{table}
 
-En mantenibilidad, los cinco módulos Backend y Web superan 70\%, pero Mobile no;
-por ello no se calcula un promedio global. Checkstyle limita complejidad a diez
-en Usuarios y existe un registro puntual de media 1,16 y máximo 6, pero no se
-conserva un reporte cuantitativo equivalente para todos los módulos. La
-complejidad se considera parcialmente evaluada. En compatibilidad, Playwright
-aporta evidencia de tres motores y Android declara API 26 o superior; esto no
-implica compatibilidad con todo navegador, fabricante o dispositivo existente.
+En seguridad, la matriz de endpoints y las configuraciones JWT/RBAC aportan
+evidencia estática, pero no justifican declarar cobertura total frente a todas
+las amenazas; por eso el resultado es parcial. En mantenibilidad existen gates
+de cobertura para Backend y Web, y una medición versionada de Usuarios con
+media ciclomática 1,16 y máximo 6; no hay un reporte cuantitativo equivalente y
+actual para todos los módulos, y la evidencia Mobile conservada permanece bajo
+70\%. En compatibilidad, Playwright configura tres motores y Android declara
+API 26 o superior, pero la configuración no sustituye un artefacto consolidado
+de ejecución actual ni implica compatibilidad universal.
 
 \subsection{Análisis crítico}
 \label{subsec:analisis-critico-final}
@@ -300,6 +306,101 @@ demostrada. A ello se suman el panel Mobile proxy, falta de rollback automático
 ausencia de Pact Broker, Testcontainers no uniforme y artefactos de calidad no
 persistidos para todos los componentes. Estas restricciones se documentan como
 amenazas a la generalización, no se ocultan mediante promedios o extrapolaciones.
+
+\subsection{Reflexión ética}
+\label{subsec:reflexion-etica}
+
+SCLI trata perfiles de estudiantes y docentes, asignaciones institucionales,
+reservas, incidentes y registros de asistencia. Aunque el sistema no está
+integrado con la matrícula académica oficial ni con fuentes externas de la
+universidad, estos datos internos permiten inferir presencia, horarios y
+actividad. Por ello deben recopilarse únicamente los atributos necesarios para
+operar el laboratorio, limitarse su conservación al propósito declarado y
+evitar que observabilidad o logs repliquen credenciales, tokens o información
+personal innecesaria.
+
+La trazabilidad de aprobaciones y asistencia favorece la rendición de cuentas,
+pero también puede convertirse en vigilancia excesiva si se usa para finalidades
+distintas de las informadas. El control por roles reduce exposición, sin
+eliminar la obligación de revisar periódicamente permisos y accesos. Las
+métricas deben agregarse cuando sea posible y no utilizarse para elaborar
+perfiles personales de productividad. Estas decisiones siguen los principios
+de privacidad, prevención del daño, honestidad y responsabilidad profesional
+del Código de Ética de la ACM \cite{acm2018code}.
+
+Las decisiones académicas o disciplinarias no deben automatizarse a partir de
+una ausencia, alerta o métrica aislada. SCLI aporta evidencia operacional; una
+persona responsable debe verificar contexto, errores de identificación,
+indisponibilidad técnica y reglas institucionales antes de actuar. El equipo
+mantiene responsabilidad sobre diseño, validación y comunicación de
+limitaciones, incluida la ausencia de integración con registros académicos
+oficiales.
+
+\subsection{Declaración de uso de inteligencia artificial generativa}
+\label{subsec:declaracion-ia}
+
+Durante el desarrollo y la redacción se empleó inteligencia artificial
+generativa como herramienta de apoyo. El código y el texto resultantes fueron
+revisados por integrantes del equipo y contrastados con el repositorio, las
+pruebas y la evidencia disponible. Una salida generada por IA no se considera
+por sí sola evidencia experimental: los resultados reportados proceden de los
+archivos de protocolo, datos crudos, resúmenes y verificaciones versionadas. La
+selección técnica, la interpretación de resultados y la responsabilidad final
+corresponden al equipo FUVV; no se atribuye a la herramienta autoría ni decisión
+autónoma.
+
+\subsection{Amenazas a la validez}
+\label{subsec:amenazas-validez}
+
+\subsubsection{Validez interna}
+
+\textbf{Amenaza:} calentamiento de JVM, cachés y recursos compartidos entre
+contenedores pueden alterar la latencia. \textbf{Efecto:} diferencias entre
+repeticiones que no provienen del cambio evaluado. \textbf{Mitigación aplicada:}
+protocolo previo, diez repeticiones nominales, conservación de r1 y r10 y uso
+uniforme de r2--r9 para el análisis central. \textbf{Riesgo residual:} no se
+aislaron por completo CPU, red, cachés ni pausas del runtime en el host.
+
+\textbf{Amenaza:} la fiabilidad temporal quedó sin ejecutar.
+\textbf{Efecto:} una tasa puntual de 5xx podría interpretarse erróneamente como
+disponibilidad. \textbf{Mitigación aplicada:} se conserva explícitamente el
+resultado 0/10 y no se calcula disponibilidad. \textbf{Riesgo residual:} la
+fiabilidad de diez ejecuciones de una hora sigue siendo desconocida.
+
+\subsubsection{Validez externa}
+
+\textbf{Amenaza:} la evidencia procede de una VM y un conjunto de datos y carga
+controlados, no de una instalación distribuida representativa de todas las
+condiciones institucionales. \textbf{Efecto:} p95, p99 y tasa de errores pueden
+cambiar con otra red, hardware, volumen o distribución de usuarios.
+\textbf{Mitigación aplicada:} se documentan versión, SHA, herramientas,
+parámetros y datos crudos para repetir el escenario. \textbf{Riesgo residual:}
+los resultados solo se generalizan al escenario medido.
+
+\textbf{Amenaza:} el número de escenarios de carga y compatibilidad es limitado.
+\textbf{Efecto:} pueden quedar combinaciones de navegador, dispositivo o
+contención sin observar. \textbf{Mitigación aplicada:} se usan tres motores Web,
+un emulador Android y una rampa exploratoria además del caso nominal.
+\textbf{Riesgo residual:} dispositivos reales, redes adversas y el experimento
+comparativo de arbitraje S0--S4 no fueron ejecutados en esta evidencia.
+
+\subsubsection{Validez de constructo}
+
+\textbf{Amenaza:} Locust y Prometheus miden latencia en puntos diferentes, y el
+panel Mobile utiliza un proxy del Gateway. \textbf{Efecto:} tratar las métricas
+como equivalentes sobreestimaría la experiencia E2E o escondería latencia de
+red y renderizado. \textbf{Mitigación aplicada:} se reportan por separado y se
+explica el punto de medición. \textbf{Riesgo residual:} no existe medición E2E
+real desde el dispositivo.
+
+\textbf{Amenaza:} cobertura, número de pruebas y configuración del pipeline no
+equivalen por sí solos a calidad completa. \textbf{Efecto:} declarar
+cumplimiento por conteo puede omitir seguridad, concurrencia o comportamiento
+semántico. \textbf{Mitigación aplicada:} se combinan pruebas unitarias,
+contratos, integración, E2E y evidencia experimental, y las cifras variables se
+remiten al reporte del SHA. \textbf{Riesgo residual:} Seguridad,
+Compatibilidad y Mantenibilidad permanecen parciales donde falta evidencia
+integral actual.
 
 \subsection{Trazabilidad final de la Entrega 4}
 \label{subsec:trazabilidad-final}
@@ -319,13 +420,13 @@ amenazas a la generalización, no se ocultan mediante promedios o extrapolacione
     \hline
     D2.1 & SPA Web funcional y logout remoto & React, rutas, reservas, JWT y revocación & Aplicación Web & CUMPLE \\
     \hline
-    D2.2 & Calidad Web & 71/71; cobertura V8 sobre 70\%; Playwright & Pruebas Web & CUMPLE \\
+    D2.2 & Calidad Web & Umbrales V8 al 70\%; Playwright en tres motores & Pruebas Web & Resultado por SHA en CI \\
     \hline
     D3.1 & Cliente Android & Compose/MVVM, Room, QR; incidentes locales y FCM no E2E & Aplicación Mobile & PARCIAL \\
     \hline
-    D3.2 & Calidad Mobile & 142/142 y siete instrumentadas; 45,69\% de líneas & Pruebas Mobile & PARCIAL \\
+    D3.2 & Calidad Mobile & Pruebas unitarias e instrumentadas; evidencia histórica de líneas 45,69\% & Pruebas Mobile & PARCIAL \\
     \hline
-    D4.1 & Contratos Pact & 15/15 consumidores; verificación Reservas/Usuarios & Pact & CUMPLE \\
+    D4.1 & Contratos Pact & Consumidores y verificadores versionados; resultado por SHA & Pact & EVIDENCIADO EN CI \\
     \hline
     D4.2 & Integración CockroachDB & Testcontainers, Flyway, cifrado e idempotencia & Testcontainers & CUMPLE \\
     \hline
@@ -353,9 +454,10 @@ dominio Académico y en capacidades Mobile sin backend remoto.
 
 La calidad cuenta con evidencia reproducible: pruebas unitarias, integración
 real con CockroachDB, Pact, Playwright, Android instrumentado, Locust y un
-pipeline que condiciona imágenes y despliegue. Backend y Web superan el umbral
-de cobertura; Mobile dispone de numerosos casos, pero su 45,69\% impide afirmar
-cumplimiento global.
+pipeline que condiciona imágenes y despliegue. Backend y Web tienen gates de
+cobertura configurados; la evidencia Mobile versionada permanece bajo 70\%, por
+lo que no se afirma cumplimiento global ni se atribuyen al HEAD cifras de un
+reporte anterior.
 
 La eficiencia nominal cumple el criterio p95, y las muestras centrales no
 registraron HTTP 5xx. Sin embargo, p99 y la rampa muestran colas largas. La fase
