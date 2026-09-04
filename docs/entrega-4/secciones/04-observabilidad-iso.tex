@@ -236,12 +236,14 @@ central ni sustituye el escenario nominal ISO.
 \subsection{Fiabilidad y disponibilidad: alcance no concluido}
 \label{subsec:fiabilidad-disponibilidad}
 
-El protocolo de fiabilidad preveía diez repeticiones de una hora con 50
-usuarios. No se ejecutó ninguna: \textbf{NO EJECUTADA --- 0/10}. La decisión de
-detenerse antes de esta fase está registrada por el HTTP 500 de la rampa, la alta
-variabilidad p99 y el límite superior p99 mayor que 750 ms. No se simularon horas,
-no se sustituyeron datos ausentes por cero y el analizador informa 0/8 muestras
-centrales completas.
+El protocolo de fiabilidad preveía diez repeticiones independientes de una hora
+con 50 usuarios. No se ejecutó ninguna: \textbf{NO EJECUTADA --- 0/10}. La
+campaña requiere al menos diez horas efectivas de observación continua, además
+de preparación, monitoreo, recolección y validación de evidencia; ese trabajo no
+se completó dentro de la ventana disponible de la entrega. Por integridad
+experimental no se reportan ejecuciones parciales, la prueba de cinco minutos ni
+la rampa como sustitutos. No se simularon horas, no se sustituyeron datos ausentes
+por cero y el analizador informa 0/8 muestras centrales completas.
 
 La tasa HTTP 5xx y la disponibilidad no son equivalentes. Para concluir que la
 disponibilidad es al menos 99,5\% se requiere una observación temporal válida y el
@@ -271,24 +273,28 @@ solo características con evidencia disponible.
     \hline
     Disponibilidad & Observación temporal & $\geq99,5\%$ & Fiabilidad 0/10; sin horas válidas & NO CONCLUYENTE \\
     \hline
-    Seguridad & JWT, RBAC y matriz de endpoints & Acceso autenticado y autorizado & Evidencia estática en \path{../../docs/iso25010/}; cobertura integral no demostrada & PARCIAL \\
+    Seguridad & JWT, RBAC y matriz de endpoints & Acceso autenticado y autorizado & 198 operaciones: 160 JWT, 145 con RBAC, 18 internas con API key y 63 con scope explícito & PARCIAL \\
     \hline
     Mantenibilidad & Cobertura y complejidad & $\geq70\%$; complejidad $<10$ & Gates actuales; medición versionada acotada a Usuarios y evidencia Mobile histórica bajo 70\% & PARCIAL \\
     \hline
-    Compatibilidad & Motores Web y Android & Chromium, Firefox, WebKit; API 26+ & Matriz y jobs configurados; sin artefacto actual consolidado de toda la matriz & PARCIAL \\
+    Compatibilidad & Motores Web y Android & Chromium, Firefox, WebKit; API 26+ & HEAD: E2E Web omitido; Android API 29 verde en push y rojo en PR paralelo & PARCIAL \\
     \hline
   \end{tabular}
 \end{table}
 
-En seguridad, la matriz de endpoints y las configuraciones JWT/RBAC aportan
-evidencia estática, pero no justifican declarar cobertura total frente a todas
-las amenazas; por eso el resultado es parcial. En mantenibilidad existen gates
-de cobertura para Backend y Web, y una medición versionada de Usuarios con
-media ciclomática 1,16 y máximo 6; no hay un reporte cuantitativo equivalente y
-actual para todos los módulos, y la evidencia Mobile conservada permanece bajo
-70\%. En compatibilidad, Playwright configura tres motores y Android declara
-API 26 o superior, pero la configuración no sustituye un artefacto consolidado
-de ejecución actual ni implica compatibilidad universal.
+En seguridad, la matriz actual inventaría 183 operaciones de controlador y 15
+Actuator. Se identifican 160 operaciones externas con JWT, 145 con RBAC
+explícito, 18 internas con API key y 63 con control de ámbito; estos conjuntos
+no son equivalentes ni justifican declarar cobertura total frente a todas las
+amenazas. Persisten limitaciones de scope documentadas en Agenda e Incidentes.
+En mantenibilidad existen gates de cobertura para Backend y Web; en el HEAD
+auditado Auth, Académico y Gateway los superaron, mientras Usuarios y Reservas
+no completaron \texttt{mvn verify}. Web registra 86,55\% de líneas y 70,33\%
+de ramas; Mobile conserva 45,69\% de líneas, bajo el objetivo de 70\%. En
+compatibilidad, Playwright configura tres motores, pero el job E2E del HEAD fue
+omitido al fallar gates Backend. Android declara API 26 o superior y el run de
+push ejecutó satisfactoriamente la suite instrumentada en API 29, aunque el run
+paralelo de PR falló. La configuración no implica compatibilidad universal.
 
 \subsection{Análisis crítico}
 \label{subsec:analisis-critico-final}
@@ -424,13 +430,13 @@ integral actual.
     \hline
     D3.1 & Cliente Android & Compose/MVVM, Room, QR; incidentes locales y FCM no E2E & Aplicación Mobile & PARCIAL \\
     \hline
-    D3.2 & Calidad Mobile & Pruebas unitarias e instrumentadas; evidencia histórica de líneas 45,69\% & Pruebas Mobile & PARCIAL \\
+    D3.2 & Calidad Mobile & Pruebas unitarias e instrumentadas; reporte del HEAD con líneas 45,69\% & Pruebas Mobile & PARCIAL \\
     \hline
     D4.1 & Contratos Pact & Consumidores y verificadores versionados; resultado por SHA & Pact & EVIDENCIADO EN CI \\
     \hline
     D4.2 & Integración CockroachDB & Testcontainers, Flyway, cifrado e idempotencia & Testcontainers & CUMPLE \\
     \hline
-    D5.1 & Pirámide de pruebas & Backend/Web sobre 70\%; Mobile bajo umbral & Estrategia de pruebas & PARCIAL \\
+    D5.1 & Pirámide de pruebas & Gates Backend/Web configurados; dos jobs Backend rojos y Mobile bajo 70\% en el HEAD & Estrategia de pruebas & PARCIAL \\
     \hline
     D5.2 & CI/CD con gates y SHA & Workflows, GHCR, APK, deployment; sin rollback y Actions por tag & CI/CD & PARCIAL \\
     \hline
@@ -455,7 +461,7 @@ dominio Académico y en capacidades Mobile sin backend remoto.
 La calidad cuenta con evidencia reproducible: pruebas unitarias, integración
 real con CockroachDB, Pact, Playwright, Android instrumentado, Locust y un
 pipeline que condiciona imágenes y despliegue. Backend y Web tienen gates de
-cobertura configurados; la evidencia Mobile versionada permanece bajo 70\%, por
+cobertura configurados; la evidencia Mobile del HEAD permanece bajo 70\%, por
 lo que no se afirma cumplimiento global ni se atribuyen al HEAD cifras de un
 reporte anterior.
 

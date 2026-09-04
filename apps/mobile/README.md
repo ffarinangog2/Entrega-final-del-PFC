@@ -37,11 +37,13 @@ features/
 (Retrofit) — o una estrategia combinada local+remota — se implementa detrás de
 esa misma interfaz sin tocar el ViewModel ni la UI.
 
-## Notificaciones push (Firebase) — configuración pendiente
+## Notificaciones push (Firebase) — implementación parcial
 
-El código de `features/notifications/` está listo pero **no va a funcionar
-hasta que se agregue configuración real de Firebase**, que no se puede generar
-sin acceso al proyecto de Firebase del equipo:
+El cliente recibe mensajes, presenta notificaciones y registra el token en el
+backend cuando existe una sesión autenticada. Reservas persiste esos dispositivos
+y dispone de un adaptador Firebase. La cadena completa **no funciona ni está
+validada E2E hasta que se agregue configuración real de Firebase**, que no se
+puede generar sin acceso al proyecto Firebase del equipo:
 
 1. Crear (o usar) un proyecto en [Firebase Console](https://console.firebase.google.com/)
    y registrar una app Android con `applicationId` = `ec.edu.uteq.scli.mobile`.
@@ -54,8 +56,12 @@ sin acceso al proyecto de Firebase del equipo:
 4. El plugin `com.google.gms.google-services` en `app/build.gradle.kts` se
    aplica automáticamente en cuanto detecta `google-services.json`; hasta
    entonces el build sigue funcionando sin Firebase.
-5. Falta además el lado servidor/backend que dispare los push — no es parte
-   de este scaffold.
+5. Configurar en Reservas `FIREBASE_ENABLED=true` y proporcionar
+   `FIREBASE_CREDENTIALS_BASE64` mediante el gestor de secretos del entorno, sin
+   versionar el JSON de cuenta de servicio.
+6. Ejecutar un evento real soportado (actualización de incidente, solicitud o
+   planificación) y conservar evidencia de recepción en un dispositivo con
+   Play Services. La existencia de tests unitarios no reemplaza esta prueba E2E.
 
 ## Settings del técnico
 

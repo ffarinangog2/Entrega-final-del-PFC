@@ -42,7 +42,9 @@ python -m locust -f tests/load/locustfile.py --headless --users 50 --spawn-rate 
 - 50 usuarios concurrentes.
 - Duración: 1 hora por repetición.
 - La misma carga de solo lectura y el mismo ritmo de incorporación de usuarios.
-- Criterio: porcentaje de respuestas HTTP 5xx menor que 1 %.
+- Criterio de error HTTP: porcentaje de respuestas HTTP 5xx menor que 1 %.
+- Repeticiones previstas: 10; repeticiones ejecutadas: 0.
+- Estado actual: **NO EJECUTADA / NO CONCLUYENTE**.
 
 ```powershell
 python -m locust -f tests/load/locustfile.py --headless --users 50 --spawn-rate 10 --run-time 1h --csv evidencia/fiabilidad-rNN --html evidencia/fiabilidad-rNN.html
@@ -50,6 +52,20 @@ python -m locust -f tests/load/locustfile.py --headless --users 50 --spawn-rate 
 
 `NN` se reemplaza por la repetición `01` a `10`. No se debe cambiar el host ni
 la carga entre repeticiones comparables.
+
+La campaña exige diez ejecuciones independientes de una hora, es decir, al
+menos diez horas efectivas de observación continua, además de preparación del
+entorno, monitoreo, recolección y validación de evidencia. No se completó dentro
+de la ventana disponible de la entrega. Por integridad experimental no se usan
+repeticiones parciales ni resultados del escenario de cinco minutos como
+sustitutos de la campaña de fiabilidad.
+
+El porcentaje HTTP 5xx mide respuestas fallidas respecto de solicitudes y no
+equivale a disponibilidad temporal. El objetivo de disponibilidad de 99,5 %
+requiere definir y observar tiempo apto frente a tiempo total durante las diez
+ventanas completas. Hasta contar con esa evidencia, tanto la fiabilidad temporal
+como la disponibilidad permanecen **NO CONCLUYENTES**; un valor 5xx menor que
+1 % por sí solo no demuestra disponibilidad mayor o igual que 99,5 %.
 
 ## Repetibilidad y validez
 
@@ -98,9 +114,11 @@ Para cada métrica y escenario, con las ocho observaciones válidas `x_i`:
 - IC 95 %: `x̄ ± t(0.975, 7) × s / sqrt(8)`, usando `t = 2.364624251`.
 
 La decisión es conservadora: eficiencia cumple cuando el límite superior del IC 95 %
-de p95 es menor que 500 ms; fiabilidad cumple cuando el límite superior del IC 95 %
-del porcentaje 5xx es menor que 1 %. El script `analizar_iso25010.py` aplica estas
-reglas y no calcula resultados con muestras incompletas.
+de p95 es menor que 500 ms. El analizador puede decidir únicamente el criterio
+acotado de tasa HTTP 5xx cuando el límite superior de su IC 95 % es menor que
+1 %; esa decisión no se etiqueta como disponibilidad. El script
+`analizar_iso25010.py` aplica estas reglas y no calcula resultados con muestras
+incompletas.
 
 ## Evidencia que debe conservarse
 

@@ -225,15 +225,23 @@ del dispositivo al registrar uno. Para Android~13 o superior solicita
 notificación configurado. Esta notificación local no debe confundirse con una
 comunicación de servidor.
 
-Existe una preparación para Firebase Cloud Messaging: la dependencia está
-declarada, el servicio recibe mensajes y crea notificaciones, y
-\texttt{onNewToken} reconoce una renovación del registro. Sin embargo, el plugin
-de Google Services solo se aplica cuando existe \texttt{google-services.json},
-archivo que no está versionado. Tampoco existe endpoint backend para registrar
-el dispositivo ni un emisor que produzca mensajes. En consecuencia, FCM se
-clasifica como preparado, pero no operativo de extremo a extremo. Como medida
-de protección, el valor del token FCM no se escribe en los registros; solo se
-informa que se recibió uno nuevo.
+La integración de Firebase Cloud Messaging abarca más que una preparación del
+cliente. Android recibe mensajes, crea notificaciones y conserva las
+renovaciones de token hasta registrarlas mediante
+\texttt{/api/v1/notificaciones/dispositivos}. Reservas persiste dispositivos por
+perfil, dispone de un adaptador Firebase condicionado por
+\texttt{FIREBASE\_ENABLED} y emite eventos de solicitud, incidente y
+planificación. El token no se escribe en logs y los fallos de entrega no revierten
+la operación de negocio.
+
+No obstante, \texttt{google-services.json} no está versionado y el despliegue no
+aporta en el repositorio credenciales Firebase reales, como corresponde a
+secretos. Tampoco existe evidencia conservada de la cadena completa evento
+backend $\rightarrow$ Firebase $\rightarrow$ dispositivo con Play Services
+$\rightarrow$ notificación recibida. Por ello FCM está
+\textbf{implementado parcialmente y pendiente de validación E2E}; no se declara
+operativo extremo a extremo. Además, los disparadores encontrados no incluyen
+todos los eventos posibles del dominio, por ejemplo la apertura de asistencia.
 
 \subsection{Integración de clientes y servicios}
 \label{subsec:integracion-clientes}
