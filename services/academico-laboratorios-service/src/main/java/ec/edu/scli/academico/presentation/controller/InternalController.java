@@ -109,22 +109,36 @@ public class InternalController {
         }
         return ResponseEntity.ok(periodoLectivoService.verificarExistencia(id));
     }
+
     @GetMapping("/periodos-lectivos/{id}")
-    public ResponseEntity<PeriodoLectivoResponse> periodoLectivo(@PathVariable UUID id,
-            @RequestHeader(value = "X-Internal-Api-Key", required = false) String apiKey) {
-        if (!esApiKeyValida(apiKey)) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+    public ResponseEntity<PeriodoLectivoResponse> periodoLectivo(
+            @PathVariable UUID id,
+            @RequestHeader(value = "X-Internal-Api-Key", required = false) String apiKey
+    ) {
+        if (!esApiKeyValida(apiKey)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
         return ResponseEntity.ok(periodoLectivoService.obtenerPorId(id));
     }
+
     @GetMapping("/periodos-lectivos/actual/contexto")
-    public ResponseEntity<PeriodoLectivoResponse> periodoActual(@RequestHeader(value="X-Internal-Api-Key",required=false) String apiKey){
-        if(!esApiKeyValida(apiKey))return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+    public ResponseEntity<PeriodoLectivoResponse> periodoActual(
+            @RequestHeader(value = "X-Internal-Api-Key", required = false) String apiKey
+    ) {
+        if (!esApiKeyValida(apiKey)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
         return ResponseEntity.ok(periodoLectivoService.obtenerActual());
     }
 
     @GetMapping("/carreras/{id}/estado")
-    public ResponseEntity<CarreraEstadoResponse> estadoCarrera(@PathVariable UUID id,
-            @RequestHeader(value="X-Internal-Api-Key",required=false) String apiKey) {
-        if (!esApiKeyValida(apiKey)) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+    public ResponseEntity<CarreraEstadoResponse> estadoCarrera(
+            @PathVariable UUID id,
+            @RequestHeader(value = "X-Internal-Api-Key", required = false) String apiKey
+    ) {
+        if (!esApiKeyValida(apiKey)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
         try {
             var carrera = carreraService.obtenerPorId(id);
             return ResponseEntity.ok(new CarreraEstadoResponse(id, true, Boolean.TRUE.equals(carrera.activo())));

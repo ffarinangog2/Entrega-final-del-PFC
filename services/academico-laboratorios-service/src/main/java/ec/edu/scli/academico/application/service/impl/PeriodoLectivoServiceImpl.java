@@ -4,7 +4,6 @@ import ec.edu.scli.academico.application.service.PeriodoLectivoService;
 import ec.edu.scli.academico.domain.model.PeriodoLectivo;
 import ec.edu.scli.academico.domain.port.PeriodoLectivoRepositoryPort;
 import ec.edu.scli.academico.dto.internal.ExisteResponse;
-import ec.edu.scli.academico.enums.EstadoPeriodo;
 import ec.edu.scli.academico.domain.exception.ConflictException;
 import ec.edu.scli.academico.domain.exception.ResourceNotFoundException;
 import ec.edu.scli.academico.presentation.dto.periodolectivo.PeriodoLectivoRequest;
@@ -120,19 +119,27 @@ public class PeriodoLectivoServiceImpl implements PeriodoLectivoService {
     }
 
     private void validarUnidadYSolapamiento(PeriodoLectivoRequest request, UUID idActual) {
-        if (request.cicloAcademico() == null) return; // compatibilidad de registros históricos
+        if (request.cicloAcademico() == null) {
+            return; // compatibilidad de registros históricos
+        }
         var existentes = periodoLectivoRepositoryPort.buscar(null, Pageable.unpaged()).getContent();
         boolean duplicado = existentes.stream().filter(p -> !p.getId().equals(idActual)).anyMatch(p ->
                 Objects.equals(p.getCicloAcademico(), request.cicloAcademico())
                         && anio(p.getPpaNombre()).equals(anio(request.ppaNombre())));
-        if (duplicado) throw new ConflictException("Ya existe el tipo académico para ese año");
+        if (duplicado) {
+            throw new ConflictException("Ya existe el tipo académico para ese año");
+        }
         boolean solapa = existentes.stream().filter(p -> !p.getId().equals(idActual)).anyMatch(p ->
                 !request.fechaFin().isBefore(p.getFechaInicio()) && !request.fechaInicio().isAfter(p.getFechaFin()));
-        if (solapa) throw new ConflictException("Las fechas se solapan con otro período académico");
+        if (solapa) {
+            throw new ConflictException("Las fechas se solapan con otro período académico");
+        }
     }
 
     private String anio(String valor) {
-        if (valor == null) return "";
+        if (valor == null) {
+            return "";
+        }
         return valor.replaceAll(".*?(\\d{4}-\\d{4}).*", "$1");
     }
 
