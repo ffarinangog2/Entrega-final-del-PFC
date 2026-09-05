@@ -3,12 +3,15 @@ package ec.edu.scli.reservas.experimental.infrastructure;
 import ec.edu.scli.reservas.experimental.domain.SolicitudArbitraje;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionStatus;
 
+import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -34,6 +37,20 @@ class JdbcExperimentalAllocationStoreTest {
     void directaInsertaSinConsultarConflictos() {
         assertEquals("CONFIRMED", store.directa(solicitud, "s0").estado());
         verify(jdbc).update(contains("INSERT INTO scli_experimental.allocations"), any(Object[].class));
+    }
+
+    @Test
+    void directaConvierteInstantesATimestampParaCompatibilidadJdbc() {
+        store.directa(solicitud, "s0");
+        ArgumentCaptor<Object[]> captor = ArgumentCaptor.forClass(Object[].class);
+        verify(jdbc).update(contains("INSERT INTO scli_experimental.allocations"), captor.capture());
+        Object[] args = captor.getValue();
+        // starts_at (idx 5), ends_at (idx 6) y created_at (idx 9) deben ser java.sql.Timestamp para PostgreSQL/CockroachDB
+        assertInstanceOf(Timestamp.class, args[5], "starts_at debe ser Timestamp para evitar PSQLException");
+        assertInstanceOf(Timestamp.class, args[6], "ends_at debe ser Timestamp para evitar PSQLException");
+        assertInstanceOf(Timestamp.class, args[9], "created_at debe ser Timestamp para evitar PSQLException");
+        assertFalse(Arrays.stream(args).anyMatch(arg -> arg instanceof Instant),
+                "Ningún argumento debe ser Instant directo en JDBC");
     }
 
     @Test
