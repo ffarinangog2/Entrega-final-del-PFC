@@ -5,10 +5,11 @@ import ec.edu.scli.reservas.infrastructure.persistence.repository.DispositivoNot
 import ec.edu.scli.reservas.presentation.dto.request.RegistrarDispositivoRequest;
 import org.junit.jupiter.api.*; import org.junit.jupiter.api.extension.ExtendWith; import org.mockito.*; import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.*; import static org.junit.jupiter.api.Assertions.*; import static org.mockito.Mockito.*;
+import ec.edu.scli.reservas.infrastructure.persistence.repository.NotificacionInternaJpaRepository; import ec.edu.scli.reservas.infrastructure.persistence.entity.NotificacionInternaJpaEntity;
 @ExtendWith(MockitoExtension.class)
 class NotificacionServiceTest {
- @Mock DispositivoNotificacionRepository repository; @Mock NotificationPort sender; NotificacionService service;
- @BeforeEach void init(){service=new NotificacionService(repository,sender);}
+ @Mock DispositivoNotificacionRepository repository; @Mock NotificationPort sender; @Mock NotificacionInternaJpaRepository bandeja; NotificacionService service;
+ @BeforeEach void init(){service=new NotificacionService(repository,sender,bandeja);}
  @Test void registrarAsociaIdentidadAutenticadaYReactivaToken(){UUID user=UUID.randomUUID(),profile=UUID.randomUUID();var e=new DispositivoNotificacionJpaEntity();
   when(repository.findByToken("token")).thenReturn(Optional.of(e));when(repository.saveAndFlush(e)).thenReturn(e);
   service.registrar(new RegistrarDispositivoRequest("token","ANDROID"),user,profile);
@@ -27,4 +28,6 @@ class NotificacionServiceTest {
   when(repository.findByTokenAndPerfilId("token",profile)).thenReturn(Optional.empty());
   assertDoesNotThrow(()->service.desregistrar("token",profile));verify(repository,never()).save(any());
  }
+ @Test void claveDeEventoEvitaDuplicados(){UUID perfil=UUID.randomUUID();when(bandeja.existsByClaveEvento("evento")).thenReturn(true);service.notificarPerfilIdempotente(perfil,"evento","t","c",Map.of());verify(bandeja,never()).save(any());verify(sender,never()).enviar(any(),any(),any(),any());}
+ @Test void lecturaEstaAisladaPorPerfil(){UUID id=UUID.randomUUID(),perfil=UUID.randomUUID();when(bandeja.findByIdAndPerfilId(id,perfil)).thenReturn(Optional.empty());assertThrows(NoSuchElementException.class,()->service.leer(id,perfil));}
 }

@@ -16,11 +16,14 @@ import ec.edu.scli.reservas.infrastructure.persistence.repository.ObservacionRev
 import ec.edu.scli.reservas.infrastructure.persistence.repository.PlanificacionAgregadaJpaRepository;
 import ec.edu.scli.reservas.infrastructure.persistence.repository.PlanificacionJpaRepository;
 import ec.edu.scli.reservas.infrastructure.persistence.repository.RevisionPlanificacionPisoJpaRepository;
+import ec.edu.scli.reservas.infrastructure.persistence.repository.ReservaSpringDataRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
 import java.time.LocalTime;
+import java.time.LocalDate;
+import ec.edu.scli.reservas.client.dto.PeriodoExternoResponse;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -41,6 +44,8 @@ class PlanificacionAgregadaServiceTest {
     private PoliticaAmbitoLaboratorio ambito;
     private PlanificacionAgregadaService service;
     private ObservacionRevisionPlanificacionJpaRepository observaciones;
+    private UsuariosClient usuarios;
+    private ReservaSpringDataRepository reservasOperativas;
     private final UUID perfil = UUID.randomUUID();
     private final UUID carrera = UUID.randomUUID();
 
@@ -54,15 +59,18 @@ class PlanificacionAgregadaServiceTest {
         academico = mock(AcademicoLaboratoriosClient.class);
         ambito = mock(PoliticaAmbitoLaboratorio.class);
         observaciones = mock(ObservacionRevisionPlanificacionJpaRepository.class);
+        usuarios = mock(UsuariosClient.class);
+        reservasOperativas = mock(ReservaSpringDataRepository.class);
         service = new PlanificacionAgregadaService(planes, bloques, revisiones, actores, contextos,
-                academico, ambito, mock(UsuariosClient.class), mock(NotificacionService.class),
-                observaciones);
+                academico, ambito, usuarios, mock(NotificacionService.class),
+                observaciones, reservasOperativas);
         when(actores.obtener()).thenReturn(new ActorAutenticado(perfil, Set.of("ROLE_COORDINADOR")));
         when(contextos.obtenerPorPerfilId(perfil)).thenReturn(
                 new ContextoInstitucional(true, true, false, false, false, null, List.of(carrera)));
         when(planes.saveAndFlush(any())).thenAnswer(invocation -> invocation.getArgument(0));
         when(revisiones.findByPlanificacionId(any())).thenReturn(List.of());
         when(observaciones.findByRevisionId(any())).thenReturn(List.of());
+        when(usuarios.obtenerAdministradoresPorPiso(any())).thenReturn(List.of(UUID.randomUUID()));
     }
 
     @Test
@@ -101,9 +109,9 @@ class PlanificacionAgregadaServiceTest {
         pendiente.setId(UUID.randomUUID()); pendiente.setPlanificacionId(planId); pendiente.setPisoId(UUID.randomUUID());
         pendiente.setEstado(EstadoRevisionPlanificacion.PENDIENTE);
         when(ambito.pisoGestionado()).thenReturn(piso);
-        when(revisiones.findByPlanificacionIdAndPisoId(planId, piso)).thenReturn(Optional.of(propia));
+        when(revisiones.findByPlanificacionIdAndPisoIdAndVigenteTrue(planId, piso)).thenReturn(Optional.of(propia));
         when(planes.findById(planId)).thenReturn(Optional.of(plan));
-        when(revisiones.findByPlanificacionId(planId)).thenReturn(List.of(propia, pendiente));
+        when(revisiones.findByPlanificacionIdAndVigenteTrue(planId)).thenReturn(List.of(propia, pendiente));
         when(revisiones.saveAndFlush(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
         service.aprobarPiso(planId);
@@ -156,7 +164,7 @@ class PlanificacionAgregadaServiceTest {
         revision.setPlanificacionId(planId);
         revision.setEstado(EstadoRevisionPlanificacion.PENDIENTE);
         when(planes.findById(planId)).thenReturn(Optional.of(plan));
-        when(revisiones.findByPlanificacionId(planId)).thenReturn(List.of(revision));
+        when(revisiones.findByPlanificacionIdAndVigenteTrue(planId)).thenReturn(List.of(revision));
         when(bloques.findByPlanificacionId(planId)).thenReturn(List.of(bloque));
 
         var response = service.retirar(planId);
@@ -164,8 +172,8 @@ class PlanificacionAgregadaServiceTest {
         assertThat(response.estado()).isEqualTo("BORRADOR");
         assertThat(response.bloques()).hasSize(1);
         assertThat(plan.getEnviadaEn()).isNull();
-        verify(observaciones).deleteByRevisionId(revision.getId());
-        verify(revisiones).deleteAll(List.of(revision));
+        assertThat(revision.getVigente()).isFalse();
+        verify(revisiones).saveAll(List.of(revision));
     }
 
     @Test
@@ -238,6 +246,15 @@ class PlanificacionAgregadaServiceTest {
                 .isEqualTo(plan.getId());
     }
 
+    @Test void listarExponeFinalizadaPorFechaSinPersistirCambios(){
+        var plan=plan(UUID.randomUUID(),EstadoPlanificacionAgregada.APROBADA);
+        when(actores.obtener()).thenReturn(new ActorAutenticado(perfil,Set.of("ROLE_ADMINISTRADOR")));
+        when(planes.findAll()).thenReturn(List.of(plan));when(bloques.findByPlanificacionId(plan.getId())).thenReturn(List.of());
+        when(academico.obtenerPeriodo(plan.getPeriodoId())).thenReturn(new PeriodoExternoResponse(plan.getPeriodoId(),"P","P",LocalDate.now().minusMonths(2),LocalDate.now().minusDays(1),"FINALIZADO","P","PPA",1));
+        assertThat(service.listar()).singleElement().extracting(x->x.estado()).isEqualTo("FINALIZADA");
+        assertThat(plan.getEstado()).isEqualTo(EstadoPlanificacionAgregada.APROBADA);verify(planes,never()).save(any());
+    }
+
     @Test
     void administradorPisoListaSoloPlanificacionDeSuAmbito() {
         UUID piso = UUID.randomUUID();
@@ -276,7 +293,7 @@ class PlanificacionAgregadaServiceTest {
         revision.setPisoId(piso);
         revision.setEstado(EstadoRevisionPlanificacion.PENDIENTE);
         when(ambito.pisoGestionado()).thenReturn(piso);
-        when(revisiones.findByPlanificacionIdAndPisoId(planId, piso))
+        when(revisiones.findByPlanificacionIdAndPisoIdAndVigenteTrue(planId, piso))
                 .thenReturn(Optional.of(revision));
         when(planes.findById(planId)).thenReturn(Optional.of(plan));
         when(revisiones.saveAndFlush(any())).thenAnswer(invocation -> invocation.getArgument(0));

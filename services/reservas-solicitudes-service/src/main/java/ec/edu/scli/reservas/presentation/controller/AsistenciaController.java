@@ -10,6 +10,7 @@ import ec.edu.scli.reservas.application.service.AsistenciaService; import ec.edu
  @GetMapping("/sesiones/abiertas") public List<SesionAsistenciaResponse> abiertas(Principal p){return service.sesionesAbiertas(id(p));}
  @GetMapping("/mi-horario") public List<PlanificacionResponse> horario(@RequestParam(required=false) UUID periodoId,Principal p){return service.horario(id(p),periodoId);}
  @GetMapping("/mis-clases-hoy") public List<PlanificacionResponse> clasesHoy(Principal p){return service.clasesDocenteHoy(id(p));}
+ @GetMapping("/mi-horario-docente") public List<PlanificacionResponse> horarioDocente(@RequestParam(required=false) UUID periodoId,Principal p){return service.horarioDocente(id(p),periodoId);}
  @PostMapping("/sesiones/{id}/registro-propio") public ResponseEntity<RegistroAsistenciaResponse> registrarPropia(@PathVariable UUID id,Principal p){return ResponseEntity.status(HttpStatus.CREATED).body(service.registrarPropia(id,id(p)));}
  private UUID id(Principal p){return UUID.fromString(p.getName());}
 }

@@ -16,6 +16,8 @@ public class RevisionPlanificacionPisoJpaEntity {
     private UUID revisadaPorPerfilId;
     private Instant creadaEn;
     private Instant actualizadaEn;
+    private Integer ronda = 1;
+    private Boolean vigente = true;
     @Version private Long version;
     public UUID getId() { return id; }
     public void setId(UUID value) { id = value; }
@@ -33,4 +35,8 @@ public class RevisionPlanificacionPisoJpaEntity {
     public void setCreadaEn(Instant value) { creadaEn = value; }
     public Instant getActualizadaEn() { return actualizadaEn; }
     public void setActualizadaEn(Instant value) { actualizadaEn = value; }
+    public Integer getRonda() { return ronda; }
+    public void setRonda(Integer value) { ronda = value; }
+    public Boolean getVigente() { return vigente; }
+    public void setVigente(Boolean value) { vigente = value; }
 }

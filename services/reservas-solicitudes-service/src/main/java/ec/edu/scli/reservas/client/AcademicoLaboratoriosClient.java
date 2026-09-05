@@ -3,6 +3,7 @@ package ec.edu.scli.reservas.client;
 import ec.edu.scli.reservas.client.dto.ExisteExternoResponse;
 import ec.edu.scli.reservas.client.dto.LaboratorioExternoResponse;
 import ec.edu.scli.reservas.client.dto.MateriaContextoExternoResponse;
+import ec.edu.scli.reservas.client.dto.PeriodoExternoResponse;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -62,6 +63,10 @@ public class AcademicoLaboratoriosClient {
     public boolean existePeriodoLectivo(UUID periodoLectivoId) {
         ExisteExternoResponse response = verificarPeriodoLectivo(periodoLectivoId);
         return response != null && response.existe();
+    }
+    public PeriodoExternoResponse obtenerPeriodo(UUID periodoId) {
+        return executeWithReadRetries(() -> restClient.get().uri("/api/v1/internal/periodos-lectivos/{id}", periodoId)
+                .retrieve().body(PeriodoExternoResponse.class));
     }
 
     private <T> T executeWithReadRetries(Supplier<T> operation) {

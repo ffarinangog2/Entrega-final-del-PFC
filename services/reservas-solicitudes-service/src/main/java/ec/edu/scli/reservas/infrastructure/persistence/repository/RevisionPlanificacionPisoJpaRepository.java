@@ -9,4 +9,6 @@ import java.util.UUID;
 public interface RevisionPlanificacionPisoJpaRepository extends JpaRepository<RevisionPlanificacionPisoJpaEntity, UUID> {
     List<RevisionPlanificacionPisoJpaEntity> findByPlanificacionId(UUID planificacionId);
     Optional<RevisionPlanificacionPisoJpaEntity> findByPlanificacionIdAndPisoId(UUID planificacionId, UUID pisoId);
+    List<RevisionPlanificacionPisoJpaEntity> findByPlanificacionIdAndVigenteTrue(UUID planificacionId);
+    Optional<RevisionPlanificacionPisoJpaEntity> findByPlanificacionIdAndPisoIdAndVigenteTrue(UUID planificacionId, UUID pisoId);
 }

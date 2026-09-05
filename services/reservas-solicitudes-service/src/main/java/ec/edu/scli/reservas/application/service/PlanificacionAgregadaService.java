@@ -15,9 +15,11 @@ import ec.edu.scli.reservas.infrastructure.persistence.repository.PlanificacionA
 import ec.edu.scli.reservas.infrastructure.persistence.repository.PlanificacionJpaRepository;
 import ec.edu.scli.reservas.infrastructure.persistence.repository.RevisionPlanificacionPisoJpaRepository;
 import ec.edu.scli.reservas.infrastructure.persistence.repository.ObservacionRevisionPlanificacionJpaRepository;
+import ec.edu.scli.reservas.infrastructure.persistence.repository.ReservaSpringDataRepository;
 import ec.edu.scli.reservas.presentation.dto.request.ProponerCambioAgregadoRequest;
 import ec.edu.scli.reservas.presentation.dto.response.PlanificacionAgregadaResponse;
 import ec.edu.scli.reservas.presentation.dto.response.PlanificacionResponse;
+import ec.edu.scli.reservas.presentation.dto.response.DisponibilidadPlanificacionResponse;
 import ec.edu.scli.reservas.presentation.exception.ResourceNotFoundException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.access.AccessDeniedException;
@@ -25,11 +27,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.time.LocalTime;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import ec.edu.scli.reservas.domain.model.EstadoPlanificacion;
 
 @Service
 public class PlanificacionAgregadaService {
@@ -43,13 +49,15 @@ public class PlanificacionAgregadaService {
     private final UsuariosClient usuarios;
     private final NotificacionService notificaciones;
     private final ObservacionRevisionPlanificacionJpaRepository observaciones;
+    private final ReservaSpringDataRepository reservasOperativas;
 
     public PlanificacionAgregadaService(PlanificacionAgregadaJpaRepository planes,
             PlanificacionJpaRepository bloques, RevisionPlanificacionPisoJpaRepository revisiones,
             ActorActualPort actores, ContextoInstitucionalPort contextos,
             AcademicoLaboratoriosClient academico, PoliticaAmbitoLaboratorio ambitoLaboratorio,
             UsuariosClient usuarios, NotificacionService notificaciones,
-            ObservacionRevisionPlanificacionJpaRepository observaciones) {
+            ObservacionRevisionPlanificacionJpaRepository observaciones,
+            ReservaSpringDataRepository reservasOperativas) {
         this.planes = planes;
         this.bloques = bloques;
         this.revisiones = revisiones;
@@ -60,6 +68,7 @@ public class PlanificacionAgregadaService {
         this.usuarios = usuarios;
         this.notificaciones = notificaciones;
         this.observaciones = observaciones;
+        this.reservasOperativas = reservasOperativas;
     }
 
     @Transactional
@@ -101,6 +110,19 @@ public class PlanificacionAgregadaService {
         throw new AccessDeniedException("No puede consultar planificaciones agregadas");
     }
 
+    @Transactional(readOnly = true)
+    public DisponibilidadPlanificacionResponse disponibilidad(UUID planificacionId, UUID periodoId,
+            String dia, LocalTime horaInicio, LocalTime horaFin) {
+        coordinador();
+        if (horaInicio == null || horaFin == null || !horaInicio.isBefore(horaFin))
+            throw new IllegalArgumentException("La franja horaria no es valida");
+        var ocupacion = bloques.buscarOcupacionGlobal(planificacionId, periodoId, dia.toUpperCase(), horaInicio,
+                horaFin, List.of(EstadoPlanificacionAgregada.EN_REVISION, EstadoPlanificacionAgregada.APROBADA));
+        return new DisponibilidadPlanificacionResponse(
+                ocupacion.stream().map(PlanificacionJpaEntity::getDocenteId).filter(java.util.Objects::nonNull).distinct().toList(),
+                ocupacion.stream().map(PlanificacionJpaEntity::getLaboratorioId).distinct().toList());
+    }
+
     @Transactional
     public PlanificacionAgregadaResponse enviar(UUID id) {
         PlanificacionAgregadaJpaEntity plan = propia(id);
@@ -110,34 +132,45 @@ public class PlanificacionAgregadaService {
         }
         List<PlanificacionJpaEntity> items = bloques.findByPlanificacionId(id);
         if (items.isEmpty()) throw new IllegalStateException("La planificacion no contiene bloques");
-        validarConflictos(items);
+        validarOcupacionOficial(plan, items);
         Set<UUID> pisos = new LinkedHashSet<>();
         for (PlanificacionJpaEntity item : items) {
             var laboratorio = academico.obtenerLaboratorio(item.getLaboratorioId());
-            if (laboratorio == null || !laboratorio.existe() || !laboratorio.activo()) {
+            if (laboratorio == null || !laboratorio.existe() || !laboratorio.activo()
+                    || !"DISPONIBLE".equalsIgnoreCase(laboratorio.estado())) {
                 throw new IllegalStateException("Un laboratorio de la planificacion no esta disponible");
             }
             pisos.add(laboratorio.pisoId());
         }
         Instant ahora = Instant.now();
         List<RevisionPlanificacionPisoJpaEntity> anteriores = revisiones.findByPlanificacionId(id);
-        anteriores.forEach(item -> observaciones.deleteByRevisionId(item.getId()));
-        revisiones.deleteAll(anteriores);
+        int ronda = anteriores.stream().map(RevisionPlanificacionPisoJpaEntity::getRonda)
+                .filter(java.util.Objects::nonNull).max(Integer::compareTo).orElse(0) + 1;
+        anteriores.stream().filter(item -> Boolean.TRUE.equals(item.getVigente())).forEach(item -> item.setVigente(false));
+        revisiones.saveAll(anteriores);
         for (UUID pisoId : pisos) {
+            var administradores = usuarios.obtenerAdministradoresPorPiso(pisoId);
+            if (administradores.isEmpty()) {
+                throw new IllegalStateException("No existe administrador asignado al piso " + pisoId);
+            }
             RevisionPlanificacionPisoJpaEntity revision = new RevisionPlanificacionPisoJpaEntity();
             revision.setPlanificacionId(id);
             revision.setPisoId(pisoId);
             revision.setEstado(EstadoRevisionPlanificacion.PENDIENTE);
             revision.setCreadaEn(ahora);
             revision.setActualizadaEn(ahora);
+            revision.setRonda(ronda);
+            revision.setVigente(true);
             revisiones.save(revision);
-            usuarios.obtenerAdministradoresPorPiso(pisoId).forEach(perfilId ->
+            administradores.forEach(perfilId ->
                     notificaciones.notificarPerfil(perfilId,
                             "Nueva planificacion academica pendiente de revision",
                             "Revise la planificacion completa correspondiente a su piso",
                             java.util.Map.of("tipo", "PLANIFICACION", "planificacionId", id.toString())));
         }
         plan.setEstado(EstadoPlanificacionAgregada.EN_REVISION);
+        items.forEach(item -> item.setEstado(EstadoPlanificacion.ENVIADA));
+        bloques.saveAll(items);
         plan.setEnviadaEn(ahora);
         plan.setActualizadaEn(ahora);
         return map(planes.saveAndFlush(plan));
@@ -149,13 +182,15 @@ public class PlanificacionAgregadaService {
         if (plan.getEstado() != EstadoPlanificacionAgregada.EN_REVISION) {
             throw new IllegalStateException("Solo puede retirarse una planificacion en revision");
         }
-        List<RevisionPlanificacionPisoJpaEntity> actuales = revisiones.findByPlanificacionId(id);
+        List<RevisionPlanificacionPisoJpaEntity> actuales = revisiones.findByPlanificacionIdAndVigenteTrue(id);
         if (actuales.stream().anyMatch(item ->
                 item.getEstado() != EstadoRevisionPlanificacion.PENDIENTE)) {
             throw new IllegalStateException("La revision ya fue atendida por un piso");
         }
-        actuales.forEach(item -> observaciones.deleteByRevisionId(item.getId()));
-        revisiones.deleteAll(actuales);
+        actuales.forEach(item -> item.setVigente(false));
+        revisiones.saveAll(actuales);
+        bloques.findByPlanificacionId(id).stream().filter(item -> item.getEstado() == EstadoPlanificacion.ENVIADA)
+                .forEach(item -> item.setEstado(EstadoPlanificacion.BORRADOR));
         plan.setEstado(EstadoPlanificacionAgregada.BORRADOR);
         plan.setEnviadaEn(null);
         plan.setActualizadaEn(Instant.now());
@@ -166,21 +201,85 @@ public class PlanificacionAgregadaService {
     public PlanificacionAgregadaResponse aprobarPiso(UUID id) {
         ActorAutenticado actor = actores.obtener();
         UUID pisoId = ambitoLaboratorio.pisoGestionado();
-        RevisionPlanificacionPisoJpaEntity revision = revisiones.findByPlanificacionIdAndPisoId(id, pisoId)
+        RevisionPlanificacionPisoJpaEntity revision = revisiones.findByPlanificacionIdAndPisoIdAndVigenteTrue(id, pisoId)
                 .orElseThrow(() -> new AccessDeniedException("La planificacion no corresponde a su piso"));
         revision.setEstado(EstadoRevisionPlanificacion.APROBADA);
         revision.setRevisadaPorPerfilId(actor.perfilId());
         revision.setActualizadaEn(Instant.now());
         revisiones.saveAndFlush(revision);
         PlanificacionAgregadaJpaEntity plan = obtener(id);
-        if (revisiones.findByPlanificacionId(id).stream()
+        if (revisiones.findByPlanificacionIdAndVigenteTrue(id).stream()
                 .allMatch(item -> item.getEstado() == EstadoRevisionPlanificacion.APROBADA)) {
+            List<PlanificacionJpaEntity> items = bloques.findByPlanificacionId(id);
+            validarConflictosGlobales(plan, items);
             plan.setEstado(EstadoPlanificacionAgregada.APROBADA);
             plan.setAprobadaEn(Instant.now());
             plan.setActualizadaEn(Instant.now());
             planes.saveAndFlush(plan);
+            items.stream().filter(item -> item.getEstado() != EstadoPlanificacion.CANCELADA)
+                    .forEach(item -> item.setEstado(EstadoPlanificacion.CONFIRMADA));
+            bloques.saveAll(items);
+            notificaciones.notificarPerfil(plan.getCoordinadorPerfilId(), "Planificacion aprobada",
+                    "Todos los pisos aprobaron la planificacion academica", java.util.Map.of("tipo", "PLANIFICACION_APROBADA", "planificacionId", id.toString()));
+            items.stream().map(PlanificacionJpaEntity::getDocenteId).filter(java.util.Objects::nonNull).distinct()
+                    .map(usuarios::obtenerDocentePorId).filter(java.util.Objects::nonNull).filter(d -> d.activo())
+                    .forEach(d -> notificaciones.notificarPerfil(d.perfilId(), "Horario academico disponible",
+                            "Una planificacion aprobada actualizo su horario", java.util.Map.of("tipo", "HORARIO_DOCENTE", "planificacionId", id.toString())));
         }
         return mapParaPiso(plan);
+    }
+
+    private void validarConflictosGlobales(PlanificacionAgregadaJpaEntity plan,
+            List<PlanificacionJpaEntity> items) {
+        List<EstadoPlanificacionAgregada> ocupantes = List.of(
+                EstadoPlanificacionAgregada.EN_REVISION,
+                EstadoPlanificacionAgregada.APROBADA);
+        for (PlanificacionJpaEntity item : items) {
+            List<PlanificacionJpaEntity> conflictos = bloques.bloquearConflictosGlobales(
+                    plan.getId(), plan.getPeriodoId(), item.getDocenteId(), item.getLaboratorioId(),
+                    item.getDiaSemana(), item.getHoraInicio(), item.getHoraFin(), ocupantes);
+            if (conflictos.stream().anyMatch(other -> item.getLaboratorioId().equals(other.getLaboratorioId()))) {
+                throw new IllegalStateException("El laboratorio ya se encuentra ocupado en esta franja");
+            }
+            if (item.getDocenteId() != null && conflictos.stream()
+                    .anyMatch(other -> item.getDocenteId().equals(other.getDocenteId()))) {
+                throw new IllegalStateException("El docente ya se encuentra asignado en esta franja");
+            }
+        }
+    }
+
+    /** Autoridad unica de disponibilidad para envio y cambios posteriores. */
+    public void validarOcupacionOficial(PlanificacionAgregadaJpaEntity plan, List<PlanificacionJpaEntity> items) {
+        validarConflictos(items);
+        validarConflictosGlobales(plan, items);
+        validarReservasOperativas(plan, items);
+        for (PlanificacionJpaEntity item : items) {
+            var laboratorio = academico.obtenerLaboratorio(item.getLaboratorioId());
+            if (laboratorio == null || !laboratorio.existe() || !laboratorio.activo()
+                    || !"DISPONIBLE".equalsIgnoreCase(laboratorio.estado())) {
+                throw new IllegalStateException("El laboratorio no esta operativo");
+            }
+        }
+    }
+
+    private void validarReservasOperativas(PlanificacionAgregadaJpaEntity plan, List<PlanificacionJpaEntity> items) {
+        var periodo = academico.obtenerPeriodo(plan.getPeriodoId());
+        if (periodo == null || periodo.fechaInicio() == null || periodo.fechaFin() == null) return;
+        for (PlanificacionJpaEntity item : items) {
+            for (LocalDate fecha = periodo.fechaInicio(); !fecha.isAfter(periodo.fechaFin()); fecha = fecha.plusDays(1)) {
+                if (dia(fecha).equals(item.getDiaSemana()) && reservasOperativas.contarConflictosActivos(
+                        item.getLaboratorioId(), fecha, item.getHoraInicio(), item.getHoraFin()) > 0) {
+                    throw new IllegalStateException("El laboratorio tiene una reserva operativa durante el periodo planificado");
+                }
+            }
+        }
+    }
+
+    private String dia(LocalDate fecha) {
+        return switch (fecha.getDayOfWeek()) {
+            case MONDAY -> "LUNES"; case TUESDAY -> "MARTES"; case WEDNESDAY -> "MIERCOLES";
+            case THURSDAY -> "JUEVES"; case FRIDAY -> "VIERNES"; case SATURDAY -> "SABADO"; case SUNDAY -> "DOMINGO";
+        };
     }
 
     @Transactional
@@ -196,7 +295,7 @@ public class PlanificacionAgregadaService {
     @Transactional
     public PlanificacionAgregadaResponse proponerCambio(UUID id, ProponerCambioAgregadoRequest request) {
         UUID pisoId = ambitoLaboratorio.pisoGestionado();
-        RevisionPlanificacionPisoJpaEntity revision = revisiones.findByPlanificacionIdAndPisoId(id, pisoId)
+        RevisionPlanificacionPisoJpaEntity revision = revisiones.findByPlanificacionIdAndPisoIdAndVigenteTrue(id, pisoId)
                 .orElseThrow(() -> new AccessDeniedException("La planificacion no corresponde a su piso"));
         PlanificacionJpaEntity bloque = bloques.findById(request.bloqueId())
                 .orElseThrow(() -> new ResourceNotFoundException("Bloque no encontrado"));
@@ -223,7 +322,7 @@ public class PlanificacionAgregadaService {
             String observacion) {
         ActorAutenticado actor = actores.obtener();
         UUID pisoId = ambitoLaboratorio.pisoGestionado();
-        RevisionPlanificacionPisoJpaEntity revision = revisiones.findByPlanificacionIdAndPisoId(id, pisoId)
+        RevisionPlanificacionPisoJpaEntity revision = revisiones.findByPlanificacionIdAndPisoIdAndVigenteTrue(id, pisoId)
                 .orElseThrow(() -> new AccessDeniedException("La planificacion no corresponde a su piso"));
         revision.setEstado(estado);
         revision.setObservacion(observacion);
@@ -232,7 +331,11 @@ public class PlanificacionAgregadaService {
         revisiones.saveAndFlush(revision);
         PlanificacionAgregadaJpaEntity plan = obtener(id);
         plan.setEstado(EstadoPlanificacionAgregada.REQUIERE_CAMBIOS);
+        bloques.findByPlanificacionId(id).stream().filter(item -> item.getEstado() != EstadoPlanificacion.CANCELADA)
+                .forEach(item -> item.setEstado(EstadoPlanificacion.PROPUESTA_CAMBIO));
         plan.setActualizadaEn(Instant.now());
+        notificaciones.notificarPerfil(plan.getCoordinadorPerfilId(), "Planificacion devuelta",
+                observacion, java.util.Map.of("tipo", "PLANIFICACION_DEVUELTA", "planificacionId", id.toString()));
         return planes.saveAndFlush(plan);
     }
 
@@ -304,14 +407,23 @@ public class PlanificacionAgregadaService {
                 .map(this::mapBlock).toList();
         var reviews = revisiones.findByPlanificacionId(plan.getId()).stream()
                 .map(item -> new PlanificacionAgregadaResponse.RevisionResponse(item.getId(), item.getPisoId(),
-                        item.getEstado().name(), item.getObservacion(), observaciones.findByRevisionId(item.getId())
+                        item.getEstado().name(), item.getObservacion(), item.getRonda(), Boolean.TRUE.equals(item.getVigente()),
+                        item.getRevisadaPorPerfilId(), item.getActualizadaEn(), observaciones.findByRevisionId(item.getId())
                                 .stream().map(value -> new PlanificacionAgregadaResponse.ObservacionResponse(
                                         value.getBloqueId(), value.getLaboratorioPropuestoId(),
                                         value.getObservacion())).toList()))
                 .toList();
         return new PlanificacionAgregadaResponse(plan.getId(), plan.getCarreraId(), plan.getPeriodoId(),
-                plan.getEstado().name(), plan.getCoordinadorPerfilId(), plan.getCreadaEn(), plan.getEnviadaEn(),
+                estadoEfectivo(plan).name(), plan.getCoordinadorPerfilId(), plan.getCreadaEn(), plan.getEnviadaEn(),
                 plan.getAprobadaEn(), mapped, reviews);
+    }
+
+    private EstadoPlanificacionAgregada estadoEfectivo(PlanificacionAgregadaJpaEntity plan) {
+        if (plan.getEstado() != EstadoPlanificacionAgregada.APROBADA) return plan.getEstado();
+        var periodo = academico.obtenerPeriodo(plan.getPeriodoId());
+        return periodo != null && periodo.fechaFin() != null
+                && periodo.fechaFin().isBefore(LocalDate.now(ZoneId.of("America/Guayaquil")))
+                ? EstadoPlanificacionAgregada.FINALIZADA : plan.getEstado();
     }
 
     private PlanificacionResponse mapBlock(PlanificacionJpaEntity item) {

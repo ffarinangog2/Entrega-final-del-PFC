@@ -1,0 +1,3 @@
+package ec.edu.scli.reservas.presentation.dto.response;
+import java.time.*; import java.util.*;
+public record SolicitudCambioResponse(UUID id,UUID planificacionId,UUID bloqueId,String tipo,String estado,String motivo,UUID solicitantePerfilId,UUID laboratorioAnteriorId,UUID laboratorioPropuestoId,UUID docenteAnteriorId,UUID docentePropuestoId,String diaAnterior,String diaPropuesto,LocalTime horaInicioAnterior,LocalTime horaInicioPropuesta,LocalTime horaFinAnterior,LocalTime horaFinPropuesta,String resolucion,Instant creadaEn,Instant resueltaEn,List<Revision> revisiones){ public record Revision(UUID pisoId,String estado,UUID revisorPerfilId,String observacion,Instant resueltaEn){} }

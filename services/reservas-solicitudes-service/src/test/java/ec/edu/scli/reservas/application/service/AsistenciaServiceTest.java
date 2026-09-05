@@ -54,6 +54,7 @@ class AsistenciaServiceTest {
     private PlanificacionJpaRepository bloques;
     private PlanificacionAgregadaJpaRepository planes;
     private UsuariosClient usuarios;
+    private NotificacionService notificaciones;
 
     @BeforeEach void preparar() {
         sesiones = mock(SesionAsistenciaJpaRepository.class);
@@ -63,11 +64,11 @@ class AsistenciaServiceTest {
         reservaRepository = mock(ReservaRepositoryPort.class);
         solicitudRepository = mock(SolicitudReservaRepositoryPort.class);
         academico = mock(AcademicoLaboratoriosClient.class);
-        bloques = mock(PlanificacionJpaRepository.class); planes = mock(PlanificacionAgregadaJpaRepository.class); usuarios=mock(UsuariosClient.class);
+        bloques = mock(PlanificacionJpaRepository.class); planes = mock(PlanificacionAgregadaJpaRepository.class); usuarios=mock(UsuariosClient.class);notificaciones=mock(NotificacionService.class);
         when(estudiantes.resolverEstudianteActivo(any())).thenAnswer(i -> i.getArgument(0));
         service = new AsistenciaService(sesiones, registros, reservas, estudiantes,
-                reservaRepository, solicitudRepository, academico, bloques, planes, usuarios, 15);
-        when(sesiones.save(any())).thenAnswer(i -> i.getArgument(0));
+                reservaRepository, solicitudRepository, academico, bloques, planes, usuarios, notificaciones, 15);
+        when(sesiones.save(any())).thenAnswer(i -> { SesionAsistenciaJpaEntity value=i.getArgument(0); if(value.getId()==null)value.setId(UUID.randomUUID()); return value; });
         when(registros.save(any())).thenAnswer(i -> i.getArgument(0));
     }
 
@@ -195,7 +196,9 @@ class AsistenciaServiceTest {
 
         when(sesiones.findFirstByBloquePlanificacionIdAndFechaClaseAndEstado(eq(bloqueId), any(), eq(EstadoSesionAsistencia.ABIERTA)))
                 .thenReturn(Optional.empty());
+        UUID estudiantePerfil=UUID.randomUUID();when(usuarios.obtenerEstudiantesCompatibles(plan.getCarreraId(),plan.getPeriodoId(),bloque.getNivel())).thenReturn(List.of(estudiantePerfil));
         assertThat(service.abrir(new AbrirSesionAsistenciaRequest(null, bloqueId), perfil).token()).isNotBlank();
+        verify(notificaciones).notificarPerfilIdempotente(eq(estudiantePerfil),contains("ASISTENCIA:"),eq("Asistencia disponible"),anyString(),anyMap());
     }
 
     @Test void sesionesAbiertasDescartanVencidasYContextosIncompletos() throws Exception {

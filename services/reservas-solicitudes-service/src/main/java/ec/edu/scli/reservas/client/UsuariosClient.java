@@ -84,6 +84,10 @@ public class UsuariosClient {
                 .retrieve().body(UUID[].class));
         return perfiles == null ? List.of() : List.of(perfiles);
     }
+    public List<UUID> obtenerEstudiantesCompatibles(UUID carreraId,UUID periodoId,Integer nivel){
+        UUID[] perfiles=executeWithReadRetries(()->restClient.get().uri(uri->uri.path("/api/v1/internal/estudiantes/compatibles").queryParam("carreraId",carreraId).queryParam("periodoId",periodoId).queryParam("nivel",nivel).build()).retrieve().body(UUID[].class));
+        return perfiles==null?List.of():List.of(perfiles);
+    }
 
     public boolean existeDocenteActivo(UUID perfilId) {
         PerfilExternoResponse response = obtenerPerfil(perfilId);

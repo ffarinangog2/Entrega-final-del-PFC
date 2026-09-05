@@ -11,6 +11,8 @@ import org.springframework.web.bind.annotation.*;
 import java.net.URI;
 import java.util.List;
 import java.util.UUID;
+import java.time.LocalTime;
+import ec.edu.scli.reservas.presentation.dto.response.DisponibilidadPlanificacionResponse;
 
 @RestController
 @RequestMapping("/api/v1/planificaciones-agregadas")
@@ -29,6 +31,13 @@ public class PlanificacionAgregadaController {
 
     @GetMapping
     public List<PlanificacionAgregadaResponse> listar() { return service.listar(); }
+
+    @GetMapping("/disponibilidad")
+    public DisponibilidadPlanificacionResponse disponibilidad(@RequestParam(required=false) UUID planificacionId,
+            @RequestParam UUID periodoId, @RequestParam String dia, @RequestParam LocalTime horaInicio,
+            @RequestParam LocalTime horaFin) {
+        return service.disponibilidad(planificacionId, periodoId, dia, horaInicio, horaFin);
+    }
 
     @PostMapping("/{id}/enviar")
     public PlanificacionAgregadaResponse enviar(@PathVariable UUID id) { return service.enviar(id); }

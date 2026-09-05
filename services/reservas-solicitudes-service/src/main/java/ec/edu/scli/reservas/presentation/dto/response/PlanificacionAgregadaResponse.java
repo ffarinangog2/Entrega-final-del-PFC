@@ -10,6 +10,7 @@ public record PlanificacionAgregadaResponse(
         Instant aprobadaEn, List<PlanificacionResponse> bloques,
         List<RevisionResponse> revisiones) {
     public record RevisionResponse(UUID id, UUID pisoId, String estado, String observacion,
+            Integer ronda, boolean vigente, UUID revisadaPorPerfilId, Instant actualizadaEn,
             List<ObservacionResponse> observaciones) { }
     public record ObservacionResponse(UUID bloqueId, UUID laboratorioPropuestoId, String observacion) { }
 }
