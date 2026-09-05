@@ -1,5 +1,6 @@
 package ec.edu.scli.academico.security;
 
+import ec.edu.scli.academico.application.service.CarreraService;
 import ec.edu.scli.academico.application.service.LaboratorioService;
 import ec.edu.scli.academico.application.service.MateriaService;
 import ec.edu.scli.academico.application.service.PeriodoLectivoService;
@@ -66,6 +67,9 @@ class AcademicoSecurityIntegrationTest {
 
     @MockitoBean
     private MateriaService materiaService;
+
+    @MockitoBean
+    private CarreraService carreraService;
 
     @MockitoBean
     private PoliticaAmbitoAcademico politicaAmbitoAcademico;

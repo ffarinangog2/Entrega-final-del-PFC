@@ -18,7 +18,8 @@ describe('apiClient central', () => {
     configureUnauthorizedHandler(refresh)
     vi.mocked(fetch).mockResolvedValueOnce(new Response(null, { status: 401 })).mockResolvedValueOnce(new Response(JSON.stringify({ ok: true }), { status: 200 }))
     await expect(apiRequest<{ ok: boolean }>('/api/v1/reservas')).resolves.toEqual({ ok: true })
-    expect(refresh).toHaveBeenCalledTimes(1); expect(fetch).toHaveBeenCalledTimes(2)
+    expect(refresh).toHaveBeenCalledTimes(1)
+    expect(fetch).toHaveBeenCalledTimes(2)
     expect(vi.mocked(fetch).mock.calls[1][1]?.headers).toMatchObject({ Authorization: 'Bearer fresh' })
   })
 
@@ -31,7 +32,11 @@ describe('apiClient central', () => {
 
   it.each([
     [404, { message: 'No encontrado' }, 'No encontrado'],
+    [404, {}, 'El recurso solicitado no existe.'],
+    [409, { message: 'Conflicto custom' }, 'Conflicto custom'],
     [409, {}, 'Existe un conflicto de disponibilidad o estado.'],
+    [423, { message: 'Bloqueado por intentos' }, 'Bloqueado por intentos'],
+    [423, {}, 'La cuenta está bloqueada temporalmente.'],
     [500, { message: 'detalle interno' }, 'Se produjo un error al procesar la solicitud.'],
     [400, {}, 'No se pudo completar la solicitud.'],
   ])('traduce el error HTTP %s de forma segura', async (status, body, message) => {

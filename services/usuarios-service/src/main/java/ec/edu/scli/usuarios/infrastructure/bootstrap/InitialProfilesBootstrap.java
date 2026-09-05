@@ -75,7 +75,26 @@ public class InitialProfilesBootstrap implements ApplicationRunner {
         var existente = administradores.findByPerfilId(profileId);
         if (existente.isPresent()) {
             var admin = existente.get();
-            if (!java.util.Objects.equals(admin.getPisoId(), pisoId)) { admin.setPisoId(pisoId); administradores.save(admin); }
+            boolean modificado = false;
+            if (!java.util.Objects.equals(admin.getPisoId(), pisoId)) {
+                admin.setPisoId(pisoId);
+                modificado = true;
+            }
+            if (!java.util.Objects.equals(admin.getCodigoAdministrador(), code)) {
+                admin.setCodigoAdministrador(code);
+                modificado = true;
+            }
+            if (!java.util.Objects.equals(admin.getCargo(), position)) {
+                admin.setCargo(position);
+                modificado = true;
+            }
+            if (!Boolean.TRUE.equals(admin.getActivo())) {
+                admin.setActivo(true);
+                modificado = true;
+            }
+            if (modificado) {
+                administradores.save(admin);
+            }
             return;
         }
         Administrador admin = new Administrador(); admin.setPerfil(perfiles.getReferenceById(profileId));
