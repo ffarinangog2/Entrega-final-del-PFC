@@ -24,6 +24,9 @@ export function obtenerHorariosDocente(docenteId: string) { return apiRequest<Ho
 export async function obtenerMaterias(): Promise<Materia[]> { return (await apiRequest<PageResponse<Materia>>('/api/v1/materias?size=100')).content }
 export function obtenerPeriodoActual() { return apiRequest<PeriodoLectivo>('/api/v1/periodos-lectivos/actual') }
 export async function obtenerPeriodos(): Promise<PeriodoLectivo[]> { return (await apiRequest<PageResponse<PeriodoLectivo>>('/api/v1/periodos-lectivos?size=100')).content }
+export type GuardarPeriodo={codigo:string;nombre:string;fechaInicio:string;fechaFin:string;estado:PeriodoLectivo['estado'];ppaCodigo:string;ppaNombre:string;cicloAcademico:1|2}
+export const crearPeriodo=(body:GuardarPeriodo)=>apiRequest<PeriodoLectivo>('/api/v1/periodos-lectivos',{method:'POST',body:JSON.stringify(body)})
+export const actualizarPeriodo=(id:string,body:GuardarPeriodo)=>apiRequest<PeriodoLectivo>(`/api/v1/periodos-lectivos/${encodeURIComponent(id)}`,{method:'PUT',body:JSON.stringify(body)})
 export async function obtenerCarreras():Promise<Carrera[]>{return (await apiRequest<PageResponse<Carrera>>('/api/v1/carreras?size=100')).content}
 export async function obtenerPisos(): Promise<Piso[]> { return (await apiRequest<PageResponse<Piso>>('/api/v1/pisos?size=100')).content }
 export async function obtenerCampus(): Promise<Campus[]> { return (await apiRequest<PageResponse<Campus>>('/api/v1/campus?size=100')).content }

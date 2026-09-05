@@ -44,6 +44,7 @@ function preparar(
   items: api.Planificacion[] = [base, segunda],
   estado: api.EstadoPlanificacionAgregada = 'BORRADOR',
 ) {
+  vi.mocked(api.obtenerDisponibilidadPlanificacion).mockResolvedValue({ docentesOcupados: [], laboratoriosOcupados: [] })
   const aggregate: api.PlanificacionAgregada = {
     id: 'aggregate-1',
     carreraId: 'carrera-1',

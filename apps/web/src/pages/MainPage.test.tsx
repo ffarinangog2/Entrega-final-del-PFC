@@ -54,6 +54,9 @@ describe('MainPage', () => {
         activo: true,
       },
     ])
+    vi.mocked(operational.obtenerMiHorarioDocente).mockResolvedValue([{
+      id: 'h-1', planificacionId: 'plan', nivel: 1, periodoId: 'p-1', carreraId: 'c-1', materiaId: 'm-1', docenteId: 'doc-1', laboratorioId: 'l-1', diaSemana: 'LUNES', horaInicio: '07:30', horaFin: '09:30', estado: 'CONFIRMADA', observacion: null, version: 0,
+    }])
     vi.mocked(academico.obtenerMaterias).mockResolvedValue([
       {
         id: 'm-1',
@@ -152,6 +155,7 @@ describe('MainPage', () => {
         version: 0,
       },
     ])
+    vi.mocked(operational.listarPlanificacionesAgregadas).mockResolvedValue([{ id: 'aggregate-1', carreraId: 'c-1', periodoId: 'periodo-1', estado: 'EN_REVISION', bloques: [{ id: 'p-1', periodoId: 'periodo-1', carreraId: 'c-1', materiaId: 'm-1', docenteId: 'd-1', laboratorioId: 'l-1', diaSemana: 'LUNES', horaInicio: '07:30', horaFin: '09:30', estado: 'ENVIADA', observacion: null, version: 0 }], revisiones: [] }])
     vi.mocked(academico.obtenerPeriodoActual).mockResolvedValue({
       id: 'periodo-1',
       codigo: '2026-B',
@@ -169,7 +173,7 @@ describe('MainPage', () => {
         activo: true,
       },
     ])
-    vi.mocked(academico.obtenerDocentes).mockResolvedValue([])
+    vi.mocked(academico.obtenerDocentesPlanificacion).mockResolvedValue([])
     render(
       <MemoryRouter>
         <MainPage />

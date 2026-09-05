@@ -84,6 +84,16 @@
   display: flex;
   align-items: center;
 }
+.academic-period-selector { position: relative; }
+.academic-period-selector summary { cursor: pointer; list-style: none; padding: .55rem .75rem; border: 1px solid var(--color-border-soft); border-radius: 7px; background: #fff; font-weight: 600; }
+.academic-period-selector__menu { position: absolute; z-index: 60; right: 0; top: calc(100% + .5rem); width: min(360px, 85vw); display: grid; gap: .45rem; padding: 1rem; border: 1px solid var(--color-border-soft); border-radius: 9px; background: #fff; box-shadow: 0 12px 30px rgb(0 0 0 / .16); }
+.academic-period-selector__menu input { padding: .65rem; border: 1px solid var(--color-border-soft); border-radius: 6px; }
+.academic-period-selector__menu button { display: flex; justify-content: space-between; gap: 1rem; padding: .65rem; border: 0; border-radius: 6px; background: transparent; text-align: left; }
+.academic-period-selector__menu button:hover, .academic-period-selector__menu button.is-selected { background: var(--color-bg); }
+.academic-period-selector__menu small { color: var(--color-text-user-muted); }
+.student-context-gate { max-width: 620px; display: grid; gap: 1rem; margin: 2rem auto; padding: 2rem; border: 1px solid var(--color-border-soft); border-radius: 10px; background: #fff; }
+.student-context-gate label { display: grid; gap: .4rem; font-weight: 600; }
+.student-context-gate input, .student-context-gate select { padding: .7rem; border: 1px solid var(--color-border-soft); border-radius: 6px; }
 
 .dashboard__identity {
   gap: 13px;

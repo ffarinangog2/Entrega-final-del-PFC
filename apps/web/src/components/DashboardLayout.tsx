@@ -6,6 +6,8 @@ import '../i18n'
 import { LogoutButton } from './LogoutButton'
 import '../pages/MainPage.css'
 import { StudentNotificationBell } from '../features/estudiante/StudentNotificationBell'
+import { AcademicPeriodSelector } from './AcademicPeriodSelector'
+import { StudentContextGate } from '../features/estudiante/StudentContextGate'
 
 export function DashboardLayout({
   breadcrumb,
@@ -72,7 +74,8 @@ export function DashboardLayout({
           </div>
         </div>
         <div className="dashboard__account">
-          {estudiante && <StudentNotificationBell />}
+          <StudentNotificationBell asistencia={estudiante} />
+          <AcademicPeriodSelector />
           <div className="dashboard__avatar" aria-hidden="true">
             {nombre.charAt(0).toUpperCase()}
           </div>
@@ -212,7 +215,7 @@ export function DashboardLayout({
           <div className="dashboard__breadcrumb">
             {t('dashboard.breadcrumbHome')} <span>/</span> {breadcrumb}
           </div>
-          {children}
+          {estudiante ? <StudentContextGate>{children}</StudentContextGate> : children}
         </main>
       </div>
     </div>

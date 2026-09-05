@@ -9,6 +9,7 @@ import { DashboardLayout } from '../../components/DashboardLayout'
 import * as academico from '../../services/academicoApi'
 import * as api from '../../services/operationalApi'
 import './CoordinadorPlanificacion.css'
+import { useAcademicPeriod } from '../../academicPeriod'
 
 const dias = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES'] as const
 const horas = Array.from(
@@ -41,6 +42,7 @@ const cicloHabilitado = (periodo?: academico.PeriodoLectivo) =>
   new Date(`${periodo!.fechaInicio}T00:00:00`).getTime() <= Date.now()
 
 export function CoordinadorPlanificacion() {
+  const { periodoSeleccionado } = useAcademicPeriod()
   const [items, setItems] = useState<api.Planificacion[]>([])
   const [plan, setPlan] = useState<api.PlanificacionAgregada | null>(null)
   const [planesAgregados, setPlanesAgregados] = useState<api.PlanificacionAgregada[]>([])
@@ -65,10 +67,23 @@ export function CoordinadorPlanificacion() {
   const [error, setError] = useState('')
   const [mensaje, setMensaje] = useState('')
   const [iniciado, setIniciado] = useState(false)
+  const [ocupacion, setOcupacion] = useState<api.DisponibilidadPlanificacion>({ docentesOcupados: [], laboratoriosOcupados: [] })
+  const [errorEditor, setErrorEditor] = useState('')
+  const [cambio, setCambio] = useState<api.Planificacion | null>(null)
+  const [tipoCambio, setTipoCambio] = useState<api.SolicitudCambio['tipo']>('LABORATORIO')
+  const [motivoCambio, setMotivoCambio] = useState('')
+  const [propuestaCambio, setPropuestaCambio] = useState({ laboratorioId:'',docenteId:'',diaSemana:'LUNES',horaInicio:'07:30',horaFin:'08:30' })
+  const [errorCambio,setErrorCambio]=useState('')
+
+  useEffect(() => {
+    if (!editorAbierto || !form.periodoId || !form.horaInicio || !form.horaFin) return
+    api.obtenerDisponibilidadPlanificacion({ planificacionId: plan?.id, periodoId: form.periodoId, dia: form.diaSemana, horaInicio: form.horaInicio, horaFin: form.horaFin })
+      .then(setOcupacion).catch(() => setOcupacion({ docentesOcupados: [], laboratoriosOcupados: [] }))
+  }, [editorAbierto, form.periodoId, form.diaSemana, form.horaInicio, form.horaFin, plan?.id])
 
   const cargar = useCallback(async () => {
     setCargando(true)
-    setError('')
+    setError(''); setErrorEditor('')
     try {
       const [planes, ciclos, materias, docentes, laboratorios, carreras] =
         await Promise.all([
@@ -91,18 +106,12 @@ export function CoordinadorPlanificacion() {
         throw new Error(
           'No se encontró la carrera institucional del coordinador.',
         )
-      const ciclosPpa = ciclos.filter(
-        (item) => item.ppaCodigo === 'REGULAR-2026-2027-PPA',
-      )
-      const cicloInicial = [...(ciclosPpa.length > 0 ? ciclosPpa : ciclos)]
-        .filter(cicloHabilitado)
-        .sort((left, right) => right.fechaInicio.localeCompare(left.fechaInicio))[0]
-      const cicloId = cicloInicial?.id || ciclosPpa[0]?.id || ciclos[0]?.id || ''
+      const cicloId = periodoSeleccionado?.id ?? ciclos[0]?.id ?? ''
       const periodo = ciclos.find((item) => item.id === cicloId)
       if (!periodo) throw new Error('No existe un ciclo académico disponible.')
       const planActual =
         planes.find((item) => item.periodoId === cicloId) ?? null
-      setPeriodos(ciclosPpa.length > 0 ? ciclosPpa : ciclos)
+      setPeriodos(ciclos)
       setPeriodoId(cicloId)
       setPlan(planActual)
       setPlanesAgregados(planes)
@@ -131,7 +140,7 @@ export function CoordinadorPlanificacion() {
     } finally {
       setCargando(false)
     }
-  }, [])
+  }, [periodoSeleccionado?.id])
   useEffect(() => {
     void cargar()
   }, [cargar])
@@ -154,7 +163,7 @@ export function CoordinadorPlanificacion() {
 
   function seleccionarPeriodo(id: string) {
     const periodo = periodos.find((item) => item.id === id)
-    if (!cicloHabilitado(periodo)) return
+    if (editorAbierto && !confirm('Hay una asignación sin guardar. ¿Cambiar de período y descartarla?')) return
     setPeriodoId(id)
     const actual = planesAgregados.find((item) => item.periodoId === id) ?? null
     setCatalogos((value) => ({ ...value, periodo }))
@@ -197,7 +206,7 @@ export function CoordinadorPlanificacion() {
     plan?.estado === 'EN_REVISION' ||
     plan?.estado === 'APROBADA' ||
     plan?.estado === 'FINALIZADA'
-  const cicloDisponible = cicloHabilitado(catalogos.periodo)
+  const cicloDisponible = catalogos.periodo?.estado !== 'FINALIZADO'
   const materia = (id: string) =>
     catalogos.materias.find((item) => item.id === id)
   const docente = (id: string | null) =>
@@ -261,19 +270,19 @@ export function CoordinadorPlanificacion() {
   }
   async function guardar(event: FormEvent) {
     event.preventDefault()
-    setError('')
+    setErrorEditor('')
     setMensaje('')
     if (
       form.horaInicio < '07:30' ||
       form.horaFin > '17:30' ||
       form.horaInicio >= form.horaFin
     ) {
-      setError('Seleccione un horario válido entre 07:30 y 17:30.')
+      setErrorEditor('Seleccione un horario válido entre 07:30 y 17:30.')
       return
     }
     const conflicto = conflictoLocal()
     if (conflicto) {
-      setError(conflicto)
+      setErrorEditor(conflicto)
       return
     }
     setGuardando(true)
@@ -297,7 +306,7 @@ export function CoordinadorPlanificacion() {
       setEditorAbierto(false)
       setEditandoId(null)
     } catch (cause) {
-      setError(
+      setErrorEditor(
         cause instanceof Error
           ? cause.message
           : 'No fue posible guardar la asignación.',
@@ -453,7 +462,7 @@ export function CoordinadorPlanificacion() {
                 />
               </label>
               <label>
-                Ciclo académico
+                Período de consulta
                 <select
                   value={periodoId}
                   onChange={(event) => seleccionarPeriodo(event.target.value)}
@@ -462,13 +471,9 @@ export function CoordinadorPlanificacion() {
                     <option
                       key={item.id}
                       value={item.id}
-                      disabled={!cicloHabilitado(item)}
+                      disabled={item.estado === 'FINALIZADO'}
                     >
-                      {item.cicloAcademico === 1
-                        ? 'Mayo–Septiembre'
-                        : item.cicloAcademico === 2
-                          ? 'Noviembre–Abril'
-                          : item.nombre}
+                      {item.nombre}
                     </option>
                   ))}
                 </select>
@@ -527,6 +532,7 @@ export function CoordinadorPlanificacion() {
                 <span>Bloques</span>
               </div>
             </section>
+            {materiasNivel.length === 0 && <p className="weekly-planning__empty">No existen materias configuradas para este nivel.</p>}
             {visibles.length === 0 && (
               <div className="weekly-planning__empty">
                 <p>La planificación todavía no tiene bloques.</p>
@@ -614,6 +620,7 @@ export function CoordinadorPlanificacion() {
                                       </button>
                                     </div>
                                   )}
+                                {plan?.estado === 'APROBADA' && <button onClick={()=>{setCambio(item);setTipoCambio('LABORATORIO');setMotivoCambio('');setErrorCambio('');setPropuestaCambio({laboratorioId:item.laboratorioId,docenteId:item.docenteId??'',diaSemana:item.diaSemana,horaInicio:item.horaInicio,horaFin:item.horaFin})}}>Solicitar cambio</button>}
                               </article>
                             ))}
                             {iniciado &&
@@ -666,6 +673,7 @@ export function CoordinadorPlanificacion() {
               <h2 id="assignment-title">
                 {editandoId ? 'Editar asignación' : 'Nueva asignación'}
               </h2>
+              {errorEditor && <p role="alert" className="operations__error">{errorEditor}</p>}
               <label>
                 Materia
                 <select
@@ -694,8 +702,8 @@ export function CoordinadorPlanificacion() {
                 >
                   <option value="">Seleccione un docente</option>
                   {catalogos.docentes.map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.codigoDocente ?? 'Docente institucional'}
+                    <option key={item.id} value={item.id} disabled={ocupacion.docentesOcupados.includes(item.id)}>
+                      {item.codigoDocente ?? 'Docente institucional'} — {ocupacion.docentesOcupados.includes(item.id) ? 'OCUPADO en esta franja' : 'DISPONIBLE'}
                     </option>
                   ))}
                 </select>
@@ -711,8 +719,8 @@ export function CoordinadorPlanificacion() {
                 >
                   <option value="">Seleccione un laboratorio</option>
                   {catalogos.laboratorios.map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.codigo} — {item.nombre}
+                    <option key={item.id} value={item.id} disabled={item.estado !== 'DISPONIBLE' || ocupacion.laboratoriosOcupados.includes(item.id)}>
+                      {item.codigo} — {item.nombre} · Capacidad {item.capacidad} — {item.estado !== 'DISPONIBLE' ? item.estado : ocupacion.laboratoriosOcupados.includes(item.id) ? 'OCUPADO en esta franja' : 'DISPONIBLE'}
                     </option>
                   ))}
                 </select>
@@ -820,6 +828,7 @@ export function CoordinadorPlanificacion() {
             </section>
           </div>
         )}
+        {cambio && <div className="planning-dialog" role="dialog" aria-modal="true" aria-labelledby="change-title"><form onSubmit={(event)=>{event.preventDefault();if(!plan)return;setErrorCambio('');void api.crearSolicitudCambio(plan.id,{bloqueId:cambio.id,tipo:tipoCambio,motivo:motivoCambio, ...(tipoCambio==='LABORATORIO'?{laboratorioId:propuestaCambio.laboratorioId}:{}),...(tipoCambio==='DOCENTE'?{docenteId:propuestaCambio.docenteId}:{}),...(tipoCambio==='HORARIO'?{diaSemana:propuestaCambio.diaSemana,horaInicio:propuestaCambio.horaInicio,horaFin:propuestaCambio.horaFin}:{})}).then(()=>{setCambio(null);setMensaje('Solicitud de cambio enviada para revisión.')}).catch(e=>setErrorCambio(e instanceof Error?e.message:'No fue posible crear la solicitud'))}}><h2 id="change-title">Solicitar cambio</h2><p>El horario aprobado seguirá vigente hasta que todos los pisos afectados autoricen la solicitud.</p>{errorCambio&&<p role="alert" className="operations__error">{errorCambio}</p>}<label>Tipo<select value={tipoCambio} onChange={e=>setTipoCambio(e.target.value as api.SolicitudCambio['tipo'])}><option value="LABORATORIO">Cambio de laboratorio</option><option value="HORARIO">Cambio de horario</option><option value="DOCENTE">Cambio de docente</option><option value="CANCELACION">Cancelación excepcional</option></select></label>{tipoCambio==='LABORATORIO'&&<label>Laboratorio propuesto<select required value={propuestaCambio.laboratorioId} onChange={e=>setPropuestaCambio({...propuestaCambio,laboratorioId:e.target.value})}>{catalogos.laboratorios.map(l=><option key={l.id} value={l.id} disabled={l.estado!=='DISPONIBLE'}>{l.codigo} — {l.estado}</option>)}</select></label>}{tipoCambio==='DOCENTE'&&<label>Docente propuesto<select required value={propuestaCambio.docenteId} onChange={e=>setPropuestaCambio({...propuestaCambio,docenteId:e.target.value})}>{catalogos.docentes.map(d=><option key={d.id} value={d.id}>{d.codigoDocente??'Docente institucional'}</option>)}</select></label>}{tipoCambio==='HORARIO'&&<><label>Día<select value={propuestaCambio.diaSemana} onChange={e=>setPropuestaCambio({...propuestaCambio,diaSemana:e.target.value})}>{dias.map(d=><option key={d}>{d}</option>)}</select></label><label>Hora inicio<input type="time" required value={propuestaCambio.horaInicio} onChange={e=>setPropuestaCambio({...propuestaCambio,horaInicio:e.target.value})}/></label><label>Hora fin<input type="time" required value={propuestaCambio.horaFin} onChange={e=>setPropuestaCambio({...propuestaCambio,horaFin:e.target.value})}/></label></>}<label className="planning-dialog__wide">Motivo<textarea required value={motivoCambio} onChange={e=>setMotivoCambio(e.target.value)}/></label><div className="planning-dialog__actions"><button type="button" onClick={()=>setCambio(null)}>Cancelar</button><button>Enviar solicitud</button></div></form></div>}
       </main>
     </DashboardLayout>
   )

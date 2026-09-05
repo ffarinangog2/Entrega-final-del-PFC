@@ -37,11 +37,16 @@ export interface GuardarPlanificacion {
   observacion: string
 }
 export type EstadoPlanificacionAgregada = 'BORRADOR' | 'EN_REVISION' | 'REQUIERE_CAMBIOS' | 'APROBADA' | 'FINALIZADA'
-export interface PlanificacionAgregada { id: string; carreraId: string; periodoId: string; estado: EstadoPlanificacionAgregada; bloques: Planificacion[]; revisiones: { id: string; pisoId: string; estado: string; observacion: string | null }[] }
+export interface PlanificacionAgregada { id: string; carreraId: string; periodoId: string; estado: EstadoPlanificacionAgregada; bloques: Planificacion[]; revisiones: { id: string; pisoId: string; estado: string; observacion: string | null; ronda?: number; vigente?: boolean; revisadaPorPerfilId?: string | null; actualizadaEn?: string }[] }
 export const listarPlanificacionesAgregadas = () => apiRequest<PlanificacionAgregada[]>('/api/v1/planificaciones-agregadas')
 export const iniciarPlanificacion = (periodoId: string) => apiRequest<PlanificacionAgregada>('/api/v1/planificaciones-agregadas', { method: 'POST', body: JSON.stringify({ periodoId }) })
 export const enviarPlanificacionCompleta = (id: string) => apiRequest<PlanificacionAgregada>(`/api/v1/planificaciones-agregadas/${encodeURIComponent(id)}/enviar`, { method: 'POST' })
 export const retirarPlanificacionCompleta = (id: string) => apiRequest<PlanificacionAgregada>(`/api/v1/planificaciones-agregadas/${encodeURIComponent(id)}/retirar`, { method: 'POST' })
+export interface DisponibilidadPlanificacion { docentesOcupados: string[]; laboratoriosOcupados: string[] }
+export const obtenerDisponibilidadPlanificacion = (params: { planificacionId?: string; periodoId: string; dia: string; horaInicio: string; horaFin: string }) => {
+  const query = new URLSearchParams(Object.entries(params).filter((entry): entry is [string, string] => Boolean(entry[1])))
+  return apiRequest<DisponibilidadPlanificacion>(`/api/v1/planificaciones-agregadas/disponibilidad?${query}`)
+}
 export const aprobarPlanificacionPiso = (id: string) => apiRequest<PlanificacionAgregada>(`/api/v1/planificaciones-agregadas/${encodeURIComponent(id)}/revisiones/mi-piso/aprobar`, { method: 'POST' })
 export const rechazarPlanificacionPiso = (id: string, observacion: string) => apiRequest<PlanificacionAgregada>(`/api/v1/planificaciones-agregadas/${encodeURIComponent(id)}/revisiones/mi-piso/rechazar`, { method: 'POST', body: JSON.stringify({ observacion }) })
 export const proponerCambioPlanificacionPiso = (id: string, body: { bloqueId: string; laboratorioPropuestoId?: string; observacion: string }) => apiRequest<PlanificacionAgregada>(`/api/v1/planificaciones-agregadas/${encodeURIComponent(id)}/revisiones/mi-piso/proponer-cambio`, { method: 'POST', body: JSON.stringify(body) })
@@ -115,6 +120,8 @@ export const abrirAsistenciaBloque = (bloqueId: string) =>
 export const obtenerClasesDocenteHoy = () => apiRequest<Planificacion[]>('/api/v1/asistencias/mis-clases-hoy')
 export const obtenerMiHorario = (periodoId?: string) =>
   apiRequest<Planificacion[]>(`/api/v1/asistencias/mi-horario${periodoId ? `?periodoId=${encodeURIComponent(periodoId)}` : ''}`)
+export const obtenerMiHorarioDocente = (periodoId?: string) =>
+  apiRequest<Planificacion[]>(`/api/v1/asistencias/mi-horario-docente${periodoId ? `?periodoId=${encodeURIComponent(periodoId)}` : ''}`)
 export const consultarAsistencia = (id: string) =>
   apiRequest<SesionAsistencia>(
     `/api/v1/asistencias/sesiones/${encodeURIComponent(id)}`,
@@ -142,6 +149,15 @@ export const registrarAsistenciaPropia = (id: string) =>
     `/api/v1/asistencias/sesiones/${encodeURIComponent(id)}/registro-propio`,
     { method: 'POST' },
   )
+export interface NotificacionInterna { id: string; titulo: string; cuerpo: string; tipo: string | null; referenciaId: string | null; leida: boolean; creadaEn: string }
+export const listarNotificaciones = () => apiRequest<NotificacionInterna[]>('/api/v1/notificaciones')
+export const marcarNotificacionLeida = (id: string) => apiRequest<NotificacionInterna>(`/api/v1/notificaciones/${encodeURIComponent(id)}/leer`, { method: 'POST' })
+export const marcarTodasNotificacionesLeidas = () => apiRequest<void>('/api/v1/notificaciones/leer-todas', { method: 'POST' })
+export interface SolicitudCambio { id:string; planificacionId:string; bloqueId:string; tipo:'LABORATORIO'|'HORARIO'|'DOCENTE'|'CANCELACION'; estado:'PENDIENTE'|'APROBADA'|'RECHAZADA'; motivo:string; laboratorioAnteriorId:string; laboratorioPropuestoId:string; docenteAnteriorId:string|null; docentePropuestoId:string|null; diaAnterior:string; diaPropuesto:string; horaInicioAnterior:string; horaInicioPropuesta:string; horaFinAnterior:string; horaFinPropuesta:string; creadaEn:string }
+export const listarSolicitudesCambio=(planId:string)=>apiRequest<SolicitudCambio[]>(`/api/v1/planificaciones-agregadas/${encodeURIComponent(planId)}/solicitudes-cambio`)
+export const crearSolicitudCambio=(planId:string,body:{bloqueId:string;tipo:SolicitudCambio['tipo'];motivo:string;laboratorioId?:string;docenteId?:string;diaSemana?:string;horaInicio?:string;horaFin?:string})=>apiRequest<SolicitudCambio>(`/api/v1/planificaciones-agregadas/${encodeURIComponent(planId)}/solicitudes-cambio`,{method:'POST',body:JSON.stringify(body)})
+export const aprobarSolicitudCambio=(planId:string,id:string,observacion='')=>apiRequest<SolicitudCambio>(`/api/v1/planificaciones-agregadas/${encodeURIComponent(planId)}/solicitudes-cambio/${encodeURIComponent(id)}/aprobar`,{method:'POST',body:JSON.stringify({observacion})})
+export const rechazarSolicitudCambio=(planId:string,id:string,observacion:string)=>apiRequest<SolicitudCambio>(`/api/v1/planificaciones-agregadas/${encodeURIComponent(planId)}/solicitudes-cambio/${encodeURIComponent(id)}/rechazar`,{method:'POST',body:JSON.stringify({observacion})})
 
 export interface Incidente {
   id: string

@@ -10,6 +10,8 @@ import {
 } from '../../services/academicoApi'
 import { obtenerCalendario, type Reserva } from './reservasApi'
 import './Reservas.css'
+import { useAcademicPeriod } from '../../academicPeriod'
+import { obtenerDisponibilidadPlanificacion } from '../../services/operationalApi'
 
 function inicioSemana(fecha: Date) {
   const copia = new Date(fecha)
@@ -23,6 +25,7 @@ function iso(fecha: Date) {
 }
 
 export function CalendarioReservasPage() {
+  const { periodoSeleccionado } = useAcademicPeriod()
   const { usuario } = useAuth()
   const coordinador = hasRole(usuario, 'COORDINADOR')
   const administrador = hasRole(usuario, 'ADMINISTRADOR')
@@ -30,17 +33,14 @@ export function CalendarioReservasPage() {
   const [reservas, setReservas] = useState<Reserva[]>([])
   const [laboratorios, setLaboratorios] = useState<Laboratorio[]>([])
   const [pisos, setPisos] = useState<Piso[]>([])
-  const [filtros, setFiltros] = useState({ piso: '', laboratorio: '' })
+  const [filtros, setFiltros] = useState({ piso: '', laboratorio: '', fecha: iso(new Date()), horaInicio: '07:30', horaFin: '08:30', capacidad: 0, estado: '' })
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [ocupadosPlan, setOcupadosPlan] = useState<string[]>([])
   const fin = new Date(inicio)
   fin.setDate(fin.getDate() + 6)
 
   useEffect(() => {
-    if (coordinador) {
-      setCargando(false)
-      return
-    }
     const hasta = new Date(inicio)
     hasta.setDate(hasta.getDate() + 6)
     setCargando(true)
@@ -62,8 +62,13 @@ export function CalendarioReservasPage() {
       .catch(() => setLaboratorios([]))
   }, [])
   useEffect(() => {
-    if (administrador) void obtenerPisos().then(setPisos).catch(() => setPisos([]))
-  }, [administrador])
+    if (administrador || coordinador) void obtenerPisos().then(setPisos).catch(() => setPisos([]))
+  }, [administrador, coordinador])
+  useEffect(() => {
+    if (!coordinador || !periodoSeleccionado) return
+    const dia = new Date(`${filtros.fecha}T12:00:00`).toLocaleDateString('es-EC', { weekday: 'long' }).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase()
+    obtenerDisponibilidadPlanificacion({ periodoId: periodoSeleccionado.id, dia, horaInicio: filtros.horaInicio, horaFin: filtros.horaFin }).then((data) => setOcupadosPlan(data.laboratoriosOcupados)).catch(() => setOcupadosPlan([]))
+  }, [coordinador, periodoSeleccionado, filtros.fecha, filtros.horaInicio, filtros.horaFin])
   const mover = (cantidad: number) =>
     setInicio((actual) => {
       const siguiente = new Date(actual)
@@ -100,21 +105,27 @@ export function CalendarioReservasPage() {
             <button onClick={() => mover(7)}>Semana siguiente</button>
           </div>
         </header>
-        {administrador && <div className="reservas-filters">
-          <label>Piso<select value={filtros.piso} onChange={(e) => setFiltros({ piso: e.target.value, laboratorio: '' })}><option value="">Todos</option>{pisos.map((piso) => <option key={piso.id} value={piso.id}>Piso {piso.numero}</option>)}</select></label>
+        {(administrador || coordinador) && <div className="reservas-filters">
+          <label>Piso<select value={filtros.piso} onChange={(e) => setFiltros({ ...filtros, piso: e.target.value, laboratorio: '' })}><option value="">Todos</option>{pisos.map((piso) => <option key={piso.id} value={piso.id}>Piso {piso.numero}</option>)}</select></label>
           <label>Laboratorio<select value={filtros.laboratorio} onChange={(e) => setFiltros({ ...filtros, laboratorio: e.target.value })}><option value="">Todos</option>{laboratorios.filter((lab) => !filtros.piso || lab.pisoId === filtros.piso).map((lab) => <option key={lab.id} value={lab.id}>{lab.codigo} — {lab.nombre}</option>)}</select></label>
+          {coordinador && <><label>Fecha<input type="date" value={filtros.fecha} onChange={(e) => setFiltros({ ...filtros, fecha: e.target.value })} /></label><label>Desde<input type="time" value={filtros.horaInicio} onChange={(e) => setFiltros({ ...filtros, horaInicio: e.target.value })} /></label><label>Hasta<input type="time" value={filtros.horaFin} onChange={(e) => setFiltros({ ...filtros, horaFin: e.target.value })} /></label><label>Capacidad mínima<input type="number" min="0" value={filtros.capacidad} onChange={(e) => setFiltros({ ...filtros, capacidad: Number(e.target.value) })} /></label><label>Estado<select value={filtros.estado} onChange={(e) => setFiltros({ ...filtros, estado: e.target.value })}><option value="">Todos</option><option value="DISPONIBLE">Disponible</option><option value="OCUPADO">Ocupado</option><option value="MANTENIMIENTO">Mantenimiento</option></select></label></>}
         </div>}
         {coordinador ? (
           <div className="reservas-list reservas-list--availability">
             {laboratorios.length === 0 ? (
               <p>No hay laboratorios disponibles para consultar.</p>
             ) : (
-              laboratorios.map((lab) => (
+              laboratorios
+                .filter((lab) => !filtros.piso || lab.pisoId === filtros.piso)
+                .filter((lab) => !filtros.laboratorio || lab.id === filtros.laboratorio)
+                .filter((lab) => lab.capacidad >= filtros.capacidad)
+                .filter((lab) => { const ocupado = ocupadosPlan.includes(lab.id) || reservas.some((r) => r.laboratorioId === lab.id && r.fechaReserva === filtros.fecha && r.horaInicio < filtros.horaFin && r.horaFin > filtros.horaInicio); const estado = lab.estado !== 'DISPONIBLE' ? lab.estado : ocupado ? 'OCUPADO' : 'DISPONIBLE'; return !filtros.estado || filtros.estado === estado })
+                .map((lab) => (
                 <article className="reserva-card reserva-card--availability" key={lab.id}>
                   <h2>
                     {lab.codigo} — {lab.nombre}
                   </h2>
-                  <p>{lab.estado.replace(/_/g, ' ')}</p>
+                  <p>{(lab.estado !== 'DISPONIBLE' ? lab.estado : ocupadosPlan.includes(lab.id) || reservas.some((reserva) => reserva.laboratorioId === lab.id && reserva.fechaReserva === filtros.fecha && reserva.horaInicio < filtros.horaFin && reserva.horaFin > filtros.horaInicio) ? 'OCUPADO' : 'DISPONIBLE').replace(/_/g, ' ')}</p>
                   <p>Capacidad: {lab.capacidad}</p>
                 </article>
               ))

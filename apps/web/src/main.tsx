@@ -3,12 +3,13 @@ import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import { App } from './App'
 import { AuthProvider } from './auth'
+import { AcademicPeriodProvider } from './academicPeriod'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
       <AuthProvider>
-        <App />
+        <AcademicPeriodProvider><App /></AcademicPeriodProvider>
       </AuthProvider>
     </BrowserRouter>
   </StrictMode>,

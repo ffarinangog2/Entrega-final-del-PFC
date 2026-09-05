@@ -8,25 +8,22 @@ import { AdminDashboard } from '../features/admin/AdminDashboard'
 import { hasRole, useAuth } from '../auth'
 import {
   obtenerDocentePorPerfil,
-  obtenerDocentes,
-  obtenerHorariosDocente,
+  obtenerDocentesPlanificacion,
   obtenerLaboratorios,
   obtenerMaterias,
   obtenerPeriodoActual,
   obtenerCarreras,
-  type HorarioAcademico,
   type Laboratorio,
   type Materia,
 } from '../services/academicoApi'
-import {
-  listarPlanificaciones,
-  type Planificacion,
-} from '../services/operationalApi'
+import { listarPlanificacionesAgregadas, obtenerMiHorarioDocente, type Planificacion, type PlanificacionAgregada } from '../services/operationalApi'
+import { etiquetaPeriodo, useAcademicPeriod } from '../academicPeriod'
 
 const dias = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES']
 
 function MiSemana({ perfilId }: { perfilId: string }) {
-  const [horarios, setHorarios] = useState<HorarioAcademico[]>([])
+  const { periodoSeleccionado } = useAcademicPeriod()
+  const [horarios, setHorarios] = useState<Planificacion[]>([])
   const [materias, setMaterias] = useState<Materia[]>([])
   const [laboratorios, setLaboratorios] = useState<Laboratorio[]>([])
   const [cargando, setCargando] = useState(true)
@@ -38,15 +35,15 @@ function MiSemana({ perfilId }: { perfilId: string }) {
       setCargando(true)
       setError('')
       try {
-        const docente = await obtenerDocentePorPerfil(perfilId)
+        await obtenerDocentePorPerfil(perfilId)
         const [horariosData, materiasData, laboratoriosData] =
           await Promise.all([
-            obtenerHorariosDocente(docente.id),
+            obtenerMiHorarioDocente(periodoSeleccionado?.id),
             obtenerMaterias(),
             obtenerLaboratorios(),
           ])
         if (!active) return
-        setHorarios(horariosData.filter((horario) => horario.activo))
+        setHorarios(horariosData)
         setMaterias(materiasData)
         setLaboratorios(laboratoriosData)
       } catch (cause) {
@@ -64,7 +61,7 @@ function MiSemana({ perfilId }: { perfilId: string }) {
     return () => {
       active = false
     }
-  }, [perfilId])
+  }, [perfilId, periodoSeleccionado?.id])
 
   const materiaPorId = useMemo(
     () => new Map(materias.map((materia) => [materia.id, materia])),
@@ -168,6 +165,7 @@ function MiSemana({ perfilId }: { perfilId: string }) {
 }
 
 function InicioPorRol() {
+  const { periodoSeleccionado } = useAcademicPeriod()
   const { usuario } = useAuth()
   const estudiante = hasRole(usuario, 'ESTUDIANTE')
   const coordinador = hasRole(usuario, 'COORDINADOR')
@@ -175,7 +173,7 @@ function InicioPorRol() {
   const [resumenCoordinacion, setResumenCoordinacion] = useState<{
     periodo: string
     carrera: string
-    planes: Planificacion[]
+    plan: PlanificacionAgregada | null
     materias: number
     docentes: number
     laboratorios: number
@@ -185,22 +183,22 @@ function InicioPorRol() {
     if (!coordinador) return
     let active = true
     void Promise.all([
-      listarPlanificaciones(),
-      obtenerPeriodoActual(),
+      listarPlanificacionesAgregadas(),
+      periodoSeleccionado ? Promise.resolve(periodoSeleccionado) : obtenerPeriodoActual(),
       obtenerMaterias(),
       obtenerCarreras(),
-      obtenerDocentes(),
+      obtenerDocentesPlanificacion(),
       obtenerLaboratorios(),
     ])
-      .then(([planes, periodo, materias, carreras, docentes, laboratorios]) => {
+      .then(([planes, periodoConsulta, materias, carreras, docentes, laboratorios]) => {
         if (!active) return
         const carreraId = materias[0]?.carreraId
         setResumenCoordinacion({
-          periodo: periodo.nombre,
+          periodo: etiquetaPeriodo(periodoConsulta),
           carrera:
             carreras.find((item) => item.id === carreraId)?.nombre ??
             'Mi carrera institucional',
-          planes,
+          plan: planes.find((item) => item.periodoId === periodoConsulta.id) ?? null,
           materias: materias.filter((item) => item.activo).length,
           docentes: docentes.filter((item) => item.activo).length,
           laboratorios: laboratorios.filter((item) => item.activo).length,
@@ -217,7 +215,7 @@ function InicioPorRol() {
     return () => {
       active = false
     }
-  }, [coordinador])
+  }, [coordinador, periodoSeleccionado])
   const titulo = estudiante
     ? 'Mi información académica'
     : coordinador
@@ -254,32 +252,17 @@ function InicioPorRol() {
                 </p>
                 <p>
                   <strong>Estado:</strong>{' '}
-                  {resumenCoordinacion.planes.some(
-                    (item) => item.estado === 'PROPUESTA_CAMBIO',
-                  )
-                    ? 'Devuelta con propuesta'
-                    : resumenCoordinacion.planes.some(
-                          (item) => item.estado === 'ENVIADA',
-                        )
-                      ? 'En revisión'
-                      : resumenCoordinacion.planes.length > 0 &&
-                          resumenCoordinacion.planes.every(
-                            (item) => item.estado === 'CONFIRMADA',
-                          )
-                        ? 'Aprobada'
-                        : resumenCoordinacion.planes.length > 0
-                          ? 'Borrador'
-                          : 'Sin iniciar'}
+                  {resumenCoordinacion.plan?.estado === 'EN_REVISION' ? 'En revisión' : resumenCoordinacion.plan?.estado === 'REQUIERE_CAMBIOS' ? 'Requiere cambios' : resumenCoordinacion.plan?.estado === 'APROBADA' ? 'Aprobada' : resumenCoordinacion.plan?.estado === 'FINALIZADA' ? 'Finalizada' : resumenCoordinacion.plan ? 'Borrador' : 'Sin iniciar'}
                 </p>
                 <p>
                   {resumenCoordinacion.materias} materias disponibles ·{' '}
                   {resumenCoordinacion.docentes} docentes disponibles ·{' '}
                   {resumenCoordinacion.laboratorios} laboratorios disponibles ·{' '}
-                  {resumenCoordinacion.planes.length} bloques planificados
+                  {resumenCoordinacion.plan?.bloques.filter((item) => item.estado !== 'CANCELADA').length ?? 0} bloques planificados
                 </p>
                 <div className="role-home__level-progress" aria-label="Progreso por niveles">
                   {Array.from({ length: 10 }, (_, index) => index + 1).map((value) => {
-                    const cantidad = resumenCoordinacion.planes.filter(
+                    const cantidad = (resumenCoordinacion.plan?.bloques ?? []).filter(
                       (item) => (item.nivel ?? 1) === value,
                     ).length
                     return <span key={value}>{value}° <strong>{cantidad}</strong></span>

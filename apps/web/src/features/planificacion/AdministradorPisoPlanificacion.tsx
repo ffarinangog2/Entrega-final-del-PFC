@@ -17,6 +17,7 @@ import {
   rechazarPlanificacionPiso,
   type PlanificacionAgregada,
   type Planificacion,
+  type SolicitudCambio, listarSolicitudesCambio, aprobarSolicitudCambio, rechazarSolicitudCambio,
 } from '../../services/operationalApi'
 import './AdministradorPisoPlanificacion.css'
 import { estadoPaquete } from './adminPisoPlanificacionState'
@@ -47,6 +48,7 @@ export function AdministradorPisoPlanificacion() {
   const [error, setError] = useState('')
   const [mensaje, setMensaje] = useState('')
   const [cargando, setCargando] = useState(true)
+  const [solicitudes,setSolicitudes]=useState<SolicitudCambio[]>([])
 
   const cargar = useCallback(async () => {
     setCargando(true)
@@ -84,6 +86,7 @@ export function AdministradorPisoPlanificacion() {
     }
   }, [])
   useEffect(() => void cargar(), [cargar])
+  useEffect(()=>{if(paquete)void Promise.resolve(listarSolicitudesCambio(paquete)).then(value=>setSolicitudes(value??[])).catch(()=>setSolicitudes([]))},[paquete,agregados])
 
   const paquetes = useMemo(
     () =>
@@ -223,6 +226,7 @@ export function AdministradorPisoPlanificacion() {
               <span>Estado: {planActual?.estado ?? estadoPaquete(visibles)}</span>
               <span>{visibles.length} bloques en su piso</span>
             </div>
+            {solicitudes.filter(s=>s.estado==='PENDIENTE').map(s=><article className="floor-planning__summary" key={s.id}><strong>Solicitud de cambio · {s.tipo}</strong><span>{s.motivo}</span><span>El horario original continúa vigente.</span><button disabled={ocupado} onClick={()=>void ejecutar(()=>aprobarSolicitudCambio(paquete,s.id),'¿Aprobar y revalidar este cambio?')}>Aprobar cambio</button><button disabled={ocupado} onClick={()=>{const motivo=window.prompt('Motivo del rechazo');if(motivo?.trim())void ejecutar(()=>rechazarSolicitudCambio(paquete,s.id,motivo.trim()),'¿Rechazar esta solicitud?')}}>Rechazar cambio</button></article>)}
             <div className="floor-planning__grid-wrap">
               <table className="floor-planning__grid">
                 <thead>

@@ -27,6 +27,7 @@ import {
 } from '../features/admin/AdminInstitutionPage'
 import { MiHorarioPage, StudentHistorialPage, StudentLaboratoriosPage } from '../features/estudiante/StudentAcademicPage'
 import { hasRole, useAuth } from '../auth'
+import { NotificationsPage } from '../features/notificaciones/NotificationsPage'
 
 function LaboratoriosRolePage() {
   const { usuario } = useAuth()
@@ -61,6 +62,7 @@ export function AppRoutes() {
           <Route path="/historial" element={<StudentHistorialPage />} />
         </Route>
         <Route path="/perfil" element={<ProfilePage />} />
+        <Route path="/notificaciones" element={<NotificationsPage />} />
         <Route element={<ProtectedRoute roles={['ADMINISTRADOR', 'ADMINISTRADOR_PISO', 'COORDINADOR']} permissions={['PLANIFICACION_GESTIONAR', 'SOLICITUD_APROBAR']} />}><Route path="/planificacion" element={<PlanificacionPage />} /></Route>
         <Route element={<ProtectedRoute roles={['DOCENTE', 'ESTUDIANTE']} permissions={['RESERVA_LEER', 'ACADEMICO_LEER']} />}><Route path="/asistencia" element={<AsistenciaPage />} /></Route>
         <Route element={<ProtectedRoute roles={['ADMINISTRADOR', 'ADMINISTRADOR_PISO', 'DOCENTE']} permissions={['INCIDENTE_LEER', 'INCIDENTE_CREAR', 'INCIDENTE_GESTIONAR']} />}><Route path="/incidentes" element={<IncidentesPage />} /></Route>

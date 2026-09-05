@@ -166,6 +166,8 @@ export function actualizarPerfilPropio(
 
 export const obtenerMiContextoAcademico = () =>
   request<ContextoAcademicoEstudiante>('/api/v1/estudiantes/mi-contexto')
+export const confirmarMiContextoAcademico = (body: { carreraId: string; periodoId: string; nivel: number }) =>
+  request<ContextoAcademicoEstudiante>('/api/v1/estudiantes/mi-contexto', { method: 'POST', body: JSON.stringify(body) })
 
 export const obtenerMisContextosAcademicos = () =>
   request<ContextoAcademicoEstudiante[]>('/api/v1/estudiantes/mis-contextos')
