@@ -72,7 +72,12 @@ public class InitialProfilesBootstrap implements ApplicationRunner {
 
     private void createAdmin(int number, UUID pisoId, String code, String position) {
         UUID profileId = profileId(number);
-        if (administradores.existsByPerfilId(profileId)) return;
+        var existente = administradores.findByPerfilId(profileId);
+        if (existente.isPresent()) {
+            var admin = existente.get();
+            if (!java.util.Objects.equals(admin.getPisoId(), pisoId)) { admin.setPisoId(pisoId); administradores.save(admin); }
+            return;
+        }
         Administrador admin = new Administrador(); admin.setPerfil(perfiles.getReferenceById(profileId));
         admin.setCodigoAdministrador(code); admin.setCargo(position); admin.setPisoId(pisoId); admin.setActivo(true);
         administradores.save(admin);
