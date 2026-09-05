@@ -251,6 +251,119 @@ protocolo completo. En consecuencia, fiabilidad temporal y disponibilidad son
 \textbf{no concluyentes}; el informe no afirma 99,5\%, 100\% ni aprobación de
 fiabilidad.
 
+\subsection{Experimento de arbitraje concurrente S0--S4}
+\label{subsec:arbiter-resultados}
+
+El experimento ARBITER comparó cinco comportamientos seleccionables sin alterar
+el camino productivo predeterminado: S0, escritura sin arbitraje usada como
+control negativo; S1, control optimista; S2, control pesimista; S3, coordinador
+de aplicación elegido mediante el algoritmo Bully y orden lógico de Lamport; y
+S4, transacción \texttt{SERIALIZABLE} en CockroachDB respaldada por el consenso
+del clúster. S3 no utiliza Raft: su líder pertenece a la aplicación. En S4 no
+existe un coordinador Bully; la coordinación corresponde a la persistencia
+distribuida del clúster.
+
+La campaña del SHA
+\texttt{e43967eda31410b7fef060cfc7903cea94efbe96} planificó 130 corridas. Se
+completaron 123, siete fallaron y ninguna fue clasificada como inválida. La regla
+prerregistrada excluye las repeticiones 1 y 10 de cada configuración, lo que
+produce 104 posiciones analíticas teóricas. Cinco posiciones centrales de
+Esc-1 también fallaron; por ello el conjunto realmente analizable contiene 99
+corridas completadas. La Tabla~\ref{tab:arbiter-conteos} evita confundir esas
+cuatro cantidades.
+
+\begin{table}[ht]
+  \centering
+  \small
+  \caption{Conteos auditados de la campaña ARBITER.}
+  \label{tab:arbiter-conteos}
+  \begin{tabular}{|l|r|r|r|r|}
+    \hline
+    \textbf{Escenario} & \textbf{Planificadas} & \textbf{Completadas} & \textbf{Fallidas} & \textbf{Analíticas válidas} \\
+    \hline
+    Esc-1, nominal & 10 & 3 & 7 & 3 \\
+    \hline
+    Esc-2, contención media & 50 & 50 & 0 & 40 \\
+    \hline
+    Esc-3, contención máxima & 50 & 50 & 0 & 40 \\
+    \hline
+    Esc-4, caída controlada & 20 & 20 & 0 & 16 \\
+    \hline
+    \textbf{Total} & \textbf{130} & \textbf{123} & \textbf{7} & \textbf{99} \\
+    \hline
+  \end{tabular}
+\end{table}
+
+S0 exhibió dobles adjudicaciones en todas las muestras analíticas de
+contención: 8/8 en Esc-2 y 8/8 en Esc-3. Para S1--S4 no se observaron dobles
+adjudicaciones en las corridas ejecutadas; este resultado acotado no constituye
+una garantía de aislamiento absoluto. La Tabla~\ref{tab:arbiter-estrategias}
+resume las 96 muestras analíticas de contención y caída, separadas de las tres
+muestras nominales válidas de Esc-1.
+
+\begin{table}[ht]
+  \centering
+  \small
+  \caption{Resultado principal por estrategia en muestras analíticas.}
+  \label{tab:arbiter-estrategias}
+  \begin{tabular}{|c|r|l|l|}
+    \hline
+    \textbf{Estrategia} & \textbf{$n$} & \textbf{Dobles adjudicaciones} & \textbf{Interpretación} \\
+    \hline
+    S0 & 16 & Observadas en 16/16 & Control negativo efectivo \\
+    \hline
+    S1 & 16 & No observadas & Resultado limitado a las corridas \\
+    \hline
+    S2 & 16 & No observadas & Resultado limitado a las corridas \\
+    \hline
+    S3 & 24 & No observadas & Incluye 8 corridas de caída \\
+    \hline
+    S4 & 24 & No observadas & Incluye 8 corridas de caída \\
+    \hline
+  \end{tabular}
+\end{table}
+
+En S3, los tiempos de recuperación de las ocho muestras analíticas fueron 0,
+0, 1, 0, 0, 0, 0 y 0 ms: media 0,125 ms, mediana 0 ms y rango 0--1 ms. En siete
+casos no se observó demora medible con la resolución milimétrica disponible;
+esto no equivale a recuperación instantánea. En S4, la recuperación observada
+por healthcheck presentó media 3252,11 ms, mediana 3171,85 ms, desviación
+estándar 2188,52 ms y rango 1116,75--5949,68 ms. Esta medición demuestra el
+retorno del servicio al estado saludable, no el tiempo interno de convergencia
+de Raft.
+
+El oráculo evaluó 96 muestras analíticas. I1 (ausencia de doble adjudicación)
+produjo 80 PASS y 16 FAIL, todos estos últimos en S0; I2 (exactamente un
+adjudicatario) produjo 96 PASS; e I3 (equipo fuera de mantenimiento), 96 PASS.
+I4 (liberación exactamente una vez tras cancelar) e I5 (acceso solo con reserva
+vigente) quedaron ambos en 96 \texttt{NOT\_OBSERVED}; no se interpretan como
+aprobados.
+
+Para la tasa de doble adjudicación, las comparaciones prerregistradas entre S0
+como grupo A y cada estrategia S1--S4 como grupo B, tanto en Esc-2 como en
+Esc-3, obtuvieron $U=64$, $p=0,0007775$ y $A_{12}=1,0$, con ocho muestras por
+grupo. $A_{12}$ expresa la probabilidad de que A produzca un valor mayor que B:
+en esta métrica, un valor mayor es desfavorable, de modo que 1,0 representa el
+peor comportamiento de S0 y no su superioridad. Las comparaciones de latencia
+mostraron diferencias entre S0 y S3 en Esc-2 ($U=4$, $p=0,00328$,
+$A_{12}=0,0625$) y entre S0 y S1--S3 en Esc-3 ($p\leq0,00114$ y
+$A_{12}\leq0,015625$); S0 frente a S4 no mostró diferencia estadística en
+Esc-2 ($p=0,7527$) ni Esc-3 ($p=0,5286$). Estos contrastes no compensan la
+inseguridad observada en S0.
+
+El índice de Jain fue 1,0000, pero no discrimina equidad en este diseño: cada
+corrida usa una única franja y un único equipo y, en S1--S4, normalmente existe
+un solo adjudicatario. Se trata de un resultado degenerado, no de evidencia de
+superioridad. Los rechazos innecesarios medidos fueron cero porque todas las
+solicitudes contenciosas compartieron equipo y franja con una adjudicación
+confirmada. Además, algunas corridas marcadas como completadas contienen
+\texttt{HTTP\_ERROR}; siete corridas de Esc-1 fallaron ante respuestas HTTP 500
+y este escenario aporta solo $n=3$ muestras válidas; I4 e I5 no
+fueron observados; S3 está limitado por la resolución temporal; y S4 mide
+healthcheck, no consenso directamente. La evidencia solo permite afirmar que no
+se observaron modificaciones en las tablas productivas que fueron verificadas,
+no impacto cero absoluto sobre toda la producción.
+
 \subsection{Evaluación ISO/IEC 25010 seleccionada}
 \label{subsec:tabla-iso25010}
 
@@ -268,6 +381,8 @@ solo características con evidencia disponible.
     \textbf{Característica} & \textbf{Métrica} & \textbf{Objetivo} & \textbf{Evidencia/resultado} & \textbf{Estado} \\
     \hline
     Eficiencia & p95 nominal, 50 usuarios & IC95 superior $<500$ ms & 88,543936 ms & CUMPLE \\
+    \hline
+    Eficiencia secundaria & p99 nominal & IC95 superior $<750$ ms & Media 624,00 ms; SD 606,59 ms; IC95 [116,88; 1131,12] ms & NO CUMPLE \\
     \hline
     Fiabilidad acotada & HTTP 5xx nominal & $<1\%$ & 0/57\,641, 0\% en r2--r9 & CUMPLE en escenario \\
     \hline
@@ -420,8 +535,10 @@ los resultados solo se generalizan al escenario medido.
 \textbf{Efecto:} pueden quedar combinaciones de navegador, dispositivo o
 contención sin observar. \textbf{Mitigación aplicada:} se usan tres motores Web,
 un emulador Android y una rampa exploratoria además del caso nominal.
-\textbf{Riesgo residual:} dispositivos reales, redes adversas y el experimento
-comparativo de arbitraje S0--S4 no fueron ejecutados en esta evidencia.
+\textbf{Riesgo residual:} dispositivos reales y redes adversas permanecen sin
+cubrir; aunque ARBITER S0--S4 fue ejecutado, Esc-1 conservó solo tres muestras
+analíticas válidas y el dataset experimental no representa toda la demanda de
+un campus real.
 
 \subsubsection{Validez de constructo}
 
@@ -479,6 +596,8 @@ integral actual.
     \hline
     D7.1 & Experimento ISO 25010 & Eficiencia completa; hashes 195/195; fiabilidad 0/10 & ISO/experimentos & PARCIAL \\
     \hline
+    D7.2 & Experimento ARBITER & 130 planificadas; 123 completadas; 99 muestras analíticas válidas & ARBITER/oráculo & PARCIAL \\
+    \hline
   \end{tabular}
 \end{table}
 
@@ -503,6 +622,14 @@ registraron HTTP 5xx. Sin embargo, p99 y la rampa muestran colas largas. La fase
 de fiabilidad no se ejecutó, por lo que no existe base para afirmar
 disponibilidad de 99,5\%. La conclusión profesional es, por tanto, favorable para
 el escenario de eficiencia medido y parcial para la evaluación ISO completa.
+
+El experimento ARBITER confirmó la utilidad del control negativo: S0 presentó
+dobles adjudicaciones en las 16 muestras analíticas de contención. No se
+observaron dobles adjudicaciones con S1--S4 en las corridas ejecutadas, sin que
+esto constituya una garantía universal. De 130 corridas planificadas se
+completaron 123 y quedaron 99 muestras analíticas válidas; I4 e I5 no fueron
+observados y las mediciones de recuperación conservan las limitaciones de
+resolución y healthcheck descritas en la Sección~\ref{subsec:arbiter-resultados}.
 
 La observabilidad mejora la capacidad de diagnóstico mediante Prometheus,
 OpenTelemetry, Tempo, Loki, cAdvisor y Grafana. Su dashboard satisface la
