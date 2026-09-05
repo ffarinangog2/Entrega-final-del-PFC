@@ -40,6 +40,8 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.contains;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 class AsistenciaServiceTest {
@@ -201,6 +203,28 @@ class AsistenciaServiceTest {
         verify(notificaciones).notificarPerfilIdempotente(eq(estudiantePerfil),contains("ASISTENCIA:"),eq("Asistencia disponible"),anyString(),anyMap());
     }
 
+    @Test void abrirBloqueRechazaDiaIncorrectoUHorarioFueraDeRango() {
+        UUID bloqueId = UUID.randomUUID(), planId = UUID.randomUUID(), docenteId = UUID.randomUUID(), perfil = UUID.randomUUID();
+        PlanificacionJpaEntity bloque = bloque(bloqueId, planId, 7);
+        when(bloques.findById(bloqueId)).thenReturn(Optional.of(bloque));
+        PlanificacionAgregadaJpaEntity plan = plan(planId, UUID.randomUUID(), UUID.randomUUID(), EstadoPlanificacionAgregada.APROBADA);
+        when(planes.findById(planId)).thenReturn(Optional.of(plan));
+        bloque.setDocenteId(docenteId);
+        when(usuarios.obtenerDocentePorId(docenteId)).thenReturn(new DocenteExternoResponse(docenteId, perfil, true));
+
+        // Dia que no coincide
+        bloque.setDiaSemana("OTRO_DIA_INEXISTENTE");
+        assertThatThrownBy(() -> service.abrir(new AbrirSesionAsistenciaRequest(null, bloqueId), perfil))
+                .isInstanceOf(IllegalStateException.class).hasMessageContaining("corresponde");
+
+        // Hora fuera de rango
+        bloque.setDiaSemana(diaActual());
+        bloque.setHoraInicio(LocalTime.of(2, 0));
+        bloque.setHoraFin(LocalTime.of(3, 0));
+        assertThatThrownBy(() -> service.abrir(new AbrirSesionAsistenciaRequest(null, bloqueId), perfil))
+                .isInstanceOf(IllegalStateException.class).hasMessageContaining("horario");
+    }
+
     @Test void sesionesAbiertasDescartanVencidasYContextosIncompletos() throws Exception {
         UUID perfil = UUID.randomUUID(), carrera = UUID.randomUUID(), periodo = UUID.randomUUID();
         var contexto = new EstudianteInstitucionalPort.Contexto(UUID.randomUUID(), perfil, carrera, periodo, 7);
@@ -272,6 +296,39 @@ class AsistenciaServiceTest {
         when(planes.findById(noAprobado.getPlanificacionId())).thenReturn(Optional.of(plan(noAprobado.getPlanificacionId(), UUID.randomUUID(), UUID.randomUUID(), EstadoPlanificacionAgregada.BORRADOR)));
         when(planes.findById(planId)).thenReturn(Optional.of(plan(planId, UUID.randomUUID(), UUID.randomUUID(), EstadoPlanificacionAgregada.APROBADA)));
         assertThat(service.clasesDocenteHoy(perfil)).singleElement().extracting(r -> r.id()).isEqualTo(aprobado.getId());
+    }
+
+    @Test void horarioDocenteFiltraPorPeriodoYPlanAprobado() {
+        UUID perfil = UUID.randomUUID(), docenteId = UUID.randomUUID(), periodo1 = UUID.randomUUID(), periodo2 = UUID.randomUUID();
+        UUID plan1 = UUID.randomUUID(), plan2 = UUID.randomUUID();
+
+        when(usuarios.obtenerDocentePorPerfil(perfil)).thenReturn(null);
+        assertThatThrownBy(() -> service.horarioDocente(perfil, periodo1)).isInstanceOf(AccessDeniedException.class);
+
+        when(usuarios.obtenerDocentePorPerfil(perfil)).thenReturn(new DocenteExternoResponse(docenteId, perfil, false));
+        assertThatThrownBy(() -> service.horarioDocente(perfil, periodo1)).isInstanceOf(AccessDeniedException.class);
+
+        when(usuarios.obtenerDocentePorPerfil(perfil)).thenReturn(new DocenteExternoResponse(docenteId, perfil, true));
+
+        var b1 = bloque(UUID.randomUUID(), plan1, 5);
+        b1.setPeriodoId(periodo1);
+        b1.setDocenteId(docenteId);
+
+        var b2 = bloque(UUID.randomUUID(), plan2, 6);
+        b2.setPeriodoId(periodo2);
+        b2.setDocenteId(docenteId);
+
+        when(bloques.findAll()).thenReturn(List.of(b1, b2));
+        when(planes.findById(plan1)).thenReturn(Optional.of(plan(plan1, UUID.randomUUID(), periodo1, EstadoPlanificacionAgregada.APROBADA)));
+        when(planes.findById(plan2)).thenReturn(Optional.of(plan(plan2, UUID.randomUUID(), periodo2, EstadoPlanificacionAgregada.FINALIZADA)));
+
+        // Filtrado por periodo1
+        var resPeriodo1 = service.horarioDocente(perfil, periodo1);
+        assertThat(resPeriodo1).singleElement().extracting(r -> r.id()).isEqualTo(b1.getId());
+
+        // Sin filtro de periodo (periodoId null) -> ambos planes aprobados/finalizados
+        var resTodos = service.horarioDocente(perfil, null);
+        assertThat(resTodos).hasSize(2);
     }
 
     @Test void registrarPropiaRechazaSesionCerradaYDuplicada() throws Exception {

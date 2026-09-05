@@ -3,27 +3,32 @@ package ec.edu.scli.reservas.application.service;
 import ec.edu.scli.reservas.client.AcademicoLaboratoriosClient;
 import ec.edu.scli.reservas.client.UsuariosClient;
 import ec.edu.scli.reservas.client.dto.LaboratorioExternoResponse;
+import ec.edu.scli.reservas.client.dto.PeriodoExternoResponse;
 import ec.edu.scli.reservas.domain.model.ActorAutenticado;
 import ec.edu.scli.reservas.domain.model.ContextoInstitucional;
+import ec.edu.scli.reservas.domain.model.EstadoPlanificacion;
 import ec.edu.scli.reservas.domain.model.EstadoPlanificacionAgregada;
 import ec.edu.scli.reservas.domain.model.EstadoRevisionPlanificacion;
 import ec.edu.scli.reservas.domain.port.out.ActorActualPort;
 import ec.edu.scli.reservas.domain.port.out.ContextoInstitucionalPort;
+import ec.edu.scli.reservas.infrastructure.persistence.entity.ObservacionRevisionPlanificacionJpaEntity;
 import ec.edu.scli.reservas.infrastructure.persistence.entity.PlanificacionAgregadaJpaEntity;
 import ec.edu.scli.reservas.infrastructure.persistence.entity.PlanificacionJpaEntity;
 import ec.edu.scli.reservas.infrastructure.persistence.entity.RevisionPlanificacionPisoJpaEntity;
 import ec.edu.scli.reservas.infrastructure.persistence.repository.ObservacionRevisionPlanificacionJpaRepository;
 import ec.edu.scli.reservas.infrastructure.persistence.repository.PlanificacionAgregadaJpaRepository;
 import ec.edu.scli.reservas.infrastructure.persistence.repository.PlanificacionJpaRepository;
-import ec.edu.scli.reservas.infrastructure.persistence.repository.RevisionPlanificacionPisoJpaRepository;
 import ec.edu.scli.reservas.infrastructure.persistence.repository.ReservaSpringDataRepository;
+import ec.edu.scli.reservas.infrastructure.persistence.repository.RevisionPlanificacionPisoJpaRepository;
+import ec.edu.scli.reservas.presentation.dto.request.ProponerCambioAgregadoRequest;
+import ec.edu.scli.reservas.presentation.exception.ResourceNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.security.access.AccessDeniedException;
 
 import java.time.Instant;
-import java.time.LocalTime;
 import java.time.LocalDate;
-import ec.edu.scli.reservas.client.dto.PeriodoExternoResponse;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -32,7 +37,12 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 class PlanificacionAgregadaServiceTest {
     private PlanificacionAgregadaJpaRepository planes;
@@ -246,13 +256,17 @@ class PlanificacionAgregadaServiceTest {
                 .isEqualTo(plan.getId());
     }
 
-    @Test void listarExponeFinalizadaPorFechaSinPersistirCambios(){
-        var plan=plan(UUID.randomUUID(),EstadoPlanificacionAgregada.APROBADA);
-        when(actores.obtener()).thenReturn(new ActorAutenticado(perfil,Set.of("ROLE_ADMINISTRADOR")));
-        when(planes.findAll()).thenReturn(List.of(plan));when(bloques.findByPlanificacionId(plan.getId())).thenReturn(List.of());
-        when(academico.obtenerPeriodo(plan.getPeriodoId())).thenReturn(new PeriodoExternoResponse(plan.getPeriodoId(),"P","P",LocalDate.now().minusMonths(2),LocalDate.now().minusDays(1),"FINALIZADO","P","PPA",1));
-        assertThat(service.listar()).singleElement().extracting(x->x.estado()).isEqualTo("FINALIZADA");
-        assertThat(plan.getEstado()).isEqualTo(EstadoPlanificacionAgregada.APROBADA);verify(planes,never()).save(any());
+    @Test
+    void listarExponeFinalizadaPorFechaSinPersistirCambios() {
+        var plan = plan(UUID.randomUUID(), EstadoPlanificacionAgregada.APROBADA);
+        when(actores.obtener()).thenReturn(new ActorAutenticado(perfil, Set.of("ROLE_ADMINISTRADOR")));
+        when(planes.findAll()).thenReturn(List.of(plan));
+        when(bloques.findByPlanificacionId(plan.getId())).thenReturn(List.of());
+        when(academico.obtenerPeriodo(plan.getPeriodoId())).thenReturn(new PeriodoExternoResponse(
+                plan.getPeriodoId(), "P", "P", LocalDate.now().minusMonths(2), LocalDate.now().minusDays(1), "FINALIZADO", "P", "PPA", 1));
+        assertThat(service.listar()).singleElement().extracting(x -> x.estado()).isEqualTo("FINALIZADA");
+        assertThat(plan.getEstado()).isEqualTo(EstadoPlanificacionAgregada.APROBADA);
+        verify(planes, never()).save(any());
     }
 
     @Test
@@ -307,6 +321,86 @@ class PlanificacionAgregadaServiceTest {
         assertThat(revision.getObservacion()).isEqualTo("Conflicto operativo");
     }
 
+    @Test
+    void disponibilidadValidaFranjaYRetornaOcupacion() {
+        UUID planId = UUID.randomUUID(), periodoId = UUID.randomUUID();
+        assertThatThrownBy(() -> service.disponibilidad(planId, periodoId, "LUNES", null, LocalTime.of(10, 0)))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("franja horaria no es valida");
+        assertThatThrownBy(() -> service.disponibilidad(planId, periodoId, "LUNES", LocalTime.of(10, 0), LocalTime.of(9, 0)))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("franja horaria no es valida");
+
+        UUID doc = UUID.randomUUID(), lab = UUID.randomUUID();
+        var ocupado = bloque(planId, 3, doc, lab);
+        when(bloques.buscarOcupacionGlobal(eq(planId), eq(periodoId), eq("LUNES"), eq(LocalTime.of(8, 0)), eq(LocalTime.of(10, 0)), any()))
+                .thenReturn(List.of(ocupado));
+
+        var disp = service.disponibilidad(planId, periodoId, "LUNES", LocalTime.of(8, 0), LocalTime.of(10, 0));
+        assertThat(disp.docentesOcupados()).containsExactly(doc);
+        assertThat(disp.laboratoriosOcupados()).containsExactly(lab);
+    }
+
+    @Test
+    void proponerCambioRegistraObservacionYActualizaEstado() {
+        UUID planId = UUID.randomUUID(), bloqueId = UUID.randomUUID(), piso = UUID.randomUUID(), labPropuesto = UUID.randomUUID();
+        RevisionPlanificacionPisoJpaEntity rev = new RevisionPlanificacionPisoJpaEntity();
+        rev.setId(UUID.randomUUID());
+        rev.setPlanificacionId(planId);
+        rev.setPisoId(piso);
+        rev.setEstado(EstadoRevisionPlanificacion.PENDIENTE);
+
+        when(ambito.pisoGestionado()).thenReturn(piso);
+        when(revisiones.findByPlanificacionIdAndPisoIdAndVigenteTrue(planId, piso)).thenReturn(Optional.of(rev));
+
+        PlanificacionJpaEntity b = bloque(planId, 4, UUID.randomUUID(), UUID.randomUUID());
+        b.setId(bloqueId);
+        when(bloques.findById(bloqueId)).thenReturn(Optional.of(b));
+        when(academico.obtenerLaboratorio(b.getLaboratorioId())).thenReturn(laboratorio(b, piso));
+
+        PlanificacionAgregadaJpaEntity plan = plan(planId, EstadoPlanificacionAgregada.EN_REVISION);
+        when(planes.findById(planId)).thenReturn(Optional.of(plan));
+        when(bloques.findByPlanificacionId(planId)).thenReturn(List.of(b));
+
+        var request = new ProponerCambioAgregadoRequest(bloqueId, labPropuesto, "Mover a lab especializado");
+        var resp = service.proponerCambio(planId, request);
+
+        assertThat(resp.estado()).isEqualTo("REQUIERE_CAMBIOS");
+        assertThat(rev.getEstado()).isEqualTo(EstadoRevisionPlanificacion.PROPUESTA_CAMBIO);
+        assertThat(b.getEstado()).isEqualTo(EstadoPlanificacion.PROPUESTA_CAMBIO);
+        verify(ambito).validarGestion(labPropuesto);
+        verify(observaciones).save(any(ObservacionRevisionPlanificacionJpaEntity.class));
+    }
+
+    @Test
+    void validarOcupacionOficialDetectaConflictoConReservaOperativa() {
+        UUID planId = UUID.randomUUID();
+        PlanificacionAgregadaJpaEntity plan = plan(planId, EstadoPlanificacionAgregada.BORRADOR);
+        PlanificacionJpaEntity b = bloque(planId, 4, UUID.randomUUID(), UUID.randomUUID());
+        b.setDiaSemana("LUNES");
+        b.setHoraInicio(LocalTime.of(8, 0));
+        b.setHoraFin(LocalTime.of(10, 0));
+
+        LocalDate hoy = LocalDate.now();
+        when(academico.obtenerPeriodo(plan.getPeriodoId())).thenReturn(new PeriodoExternoResponse(
+                plan.getPeriodoId(), "P", "P", hoy.minusDays(7), hoy.plusDays(7), "ACTIVO", "PPA", "PPA", 1));
+        when(reservasOperativas.contarConflictosActivos(eq(b.getLaboratorioId()), any(), eq(b.getHoraInicio()), eq(b.getHoraFin())))
+                .thenReturn(1L);
+
+        assertThatThrownBy(() -> service.validarOcupacionOficial(plan, List.of(b)))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("reserva operativa");
+    }
+
+    @Test
+    void validarNivelInvalidoLanzaExcepcion() {
+        UUID planId = UUID.randomUUID();
+        PlanificacionAgregadaJpaEntity plan = plan(planId, EstadoPlanificacionAgregada.BORRADOR);
+        PlanificacionJpaEntity b = bloque(planId, 0, UUID.randomUUID(), UUID.randomUUID()); // nivel 0 inválido
+
+        assertThatThrownBy(() -> service.validarOcupacionOficial(plan, List.of(b)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("nivel debe estar entre 1 y 10");
+    }
+
     private PlanificacionAgregadaJpaEntity plan(UUID id, EstadoPlanificacionAgregada estado) {
         PlanificacionAgregadaJpaEntity plan = new PlanificacionAgregadaJpaEntity();
         plan.setId(id); plan.setCarreraId(carrera); plan.setPeriodoId(UUID.randomUUID());
@@ -319,7 +413,8 @@ class PlanificacionAgregadaServiceTest {
         bloque.setId(UUID.randomUUID()); bloque.setPlanificacionId(planId); bloque.setNivel(nivel);
         bloque.setDocenteId(docente); bloque.setLaboratorioId(laboratorio); bloque.setCarreraId(carrera);
         bloque.setPeriodoId(UUID.randomUUID()); bloque.setMateriaId(UUID.randomUUID()); bloque.setDiaSemana("MARTES");
-        bloque.setHoraInicio(LocalTime.of(8 + nivel, 0)); bloque.setHoraFin(LocalTime.of(9 + nivel, 0));
+        bloque.setHoraInicio(LocalTime.of(8 + (nivel >= 1 && nivel <= 10 ? nivel : 1), 0));
+        bloque.setHoraFin(LocalTime.of(9 + (nivel >= 1 && nivel <= 10 ? nivel : 1), 0));
         return bloque;
     }
 
