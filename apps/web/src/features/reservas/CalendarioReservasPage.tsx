@@ -10,7 +10,7 @@ import {
 } from '../../services/academicoApi'
 import { obtenerCalendario, type Reserva } from './reservasApi'
 import './Reservas.css'
-import { useAcademicPeriod } from '../../academicPeriod'
+import { useAcademicPeriod } from '../../academicPeriodContext'
 import { obtenerDisponibilidadPlanificacion } from '../../services/operationalApi'
 
 function inicioSemana(fecha: Date) {

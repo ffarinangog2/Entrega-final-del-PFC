@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
-import { estadoEfectivo, etiquetaPeriodo, useAcademicPeriod } from '../academicPeriod'
+import { useAcademicPeriod } from '../academicPeriodContext'
+import { estadoEfectivo, etiquetaPeriodo } from '../academicPeriodHelpers'
 
 export function AcademicPeriodSelector() {
   const { periodos, periodoVigente, periodoSeleccionado, seleccionarPeriodo, cargando } = useAcademicPeriod()

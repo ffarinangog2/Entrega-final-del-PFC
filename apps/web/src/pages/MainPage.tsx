@@ -17,7 +17,8 @@ import {
   type Materia,
 } from '../services/academicoApi'
 import { listarPlanificacionesAgregadas, obtenerMiHorarioDocente, type Planificacion, type PlanificacionAgregada } from '../services/operationalApi'
-import { etiquetaPeriodo, useAcademicPeriod } from '../academicPeriod'
+import { useAcademicPeriod } from '../academicPeriodContext'
+import { etiquetaPeriodo } from '../academicPeriodHelpers'
 
 const dias = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES']
 

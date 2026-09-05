@@ -3,7 +3,7 @@ import { DashboardLayout } from '../../components/DashboardLayout'
 import { obtenerCarreras, obtenerLaboratorios, obtenerMaterias, obtenerPeriodos, obtenerPisos, type Carrera, type Laboratorio, type Materia, type PeriodoLectivo, type Piso } from '../../services/academicoApi'
 import { listarPlanificacionesAgregadas, type PlanificacionAgregada } from '../../services/operationalApi'
 import '../operaciones/Operations.css'
-import { etiquetaPeriodo } from '../../academicPeriod'
+import { etiquetaPeriodo } from '../../academicPeriodHelpers'
 
 export function AdministradorPlanificacionGlobal() {
   const [planes, setPlanes] = useState<PlanificacionAgregada[]>([])

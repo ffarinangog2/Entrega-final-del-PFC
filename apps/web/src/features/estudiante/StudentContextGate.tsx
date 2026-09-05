@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { etiquetaPeriodo, useAcademicPeriod } from '../../academicPeriod'
+import { useAcademicPeriod } from '../../academicPeriodContext'
+import { etiquetaPeriodo } from '../../academicPeriodHelpers'
 import { obtenerCarreras, type Carrera } from '../../services/academicoApi'
 import { confirmarMiContextoAcademico, obtenerMisContextosAcademicos } from '../../services/usuariosApi'
 

@@ -9,7 +9,7 @@ import { DashboardLayout } from '../../components/DashboardLayout'
 import * as academico from '../../services/academicoApi'
 import * as api from '../../services/operationalApi'
 import './CoordinadorPlanificacion.css'
-import { useAcademicPeriod } from '../../academicPeriod'
+import { useAcademicPeriod } from '../../academicPeriodContext'
 
 const dias = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES'] as const
 const horas = Array.from(
@@ -37,9 +37,6 @@ const etiquetas: Record<api.EstadoPlanificacion, string> = {
   RECHAZADA: 'Rechazada',
   CANCELADA: 'Retirada',
 }
-const cicloHabilitado = (periodo?: academico.PeriodoLectivo) =>
-  Boolean(periodo?.fechaInicio) &&
-  new Date(`${periodo!.fechaInicio}T00:00:00`).getTime() <= Date.now()
 
 export function CoordinadorPlanificacion() {
   const { periodoSeleccionado } = useAcademicPeriod()
