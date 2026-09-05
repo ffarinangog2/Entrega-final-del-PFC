@@ -1,8 +1,9 @@
 import type { PeriodoLectivo } from './services/academicoApi'
 
 export function etiquetaPeriodo(periodo: PeriodoLectivo) {
-  if (periodo.cicloAcademico === 1) return periodo.ppaNombre?.replace(/\s*PPA\s*$/i, '').trim() + ' PPA'
-  if (periodo.cicloAcademico === 2) return periodo.ppaNombre?.replace(/\s*PPA\s*$/i, '').trim() + ' SPA'
+  const nombrePpa = periodo.ppaNombre?.replace(/^REGULAR\s*-\s*/i, 'REGULAR ')
+  if (periodo.cicloAcademico === 1) return nombrePpa?.replace(/\s*PPA\s*$/i, '').trim() + ' PPA'
+  if (periodo.cicloAcademico === 2) return nombrePpa?.replace(/\s*PPA\s*$/i, '').trim() + ' SPA'
   return periodo.nombre
 }
 

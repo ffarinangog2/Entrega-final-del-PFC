@@ -12,11 +12,13 @@ import ec.edu.scli.academico.presentation.dto.periodolectivo.PeriodoLectivoRespo
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -33,13 +35,15 @@ class PeriodoLectivoServiceImplTest {
     @Mock
     private PeriodoLectivoRepositoryPort periodoLectivoRepositoryPort;
 
-    @InjectMocks
     private PeriodoLectivoServiceImpl periodoLectivoService;
 
     private PeriodoLectivoRequest requestValido;
 
     @BeforeEach
     void configurar() {
+        periodoLectivoService = new PeriodoLectivoServiceImpl(
+                periodoLectivoRepositoryPort,
+                Clock.fixed(Instant.parse("2026-09-05T12:00:00Z"), ZoneOffset.UTC));
         requestValido = new PeriodoLectivoRequest(
                 "2026-1",
                 "Periodo Regular 2026-1",
@@ -47,6 +51,56 @@ class PeriodoLectivoServiceImplTest {
                 LocalDate.of(2026, 7, 31),
                 EstadoPeriodo.PLANIFICADO
         );
+    }
+
+    @Test
+    void obtenerActual_deberiaConsultarPpaConLaFechaDelServidor() {
+        PeriodoLectivo ppa = PeriodoLectivo.nuevo(
+                "PPA-2026-2027-C1", "Ciclo académico Mayo-Septiembre",
+                LocalDate.of(2026, 5, 1), LocalDate.of(2026, 9, 18),
+                EstadoPeriodo.PLANIFICADO);
+        ppa.setId(UUID.randomUUID());
+        ppa.definirUnidadAcademica("REGULAR-2026-2027-PPA", "REGULAR - 2026-2027 PPA", 1);
+        when(periodoLectivoRepositoryPort.buscarVigente(LocalDate.of(2026, 9, 5)))
+                .thenReturn(Optional.of(ppa));
+
+        PeriodoLectivoResponse response = periodoLectivoService.obtenerActual();
+
+        assertThat(response.cicloAcademico()).isEqualTo(1);
+        verify(periodoLectivoRepositoryPort).buscarVigente(LocalDate.of(2026, 9, 5));
+        verify(periodoLectivoRepositoryPort, never()).guardar(any());
+    }
+
+    @Test
+    void obtenerActual_deberiaConsultarSpaCuandoLlegaSuFechaConfigurada() {
+        periodoLectivoService = new PeriodoLectivoServiceImpl(
+                periodoLectivoRepositoryPort,
+                Clock.fixed(Instant.parse("2026-11-15T12:00:00Z"), ZoneOffset.UTC));
+        PeriodoLectivo spa = PeriodoLectivo.nuevo(
+                "PPA-2026-2027-C2", "Ciclo académico Noviembre-Abril",
+                LocalDate.of(2026, 11, 1), LocalDate.of(2027, 4, 30),
+                EstadoPeriodo.PLANIFICADO);
+        spa.setId(UUID.randomUUID());
+        spa.definirUnidadAcademica("REGULAR-2026-2027-SPA", "REGULAR - 2026-2027 SPA", 2);
+        when(periodoLectivoRepositoryPort.buscarVigente(LocalDate.of(2026, 11, 15)))
+                .thenReturn(Optional.of(spa));
+
+        PeriodoLectivoResponse response = periodoLectivoService.obtenerActual();
+
+        assertThat(response.cicloAcademico()).isEqualTo(2);
+        verify(periodoLectivoRepositoryPort).buscarVigente(LocalDate.of(2026, 11, 15));
+        verify(periodoLectivoRepositoryPort, never()).guardar(any());
+    }
+
+    @Test
+    void obtenerActual_noDeberiaInventarPeriodoPasadoOFuturo() {
+        when(periodoLectivoRepositoryPort.buscarVigente(LocalDate.of(2026, 9, 5)))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> periodoLectivoService.obtenerActual())
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("fecha del servidor");
+        verify(periodoLectivoRepositoryPort, never()).guardar(any());
     }
 
     @Test

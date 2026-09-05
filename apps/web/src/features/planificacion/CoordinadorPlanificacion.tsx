@@ -10,6 +10,7 @@ import * as academico from '../../services/academicoApi'
 import * as api from '../../services/operationalApi'
 import './CoordinadorPlanificacion.css'
 import { useAcademicPeriod } from '../../academicPeriodContext'
+import { etiquetaPeriodo } from '../../academicPeriodHelpers'
 
 const dias = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES'] as const
 const horas = Array.from(
@@ -39,12 +40,10 @@ const etiquetas: Record<api.EstadoPlanificacion, string> = {
 }
 
 export function CoordinadorPlanificacion() {
-  const { periodoSeleccionado } = useAcademicPeriod()
+  const { periodoVigente } = useAcademicPeriod()
   const [items, setItems] = useState<api.Planificacion[]>([])
   const [plan, setPlan] = useState<api.PlanificacionAgregada | null>(null)
-  const [planesAgregados, setPlanesAgregados] = useState<api.PlanificacionAgregada[]>([])
   const [nivel, setNivel] = useState(1)
-  const [periodos, setPeriodos] = useState<academico.PeriodoLectivo[]>([])
   const [periodoId, setPeriodoId] = useState('')
   const [form, setForm] = useState(inicial)
   const [editandoId, setEditandoId] = useState<string | null>(null)
@@ -82,10 +81,9 @@ export function CoordinadorPlanificacion() {
     setCargando(true)
     setError(''); setErrorEditor('')
     try {
-      const [planes, ciclos, materias, docentes, laboratorios, carreras] =
+      const [planes, materias, docentes, laboratorios, carreras] =
         await Promise.all([
           api.listarPlanificacionesAgregadas(),
-          academico.obtenerPeriodos(),
           academico.obtenerMaterias(),
           academico.obtenerDocentesPlanificacion(),
           academico.obtenerLaboratorios(),
@@ -103,15 +101,13 @@ export function CoordinadorPlanificacion() {
         throw new Error(
           'No se encontró la carrera institucional del coordinador.',
         )
-      const cicloId = periodoSeleccionado?.id ?? ciclos[0]?.id ?? ''
-      const periodo = ciclos.find((item) => item.id === cicloId)
-      if (!periodo) throw new Error('No existe un ciclo académico disponible.')
+      if (!periodoVigente) throw new Error('Sin período académico actual')
+      const cicloId = periodoVigente.id
+      const periodo = periodoVigente
       const planActual =
         planes.find((item) => item.periodoId === cicloId) ?? null
-      setPeriodos(ciclos)
       setPeriodoId(cicloId)
       setPlan(planActual)
-      setPlanesAgregados(planes)
       setItems(planActual?.bloques ?? [])
       setIniciado(planActual !== null)
       setCatalogos({
@@ -137,7 +133,7 @@ export function CoordinadorPlanificacion() {
     } finally {
       setCargando(false)
     }
-  }, [periodoSeleccionado?.id])
+  }, [periodoVigente])
   useEffect(() => {
     void cargar()
   }, [cargar])
@@ -158,23 +154,6 @@ export function CoordinadorPlanificacion() {
     [catalogos.materias, nivel],
   )
 
-  function seleccionarPeriodo(id: string) {
-    const periodo = periodos.find((item) => item.id === id)
-    if (editorAbierto && !confirm('Hay una asignación sin guardar. ¿Cambiar de período y descartarla?')) return
-    setPeriodoId(id)
-    const actual = planesAgregados.find((item) => item.periodoId === id) ?? null
-    setCatalogos((value) => ({ ...value, periodo }))
-    setPlan(actual)
-    setItems(actual?.bloques ?? [])
-    setIniciado(actual !== null)
-    setForm((value) => ({
-      ...value,
-      periodoId: id,
-      planificacionId: actual?.id ?? '',
-      nivel,
-    }))
-    setEditorAbierto(false)
-  }
   const editables = visibles.filter((item) =>
     ['BORRADOR', 'PROPUESTA_CAMBIO'].includes(item.estado),
   )
@@ -354,9 +333,6 @@ export function CoordinadorPlanificacion() {
     try {
       const retirada = await api.retirarPlanificacionCompleta(plan.id)
       setPlan(retirada)
-      setPlanesAgregados((actuales) =>
-        actuales.map((item) => (item.id === retirada.id ? retirada : item)),
-      )
       setItems(retirada.bloques)
       setMensaje('Planificación retirada. Puede volver a editar el borrador.')
     } catch (cause) {
@@ -377,10 +353,6 @@ export function CoordinadorPlanificacion() {
     try {
       const creada = await api.iniciarPlanificacion(periodoId)
       setPlan(creada)
-      setPlanesAgregados((actuales) => [
-        ...actuales.filter((item) => item.id !== creada.id),
-        creada,
-      ])
       setItems(creada.bloques)
       setIniciado(true)
       setForm((actual) => ({
@@ -419,7 +391,7 @@ export function CoordinadorPlanificacion() {
             <h1>Planificación semanal</h1>
             <span>
               {catalogos.carrera?.nombre ?? 'Mi carrera'} ·{' '}
-              {catalogos.periodo?.ppaNombre ?? catalogos.periodo?.nombre ?? 'Periodo activo'}
+              {catalogos.periodo ? etiquetaPeriodo(catalogos.periodo) : 'Sin período académico actual'}
             </span>
           </div>
           <div>
@@ -449,32 +421,8 @@ export function CoordinadorPlanificacion() {
           <>
             <section
               className="weekly-planning__selectors"
-              aria-label="Periodo, ciclo y nivel"
+              aria-label="Nivel académico"
             >
-              <label>
-                Periodo
-                <input
-                  readOnly
-                  value={catalogos.periodo?.ppaNombre ?? 'REGULAR - 2026-2027 PPA'}
-                />
-              </label>
-              <label>
-                Período de consulta
-                <select
-                  value={periodoId}
-                  onChange={(event) => seleccionarPeriodo(event.target.value)}
-                >
-                  {periodos.map((item) => (
-                    <option
-                      key={item.id}
-                      value={item.id}
-                      disabled={item.estado === 'FINALIZADO'}
-                    >
-                      {item.nombre}
-                    </option>
-                  ))}
-                </select>
-              </label>
               <div role="group" aria-label="Nivel académico">
                 {Array.from({ length: 10 }, (_, index) => index + 1).map(
                   (value) => {

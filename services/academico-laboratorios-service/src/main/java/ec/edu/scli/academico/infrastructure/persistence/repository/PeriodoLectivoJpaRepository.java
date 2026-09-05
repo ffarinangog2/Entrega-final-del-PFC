@@ -18,8 +18,9 @@ public interface PeriodoLectivoJpaRepository
 
     @Query(value = """
             SELECT * FROM periodos_lectivos p
-            WHERE p.fecha_inicio <= :fecha AND p.fecha_fin >= :fecha
-            ORDER BY CASE WHEN p.ciclo_academico IS NOT NULL THEN 0 ELSE 1 END, p.fecha_inicio DESC
+            WHERE p.ciclo_academico IS NOT NULL
+              AND p.fecha_inicio <= :fecha AND p.fecha_fin >= :fecha
+            ORDER BY p.fecha_inicio DESC
             limit 1
             """, nativeQuery = true)
     Optional<PeriodoLectivoEntity> buscarVigente(LocalDate fecha);

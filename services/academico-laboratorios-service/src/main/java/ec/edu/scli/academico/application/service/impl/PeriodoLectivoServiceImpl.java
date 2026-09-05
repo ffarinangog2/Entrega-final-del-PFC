@@ -22,10 +22,15 @@ import java.util.Objects;
 public class PeriodoLectivoServiceImpl implements PeriodoLectivoService {
 
     private final PeriodoLectivoRepositoryPort periodoLectivoRepositoryPort;
-    private final Clock clock = Clock.systemDefaultZone();
+    private final Clock clock;
 
     public PeriodoLectivoServiceImpl(PeriodoLectivoRepositoryPort periodoLectivoRepositoryPort) {
+        this(periodoLectivoRepositoryPort, Clock.systemDefaultZone());
+    }
+
+    PeriodoLectivoServiceImpl(PeriodoLectivoRepositoryPort periodoLectivoRepositoryPort, Clock clock) {
         this.periodoLectivoRepositoryPort = periodoLectivoRepositoryPort;
+        this.clock = clock;
     }
 
     @Override

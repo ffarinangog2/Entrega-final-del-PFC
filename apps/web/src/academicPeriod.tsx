@@ -1,6 +1,6 @@
-import { useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { obtenerPeriodoActual, obtenerPeriodos, type PeriodoLectivo } from './services/academicoApi'
-import { AcademicPeriodContext, STORAGE_KEY } from './academicPeriodContext'
+import { useContext, useEffect, useState, type ReactNode } from 'react'
+import { obtenerPeriodoActual, type PeriodoLectivo } from './services/academicoApi'
+import { AcademicPeriodContext } from './academicPeriodContext'
 import { AuthContext } from './auth'
 
 export function AcademicPeriodProvider({ children }: { children: ReactNode }) {
@@ -8,7 +8,6 @@ export function AcademicPeriodProvider({ children }: { children: ReactNode }) {
   const isAuthenticated = auth ? auth.isAuthenticated : Boolean(sessionStorage.getItem('accessToken'))
   const [periodos, setPeriodos] = useState<PeriodoLectivo[]>([])
   const [periodoVigente, setPeriodoVigente] = useState<PeriodoLectivo | null>(null)
-  const [seleccionadoId, setSeleccionadoId] = useState(() => sessionStorage.getItem(STORAGE_KEY) ?? '')
   const [cargando, setCargando] = useState(false)
 
   useEffect(() => {
@@ -22,12 +21,11 @@ export function AcademicPeriodProvider({ children }: { children: ReactNode }) {
       }
     }
     setCargando(true)
-    Promise.all([obtenerPeriodos(), obtenerPeriodoActual()])
-      .then(([lista, vigente]) => {
+    obtenerPeriodoActual()
+      .then((vigente) => {
         if (!activo) return
-        setPeriodos(lista.sort((a, b) => b.fechaInicio.localeCompare(a.fechaInicio)))
+        setPeriodos([vigente])
         setPeriodoVigente(vigente)
-        setSeleccionadoId((actual) => (actual && lista.some((p) => p.id === actual) ? actual : vigente.id))
       })
       .catch(() => {
         if (activo) {
@@ -43,19 +41,9 @@ export function AcademicPeriodProvider({ children }: { children: ReactNode }) {
     }
   }, [isAuthenticated])
 
-  const periodoSeleccionado = useMemo(
-    () => periodos.find((p) => p.id === seleccionadoId) ?? periodoVigente,
-    [periodos, periodoVigente, seleccionadoId],
-  )
-
-  const seleccionarPeriodo = (id: string) => {
-    sessionStorage.setItem(STORAGE_KEY, id)
-    setSeleccionadoId(id)
-  }
-
   return (
     <AcademicPeriodContext.Provider
-      value={{ periodos, periodoVigente, periodoSeleccionado, seleccionarPeriodo, cargando }}
+      value={{ periodos, periodoVigente, periodoSeleccionado: periodoVigente, seleccionarPeriodo: () => undefined, cargando }}
     >
       {children}
     </AcademicPeriodContext.Provider>

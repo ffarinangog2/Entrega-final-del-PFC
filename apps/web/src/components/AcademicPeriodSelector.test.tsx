@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { AcademicPeriodSelector } from './AcademicPeriodSelector'
 import { AcademicPeriodContext, type AcademicPeriodContextValue } from '../academicPeriodContext'
@@ -11,7 +11,7 @@ const mockPeriodo1: PeriodoLectivo = {
   fechaInicio: '2026-01-01',
   fechaFin: '2026-06-30',
   estado: 'ACTIVO',
-  ppaNombre: 'Periodo 2026-1 PPA',
+  ppaNombre: 'REGULAR - 2026-2027 PPA',
   cicloAcademico: 1,
 }
 
@@ -22,7 +22,7 @@ const mockPeriodo2: PeriodoLectivo = {
   fechaInicio: '2099-07-01',
   fechaFin: '2099-12-31',
   estado: 'PLANIFICADO',
-  ppaNombre: 'Periodo 2026-2',
+  ppaNombre: 'REGULAR - 2026-2027 PPA',
   cicloAcademico: 2,
 }
 
@@ -50,23 +50,17 @@ describe('AcademicPeriodSelector', () => {
     expect(screen.getByText('Cargando período…')).toBeInTheDocument()
   })
 
-  it('muestra texto por defecto si no hay periodoSeleccionado', () => {
-    renderSelector({ periodoSeleccionado: null })
-    expect(screen.getByText('Período académico')).toBeInTheDocument()
+  it('muestra la ausencia de un período efectivo', () => {
+    renderSelector({ periodoVigente: null, periodoSeleccionado: null })
+    expect(screen.getByText('Sin período académico actual')).toBeInTheDocument()
   })
 
-  it('muestra el periodo seleccionado y lista opciones con filtro de busqueda', () => {
+  it('muestra únicamente el PPA efectivo como indicador no editable', () => {
     const { seleccionarPeriodo } = renderSelector()
-    expect(screen.getByText('Periodo 2026-1 PPA')).toBeInTheDocument()
-
-    const input = screen.getByLabelText('Buscar período')
-    fireEvent.change(input, { target: { value: 'SPA' } })
-
-    expect(screen.queryByRole('button', { name: /Periodo 2026-1 PPA/ })).not.toBeInTheDocument()
-    const opcion2 = screen.getByRole('button', { name: /Periodo 2026-2 SPA/ })
-    expect(opcion2).toBeInTheDocument()
-
-    fireEvent.click(opcion2)
-    expect(seleccionarPeriodo).toHaveBeenCalledWith('p-2')
+    expect(screen.getByText('REGULAR 2026-2027 PPA')).toBeInTheDocument()
+    expect(screen.queryByText(/SPA/)).not.toBeInTheDocument()
+    expect(screen.queryByRole('button')).not.toBeInTheDocument()
+    expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
+    expect(seleccionarPeriodo).not.toHaveBeenCalled()
   })
 })

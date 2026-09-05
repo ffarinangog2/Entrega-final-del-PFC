@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as academico from '../../services/academicoApi'
 import * as api from '../../services/operationalApi'
 import { CoordinadorPlanificacion } from './CoordinadorPlanificacion'
+import { AcademicPeriodContext } from '../../academicPeriodContext'
 
 vi.mock('../../services/academicoApi')
 vi.mock('../../services/operationalApi')
@@ -39,6 +40,17 @@ const segunda: api.Planificacion = {
   horaInicio: '09:30',
   horaFin: '11:30',
 }
+const periodoActual: academico.PeriodoLectivo = {
+  id: 'periodo-1',
+  codigo: 'PPA-2026-2027-C1',
+  nombre: 'Ciclo académico Mayo–Septiembre',
+  fechaInicio: '2026-05-01',
+  fechaFin: '2026-09-18',
+  estado: 'PLANIFICADO',
+  ppaCodigo: 'REGULAR-2026-2027-PPA',
+  ppaNombre: 'REGULAR - 2026-2027 PPA',
+  cicloAcademico: 1,
+}
 
 function preparar(
   items: api.Planificacion[] = [base, segunda],
@@ -56,17 +68,6 @@ function preparar(
   vi.mocked(api.listarPlanificacionesAgregadas).mockResolvedValue(
     items.length === 0 ? [] : [aggregate],
   )
-  vi.mocked(academico.obtenerPeriodos).mockResolvedValue([{
-    id: 'periodo-1',
-    codigo: 'PPA-2026-2027-C1',
-    nombre: 'Ciclo académico Mayo–Septiembre',
-    fechaInicio: '2026-08-01',
-    fechaFin: '2027-01-31',
-    estado: 'ACTIVO',
-    ppaCodigo: 'REGULAR-2026-2027-PPA',
-    ppaNombre: 'REGULAR - 2026-2027 PPA',
-    cicloAcademico: 1,
-  }])
   vi.mocked(academico.obtenerCarreras).mockResolvedValue([
     {
       id: 'carrera-1',
@@ -155,7 +156,9 @@ function preparar(
 function renderPage() {
   return render(
     <MemoryRouter>
-      <CoordinadorPlanificacion />
+      <AcademicPeriodContext.Provider value={{ periodos: [periodoActual], periodoVigente: periodoActual, periodoSeleccionado: periodoActual, seleccionarPeriodo: vi.fn(), cargando: false }}>
+        <CoordinadorPlanificacion />
+      </AcademicPeriodContext.Provider>
     </MemoryRouter>,
   )
 }
@@ -179,6 +182,11 @@ describe('CoordinadorPlanificacion', () => {
     expect(screen.getAllByText('DOC-CARLOS')).toHaveLength(2)
     expect(screen.getByText('LAB-01')).toBeInTheDocument()
     expect(screen.queryByText('materia-1')).not.toBeInTheDocument()
+    expect(screen.getByText(/Ingeniería de Software · REGULAR 2026-2027 PPA/)).toBeInTheDocument()
+    expect(screen.queryByLabelText('Periodo')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('Período de consulta')).not.toBeInTheDocument()
+    expect(screen.queryByText(/Periodo Lectivo 2026-[AB]/)).not.toBeInTheDocument()
+    expect(academico.obtenerPeriodos).not.toHaveBeenCalled()
   })
 
   it('guarda una nueva asignación como borrador', async () => {
