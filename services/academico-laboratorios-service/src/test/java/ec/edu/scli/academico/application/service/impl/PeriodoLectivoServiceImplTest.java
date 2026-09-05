@@ -113,7 +113,7 @@ class PeriodoLectivoServiceImplTest {
                 EstadoPeriodo.ACTIVO);
         periodoActivo.setId(UUID.randomUUID());
 
-        when(periodoLectivoRepositoryPort.buscarActualPorEstado(EstadoPeriodo.ACTIVO))
+        when(periodoLectivoRepositoryPort.buscarVigente(any(LocalDate.class)))
                 .thenReturn(Optional.of(periodoActivo));
 
         PeriodoLectivoResponse response = periodoLectivoService.obtenerActual();
@@ -124,7 +124,7 @@ class PeriodoLectivoServiceImplTest {
     @Test
     void obtenerActual_deberiaLanzarResourceNotFoundCuandoNoHayPeriodoActivo() {
 
-        when(periodoLectivoRepositoryPort.buscarActualPorEstado(EstadoPeriodo.ACTIVO))
+        when(periodoLectivoRepositoryPort.buscarVigente(any(LocalDate.class)))
                 .thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> periodoLectivoService.obtenerActual())

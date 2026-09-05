@@ -4,6 +4,8 @@ import ec.edu.scli.academico.enums.EstadoPeriodo;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Max;
 
 import java.time.LocalDate;
 
@@ -23,7 +25,15 @@ public record PeriodoLectivoRequest(
         @NotNull(message = "La fecha de fin es obligatoria")
         LocalDate fechaFin,
 
-        EstadoPeriodo estado
+        EstadoPeriodo estado,
+
+        @Size(max = 40) String ppaCodigo,
+        @Size(max = 120) String ppaNombre,
+        @Min(1) @Max(2) Integer cicloAcademico
 
 ) {
+    public PeriodoLectivoRequest(String codigo, String nombre, LocalDate fechaInicio,
+            LocalDate fechaFin, EstadoPeriodo estado) {
+        this(codigo, nombre, fechaInicio, fechaFin, estado, null, null, null);
+    }
 }

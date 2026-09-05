@@ -15,11 +15,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
+import java.time.Clock;
+import java.time.LocalDate;
+import java.util.Objects;
 
 @Service
 public class PeriodoLectivoServiceImpl implements PeriodoLectivoService {
 
     private final PeriodoLectivoRepositoryPort periodoLectivoRepositoryPort;
+    private final Clock clock = Clock.systemDefaultZone();
 
     public PeriodoLectivoServiceImpl(PeriodoLectivoRepositoryPort periodoLectivoRepositoryPort) {
         this.periodoLectivoRepositoryPort = periodoLectivoRepositoryPort;
@@ -30,6 +34,7 @@ public class PeriodoLectivoServiceImpl implements PeriodoLectivoService {
     public PeriodoLectivoResponse crear(PeriodoLectivoRequest request) {
 
         validarCodigoDuplicado(request.codigo(), null);
+        validarUnidadYSolapamiento(request, null);
 
         PeriodoLectivo periodo = PeriodoLectivo.nuevo(
                 request.codigo(),
@@ -38,6 +43,7 @@ public class PeriodoLectivoServiceImpl implements PeriodoLectivoService {
                 request.fechaFin(),
                 request.estado()
         );
+        periodo.definirUnidadAcademica(request.ppaCodigo(), request.ppaNombre(), request.cicloAcademico());
 
         PeriodoLectivo guardado = periodoLectivoRepositoryPort.guardar(periodo);
 
@@ -61,10 +67,10 @@ public class PeriodoLectivoServiceImpl implements PeriodoLectivoService {
     @Transactional(readOnly = true)
     public PeriodoLectivoResponse obtenerActual() {
         return periodoLectivoRepositoryPort
-                .buscarActualPorEstado(EstadoPeriodo.ACTIVO)
+                .buscarVigente(LocalDate.now(clock))
                 .map(this::convertirAResponse)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        "No hay un periodo lectivo activo actualmente"));
+                        "No hay un periodo lectivo vigente para la fecha del servidor"));
     }
 
     @Override
@@ -74,6 +80,7 @@ public class PeriodoLectivoServiceImpl implements PeriodoLectivoService {
         PeriodoLectivo periodo = buscarPeriodo(id);
 
         validarCodigoDuplicado(request.codigo(), id);
+        validarUnidadYSolapamiento(request, id);
 
         periodo.actualizarDatos(
                 request.codigo(),
@@ -82,6 +89,7 @@ public class PeriodoLectivoServiceImpl implements PeriodoLectivoService {
                 request.fechaFin()
         );
         periodo.cambiarEstado(request.estado());
+        periodo.definirUnidadAcademica(request.ppaCodigo(), request.ppaNombre(), request.cicloAcademico());
 
         PeriodoLectivo actualizado = periodoLectivoRepositoryPort.guardar(periodo);
 
@@ -109,6 +117,23 @@ public class PeriodoLectivoServiceImpl implements PeriodoLectivoService {
         if (existe) {
             throw new ConflictException("Ya existe un periodo lectivo con el código: " + codigo);
         }
+    }
+
+    private void validarUnidadYSolapamiento(PeriodoLectivoRequest request, UUID idActual) {
+        if (request.cicloAcademico() == null) return; // compatibilidad de registros históricos
+        var existentes = periodoLectivoRepositoryPort.buscar(null, Pageable.unpaged()).getContent();
+        boolean duplicado = existentes.stream().filter(p -> !p.getId().equals(idActual)).anyMatch(p ->
+                Objects.equals(p.getCicloAcademico(), request.cicloAcademico())
+                        && anio(p.getPpaNombre()).equals(anio(request.ppaNombre())));
+        if (duplicado) throw new ConflictException("Ya existe el tipo académico para ese año");
+        boolean solapa = existentes.stream().filter(p -> !p.getId().equals(idActual)).anyMatch(p ->
+                !request.fechaFin().isBefore(p.getFechaInicio()) && !request.fechaInicio().isAfter(p.getFechaFin()));
+        if (solapa) throw new ConflictException("Las fechas se solapan con otro período académico");
+    }
+
+    private String anio(String valor) {
+        if (valor == null) return "";
+        return valor.replaceAll(".*?(\\d{4}-\\d{4}).*", "$1");
     }
 
     private PeriodoLectivoResponse convertirAResponse(PeriodoLectivo periodo) {

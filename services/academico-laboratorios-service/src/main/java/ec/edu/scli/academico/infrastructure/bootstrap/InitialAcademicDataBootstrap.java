@@ -97,10 +97,10 @@ public class InitialAcademicDataBootstrap implements ApplicationRunner {
     }
 
     private void periods() {
-        createPeriod(PERIOD_ACTIVE_ID, "2026-B", "Periodo Lectivo 2026-B", EstadoPeriodo.ACTIVO,
-                LocalDate.of(2026, 7, 1), LocalDate.of(2026, 12, 20));
-        createPeriod(PERIOD_FINISHED_ID, "2026-A", "Periodo Lectivo 2026-A", EstadoPeriodo.FINALIZADO,
-                LocalDate.of(2026, 1, 5), LocalDate.of(2026, 6, 30));
+        createPeriod(PERIOD_ACTIVE_ID, "REGULAR 2026-2027 SPA", EstadoPeriodo.ACTIVO,
+                LocalDate.of(2026, 7, 1), LocalDate.of(2026, 12, 20), 2);
+        createPeriod(PERIOD_FINISHED_ID, "REGULAR 2026-2027 PPA", EstadoPeriodo.FINALIZADO,
+                LocalDate.of(2026, 1, 5), LocalDate.of(2026, 6, 30), 1);
     }
 
     private void subjects() {
@@ -170,9 +170,10 @@ public class InitialAcademicDataBootstrap implements ApplicationRunner {
         }
     }
 
-    private void createPeriod(UUID id, String code, String name, EstadoPeriodo state, LocalDate start, LocalDate end) {
+    private void createPeriod(UUID id, String name, EstadoPeriodo state, LocalDate start, LocalDate end, int type) {
         if (!periods.existsById(id)) {
-            PeriodoLectivoEntity e = new PeriodoLectivoEntity(); e.setId(id); e.setCodigo(code); e.setNombre(name);
+            PeriodoLectivoEntity e = new PeriodoLectivoEntity(); e.setId(id); e.setCodigo(name); e.setNombre(name);
+            e.setPpaCodigo(name); e.setPpaNombre(name); e.setCicloAcademico(type);
             e.setEstado(state); e.setFechaInicio(start); e.setFechaFin(end); entityManager.persist(e);
         }
     }

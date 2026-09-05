@@ -93,6 +93,18 @@ public class PeriodoLectivo {
     public void setEstado(EstadoPeriodo estado) {
         this.estado = estado;
     }
+    public void definirUnidadAcademica(String codigo, String nombre, Integer tipo) {
+        if (tipo != null && tipo != 1 && tipo != 2) throw new BusinessRuleException("La unidad académica debe ser PPA o SPA");
+        if (tipo != null) {
+            String esperado = tipo == 1 ? "PPA" : "SPA";
+            if ((codigo != null && !codigo.isBlank() && !codigo.toUpperCase().endsWith(esperado))
+                    || (nombre != null && !nombre.isBlank() && !nombre.toUpperCase().endsWith(esperado)))
+                throw new BusinessRuleException("El tipo " + esperado + " contradice el código o nombre académico");
+        }
+        this.ppaCodigo = codigo;
+        this.ppaNombre = nombre;
+        this.cicloAcademico = tipo;
+    }
 
     public String getPpaCodigo() { return ppaCodigo; }
     public void setPpaCodigo(String value) { ppaCodigo = value; }

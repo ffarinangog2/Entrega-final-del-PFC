@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.Optional;
 import java.util.UUID;
+import java.time.LocalDate;
 
 @Component
 public class PeriodoLectivoRepositoryAdapter implements PeriodoLectivoRepositoryPort {
@@ -53,6 +54,13 @@ public class PeriodoLectivoRepositoryAdapter implements PeriodoLectivoRepository
     public Optional<PeriodoLectivo> buscarActualPorEstado(EstadoPeriodo estado) {
         return periodoLectivoJpaRepository
                 .findFirstByEstadoOrderByFechaInicioDesc(estado)
+                .map(mapper::aDominio);
+    }
+
+    @Override
+    public Optional<PeriodoLectivo> buscarVigente(LocalDate fecha) {
+        return periodoLectivoJpaRepository
+                .buscarVigente(fecha)
                 .map(mapper::aDominio);
     }
 
