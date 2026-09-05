@@ -1,0 +1,182 @@
+\section{Evaluación ISO/IEC 25010:2023}
+\label{sec:iso25010}
+
+Esta sección evalúa el sistema según cinco características del modelo
+de calidad ISO/IEC 25010:2023 \cite{iso25010:2023}, con métricas medidas de forma directa
+sobre el sistema en ejecución, sin proyecciones ni valores estimados.
+
+\subsection{Compatibilidad}
+
+La suite de pruebas de extremo a extremo con Playwright se ejecutó
+sobre tres motores de navegador: Chromium, Firefox y WebKit. La
+elección de WebKit responde a una limitación práctica del entorno de
+desarrollo, que no cuenta con hardware macOS disponible para probar
+Safari nativamente; WebKit es el motor de renderizado subyacente de
+Safari y constituye la alternativa más cercana disponible para
+\emph{continuous integration} en Linux. De las 15 pruebas ejecutadas
+por navegador, 9 pasaron de forma consistente en los tres motores,
+mostrando el mismo patrón de éxito o falla independientemente del
+navegador; las 6 fallas restantes se atribuyeron a interferencia de
+red local durante la ejecución y no a incompatibilidades reales entre
+motores de renderizado, ya que ninguna de ellas mostró un patrón
+distinto entre navegadores. En el ámbito móvil, la compatibilidad se
+garantiza fijando \texttt{minSdk = 26} (Android 8.0), cubriendo la
+inmensa mayoría de dispositivos activos según las cifras públicas de
+distribución de versiones de Android.
+
+\begin{table}[htbp]
+\centering
+\caption{Resultados de Compatibilidad (ISO/IEC 25010)}
+\label{tab:iso-compatibilidad}
+\begin{tabular}{lll}
+\toprule
+Métrica & Medido & Objetivo \\
+\midrule
+Pruebas E2E consistentes entre navegadores & 9/15 & Suite completa \\
+Compatibilidad móvil (Android) & minSdk 26+ & API 26+ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Seguridad}
+
+La evaluación de seguridad se realizó mediante una revisión estática de los
+mecanismos de autenticación, autorización y exposición de servicios, tomando
+como referencia los controles implementados en el API Gateway, Auth,
+Usuarios, Académico/Laboratorios y Reservas/Solicitudes. La unidad de análisis
+fue cada combinación de método HTTP y patrón de ruta declarada por los
+controladores del sistema.
+
+El API Gateway constituye el único punto de entrada externo para los clientes
+web y móvil. Su configuración de seguridad permite sin autenticación
+únicamente las operaciones de inicio de sesión y renovación de token, las
+solicitudes \texttt{OPTIONS} utilizadas por CORS y los endpoints explícitos
+de Actuator. El resto de rutas exige un token JWT de acceso válido. Además,
+los puertos internos de los microservicios no se publican hacia el host,
+evitando el acceso externo directo a los servicios y reduciendo la posibilidad
+de omitir la validación transversal del Gateway.
+
+La matriz de seguridad registró 134 filas de evidencia, correspondientes a
+119 operaciones de controladores y 15 endpoints de Actuator. De este conjunto,
+111 operaciones funcionales fueron clasificadas como protegidas y, en todos
+los casos, se verificó la exigencia de JWT en el perímetro externo oficial.
+Por tanto, la cobertura obtenida se calcula mediante:
+
+\[
+\frac{111}{111}\times 100 = 100\,\%
+\]
+
+Los endpoints públicos, como \texttt{/api/v1/auth/login},
+\texttt{/api/v1/auth/refresh} y los endpoints de Actuator, se excluyeron del
+denominador porque su exposición es intencional. De igual forma, seis rutas
+internas utilizan \texttt{X-Internal-Api-Key} como mecanismo alternativo de
+control y no forman parte de la superficie pública funcional.
+
+\begin{table}[htbp]
+\centering
+\caption{Resultados de Seguridad (ISO/IEC 25010)}
+\label{tab:iso-seguridad}
+\begin{tabular}{llll}
+\toprule
+Métrica & Medido & Objetivo & Estado \\
+\midrule
+Endpoints protegidos con JWT & 111/111 (100\,\%) & 100\,\% & Cumple \\
+Operaciones sin JWT requeridas & 0 & 0 & Cumple \\
+Rutas internas con control alternativo & 6 & Controladas & Cumple \\
+OWASP Top 10 con evidencia integral & 0/10 & Revisión completa & Parcial \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+La revisión complementaria frente al OWASP Top 10 de 2021 mostró que nueve
+categorías presentan controles parciales y una categoría, correspondiente a
+componentes vulnerables o desactualizados, no dispone todavía de evidencia
+automatizada suficiente. Entre las principales fortalezas se identificaron
+la validación JWT transversal en el Gateway, el uso de BCrypt para
+contraseñas, repositorios JPA parametrizados, separación entre access y
+refresh token, restricciones de CORS y gestión de secretos mediante variables
+de entorno.
+
+Sin embargo, permanecen aspectos por fortalecer. El servicio
+Académico/Laboratorios depende de la protección del perímetro y no valida JWT
+internamente; tampoco existen todavía evidencias completas de TLS extremo a
+extremo, análisis automatizado de dependencias, escaneo de secretos, rate
+limiting, CSP global o un modelo de amenazas formal. En consecuencia, el
+resultado del 100\,\% debe interpretarse específicamente como cobertura JWT
+del perímetro externo y no como ausencia total de riesgos de seguridad.
+
+Las pruebas automatizadas complementan esta revisión. En Auth se verifican
+respuestas HTTP 401 y 403, tokens inválidos y exclusión de rutas públicas. En
+el API Gateway, las pruebas de integración comprueban login y refresh
+públicos, rechazo de solicitudes sin token, firmas inválidas, tokens
+expirados, issuer incorrecto y rechazo de refresh tokens utilizados como
+tokens de acceso. Estas evidencias permiten concluir que el objetivo de
+protección JWT del perímetro externo se cumple, aunque la defensa en
+profundidad y algunos controles asociados a OWASP continúan como trabajo de
+mejora.
+
+\subsection{Mantenibilidad}
+% [PENDIENTE -- ISAIAS]
+
+\subsection{Fiabilidad}
+
+La fiabilidad del módulo de reservas se sustenta en cuatro mecanismos
+verificados automáticamente. Primero, la creación y la aprobación guardan
+el resultado asociado a una \texttt{Idempotency-Key}; repetir una operación
+equivalente devuelve el resultado previo sin duplicar solicitudes,
+reservas, historial ni eventos. El uso de una clave con otro actor,
+solicitud o carga útil produce un conflicto explícito.
+
+Segundo, la aprobación serializa el acceso al intervalo de agenda mediante
+una escritura conflictiva determinista compatible con CockroachDB. La
+prueba concurrente con dos solicitudes distintas para el mismo laboratorio
+y franja demuestra que se persiste como máximo una reserva. Tercero, la
+cancelación de una solicitud aprobada actualiza en una sola transacción la
+solicitud y la reserva programada. Finalmente, las pruebas con
+Testcontainers validan el esquema y el comportamiento transaccional sobre
+una base real, no únicamente mediante repositorios simulados.
+
+La topología E3 configura tres nodos y factor de replicación tres. La
+tolerancia efectiva ante la caída controlada de un nodo pertenece al
+protocolo experimental del clúster; sus resultados deben citarse desde la
+evidencia de ejecución y no inferirse solamente de la configuración.
+
+\begin{table}[htbp]
+\centering
+\caption{Evidencia de fiabilidad del módulo de reservas}
+\label{tab:iso-fiabilidad-reservas}
+\begin{tabular}{lll}
+\toprule
+Propiedad & Evidencia & Resultado \\
+\midrule
+Idempotencia de creación & Replay con misma clave y carga & Sin duplicado \\
+Idempotencia de aprobación & Replay de la misma solicitud & Una reserva \\
+Concurrencia & Dos aprobaciones sobre la misma franja & Máximo una reserva \\
+Consistencia de cancelación & Solicitud aprobada y reserva programada & Ambas canceladas \\
+Regresión automatizada & Suite de Reservas & 110/110 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Eficiencia de desempeño}
+
+La evaluación de eficiencia está preparada para ejecutarse siempre a
+través del \emph{gateway} y no contra el puerto interno de Reservas. El
+protocolo contempla lecturas de disponibilidad, solicitudes, reservas y
+agenda, además de escrituras controladas para evitar contaminar la base con
+operaciones artificiales masivas.
+
+Para cada corrida se deben conservar el total de peticiones, rendimiento en
+peticiones por segundo, tasa de fallos, media, mediana o p50, p95, p99,
+mínimo y máximo. Las repeticiones previstas permiten calcular media,
+desviación estándar e intervalo de confianza del 95\,\%, y generar
+diagramas de caja sin selección manual de resultados. Los errores
+\texttt{4xx} esperados por autorización o conflicto se separan de los
+\texttt{5xx}, que representan fallos internos.
+
+No se fija un SLA arbitrario: los percentiles y el \emph{throughput} deben
+reportarse como valores observados. Al no existir en esta versión del
+documento una campaña final completa y reproducible asociada a sus CSV, no
+se consignan cifras de rendimiento. Esta distinción evita presentar como
+evidencia definitiva una configuración, una ejecución aislada o datos de
+otra versión del sistema.

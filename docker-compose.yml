@@ -1,5 +1,34 @@
 services:
 
+  # Certificados TLS compartidos por los nodos CockroachDB de este entorno.
+  # La clave de la CA permanece en un volumen separado y no se monta en los nodos.
+  cockroach-cert-init:
+    image: cockroachdb/cockroach:v26.2.0
+    container_name: scli-cockroach-cert-init
+    user: "0"
+    entrypoint: ["/bin/sh", "-ec"]
+    command:
+      - |
+        if [ ! -s /certs/ca.crt ]; then
+          cockroach cert create-ca --certs-dir=/certs --ca-key=/ca/ca.key
+        fi
+        if [ ! -s /certs/node.crt ] || [ ! -s /certs/node.key ]; then
+          cockroach cert create-node \
+            localhost 127.0.0.1 \
+            cockroach-auth cockroach-usuarios cockroach-academico \
+            crdb-e3-1 crdb-e3-2 crdb-e3-3 \
+            --certs-dir=/certs --ca-key=/ca/ca.key
+        fi
+        if [ ! -s /certs/client.root.crt ] || [ ! -s /certs/client.root.key ]; then
+          cockroach cert create-client root --certs-dir=/certs --ca-key=/ca/ca.key
+        fi
+        chmod 0644 /certs/ca.crt /certs/node.crt /certs/client.root.crt
+        chmod 0600 /certs/node.key /certs/client.root.key /ca/ca.key
+    volumes:
+      - cockroach-certs:/certs
+      - cockroach-ca-private:/ca
+    restart: "no"
+
   # =========================================================
   # BASE DE DATOS DEL AUTH SERVICE
   # =========================================================
@@ -9,8 +38,12 @@ services:
 
     command:
       - start-single-node
-      - --insecure
+      - --certs-dir=/cockroach/cockroach-certs
       - --store=/cockroach/cockroach-data
+
+    depends_on:
+      cockroach-cert-init:
+        condition: service_completed_successfully
 
     ports:
       - "26257:26257"
@@ -18,6 +51,7 @@ services:
 
     volumes:
       - cockroach-auth-data:/cockroach/cockroach-data
+      - cockroach-certs:/cockroach/cockroach-certs:ro
 
     healthcheck:
       test:
@@ -25,13 +59,14 @@ services:
           "CMD",
           "cockroach",
           "sql",
-          "--insecure",
+          "--certs-dir=/cockroach/cockroach-certs",
           "--host=localhost:26257",
           "--execute=SELECT 1"
         ]
       interval: 10s
-      timeout: 5s
-      retries: 10
+      timeout: 10s
+      retries: 6
+      start_period: 60s
 
     networks:
       - scli-network
@@ -46,16 +81,26 @@ services:
       cockroach-auth:
         condition: service_healthy
 
+    environment:
+      DB_USERNAME: ${AUTH_DB_USERNAME:?AUTH_DB_USERNAME is required}
+      DB_PASSWORD: ${AUTH_DB_PASSWORD:?AUTH_DB_PASSWORD is required}
+
     entrypoint:
       - /bin/sh
       - -c
       - |
+        case "$${DB_USERNAME}" in ''|*[!a-z0-9_]*) echo "AUTH_DB_USERNAME invalido" >&2; exit 1;; esac
+        case "$${DB_PASSWORD}" in ''|*[!0-9a-f]*) echo "AUTH_DB_PASSWORD debe ser hexadecimal" >&2; exit 1;; esac
+        [ "$${#DB_PASSWORD}" -ge 48 ] || { echo "AUTH_DB_PASSWORD demasiado corto" >&2; exit 1; }
         cockroach sql \
-          --insecure \
+          --certs-dir=/cockroach/cockroach-certs \
           --host=cockroach-auth:26257 \
-          --execute="CREATE DATABASE IF NOT EXISTS auth_db;"
+          --execute="CREATE DATABASE IF NOT EXISTS auth_db; CREATE USER IF NOT EXISTS \"$${DB_USERNAME}\"; ALTER USER \"$${DB_USERNAME}\" WITH PASSWORD '$${DB_PASSWORD}'; GRANT ALL ON DATABASE auth_db TO \"$${DB_USERNAME}\";"
 
     restart: "no"
+
+    volumes:
+      - cockroach-certs:/cockroach/cockroach-certs:ro
 
     networks:
       - scli-network
@@ -66,22 +111,35 @@ services:
   # =========================================================
   auth-service:
     build:
-      context: ./auth-service
+      context: ./services/auth-service
       dockerfile: Dockerfile
 
     container_name: scli-auth-service
 
-    ports:
-      - "8081:8081"
-
     environment:
       SERVER_PORT: 8081
-      DB_URL: jdbc:postgresql://cockroach-auth:26257/auth_db?sslmode=disable&options=-c%20allow_unsafe_internals%3Dtrue
-      DB_USERNAME: root
-      DB_PASSWORD: ""
-      INTERNAL_API_KEY: clave-interna-desarrollo
+      DB_URL: jdbc:postgresql://cockroach-auth:26257/auth_db?sslmode=verify-full&sslrootcert=/cockroach/cockroach-certs/ca.crt&options=-c%20allow_unsafe_internals%3Dtrue
+      DB_USERNAME: ${AUTH_DB_USERNAME:?AUTH_DB_USERNAME is required}
+      DB_PASSWORD: ${AUTH_DB_PASSWORD:?AUTH_DB_PASSWORD is required}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY}
       USUARIOS_SERVICE_URL: http://usuarios-service:8082
       JWT_SECRET: ${JWT_SECRET}
+      INITIAL_DATA_ENABLED: ${INITIAL_DATA_ENABLED:-false}
+      INITIAL_USERS_PASSWORD: ${INITIAL_USERS_PASSWORD:-}
+      MAIL_HOST: ${MAIL_HOST:-localhost}
+      MAIL_PORT: ${MAIL_PORT:-1025}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_FROM: ${MAIL_FROM:-no-reply@scli.local}
+      MAIL_SMTP_AUTH: ${MAIL_SMTP_AUTH:-false}
+      MAIL_STARTTLS_ENABLE: ${MAIL_STARTTLS_ENABLE:-false}
+      MANAGEMENT_HEALTH_MAIL_ENABLED: "false"
+      PASSWORD_RESET_BASE_URL: ${PASSWORD_RESET_BASE_URL:-http://localhost:3000/restablecer-contrasena}
+      PASSWORD_RESET_EXPIRATION_MINUTES: ${PASSWORD_RESET_EXPIRATION_MINUTES:-20}
+      OTEL_SERVICE_NAME: auth-service
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://otel-collector:4318/v1/traces
+      OTEL_EXPORTER_OTLP_LOGS_ENDPOINT: http://otel-collector:4318/v1/logs
 
     depends_on:
       cockroach-auth:
@@ -89,9 +147,19 @@ services:
       cockroach-auth-init:
         condition: service_completed_successfully
       usuarios-service:
-        condition: service_started
+        condition: service_healthy
+
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:8081/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 180s
 
     restart: unless-stopped
+
+    volumes:
+      - cockroach-certs:/cockroach/cockroach-certs:ro
 
     networks:
       - scli-network
@@ -106,8 +174,12 @@ services:
 
     command:
       - start-single-node
-      - --insecure
+      - --certs-dir=/cockroach/cockroach-certs
       - --store=/cockroach/cockroach-data
+
+    depends_on:
+      cockroach-cert-init:
+        condition: service_completed_successfully
 
     ports:
       - "26258:26257"
@@ -115,6 +187,7 @@ services:
 
     volumes:
       - cockroach-usuarios-data:/cockroach/cockroach-data
+      - cockroach-certs:/cockroach/cockroach-certs:ro
 
     healthcheck:
       test:
@@ -122,13 +195,14 @@ services:
           "CMD",
           "cockroach",
           "sql",
-          "--insecure",
+          "--certs-dir=/cockroach/cockroach-certs",
           "--host=localhost:26257",
           "--execute=SELECT 1"
         ]
       interval: 10s
-      timeout: 5s
-      retries: 10
+      timeout: 10s
+      retries: 6
+      start_period: 60s
 
     networks:
       - scli-network
@@ -143,16 +217,26 @@ services:
       cockroach-usuarios:
         condition: service_healthy
 
+    environment:
+      DB_USERNAME: ${USUARIOS_DB_USERNAME:?USUARIOS_DB_USERNAME is required}
+      DB_PASSWORD: ${USUARIOS_DB_PASSWORD:?USUARIOS_DB_PASSWORD is required}
+
     entrypoint:
       - /bin/sh
       - -c
       - |
+        case "$${DB_USERNAME}" in ''|*[!a-z0-9_]*) echo "USUARIOS_DB_USERNAME invalido" >&2; exit 1;; esac
+        case "$${DB_PASSWORD}" in ''|*[!0-9a-f]*) echo "USUARIOS_DB_PASSWORD debe ser hexadecimal" >&2; exit 1;; esac
+        [ "$${#DB_PASSWORD}" -ge 48 ] || { echo "USUARIOS_DB_PASSWORD demasiado corto" >&2; exit 1; }
         cockroach sql \
-          --insecure \
+          --certs-dir=/cockroach/cockroach-certs \
           --host=cockroach-usuarios:26257 \
-          --execute="CREATE DATABASE IF NOT EXISTS usuarios_db;"
+          --execute="CREATE DATABASE IF NOT EXISTS usuarios_db; CREATE USER IF NOT EXISTS \"$${DB_USERNAME}\"; ALTER USER \"$${DB_USERNAME}\" WITH PASSWORD '$${DB_PASSWORD}'; GRANT ALL ON DATABASE usuarios_db TO \"$${DB_USERNAME}\";"
 
     restart: "no"
+
+    volumes:
+      - cockroach-certs:/cockroach/cockroach-certs:ro
 
     networks:
       - scli-network
@@ -163,20 +247,27 @@ services:
   # =========================================================
   usuarios-service:
     build:
-      context: ./usuarios-service
+      context: ./services/usuarios-service
       dockerfile: Dockerfile
 
     container_name: scli-usuarios-service
 
-    ports:
-      - "8082:8082"
-
     environment:
       SERVER_PORT: 8082
-      DB_URL: jdbc:postgresql://cockroach-usuarios:26257/usuarios_db?sslmode=disable
-      DB_USERNAME: root
-      DB_PASSWORD: ""
-      INTERNAL_API_KEY: clave-interna-desarrollo
+      DB_URL: jdbc:postgresql://cockroach-usuarios:26257/usuarios_db?sslmode=verify-full&sslrootcert=/cockroach/cockroach-certs/ca.crt
+      DB_USERNAME: ${USUARIOS_DB_USERNAME:?USUARIOS_DB_USERNAME is required}
+      DB_PASSWORD: ${USUARIOS_DB_PASSWORD:?USUARIOS_DB_PASSWORD is required}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY}
+      JWT_SECRET: ${JWT_SECRET}
+      DATA_ENCRYPTION_KEY: ${DATA_ENCRYPTION_KEY}
+      DATA_HASH_KEY: ${DATA_HASH_KEY}
+      INITIAL_DATA_ENABLED: ${INITIAL_DATA_ENABLED:-false}
+      INITIAL_PISO_IDS: ${INITIAL_PISO_IDS:-35000000-0000-0000-0000-000000000001,35000000-0000-0000-0000-000000000002}
+      INITIAL_CARRERA_IDS: ${INITIAL_CARRERA_IDS:-37000000-0000-0000-0000-000000000001,37000000-0000-0000-0000-000000000002}
+      OTEL_SERVICE_NAME: usuarios-service
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://otel-collector:4318/v1/traces
+      OTEL_EXPORTER_OTLP_LOGS_ENDPOINT: http://otel-collector:4318/v1/logs
 
     depends_on:
       cockroach-usuarios:
@@ -184,7 +275,17 @@ services:
       cockroach-usuarios-init:
         condition: service_completed_successfully
 
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:8082/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 180s
+
     restart: unless-stopped
+
+    volumes:
+      - cockroach-certs:/cockroach/cockroach-certs:ro
 
     networks:
       - scli-network
@@ -199,8 +300,12 @@ services:
 
     command:
       - start-single-node
-      - --insecure
+      - --certs-dir=/cockroach/cockroach-certs
       - --store=/cockroach/cockroach-data
+
+    depends_on:
+      cockroach-cert-init:
+        condition: service_completed_successfully
 
     ports:
       - "26259:26257"
@@ -208,6 +313,7 @@ services:
 
     volumes:
       - cockroach-academico-data:/cockroach/cockroach-data
+      - cockroach-certs:/cockroach/cockroach-certs:ro
 
     healthcheck:
       test:
@@ -215,13 +321,14 @@ services:
           "CMD",
           "cockroach",
           "sql",
-          "--insecure",
+          "--certs-dir=/cockroach/cockroach-certs",
           "--host=localhost:26257",
           "--execute=SELECT 1"
         ]
       interval: 10s
-      timeout: 5s
-      retries: 10
+      timeout: 10s
+      retries: 6
+      start_period: 60s
 
     networks:
       - scli-network
@@ -236,16 +343,26 @@ services:
       cockroach-academico:
         condition: service_healthy
 
+    environment:
+      DB_USERNAME: ${ACADEMICO_DB_USERNAME:?ACADEMICO_DB_USERNAME is required}
+      DB_PASSWORD: ${ACADEMICO_DB_PASSWORD:?ACADEMICO_DB_PASSWORD is required}
+
     entrypoint:
       - /bin/sh
       - -c
       - |
+        case "$${DB_USERNAME}" in ''|*[!a-z0-9_]*) echo "ACADEMICO_DB_USERNAME invalido" >&2; exit 1;; esac
+        case "$${DB_PASSWORD}" in ''|*[!0-9a-f]*) echo "ACADEMICO_DB_PASSWORD debe ser hexadecimal" >&2; exit 1;; esac
+        [ "$${#DB_PASSWORD}" -ge 48 ] || { echo "ACADEMICO_DB_PASSWORD demasiado corto" >&2; exit 1; }
         cockroach sql \
-          --insecure \
+          --certs-dir=/cockroach/cockroach-certs \
           --host=cockroach-academico:26257 \
-          --execute="CREATE DATABASE IF NOT EXISTS academico_db;"
+          --execute="CREATE DATABASE IF NOT EXISTS academico_db; CREATE USER IF NOT EXISTS \"$${DB_USERNAME}\"; ALTER USER \"$${DB_USERNAME}\" WITH PASSWORD '$${DB_PASSWORD}'; GRANT ALL ON DATABASE academico_db TO \"$${DB_USERNAME}\";"
 
     restart: "no"
+
+    volumes:
+      - cockroach-certs:/cockroach/cockroach-certs:ro
 
     networks:
       - scli-network
@@ -256,7 +373,7 @@ services:
   # =========================================================
   academico-laboratorios-service:
     build:
-      context: ./academico-laboratorios-service
+      context: ./services/academico-laboratorios-service
       dockerfile: Dockerfile
 
     container_name: scli-academico-laboratorios-service
@@ -268,17 +385,33 @@ services:
         condition: service_completed_successfully
 
     environment:
-      DB_URL: jdbc:postgresql://cockroach-academico:26257/academico_db?sslmode=disable&options=-c%20allow_unsafe_internals%3Dtrue
-      DB_USERNAME: root
-      DB_PASSWORD: ""
+      DB_URL: jdbc:postgresql://cockroach-academico:26257/academico_db?sslmode=verify-full&sslrootcert=/cockroach/cockroach-certs/ca.crt&options=-c%20allow_unsafe_internals%3Dtrue
+      DB_USERNAME: ${ACADEMICO_DB_USERNAME:?ACADEMICO_DB_USERNAME is required}
+      DB_PASSWORD: ${ACADEMICO_DB_PASSWORD:?ACADEMICO_DB_PASSWORD is required}
       SERVER_PORT: 8083
-      INTERNAL_API_KEY: clave-interna-desarrollo
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY}
+      JWT_SECRET: ${JWT_SECRET}
+      USUARIOS_SERVICE_URL: http://usuarios-service:8082
+      INITIAL_DATA_ENABLED: ${INITIAL_DATA_ENABLED:-false}
+      SPRING_FLYWAY_BASELINE_ON_MIGRATE: "true"
+      SPRING_FLYWAY_BASELINE_VERSION: "1"
+      OTEL_SERVICE_NAME: academico-laboratorios-service
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://otel-collector:4318/v1/traces
+      OTEL_EXPORTER_OTLP_LOGS_ENDPOINT: http://otel-collector:4318/v1/logs
 
-    ports:
-      - "8083:8083"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:8083/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 180s
 
     networks:
       - scli-network
+
+    volumes:
+      - cockroach-certs:/cockroach/cockroach-certs:ro
 
 
   # =========================================================
@@ -290,30 +423,107 @@ services:
   # =========================================================
   reservas-solicitudes-service:
     build:
-      context: ./reservas-solicitudes-service
+      context: ./services/reservas-solicitudes-service
       dockerfile: Dockerfile
 
-    container_name: scli-reservas-solicitudes-service
-
-    ports:
-      - "8084:8084"
+    container_name: reservas-service
 
     environment:
       SERVER_PORT: 8084
-      DB_URL: jdbc:postgresql://crdb-e3-1:26257,crdb-e3-2:26257,crdb-e3-3:26257/reservas_db?sslmode=disable&options=-c%20allow_unsafe_internals%3Dtrue
-      DB_USERNAME: root
-      DB_PASSWORD: ""
-      SPRING_FLYWAY_BASELINE_ON_MIGRATE: "true"
-      SPRING_FLYWAY_BASELINE_VERSION: "1"
-      INTERNAL_API_KEY: clave-interna-desarrollo
+      DB_URL: jdbc:postgresql://crdb-e3-1:26257,crdb-e3-2:26257,crdb-e3-3:26257/reservas_db?sslmode=verify-full&sslrootcert=/cockroach/cockroach-certs/ca.crt&options=-c%20allow_unsafe_internals%3Dtrue
+      DB_USERNAME: ${RESERVAS_DB_USERNAME:?RESERVAS_DB_USERNAME is required}
+      DB_PASSWORD: ${RESERVAS_DB_PASSWORD:?RESERVAS_DB_PASSWORD is required}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY}
       JWT_SECRET: ${JWT_SECRET}
       USUARIOS_SERVICE_URL: http://usuarios-service:8082
+      ACADEMICO_LABORATORIOS_SERVICE_URL: http://academico-laboratorios-service:8083
+      RESERVA_EXPIRATION_GRACE_MINUTES: ${RESERVA_EXPIRATION_GRACE_MINUTES:-1440}
+      ASISTENCIA_WINDOW_MINUTES: ${ASISTENCIA_WINDOW_MINUTES:-15}
+      OTEL_SERVICE_NAME: reservas-solicitudes-service
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://otel-collector:4318/v1/traces
+      OTEL_EXPORTER_OTLP_LOGS_ENDPOINT: http://otel-collector:4318/v1/logs
 
     depends_on:
       crdb-e3-init:
         condition: service_completed_successfully
 
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:8084/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 180s
+
     restart: unless-stopped
+
+    networks:
+      - scli-network
+
+    volumes:
+      - cockroach-certs:/cockroach/cockroach-certs:ro
+
+  # =========================================================
+  # API GATEWAY
+  # =========================================================
+  api-gateway:
+    build:
+      context: ./services/api-gateway
+      dockerfile: Dockerfile
+
+    container_name: api-gateway
+
+    ports:
+      - "8080:8080"
+
+    environment:
+      SERVER_PORT: 8080
+      AUTH_SERVICE_URL: http://auth-service:8081
+      USUARIOS_SERVICE_URL: http://usuarios-service:8082
+      ACADEMICO_SERVICE_URL: http://academico-laboratorios-service:8083
+      RESERVAS_SOLICITUDES_SERVICE_URL: http://reservas-solicitudes-service:8084
+      JWT_SECRET: ${JWT_SECRET}
+      OTEL_SERVICE_NAME: api-gateway
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://otel-collector:4318/v1/traces
+      OTEL_EXPORTER_OTLP_LOGS_ENDPOINT: http://otel-collector:4318/v1/logs
+
+    depends_on:
+      auth-service:
+        condition: service_healthy
+      usuarios-service:
+        condition: service_healthy
+      academico-laboratorios-service:
+        condition: service_healthy
+      reservas-solicitudes-service:
+        condition: service_healthy
+
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:8080/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 180s
+
+    restart: unless-stopped
+
+    networks:
+      - scli-network
+
+  # =========================================================
+  # APLICACION WEB
+  # =========================================================
+  web:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+
+    ports:
+      - "3000:80"
+
+    depends_on:
+      api-gateway:
+        condition: service_healthy
 
     networks:
       - scli-network
@@ -327,10 +537,10 @@ services:
   # =========================================================
   crdb-e3-1:
     image: ${CRDB_E3_IMAGE:-cockroachdb/cockroach:v26.2.0}
-    container_name: scli-crdb-e3-1
+    container_name: reservas-db-node-1
     command:
       - start
-      - --insecure
+      - --certs-dir=/cockroach/cockroach-certs
       - --advertise-addr=crdb-e3-1
       - --join=crdb-e3-1,crdb-e3-2,crdb-e3-3
       - --http-addr=0.0.0.0:8080
@@ -340,16 +550,26 @@ services:
       - "${CRDB_E3_1_HTTP_PORT:-8092}:8080"
     volumes:
       - crdb-e3-1-data:/cockroach/cockroach-data
+      - cockroach-certs:/cockroach/cockroach-certs:ro
+    depends_on:
+      cockroach-cert-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "cockroach", "sql", "--certs-dir=/cockroach/cockroach-certs", "--host=localhost:26257", "--execute=SELECT 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 12
+      start_period: 60s
     restart: unless-stopped
     networks:
       - scli-network
 
   crdb-e3-2:
     image: ${CRDB_E3_IMAGE:-cockroachdb/cockroach:v26.2.0}
-    container_name: scli-crdb-e3-2
+    container_name: reservas-db-node-2
     command:
       - start
-      - --insecure
+      - --certs-dir=/cockroach/cockroach-certs
       - --advertise-addr=crdb-e3-2
       - --join=crdb-e3-1,crdb-e3-2,crdb-e3-3
       - --http-addr=0.0.0.0:8080
@@ -359,16 +579,26 @@ services:
       - "${CRDB_E3_2_HTTP_PORT:-8093}:8080"
     volumes:
       - crdb-e3-2-data:/cockroach/cockroach-data
+      - cockroach-certs:/cockroach/cockroach-certs:ro
+    depends_on:
+      cockroach-cert-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "cockroach", "sql", "--certs-dir=/cockroach/cockroach-certs", "--host=localhost:26257", "--execute=SELECT 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 12
+      start_period: 60s
     restart: unless-stopped
     networks:
       - scli-network
 
   crdb-e3-3:
     image: ${CRDB_E3_IMAGE:-cockroachdb/cockroach:v26.2.0}
-    container_name: scli-crdb-e3-3
+    container_name: reservas-db-node-3
     command:
       - start
-      - --insecure
+      - --certs-dir=/cockroach/cockroach-certs
       - --advertise-addr=crdb-e3-3
       - --join=crdb-e3-1,crdb-e3-2,crdb-e3-3
       - --http-addr=0.0.0.0:8080
@@ -378,13 +608,23 @@ services:
       - "${CRDB_E3_3_HTTP_PORT:-8094}:8080"
     volumes:
       - crdb-e3-3-data:/cockroach/cockroach-data
+      - cockroach-certs:/cockroach/cockroach-certs:ro
+    depends_on:
+      cockroach-cert-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "cockroach", "sql", "--certs-dir=/cockroach/cockroach-certs", "--host=localhost:26257", "--execute=SELECT 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 12
+      start_period: 60s
     restart: unless-stopped
     networks:
       - scli-network
 
   crdb-e3-init:
     image: ${CRDB_E3_IMAGE:-cockroachdb/cockroach:v26.2.0}
-    container_name: scli-crdb-e3-init
+    container_name: reservas-db-init
     depends_on:
       crdb-e3-1:
         condition: service_started
@@ -392,16 +632,22 @@ services:
         condition: service_started
       crdb-e3-3:
         condition: service_started
+    environment:
+      DB_USERNAME: ${RESERVAS_DB_USERNAME:?RESERVAS_DB_USERNAME is required}
+      DB_PASSWORD: ${RESERVAS_DB_PASSWORD:?RESERVAS_DB_PASSWORD is required}
     entrypoint:
       - /bin/sh
       - -ec
       - |
+        case "$${DB_USERNAME}" in ''|*[!a-z0-9_]*) echo "RESERVAS_DB_USERNAME invalido" >&2; exit 1;; esac
+        case "$${DB_PASSWORD}" in ''|*[!0-9a-f]*) echo "RESERVAS_DB_PASSWORD debe ser hexadecimal" >&2; exit 1;; esac
+        [ "$${#DB_PASSWORD}" -ge 48 ] || { echo "RESERVAS_DB_PASSWORD demasiado corto" >&2; exit 1; }
         until cockroach init \
-          --insecure \
+          --certs-dir=/cockroach/cockroach-certs \
           --host=crdb-e3-1:26257
         do
           if cockroach sql \
-            --insecure \
+            --certs-dir=/cockroach/cockroach-certs \
             --host=crdb-e3-1:26257 \
             --execute="SELECT 1"
           then
@@ -411,34 +657,152 @@ services:
         done
 
         until cockroach sql \
-          --insecure \
+          --certs-dir=/cockroach/cockroach-certs \
           --host=crdb-e3-1:26257 \
           --execute="SELECT 1"
         do
           sleep 2
         done
 
-        if cockroach sql \
-          --insecure \
+        cockroach sql \
+          --certs-dir=/cockroach/cockroach-certs \
           --host=crdb-e3-1:26257 \
-          --database=reservas_db \
-          --execute="SELECT 1 FROM configuraciones_reserva LIMIT 0"
-        then
-          echo "El esquema de reservas ya está aplicado."
-        else
-          cockroach sql \
-            --insecure \
-            --host=crdb-e3-1:26257 \
-            --file=/schema.sql
-        fi
+          --execute="CREATE DATABASE IF NOT EXISTS reservas_db; CREATE USER IF NOT EXISTS \"$${DB_USERNAME}\"; ALTER USER \"$${DB_USERNAME}\" WITH PASSWORD '$${DB_PASSWORD}'; GRANT ALL ON DATABASE reservas_db TO \"$${DB_USERNAME}\"; ALTER RANGE default CONFIGURE ZONE USING num_replicas = 3"
     volumes:
-      - ./db/schema.sql:/schema.sql:ro
+      - cockroach-certs:/cockroach/cockroach-certs:ro
     restart: "no"
     networks:
       - scli-network
 
 
+  # =========================================================
+  # OBSERVABILIDAD - CADVISOR (Isaías Urbina)
+  # =========================================================
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.47.2
+    container_name: scli-cadvisor
+
+    ports:
+      - "8085:8080"
+
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+
+    restart: unless-stopped
+
+    networks:
+      - scli-network
+
+
+  # =========================================================
+  # OBSERVABILIDAD - PROMETHEUS + GRAFANA + OTEL COLLECTOR (Isaías Urbina)
+  # =========================================================
+  prometheus:
+    image: prom/prometheus:v3.0.1
+    container_name: scli-prometheus
+
+    ports:
+      - "9090:9090"
+
+    volumes:
+      - ./ops/prometheus:/etc/prometheus:ro
+
+    restart: unless-stopped
+
+    networks:
+      - scli-network
+
+
+  grafana:
+    image: grafana/grafana:11.3.0
+    container_name: scli-grafana
+
+    ports:
+      - "3001:3000"
+
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GF_SECURITY_ADMIN_PASSWORD:?GF_SECURITY_ADMIN_PASSWORD is required}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+
+    volumes:
+      - ./ops/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - ./ops/grafana/pfc-dashboard.json:/var/lib/grafana/canonical/pfc-dashboard.json:ro
+      - ./ops/grafana/provisioning:/etc/grafana/provisioning:ro
+
+    depends_on:
+      - prometheus
+      - tempo
+
+    restart: unless-stopped
+
+    networks:
+      - scli-network
+
+
+  otel-collector:
+    image: otel/opentelemetry-collector:0.110.0
+    container_name: scli-otel-collector
+
+    command: ["--config=/etc/otelcol/config.yaml"]
+
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+
+    volumes:
+      - ./ops/otel-collector/config.yaml:/etc/otelcol/config.yaml:ro
+
+    depends_on:
+      - loki
+      - tempo
+
+    restart: unless-stopped
+
+    networks:
+      - scli-network
+
+  tempo:
+    image: grafana/tempo:2.6.1
+    container_name: scli-tempo
+    command: ["-config.file=/etc/tempo/config.yaml"]
+    ports:
+      - "3200:3200"
+    volumes:
+      - ./ops/tempo/config.yaml:/etc/tempo/config.yaml:ro
+      - tempo-data:/var/tempo
+    restart: unless-stopped
+    networks:
+      - scli-network
+
+
+  # =========================================================
+  # OBSERVABILIDAD - LOKI (auditoria/SIEM, Isaías Urbina)
+  # =========================================================
+  loki:
+    image: grafana/loki:3.3.0
+    container_name: scli-loki
+
+    ports:
+      - "3100:3100"
+
+    volumes:
+      - loki-data:/loki
+
+    restart: unless-stopped
+
+    networks:
+      - scli-network
+
+
 volumes:
+
+  cockroach-certs:
+
+  cockroach-ca-private:
 
   cockroach-auth-data:
 
@@ -451,6 +815,10 @@ volumes:
   crdb-e3-2-data:
 
   crdb-e3-3-data:
+
+  loki-data:
+
+  tempo-data:
 
 
 networks:

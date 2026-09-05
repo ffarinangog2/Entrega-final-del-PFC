@@ -1,0 +1,3 @@
+package ec.edu.scli.academico.domain.model;
+import ec.edu.scli.academico.enums.EstadoPeriodo;import org.junit.jupiter.api.Test;import java.time.LocalDate;import static org.assertj.core.api.Assertions.*;
+class PeriodoLectivoUnidadAcademicaTest { @Test void ppaYSpaDebenCoincidirConElTipoInterno(){var p=PeriodoLectivo.nuevo("P","P",LocalDate.now(),LocalDate.now().plusDays(1),EstadoPeriodo.PLANIFICADO);p.definirUnidadAcademica("REGULAR 2026-2027 PPA","REGULAR 2026-2027 PPA",1);assertThat(p.getCicloAcademico()).isEqualTo(1);assertThatThrownBy(()->p.definirUnidadAcademica("REGULAR 2026-2027 SPA","REGULAR 2026-2027 SPA",1)).hasMessageContaining("contradice");} }

@@ -1,0 +1,81 @@
+{
+  "dashboard": {
+    "topbar": {
+      "tagline": "Computer Labs"
+    },
+    "sidebar": {
+      "workspaceLabel": "Workspaces",
+      "systemLabel": "System",
+      "note": "Services operational"
+    },
+    "nav": {
+      "home": "Home",
+      "labs": "Labs",
+      "reservations": "Reservations",
+      "newRequest": "New request",
+      "calendar": "Calendar",
+      "settings": "Settings",
+      "about": "About",
+      "usuarios": "Users"
+    },
+    "breadcrumbHome": "Home",
+    "userNameFallback": "User",
+    "userRoleFallback": "System user"
+  },
+  "settings": {
+    "title": "Settings",
+    "subtitle": "Application preferences.",
+    "language": {
+      "label": "Language",
+      "description": "Choose the interface language.",
+      "es": "Español",
+      "en": "English"
+    },
+    "theme": {
+      "label": "Theme",
+      "description": "Choose the interface appearance.",
+      "light": "Light",
+      "dark": "Dark"
+    }
+  },
+  "about": {
+    "title": "About SCLI",
+    "subtitle": "UTEQ distributed application.",
+    "appNameLabel": "System name",
+    "appName": "SCLI — Computer Labs Control System",
+    "versionLabel": "Version",
+    "stackLabel": "Technology stack",
+    "stackValue": "React, TypeScript, Vite, Spring Boot, CockroachDB"
+  },
+  "usuarios": {
+    "title": "Users",
+    "subtitle": "Profiles registered in the system.",
+    "table": {
+      "nombres": "First name",
+      "apellidos": "Last name",
+      "emailInstitucional": "Institutional email",
+      "activo": "Active",
+      "si": "Yes",
+      "no": "No"
+    },
+    "loading": "Loading profiles...",
+    "empty": "No profiles registered.",
+    "errorLoad": "Could not fetch the list of profiles.",
+    "retry": "Try again",
+    "form": {
+      "title": "New profile",
+      "identificacion": "ID number",
+      "nombres": "First name",
+      "apellidos": "Last name",
+      "emailInstitucional": "Institutional email",
+      "emailPersonal": "Personal email",
+      "telefono": "Phone",
+      "direccion": "Address",
+      "fechaNacimiento": "Date of birth",
+      "submit": "Create profile",
+      "submitting": "Creating...",
+      "success": "Profile created successfully.",
+      "error": "Could not create the profile."
+    }
+  }
+}

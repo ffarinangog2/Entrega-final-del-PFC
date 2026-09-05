@@ -1,0 +1,81 @@
+{
+  "dashboard": {
+    "topbar": {
+      "tagline": "Laboratorios Informáticos"
+    },
+    "sidebar": {
+      "workspaceLabel": "Espacios de trabajo",
+      "systemLabel": "Sistema",
+      "note": "Servicios operativos"
+    },
+    "nav": {
+      "home": "Inicio",
+      "labs": "Laboratorios",
+      "reservations": "Reservas",
+      "newRequest": "Nueva solicitud",
+      "calendar": "Calendario",
+      "settings": "Configuración",
+      "about": "Acerca de",
+      "usuarios": "Usuarios"
+    },
+    "breadcrumbHome": "Inicio",
+    "userNameFallback": "Usuario",
+    "userRoleFallback": "Usuario del sistema"
+  },
+  "settings": {
+    "title": "Configuración",
+    "subtitle": "Preferencias de la aplicación.",
+    "language": {
+      "label": "Idioma",
+      "description": "Elegí el idioma de la interfaz.",
+      "es": "Español",
+      "en": "English"
+    },
+    "theme": {
+      "label": "Tema",
+      "description": "Elegí la apariencia de la interfaz.",
+      "light": "Claro",
+      "dark": "Oscuro"
+    }
+  },
+  "about": {
+    "title": "Acerca de SCLI",
+    "subtitle": "Aplicación distribuida de la UTEQ.",
+    "appNameLabel": "Nombre del sistema",
+    "appName": "SCLI — Sistema de Control de Laboratorios Informáticos",
+    "versionLabel": "Versión",
+    "stackLabel": "Stack tecnológico",
+    "stackValue": "React, TypeScript, Vite, Spring Boot, CockroachDB"
+  },
+  "usuarios": {
+    "title": "Usuarios",
+    "subtitle": "Perfiles registrados en el sistema.",
+    "table": {
+      "nombres": "Nombres",
+      "apellidos": "Apellidos",
+      "emailInstitucional": "Email institucional",
+      "activo": "Activo",
+      "si": "Sí",
+      "no": "No"
+    },
+    "loading": "Cargando perfiles...",
+    "empty": "No hay perfiles registrados.",
+    "errorLoad": "No se pudo obtener el listado de perfiles.",
+    "retry": "Intentar de nuevo",
+    "form": {
+      "title": "Nuevo perfil",
+      "identificacion": "Identificación",
+      "nombres": "Nombres",
+      "apellidos": "Apellidos",
+      "emailInstitucional": "Email institucional",
+      "emailPersonal": "Email personal",
+      "telefono": "Teléfono",
+      "direccion": "Dirección",
+      "fechaNacimiento": "Fecha de nacimiento",
+      "submit": "Crear perfil",
+      "submitting": "Creando...",
+      "success": "Perfil creado correctamente.",
+      "error": "No se pudo crear el perfil."
+    }
+  }
+}

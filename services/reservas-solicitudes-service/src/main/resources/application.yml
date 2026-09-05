@@ -1,0 +1,120 @@
+server:
+  port: ${SERVER_PORT:8084}
+
+spring:
+  application:
+    name: reservas-solicitudes-service
+
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      connection-timeout: 3000
+      validation-timeout: 2000
+      maximum-pool-size: 10
+      minimum-idle: 2
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc:
+          time_zone: UTC
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    validate-on-migrate: true
+    baseline-on-migrate: false
+
+  jackson:
+    time-zone: UTC
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+
+logging:
+  structured:
+    format:
+      console: logstash
+    json:
+      add:
+        service: reservas-solicitudes-service
+      rename:
+        traceId: trace_id
+        spanId: span_id
+  level:
+    root: ${LOG_LEVEL_ROOT:INFO}
+    ec.edu.scli.reservas: ${LOG_LEVEL_APP:INFO}
+    org.springframework.web.client: ${LOG_LEVEL_REST_CLIENT:WARN}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+
+  endpoint:
+    health:
+      show-details: always
+
+  otlp:
+    tracing:
+      endpoint: ${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:http://localhost:4318/v1/traces}
+    logging:
+      endpoint: ${OTEL_EXPORTER_OTLP_LOGS_ENDPOINT:http://otel-collector:4318/v1/logs}
+
+  tracing:
+    sampling:
+      probability: ${MANAGEMENT_TRACING_SAMPLING_PROBABILITY:1.0}
+
+  health:
+    db:
+      enabled: true
+
+  metrics:
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+
+security:
+  jwt:
+    issuer: ${JWT_ISSUER:scli-auth-service}
+    secret: ${JWT_SECRET}
+
+app:
+  internal-api-key: ${INTERNAL_API_KEY}
+  reservas:
+    expiration-grace-minutes: ${RESERVA_EXPIRATION_GRACE_MINUTES:1440}
+    expiration-check-ms: ${RESERVA_EXPIRATION_CHECK_MS:60000}
+  asistencia:
+    window-minutes: ${ASISTENCIA_WINDOW_MINUTES:15}
+  experimental:
+    arbiter:
+      enabled: ${EXPERIMENTAL_ARBITER_ENABLED:false}
+      strategy: ${ARBITER:}
+
+  services:
+    usuarios:
+      base-url: ${USUARIOS_SERVICE_URL:http://localhost:8082}
+
+    academico-laboratorios:
+      base-url: ${ACADEMICO_LABORATORIOS_SERVICE_URL:http://localhost:8083}
+
+  http:
+    connect-timeout-ms: ${HTTP_CONNECT_TIMEOUT_MS:2000}
+    read-timeout-ms: ${HTTP_READ_TIMEOUT_MS:3000}
+    max-read-retries: ${HTTP_MAX_READ_RETRIES:2}
+
+  idempotency:
+    header-name: Idempotency-Key
+  notifications:
+    firebase:
+      enabled: ${FIREBASE_ENABLED:false}
+      credentials-base64: ${FIREBASE_CREDENTIALS_BASE64:}

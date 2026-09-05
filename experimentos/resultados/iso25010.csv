@@ -1,0 +1,21 @@
+escenario,repeticion,usuarios,duracion,total_requests,failures,failure_rate_percent,p95_ms,p99_ms,valida,observacion
+eficiencia_nominal_50u_5m,1,50,5m,7041,0,0.000000,110.000000,2200.000000,si,HTTP 5xx contado desde fallos HTTP de Locust; respuestas Prometheus crudas preservadas.
+eficiencia_nominal_50u_5m,2,50,5m,7230,0,0.000000,25.000000,53.000000,si,HTTP 5xx contado desde fallos HTTP de Locust; respuestas Prometheus crudas preservadas.
+eficiencia_nominal_50u_5m,3,50,5m,7151,0,0.000000,130.000000,1600.000000,si,HTTP 5xx contado desde fallos HTTP de Locust; respuestas Prometheus crudas preservadas.
+eficiencia_nominal_50u_5m,4,50,5m,7212,0,0.000000,25.000000,89.000000,si,HTTP 5xx contado desde fallos HTTP de Locust; respuestas Prometheus crudas preservadas.
+eficiencia_nominal_50u_5m,5,50,5m,7205,0,0.000000,63.000000,1400.000000,si,HTTP 5xx contado desde fallos HTTP de Locust; respuestas Prometheus crudas preservadas.
+eficiencia_nominal_50u_5m,6,50,5m,7259,0,0.000000,34.000000,150.000000,si,HTTP 5xx contado desde fallos HTTP de Locust; respuestas Prometheus crudas preservadas.
+eficiencia_nominal_50u_5m,7,50,5m,7214,0,0.000000,69.000000,570.000000,si,HTTP 5xx contado desde fallos HTTP de Locust; respuestas Prometheus crudas preservadas.
+eficiencia_nominal_50u_5m,8,50,5m,7209,0,0.000000,29.000000,270.000000,si,HTTP 5xx contado desde fallos HTTP de Locust; respuestas Prometheus crudas preservadas.
+eficiencia_nominal_50u_5m,9,50,5m,7161,0,0.000000,85.000000,860.000000,si,HTTP 5xx contado desde fallos HTTP de Locust; respuestas Prometheus crudas preservadas.
+eficiencia_nominal_50u_5m,10,50,5m,7281,0,0.000000,25.000000,150.000000,si,HTTP 5xx contado desde fallos HTTP de Locust; respuestas Prometheus crudas preservadas.
+fiabilidad_nominal_50u_1h,1,50,1h,,,,,,,
+fiabilidad_nominal_50u_1h,2,50,1h,,,,,,,
+fiabilidad_nominal_50u_1h,3,50,1h,,,,,,,
+fiabilidad_nominal_50u_1h,4,50,1h,,,,,,,
+fiabilidad_nominal_50u_1h,5,50,1h,,,,,,,
+fiabilidad_nominal_50u_1h,6,50,1h,,,,,,,
+fiabilidad_nominal_50u_1h,7,50,1h,,,,,,,
+fiabilidad_nominal_50u_1h,8,50,1h,,,,,,,
+fiabilidad_nominal_50u_1h,9,50,1h,,,,,,,
+fiabilidad_nominal_50u_1h,10,50,1h,,,,,,,

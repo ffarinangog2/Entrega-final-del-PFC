@@ -1,0 +1,121 @@
+package ec.edu.uteq.scli.mobile.features.qr
+
+import android.Manifest
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.rule.GrantPermissionRule
+import ec.edu.uteq.scli.mobile.common.network.NetworkResult
+import ec.edu.uteq.scli.mobile.features.qr.data.Equipo
+import ec.edu.uteq.scli.mobile.features.qr.data.Laboratorio
+import ec.edu.uteq.scli.mobile.features.qr.data.LaboratorioDetalle
+import ec.edu.uteq.scli.mobile.features.qr.data.QrRepository
+import ec.edu.uteq.scli.mobile.features.qr.presentation.QrScanScreen
+import ec.edu.uteq.scli.mobile.features.qr.presentation.QrViewModel
+import org.junit.Rule
+import org.junit.Test
+import org.junit.runner.RunWith
+
+/**
+ * Flujo de punta a punta de la feature QR. El resultado del escaneo real de
+ * cámara no es determinista en un entorno de pruebas, así que se usa un
+ * QrRepository doble y se deja el ViewModel con el estado ya resuelto antes
+ * de componer la pantalla: así Compose nunca llega a montar la vista de
+ * cámara real (CameraPreview) y la prueba queda estable en cualquier
+ * dispositivo o emulador, tenga o no cámara funcional.
+ */
+@RunWith(AndroidJUnit4::class)
+class QrFlowTest {
+
+    @get:Rule
+    val permisoCamaraRule: GrantPermissionRule = GrantPermissionRule.grant(Manifest.permission.CAMERA)
+
+    @get:Rule
+    val composeTestRule = createComposeRule()
+
+    @Test
+    fun escanearQrValido_muestraDetalleDelLaboratorio() {
+        val repository = FakeQrRepository(resultado = NetworkResult.Success(DETALLE))
+        val viewModel = QrViewModel(repository)
+
+        viewModel.procesarQr(LABORATORIO_ID)
+        composeTestRule.waitUntil { viewModel.uiState.value.detalle != null }
+
+        composeTestRule.setContent {
+            MaterialTheme {
+                QrScanScreen(viewModel)
+            }
+        }
+
+        composeTestRule.onNodeWithText("Detalle del laboratorio").assertExists()
+        composeTestRule.onNodeWithText(DETALLE.laboratorio.nombre).assertExists()
+        composeTestRule.onNodeWithText("Código: ${DETALLE.laboratorio.codigo}").assertExists()
+    }
+
+    @Test
+    fun qrInvalido_muestraErrorYPermiteReintentar() {
+        val repository = FakeQrRepository(resultado = NetworkResult.Success(DETALLE))
+        val viewModel = QrViewModel(repository)
+
+        viewModel.procesarQr("no-es-un-uuid")
+
+        composeTestRule.setContent {
+            MaterialTheme {
+                QrScanScreen(viewModel)
+            }
+        }
+
+        composeTestRule
+            .onNodeWithText("El QR no contiene un UUID de laboratorio válido.")
+            .assertExists()
+
+        composeTestRule.onNodeWithText("Reintentar escaneo").performClick()
+
+        assertViewModelReiniciado(viewModel)
+    }
+
+    @Test
+    fun errorDeRed_muestraMensajeDeGateway() {
+        val repository = FakeQrRepository(resultado = NetworkResult.Failure(null, "gateway_no_disponible"))
+        val viewModel = QrViewModel(repository)
+
+        viewModel.procesarQr(LABORATORIO_ID)
+        composeTestRule.waitUntil { viewModel.uiState.value.error != null }
+
+        composeTestRule.setContent {
+            MaterialTheme {
+                QrScanScreen(viewModel)
+            }
+        }
+
+        composeTestRule
+            .onNodeWithText("No se pudo conectar con el Gateway.")
+            .assertExists()
+    }
+
+    private fun assertViewModelReiniciado(viewModel: QrViewModel) {
+        val estado = viewModel.uiState.value
+        check(estado.detalle == null && estado.error == null) {
+            "Se esperaba que 'reintentar' limpiara el estado, pero quedó: $estado"
+        }
+    }
+
+    private class FakeQrRepository(
+        private val resultado: NetworkResult<LaboratorioDetalle>,
+    ) : QrRepository {
+        override suspend fun obtenerDetalle(laboratorioId: String): NetworkResult<LaboratorioDetalle> = resultado
+    }
+
+    private companion object {
+        const val LABORATORIO_ID = "123e4567-e89b-12d3-a456-426614174000"
+        val DETALLE = LaboratorioDetalle(
+            laboratorio = Laboratorio(LABORATORIO_ID, "LAB-01", "Laboratorio 1", 20, null, "DISPONIBLE", true),
+            piso = null,
+            bloque = null,
+            campus = null,
+            equipos = listOf(Equipo("equipo-1", "EQ-01", null, "Marca", "Modelo", "OPERATIVO", true)),
+        )
+    }
+}
