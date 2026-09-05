@@ -256,7 +256,7 @@ hace pull, levanta el stack y exige Gateway `UP`. El administrador configura
 `<SERVER_HOST>`, `<SERVER_USER>`, acceso GHCR de lectura y un `.env` fuera de Git.
 El rollback usa un SHA anterior y preserva volúmenes CockroachDB.
 
-## Documentación
+## Documentación académica
 
 El documento oficial de la Entrega 4 es
 [`docs/entrega-4/main.tex`](docs/entrega-4/main.tex). El árbol formado por
@@ -266,7 +266,10 @@ trazabilidad de la Entrega 3; no es el entregable principal de E4.
 
 ### Compilación reproducible del informe oficial
 
-El informe utiliza `pdflatex` y BibTeX. Desde la raíz del repositorio:
+El informe utiliza `pdflatex` y BibTeX. Se requiere una distribución LaTeX que
+incluya ambos comandos y los paquetes declarados por
+`docs/entrega-4/main.tex` (`babel` con español, `geometry` e `hyperref`). Desde
+la raíz del repositorio:
 
 ```bash
 cd docs/entrega-4
