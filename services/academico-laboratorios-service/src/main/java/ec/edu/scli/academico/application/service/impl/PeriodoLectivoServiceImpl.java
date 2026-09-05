@@ -8,6 +8,7 @@ import ec.edu.scli.academico.domain.exception.ConflictException;
 import ec.edu.scli.academico.domain.exception.ResourceNotFoundException;
 import ec.edu.scli.academico.presentation.dto.periodolectivo.PeriodoLectivoRequest;
 import ec.edu.scli.academico.presentation.dto.periodolectivo.PeriodoLectivoResponse;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -24,6 +25,7 @@ public class PeriodoLectivoServiceImpl implements PeriodoLectivoService {
     private final PeriodoLectivoRepositoryPort periodoLectivoRepositoryPort;
     private final Clock clock;
 
+    @Autowired
     public PeriodoLectivoServiceImpl(PeriodoLectivoRepositoryPort periodoLectivoRepositoryPort) {
         this(periodoLectivoRepositoryPort, Clock.systemDefaultZone());
     }
