@@ -51,6 +51,10 @@ La Tabla~\ref{tab:cobertura-backend} describe los controles verificables en el
 árbol actual. Los porcentajes y recuentos exactos pertenecen a cada ejecución y
 deben consultarse en sus reportes Surefire/JaCoCo de GitHub Actions; no se
 trasladan cifras de un SHA anterior como si describieran el HEAD actual.
+La ejecución de push del SHA funcional
+\texttt{e43967eda31410b7fef060cfc7903cea94efbe96} completó los cinco jobs
+Backend, incluido el control reforzado de Reservas, sin sustituir esos reportes
+por una cifra agregada entre servicios.
 
 \begin{table}[ht]
   \centering
@@ -67,7 +71,7 @@ trasladan cifras de un SHA anterior como si describieran el HEAD actual.
     \hline
     academico-laboratorios-service & JUnit/Mockito/JaCoCo & Surefire y JaCoCo del job Backend & Gate $\geq 70\%$ \\
     \hline
-    reservas-solicitudes-service & JUnit/Mockito/JaCoCo & Surefire y JaCoCo del job Backend & Gate $\geq 70\%$ \\
+    reservas-solicitudes-service & JUnit/Mockito/JaCoCo & Surefire y JaCoCo del job Backend & Gate: líneas $\geq80\%$ y ramas $\geq48\%$ \\
     \hline
     api-gateway & JUnit/Mockito/JaCoCo & Surefire y JaCoCo del job Backend & Gate $\geq 70\%$ \\
     \hline
@@ -129,13 +133,13 @@ solo worker y hasta dos reintentos en CI. Los tres motores aportan evidencia
 práctica frente a diferencias de Chrome, Firefox y Safari, pero no representan
 todos los navegadores, sistemas operativos ni dispositivos.
 
-La configuración y la ejecución deben distinguirse: durante esta redacción no se
-levantó localmente el stack ni se reejecutó Playwright. La evidencia utilizada es
-el job \emph{Compose integration tests}, que instala los tres motores, espera
-healthchecks, realiza login y una consulta protegida, y luego ejecuta
-\texttt{npm run test:e2e}. El reporter es de consola; las trazas se habilitan en
-el primer reintento, pero el workflow no publica actualmente un artefacto
-Playwright dedicado.
+La configuración y la ejecución deben distinguirse. La evidencia utilizada es
+el job \emph{Compose integration tests} del SHA funcional
+\texttt{e43967eda31410b7fef060cfc7903cea94efbe96}, que terminó correctamente,
+instala los tres motores, espera healthchecks, realiza login y una consulta
+protegida, y luego ejecuta \texttt{npm run test:e2e}. El reporter es de consola;
+las trazas se habilitan en el primer reintento, pero el workflow no publica
+actualmente un artefacto Playwright dedicado.
 
 \subsection{Aplicación móvil}
 \label{subsec:pruebas-mobile}
@@ -144,9 +148,12 @@ La suite local combina JUnit 4, MockK, \texttt{coroutines-test}, MockWebServer,
 Robolectric y utilidades de Compose. Sus pruebas ejercitan
 ViewModels, sesión y refresh, almacenamiento cifrado, clasificación de errores,
 repositorios remotos y locales, caché, reservas, incidentes, disponibilidad y
-estados QR. El reporte JaCoCo disponible para el HEAD auditado registra 45,69\%
-de líneas y el run de push conserva el artifact
-\texttt{mobile-coverage-cd61b...}; el valor permanece bajo 70\%.
+estados QR. La última medición numérica conservada en la evidencia documental
+registra 45,69\% de líneas. El SHA funcional
+\texttt{e43967eda31410b7fef060cfc7903cea94efbe96} completó los jobs
+\emph{Test mobile} y \emph{Test mobile instrumented}, pero ese resultado verde
+no convierte la cifra histórica en una cobertura actual distinta ni permite
+afirmar 70\% sin consultar el artefacto JaCoCo de la ejecución.
 
 El resultado documentado es parcial: existe una base amplia de casos, pero la
 última evidencia versionada no alcanza 70\% de líneas. Compose, pantallas,
@@ -278,7 +285,7 @@ claves ni fingerprints en el informe.
     \hline
     Web $\geq 70\%$ & Vitest y V8 & Test web & Cuatro umbrales configurados en 70\%; resultado por SHA en CI. \\
     \hline
-    Calidad Mobile & JUnit/Robolectric, JaCoCo y emulador & Test mobile; Test mobile instrumented & Evidencia histórica de líneas 45,69\%; resultado actual por SHA en CI. \\
+    Calidad Mobile & JUnit/Robolectric, JaCoCo y emulador & Test mobile; Test mobile instrumented & Medición documental: líneas 45,69\%; ambos jobs verdes en \texttt{e43967e}; cobertura numérica actual sujeta al artefacto JaCoCo. \\
     \hline
     Contratos compatibles & Pact consumer/provider & Matrices Backend & Consumidores y verificadores versionados; resultado por SHA en CI; sin Broker. \\
     \hline

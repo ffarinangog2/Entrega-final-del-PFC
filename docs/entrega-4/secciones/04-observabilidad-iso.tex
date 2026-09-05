@@ -275,9 +275,9 @@ solo características con evidencia disponible.
     \hline
     Seguridad & JWT, RBAC y matriz de endpoints & Acceso autenticado y autorizado & 198 operaciones: 160 JWT, 145 con RBAC, 18 internas con API key y 63 con scope explícito & PARCIAL \\
     \hline
-    Mantenibilidad & Cobertura y complejidad & $\geq70\%$; complejidad $<10$ & Gates actuales; medición versionada acotada a Usuarios y evidencia Mobile histórica bajo 70\% & PARCIAL \\
+    Mantenibilidad & Modularidad, pruebas, cobertura y complejidad & Gates por componente; complejidad $<10$ donde fue medida & Capas, patrones y CI; Backend/Web verdes en \texttt{e43967e}; complejidad medida solo en Usuarios y Mobile con 45,69\% histórico & PARCIAL \\
     \hline
-    Compatibilidad & Motores Web y Android & Chromium, Firefox, WebKit; API 26+ & HEAD: E2E Web omitido; Android API 29 verde en push y rojo en PR paralelo & PARCIAL \\
+    Compatibilidad & Motores Web y Android & Chromium, Firefox, WebKit; API 26+ & Compose/Playwright y Android API 29 verdes en el push \texttt{e43967e}; alcance acotado a esos entornos & PARCIAL \\
     \hline
   \end{tabular}
 \end{table}
@@ -287,14 +287,47 @@ Actuator. Se identifican 160 operaciones externas con JWT, 145 con RBAC
 explícito, 18 internas con API key y 63 con control de ámbito; estos conjuntos
 no son equivalentes ni justifican declarar cobertura total frente a todas las
 amenazas. Persisten limitaciones de scope documentadas en Agenda e Incidentes.
-En mantenibilidad existen gates de cobertura para Backend y Web; en el HEAD
-auditado Auth, Académico y Gateway los superaron, mientras Usuarios y Reservas
-no completaron \texttt{mvn verify}. Web registra 86,55\% de líneas y 70,33\%
-de ramas; Mobile conserva 45,69\% de líneas, bajo el objetivo de 70\%. En
-compatibilidad, Playwright configura tres motores, pero el job E2E del HEAD fue
-omitido al fallar gates Backend. Android declara API 26 o superior y el run de
-push ejecutó satisfactoriamente la suite instrumentada en API 29, aunque el run
-paralelo de PR falló. La configuración no implica compatibilidad universal.
+En mantenibilidad existen gates de cobertura para Backend y Web. El push del
+SHA funcional \texttt{e43967eda31410b7fef060cfc7903cea94efbe96}
+completó los cinco jobs Maven y el job Web; Reservas exige además 80\% de
+líneas y 48\% de ramas. La última evidencia Web documentada registra 86,55\%
+de líneas y 70,33\% de ramas. Mobile conserva como referencia documental
+45,69\% de líneas, bajo 70\%; el job verde no autoriza a reemplazar esa cifra
+sin leer su reporte. En compatibilidad, el mismo SHA completó Compose/Playwright
+y la suite instrumentada Android API 29. Android declara API 26 o superior,
+pero una ejecución en API 29 y tres motores Web no implican compatibilidad
+universal.
+
+\subsection{Mantenibilidad: evidencia y alcance}
+\label{subsec:mantenibilidad}
+
+La \textbf{modularidad} se sustenta en cinco microservicios con propiedad de
+datos diferenciada y en clientes Web y Android separados. Dentro de los
+servicios, controladores, casos de uso, puertos y adaptadores reducen el impacto
+de sustituir persistencia o clientes HTTP. Esta separación no es absoluta: el
+dominio Académico todavía expone tipos de paginación de Spring, limitación
+descrita en la Sección~\ref{sec:capas-solid}.
+
+La \textbf{analizabilidad} se apoya en Checkstyle, ESLint, logs estructurados,
+métricas, trazas y reportes Surefire, JaCoCo y V8. La arquitectura registra
+decisiones mediante ADR y emplea Repository, Strategy, State, Observer, Facade,
+Factory y Singleton en puntos concretos; estos patrones aportan vocabulario y
+puntos de variación, pero su sola presencia no prueba bajo acoplamiento.
+
+La \textbf{modificabilidad} se evidencia mediante contratos Pact y gates por
+servicio: un cambio se valida antes de construir imágenes ligadas al SHA. La
+\textbf{testabilidad} cuenta con unitarias, integración Spring/Room,
+Testcontainers, pruebas de seguridad, Pact, Vitest, Playwright e instrumentadas
+Android. Los umbrales son verificables en configuración: 70\% de líneas para
+Auth, Usuarios, Académico y Gateway; 80\% de líneas y 48\% de ramas para
+Reservas; y 70\% para statements, ramas, funciones y líneas Web.
+
+La conclusión permanece \textbf{PARCIAL}. No existe una medición de complejidad
+global homogénea para todos los componentes, la medición versionada de
+complejidad está acotada a Usuarios, faltan artefactos persistentes de cobertura
+Backend/Web y la cifra Mobile conservada está bajo 70\%. Por ello no se deriva
+un cumplimiento total a partir de que los gates del SHA funcional hayan sido
+verdes.
 
 \subsection{Análisis crítico}
 \label{subsec:analisis-critico-final}
@@ -436,7 +469,7 @@ integral actual.
     \hline
     D4.2 & Integración CockroachDB & Testcontainers, Flyway, cifrado e idempotencia & Testcontainers & CUMPLE \\
     \hline
-    D5.1 & Pirámide de pruebas & Gates Backend/Web configurados; dos jobs Backend rojos y Mobile bajo 70\% en el HEAD & Estrategia de pruebas & PARCIAL \\
+    D5.1 & Pirámide de pruebas & Backend, Web, Mobile, integración y E2E verdes en \texttt{e43967e}; Mobile conserva medición documental bajo 70\% & Estrategia de pruebas & PARCIAL \\
     \hline
     D5.2 & CI/CD con gates y SHA & Workflows, GHCR, APK, deployment; sin rollback y Actions por tag & CI/CD & PARCIAL \\
     \hline
