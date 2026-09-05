@@ -1,41 +1,46 @@
-# Documentación académica del SCLI
+# Documentación académica
 
-## Documento oficial de Entrega 4
+## Entrega 3
 
-El entregable académico vigente es [`entrega-4/main.tex`](entrega-4/main.tex).
-Sus fuentes asociadas se encuentran exclusivamente en:
+Ubicación: `docs/entrega-3/`.
 
-- `docs/entrega-4/secciones/`;
-- `docs/entrega-4/referencias.bib`;
-- `docs/entrega-4/figuras/`.
+Estado: documentación histórica conservada como evidencia. Sus fuentes y el
+PDF entregado permanecen juntos para preservar la trazabilidad académica.
 
-Para reproducir el PDF, desde la raíz del repositorio:
+## Entrega 4
+
+Ubicación oficial: `docs/entrega-4/`.
+
+**`docs/entrega-4/` es la documentación oficial y vigente.**
+
+Documento fuente oficial: `docs/entrega-4/main.tex`.
+
+PDF final: `docs/entrega-4/Informe_E4_SCLI_FUVV.pdf`.
+
+Las fuentes asociadas están en `docs/entrega-4/secciones/`, la bibliografía en
+`docs/entrega-4/referencias.bib` y las figuras externas propias de la entrega
+deben almacenarse en `docs/entrega-4/figuras/`.
+
+Para reproducir el PDF desde la raíz del repositorio:
 
 ```bash
 cd docs/entrega-4
-pdflatex main.tex
+pdflatex -interaction=nonstopmode -halt-on-error main.tex
 bibtex main
-pdflatex main.tex
-pdflatex main.tex
+pdflatex -interaction=nonstopmode -halt-on-error main.tex
+pdflatex -interaction=nonstopmode -halt-on-error main.tex
 ```
 
-Se necesita una distribución LaTeX con `pdflatex`, BibTeX y los paquetes
-declarados en `main.tex` (`babel` con español, `geometry` e `hyperref`). El
-archivo resultante es `docs/entrega-4/main.pdf`. La secuencia de cuatro pasos
-genera los auxiliares, procesa `referencias.bib` y resuelve las citas y
-referencias cruzadas.
+### Evidencias visuales pendientes
 
-## Histórico de Entrega 3
+La auditoría del repositorio no encontró capturas reales del dashboard de
+Grafana ni del flujo QR ejecutado en un dispositivo. No deben sustituirse con
+imágenes sintéticas ni con capturas históricas. Cuando se obtengan de un entorno
+real, deben eliminarse secretos y datos personales, registrar el SHA, la fecha,
+la zona horaria y el entorno, y guardarse respectivamente como
+`docs/entrega-4/figuras/panel-monitoreo.png` y
+`docs/entrega-4/figuras/qr-scan.png`.
 
-Los siguientes artefactos se conservan únicamente como antecedente y evidencia
-histórica de Entrega 3; **no constituyen el documento oficial de Entrega 4**:
-
-- `docs/main.tex`;
-- `docs/Referencias.bib`;
-- `docs/secciones/`;
-- `docs/Informe_E3_SCLI_LATEX.pdf`.
-
-Estos archivos no se eliminan ni se mezclan con E4 porque forman parte de la
-trazabilidad académica del proyecto. Los ADR, diagramas, evidencias e informes
-ISO ubicados en otros subdirectorios de `docs/` son material técnico de apoyo y
-no reemplazan el documento oficial señalado arriba.
+Los ADR, diagramas, evidencias e informes ISO situados en los demás
+subdirectorios de `docs/` son evidencia técnica compartida. Conservan su
+ubicación original y no reemplazan el documento oficial de Entrega 4.

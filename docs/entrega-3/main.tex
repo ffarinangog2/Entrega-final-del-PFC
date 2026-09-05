@@ -726,21 +726,21 @@ internos del microservicio \texttt{academico-laboratorios-service}.
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=\linewidth]{diagrams/c4-nivel1.png}
+\includegraphics[width=\linewidth]{../diagrams/c4-nivel1.png}
 \caption{C4 Nivel 1 -- Contexto del sistema SCLI}
 \label{fig:c4-nivel1}
 \end{figure}
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=\linewidth]{diagrams/c4-nivel2.png}
+\includegraphics[width=\linewidth]{../diagrams/c4-nivel2.png}
 \caption{C4 Nivel 2 -- Contenedores del sistema}
 \label{fig:c4-nivel2}
 \end{figure}
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=\linewidth]{diagrams/c4-nivel3.png}
+\includegraphics[width=\linewidth]{../diagrams/c4-nivel3.png}
 \caption{C4 Nivel 3 -- Componentes de academico-laboratorios-service}
 \label{fig:c4-nivel3}
 \end{figure}
@@ -802,7 +802,7 @@ Figura~\ref{fig:docker} muestra los tres contenedores del clúster E3
 activos junto al resto de servicios del sistema.
 \begin{figure}[t]
   \centering
-  \includegraphics[width=\linewidth]{evidencias/cluster_3_nodos_docker.png}
+  \includegraphics[width=\linewidth]{../evidencias/cluster_3_nodos_docker.png}
   \caption{Los tres nodos \texttt{scli-crdb-e3-*} activos en Docker, junto al
   resto de servicios del sistema SCLI.}
   \label{fig:docker}
@@ -889,7 +889,7 @@ se completó correctamente.
 
 \begin{figure}[t]
   \centering
-  \includegraphics[width=\linewidth]{evidencias/cluster_3_nodos_estado.png}
+  \includegraphics[width=\linewidth]{../evidencias/cluster_3_nodos_estado.png}
   \caption{Estado de los tres nodos del clúster E3 (\texttt{cockroach node
   status}): los tres reportan \texttt{is\_live=true}.}
   \label{fig:status}
@@ -897,7 +897,7 @@ se completó correctamente.
 
 \begin{figure}[t]
   \centering
-  \includegraphics[width=\linewidth]{evidencias/schema_tablas_cluster.png}
+  \includegraphics[width=\linewidth]{../evidencias/schema_tablas_cluster.png}
   \caption{Tablas del esquema \texttt{reservas\_db} aplicado en el clúster
   E3.}
   \label{fig:schema}
@@ -909,7 +909,7 @@ la política de replicación del ADR-004 quedó efectivamente configurada con
 
 \begin{figure}[t]
   \centering
-  \includegraphics[width=\linewidth]{evidencias/replicacion_num_replicas_3.png}
+  \includegraphics[width=\linewidth]{../evidencias/replicacion_num_replicas_3.png}
   \caption{Configuración de zona del rango \texttt{default}, con
   \texttt{num\_replicas = 3} aplicado.}
   \label{fig:replicas}
@@ -925,7 +925,7 @@ mediante \texttt{SELECT COUNT(*)} tras completar la carga.
 
 \begin{figure}[t]
   \centering
-  \includegraphics[width=\linewidth]{evidencias/carga_100000_registros.png}
+  \includegraphics[width=\linewidth]{../evidencias/carga_100000_registros.png}
   \caption{Verificación del conteo total (100\,000 filas) en
   \texttt{solicitudes\_reserva} tras la carga por lotes.}
   \label{fig:carga100k}
@@ -956,7 +956,7 @@ retoma en la Sección~\ref{sec:discusion}.
 
 \begin{figure}[t]
   \centering
-  \includegraphics[width=\linewidth]{evidencias/seeds_sql_creado.png}
+  \includegraphics[width=\linewidth]{../evidencias/seeds_sql_creado.png}
   \caption{Fragmento de \texttt{db/seeds\_05.sql}: sentencia
   \texttt{INSERT} de configuración de reservas con los parámetros mínimos y
   máximos exigidos por las restricciones del esquema.}
@@ -965,7 +965,7 @@ retoma en la Sección~\ref{sec:discusion}.
 
 \begin{figure}[t]
   \centering
-  \includegraphics[width=\linewidth]{evidencias/carga_lote_01_10000.png}
+  \includegraphics[width=\linewidth]{../evidencias/carga_lote_01_10000.png}
   \caption{Verificación del conteo parcial (10\,000 filas) tras cargar el
   primer lote de \texttt{db/seeds\_01.sql}.}
   \label{fig:lote1}
@@ -1011,7 +1011,7 @@ Sección~\ref{sec:teoria}.
 
 \begin{figure}[t]
   \centering
-  \includegraphics[width=\linewidth]{evidencias/tolerancia_fallo_un_nodo.png}
+  \includegraphics[width=\linewidth]{../evidencias/tolerancia_fallo_un_nodo.png}
   \caption{Un nodo detenido (\texttt{crdb-e3-2}): el clúster conserva quórum
   y la consulta se ejecuta con éxito.}
   \label{fig:1nodo}
@@ -1019,7 +1019,7 @@ Sección~\ref{sec:teoria}.
 
 \begin{figure}[t]
   \centering
-  \includegraphics[width=\linewidth]{evidencias/tolerancia_fallo_dos_nodos.png}
+  \includegraphics[width=\linewidth]{../evidencias/tolerancia_fallo_dos_nodos.png}
   \caption{Dos nodos detenidos: los tres nodos reportan
   \texttt{is\_live=false} y el clúster pierde disponibilidad de escritura.}
   \label{fig:2nodos}
@@ -1032,7 +1032,7 @@ de reiniciar el proceso del nodo.
 
 \begin{figure}[t]
   \centering
-  \includegraphics[width=\linewidth]{evidencias/recuperacion_cluster_3_nodos.png}
+  \includegraphics[width=\linewidth]{../evidencias/recuperacion_cluster_3_nodos.png}
   \caption{Recuperación completa del clúster tras reiniciar el nodo
   detenido.}
   \label{fig:recuperacion}
@@ -1049,21 +1049,21 @@ clúster.
 
 \begin{figure}[t]
   \centering
-  \includegraphics[width=\linewidth]{evidencias/latencia_antes_fallo.png}
+  \includegraphics[width=\linewidth]{../evidencias/latencia_antes_fallo.png}
   \caption{Latencia con los tres nodos operativos: 2604.54\,ms.}
   \label{fig:latantes}
 \end{figure}
 
 \begin{figure}[t]
   \centering
-  \includegraphics[width=\linewidth]{evidencias/latencia_un_nodo_caido.png}
+  \includegraphics[width=\linewidth]{../evidencias/latencia_un_nodo_caido.png}
   \caption{Latencia con un nodo caído: 2681.40\,ms.}
   \label{fig:latcaido}
 \end{figure}
 
 \begin{figure}[t]
   \centering
-  \includegraphics[width=\linewidth]{evidencias/latencia_despues_recuperacion.png}
+  \includegraphics[width=\linewidth]{../evidencias/latencia_despues_recuperacion.png}
   \caption{Latencia tras la recuperación completa: 2906.34\,ms.}
   \label{fig:latdespues}
 \end{figure}
