@@ -94,6 +94,26 @@ class UsuarioAuthRepositoryCockroachIntegrationTest {
         assertEquals(0, refreshSessions.contarActivas(now));
     }
 
+    @Test
+    @Transactional
+    void revokesOnlyActiveRefreshSessionsForSpecifiedUserIdempotently() {
+        UUID disabledUserId = UUID.randomUUID();
+        UUID otherUserId = UUID.randomUUID();
+        OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
+        persistUsuario(disabledUserId, now);
+        persistUsuario(otherUserId, now);
+        refreshSessions.guardar(session(disabledUserId, "disabled-active-1",
+                now.minusMinutes(1), now.plusMinutes(10), false));
+        refreshSessions.guardar(session(disabledUserId, "disabled-active-2",
+                now.minusMinutes(1), now.plusMinutes(10), false));
+        refreshSessions.guardar(session(otherUserId, "other-active",
+                now.minusMinutes(1), now.plusMinutes(10), false));
+
+        assertEquals(2, refreshSessions.revocarActivasPorUsuario(disabledUserId, now));
+        assertEquals(0, refreshSessions.revocarActivasPorUsuario(disabledUserId, now));
+        assertEquals(1, refreshSessions.contarActivas(now));
+    }
+
     private void persistUsuario(UUID id, OffsetDateTime now) {
         UsuarioAuth usuario = new UsuarioAuth();
         usuario.setId(id);

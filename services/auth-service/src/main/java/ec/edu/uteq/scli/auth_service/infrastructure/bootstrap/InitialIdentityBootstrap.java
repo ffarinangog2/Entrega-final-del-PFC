@@ -3,6 +3,7 @@ package ec.edu.uteq.scli.auth_service.infrastructure.bootstrap;
 import ec.edu.uteq.scli.auth_service.infrastructure.persistence.RolRepository;
 import ec.edu.uteq.scli.auth_service.infrastructure.persistence.UsuarioAuth;
 import ec.edu.uteq.scli.auth_service.infrastructure.persistence.UsuarioAuthRepository;
+import ec.edu.uteq.scli.auth_service.application.service.RefreshSessionService;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -21,8 +22,6 @@ import java.util.UUID;
 @ConditionalOnProperty(name = "app.initial-data.enabled", havingValue = "true")
 public class InitialIdentityBootstrap implements ApplicationRunner {
     private static final List<Account> BASE_ACCOUNTS = List.of(
-            account(1, "administrador.facultad01", "ADMINISTRADOR"),
-            account(2, "administrador.facultad02", "ADMINISTRADOR"),
             account(3, "adminpiso.01", "ADMINISTRADOR_PISO"),
             account(4, "adminpiso.02", "ADMINISTRADOR_PISO"),
             account(5, "coordinacion.carrera01", "COORDINADOR"),
@@ -54,13 +53,16 @@ public class InitialIdentityBootstrap implements ApplicationRunner {
     private final UsuarioAuthRepository usuarios;
     private final RolRepository roles;
     private final PasswordEncoder encoder;
+    private final RefreshSessionService refreshSessions;
     private final String password;
 
     public InitialIdentityBootstrap(UsuarioAuthRepository usuarios, RolRepository roles,
-            PasswordEncoder encoder, @Value("${app.initial-data.password:}") String password) {
+            PasswordEncoder encoder, RefreshSessionService refreshSessions,
+            @Value("${app.initial-data.password:}") String password) {
         this.usuarios = usuarios;
         this.roles = roles;
         this.encoder = encoder;
+        this.refreshSessions = refreshSessions;
         this.password = password;
     }
 
@@ -70,6 +72,7 @@ public class InitialIdentityBootstrap implements ApplicationRunner {
         if (password == null || password.isBlank()) {
             throw new IllegalStateException("INITIAL_USERS_PASSWORD es obligatorio cuando INITIAL_DATA_ENABLED=true");
         }
+        normalizarAdministradoresGlobales();
         OffsetDateTime now = OffsetDateTime.now();
         for (Account account : ACCOUNTS) {
             if (usuarios.existsByUsernameIgnoreCase(account.username())) continue;
@@ -91,6 +94,29 @@ public class InitialIdentityBootstrap implements ApplicationRunner {
             user.getRoles().add(role);
             usuarios.save(user);
         }
+    }
+
+    private void normalizarAdministradoresGlobales() {
+        usuarios.findByUsernameIgnoreCase("admin").ifPresent(user -> {
+            if (!Boolean.TRUE.equals(user.getActivo())) {
+                user.setActivo(true);
+                user.setActualizadoEn(OffsetDateTime.now());
+                usuarios.save(user);
+            }
+        });
+        desactivarAdministradorGlobalLegado("administrador.facultad01");
+        desactivarAdministradorGlobalLegado("administrador.facultad02");
+    }
+
+    private void desactivarAdministradorGlobalLegado(String username) {
+        usuarios.findByUsernameIgnoreCase(username).ifPresent(user -> {
+            if (Boolean.TRUE.equals(user.getActivo())) {
+                user.setActivo(false);
+                user.setActualizadoEn(OffsetDateTime.now());
+                usuarios.save(user);
+            }
+            refreshSessions.revocarActivasPorUsuario(user.getId());
+        });
     }
 
     private static Account account(int suffix, String username, String role) {

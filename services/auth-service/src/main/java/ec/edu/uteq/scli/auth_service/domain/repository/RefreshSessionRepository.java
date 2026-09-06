@@ -10,6 +10,7 @@ public interface RefreshSessionRepository {
     RefreshSession guardar(RefreshSession session);
     Optional<RefreshSession> buscarPorTokenHash(String tokenHash);
     boolean revocarSiActiva(String tokenHash, OffsetDateTime ahora);
+    int revocarActivasPorUsuario(UUID usuarioId, OffsetDateTime ahora);
     void registrarReemplazo(String tokenHash, UUID reemplazoId);
     long contarActivas(OffsetDateTime ahora);
 }

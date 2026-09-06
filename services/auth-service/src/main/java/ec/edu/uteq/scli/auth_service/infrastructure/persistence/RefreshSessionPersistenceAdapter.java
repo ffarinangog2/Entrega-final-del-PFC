@@ -32,6 +32,11 @@ public class RefreshSessionPersistenceAdapter implements RefreshSessionRepositor
     }
 
     @Override
+    public int revocarActivasPorUsuario(UUID usuarioId, OffsetDateTime ahora) {
+        return repository.revocarActivasPorUsuario(usuarioId, ahora);
+    }
+
+    @Override
     public void registrarReemplazo(String tokenHash, UUID reemplazoId) {
         repository.registrarReemplazo(tokenHash, reemplazoId);
     }

@@ -64,6 +64,11 @@ public class RefreshSessionService {
         repository.revocarSiActiva(hash(token), OffsetDateTime.now(clock));
     }
 
+    @Transactional
+    public int revocarActivasPorUsuario(UUID usuarioId) {
+        return repository.revocarActivasPorUsuario(usuarioId, OffsetDateTime.now(clock));
+    }
+
     static String hash(String token) {
         try {
             return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")

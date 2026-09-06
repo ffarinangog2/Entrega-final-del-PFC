@@ -53,8 +53,9 @@ public class InitialProfilesBootstrap implements ApplicationRunner {
             throw new IllegalStateException("INITIAL_PISO_IDS requiere cuatro pisos e INITIAL_CARRERA_IDS dos carreras existentes");
         }
         for (int index = 1; index <= 10; index++) createProfile(index);
-        createAdmin(1, null, "ADM-GLOBAL-01", "Administración global");
-        createAdmin(2, null, "ADM-GLOBAL-02", "Administración global");
+        normalizarAdministradorGlobal();
+        desactivarGlobalLegado(1, "ADM-GLOBAL-01");
+        desactivarGlobalLegado(2, "ADM-GLOBAL-02");
         createAdmin(3, pisos.get(0), "ADM-PISO-01", "Administración de piso");
         createAdmin(4, pisos.get(1), "ADM-PISO-02", "Administración de piso");
         createNamedProfile("adminpiso.03", "Marina", "Vera Cedeño");
@@ -88,6 +89,7 @@ public class InitialProfilesBootstrap implements ApplicationRunner {
         UUID profileId = profileId(number);
         var existente = administradores.findByPerfilId(profileId);
         if (existente.isPresent()) {
+            asegurarAdministradorPiso(existente.get(), code, pisoId);
             return;
         }
         Administrador admin = new Administrador(); admin.setPerfil(perfiles.getReferenceById(profileId));
@@ -175,12 +177,35 @@ public class InitialProfilesBootstrap implements ApplicationRunner {
         UUID profileId = stableId("profile:" + username);
         var existing = administradores.findByPerfilId(profileId);
         if (existing.isPresent()) {
+            asegurarAdministradorPiso(existing.get(), code, floorId);
             return;
         }
         Administrador admin = new Administrador(); admin.setId(stableId("admin:" + username));
         admin.setPerfil(perfiles.getReferenceById(profileId)); admin.setCodigoAdministrador(code);
         admin.setCargo("Administración de piso"); admin.setPisoId(floorId); admin.setActivo(true);
         entityManager.persist(admin);
+    }
+
+    private void asegurarAdministradorPiso(Administrador admin, String code, UUID floorId) {
+        if (floorId == null || !code.equals(admin.getCodigoAdministrador())) return;
+        if (!floorId.equals(admin.getPisoId())) admin.setPisoId(floorId);
+        if (!Boolean.TRUE.equals(admin.getActivo())) admin.setActivo(true);
+    }
+
+    private void normalizarAdministradorGlobal() {
+        administradores.findByCodigoAdministrador("ADM-0001").ifPresent(admin -> {
+            if (admin.getPisoId() != null) admin.setPisoId(null);
+            if (!Boolean.TRUE.equals(admin.getActivo())) admin.setActivo(true);
+        });
+    }
+
+    private void desactivarGlobalLegado(int number, String code) {
+        administradores.findByPerfilId(profileId(number))
+                .filter(admin -> code.equals(admin.getCodigoAdministrador()))
+                .ifPresent(admin -> {
+                    if (admin.getPisoId() != null) admin.setPisoId(null);
+                    if (Boolean.TRUE.equals(admin.getActivo())) admin.setActivo(false);
+                });
     }
 
     private void createNamedTeacher(String username, String code) {

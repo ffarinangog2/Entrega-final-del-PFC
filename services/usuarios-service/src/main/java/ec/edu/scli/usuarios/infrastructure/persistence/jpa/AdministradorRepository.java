@@ -16,5 +16,7 @@ public interface AdministradorRepository
 
     boolean existsByCodigoAdministrador(String codigoAdministrador);
 
+    Optional<Administrador> findByCodigoAdministrador(String codigoAdministrador);
+
     List<Administrador> findByPisoIdAndActivoTrue(UUID pisoId);
 }

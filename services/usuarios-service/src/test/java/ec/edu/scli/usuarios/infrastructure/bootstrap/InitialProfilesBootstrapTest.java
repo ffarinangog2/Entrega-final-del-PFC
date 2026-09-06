@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.UUID;
+import java.nio.charset.StandardCharsets;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -88,7 +89,7 @@ class InitialProfilesBootstrapTest {
                 .map(ContextoAcademicoEstudianteEntity.class::cast)
                 .allMatch(value -> value.getId() != null));
         verify(perfiles, never()).save(any());
-        verify(administradores, org.mockito.Mockito.times(4)).save(any());
+        verify(administradores, org.mockito.Mockito.times(2)).save(any());
         verify(docentes, org.mockito.Mockito.times(2)).save(any());
         verify(estudiantes, org.mockito.Mockito.times(2)).save(any());
         verify(contextos, never()).save(any());
@@ -122,7 +123,7 @@ class InitialProfilesBootstrapTest {
     }
 
     @Test
-    void conservaAdministradoresExistentesYCompletaRegistrosFaltantes() {
+    void corrigePisoYActividadDeAdministradoresOperativosSinModificarGlobales() {
         PerfilRepository perfiles = mock(PerfilRepository.class);
         AdministradorRepository administradores = mock(AdministradorRepository.class);
         DocenteRepository docentes = mock(DocenteRepository.class);
@@ -151,22 +152,59 @@ class InitialProfilesBootstrapTest {
 
         Administrador admin1 = adminParaId(perfilId(1), pisoUno, pisoDos);
         Administrador admin2 = adminParaId(perfilId(2), pisoUno, pisoDos);
+        Administrador adminCanonico = new Administrador();
+        adminCanonico.setCodigoAdministrador("ADM-0001");
+        adminCanonico.setPisoId(pisoUno);
+        adminCanonico.setActivo(false);
         Administrador admin3 = adminParaId(perfilId(3), pisoUno, pisoDos);
-        admin3.setPisoId(null);
+        admin3.setPisoId(pisoTres);
+        admin3.setActivo(false);
         Administrador admin4 = adminParaId(perfilId(4), pisoUno, pisoDos);
+        admin4.setPisoId(null);
+        Administrador adminPisoTres = adminPiso("adminpiso.03", "ADM-PISO-03", pisoUno);
+        Administrador adminPisoCuatro = adminPiso("adminpiso.04", "ADM-PISO-04", null);
 
         when(administradores.findByPerfilId(perfilId(1))).thenReturn(java.util.Optional.of(admin1));
         when(administradores.findByPerfilId(perfilId(2))).thenReturn(java.util.Optional.of(admin2));
+        when(administradores.findByCodigoAdministrador("ADM-0001"))
+                .thenReturn(java.util.Optional.of(adminCanonico));
         when(administradores.findByPerfilId(perfilId(3))).thenReturn(java.util.Optional.of(admin3));
         when(administradores.findByPerfilId(perfilId(4))).thenReturn(java.util.Optional.of(admin4));
+        when(administradores.findByPerfilId(stableId("profile:adminpiso.03")))
+                .thenReturn(java.util.Optional.of(adminPisoTres));
+        when(administradores.findByPerfilId(stableId("profile:adminpiso.04")))
+                .thenReturn(java.util.Optional.of(adminPisoCuatro));
 
         bootstrap.run(null);
 
-        assertNull(admin3.getPisoId());
-        verify(administradores, never()).save(admin3);
+        assertEquals(pisoUno, admin3.getPisoId());
+        assertTrue(admin3.getActivo());
+        assertEquals(pisoDos, admin4.getPisoId());
+        assertEquals(pisoTres, adminPisoTres.getPisoId());
+        assertEquals(pisoCuatro, adminPisoCuatro.getPisoId());
+        assertTrue(adminPisoTres.getActivo());
+        assertTrue(adminPisoCuatro.getActivo());
+        assertNull(admin1.getPisoId());
+        assertNull(admin2.getPisoId());
+        assertTrue(!admin1.getActivo());
+        assertTrue(!admin2.getActivo());
+        assertNull(adminCanonico.getPisoId());
+        assertTrue(adminCanonico.getActivo());
         verify(administradores, never()).save(admin1);
         verify(administradores, never()).save(admin2);
-        verify(administradores, never()).save(admin4);
+        verify(entityManager, never()).persist(any(Administrador.class));
+    }
+
+    private static Administrador adminPiso(String username, String code, UUID pisoId) {
+        Administrador admin = new Administrador();
+        Perfil perfil = new Perfil();
+        perfil.setId(stableId("profile:" + username));
+        admin.setPerfil(perfil);
+        admin.setCodigoAdministrador(code);
+        admin.setCargo("Administración de piso");
+        admin.setPisoId(pisoId);
+        admin.setActivo(false);
+        return admin;
     }
 
     private static Administrador adminParaId(UUID id, UUID pisoUno, UUID pisoDos) {
@@ -204,5 +242,9 @@ class InitialProfilesBootstrapTest {
 
     private static UUID perfilId(int number) {
         return UUID.fromString("22000000-0000-0000-0000-0000000000" + String.format("%02d", number));
+    }
+
+    private static UUID stableId(String value) {
+        return UUID.nameUUIDFromBytes(("scli-integral-test:" + value).getBytes(StandardCharsets.UTF_8));
     }
 }

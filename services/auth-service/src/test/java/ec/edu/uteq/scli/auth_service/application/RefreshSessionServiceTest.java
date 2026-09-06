@@ -97,6 +97,15 @@ class RefreshSessionServiceTest {
         verify(repository, times(2)).revocarSiActiva(any(), any());
     }
 
+    @Test
+    void revocaTodasLasSesionesActivasDelUsuario() {
+        UUID usuarioId = UUID.randomUUID();
+        when(repository.revocarActivasPorUsuario(usuarioId,
+                OffsetDateTime.ofInstant(now, ZoneOffset.UTC))).thenReturn(2);
+
+        assertEquals(2, service.revocarActivasPorUsuario(usuarioId));
+    }
+
     private RefreshSession session(UUID usuarioId, boolean revocada, Instant expira) {
         return new RefreshSession(UUID.randomUUID(), usuarioId, "hash", UUID.randomUUID(),
                 OffsetDateTime.ofInstant(now.minusSeconds(10), ZoneOffset.UTC),

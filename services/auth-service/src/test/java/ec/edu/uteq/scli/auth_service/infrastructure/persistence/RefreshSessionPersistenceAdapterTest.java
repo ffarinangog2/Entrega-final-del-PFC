@@ -38,11 +38,13 @@ class RefreshSessionPersistenceAdapterTest {
             return Optional.of(entity);
         });
         when(jpaRepository.revocarSiActiva("hash", now)).thenReturn(1);
+        when(jpaRepository.revocarActivasPorUsuario(session.usuarioId(), now)).thenReturn(2);
         when(jpaRepository.contarActivas(now)).thenReturn(3L);
 
         assertEquals(session, adapter.guardar(session));
         assertEquals(session, adapter.buscarPorTokenHash("hash").orElseThrow());
         assertTrue(adapter.revocarSiActiva("hash", now));
+        assertEquals(2, adapter.revocarActivasPorUsuario(session.usuarioId(), now));
         assertEquals(3L, adapter.contarActivas(now));
         adapter.registrarReemplazo("hash", session.id());
 

@@ -66,16 +66,36 @@ class InitialProfilesBootstrapIntegrationTest {
         entityManager.flush();
         entityManager.clear();
         assertAffectedRows(1);
+        assertFloorCoverage();
 
-        jdbc.update("UPDATE administradores SET cargo = ? WHERE id = ?", "Dato existente", ADMIN_ID);
+        jdbc.update("UPDATE administradores SET cargo = ?, piso_id = ?, activo = false WHERE id = ?",
+                "Dato existente", UUID.fromString("35000000-0000-0000-0000-000000000001"), ADMIN_ID);
         bootstrap = bootstrap();
         bootstrap.run(null);
         entityManager.flush();
         entityManager.clear();
 
         assertAffectedRows(1);
+        assertFloorCoverage();
         assertEquals("Dato existente", jdbc.queryForObject(
                 "SELECT cargo FROM administradores WHERE id = ?", String.class, ADMIN_ID));
+        assertEquals(0, jdbc.queryForObject(
+                "SELECT COUNT(*) FROM administradores WHERE codigo_administrador LIKE 'ADM-GLOBAL-%'"
+                        + " AND piso_id IS NOT NULL", Integer.class));
+        assertEquals(1, jdbc.queryForObject(
+                "SELECT COUNT(*) FROM administradores WHERE activo = true AND piso_id IS NULL"
+                        + " AND codigo_administrador IN ('ADM-0001', 'ADM-GLOBAL-01', 'ADM-GLOBAL-02')",
+                Integer.class));
+        assertEquals("ADM-0001", jdbc.queryForObject(
+                "SELECT codigo_administrador FROM administradores WHERE activo = true AND piso_id IS NULL"
+                        + " AND codigo_administrador IN ('ADM-0001', 'ADM-GLOBAL-01', 'ADM-GLOBAL-02')",
+                String.class));
+        for (int floor = 1; floor <= 4; floor++) {
+            UUID floorId = UUID.fromString("35000000-0000-0000-0000-0000000000%02d".formatted(floor));
+            assertEquals(1, administradores.findByPisoIdAndActivoTrue(floorId).size());
+            assertEquals("ADM-PISO-%02d".formatted(floor),
+                    administradores.findByPisoIdAndActivoTrue(floorId).getFirst().getCodigoAdministrador());
+        }
     }
 
     private InitialProfilesBootstrap bootstrap() {
@@ -96,6 +116,19 @@ class InitialProfilesBootstrapIntegrationTest {
 
     private int count(String table, UUID id) {
         return jdbc.queryForObject("SELECT COUNT(*) FROM " + table + " WHERE id = ?", Integer.class, id);
+    }
+
+    private void assertFloorCoverage() {
+        for (int floor = 1; floor <= 4; floor++) {
+            String code = "ADM-PISO-%02d".formatted(floor);
+            UUID floorId = UUID.fromString("35000000-0000-0000-0000-0000000000%02d".formatted(floor));
+            assertEquals(floorId, jdbc.queryForObject(
+                    "SELECT piso_id FROM administradores WHERE codigo_administrador = ? AND activo = true",
+                    UUID.class, code));
+            assertEquals(1, jdbc.queryForObject(
+                    "SELECT COUNT(*) FROM administradores WHERE codigo_administrador = ?",
+                    Integer.class, code));
+        }
     }
 
     private static UUID stableId(String value) {

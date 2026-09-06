@@ -23,6 +23,16 @@ public interface RefreshTokenJpaRepository extends JpaRepository<RefreshToken, U
     int revocarSiActiva(@Param("hash") String hash, @Param("ahora") OffsetDateTime ahora);
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+            update RefreshToken token
+               set token.revocado = true, token.revocadoEn = :ahora
+             where token.usuarioId = :usuarioId
+               and token.revocado = false
+               and token.expiraEn > :ahora
+            """)
+    int revocarActivasPorUsuario(@Param("usuarioId") UUID usuarioId, @Param("ahora") OffsetDateTime ahora);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("update RefreshToken token set token.reemplazadoPor = :reemplazoId where token.tokenHash = :hash")
     int registrarReemplazo(@Param("hash") String hash, @Param("reemplazoId") UUID reemplazoId);
 
