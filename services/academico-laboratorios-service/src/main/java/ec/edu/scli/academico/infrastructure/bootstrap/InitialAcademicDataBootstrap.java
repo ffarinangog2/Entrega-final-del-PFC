@@ -117,15 +117,19 @@ public class InitialAcademicDataBootstrap implements ApplicationRunner {
         createSubject(5, CAREER_TI_ID, "TI-202", "Sistemas Operativos");
         createSubject(6, CAREER_TI_ID, "TI-303", "Seguridad Informatica");
         String[] software = {"Programación", "Matemática para Computación", "Arquitectura de Software",
-                "Bases de Datos", "Ingeniería de Requisitos", "Calidad de Software", "Sistemas Distribuidos", "Gestión de Proyectos"};
+                "Bases de Datos", "Ingeniería de Requisitos", "Calidad de Software", "Sistemas Distribuidos",
+                "Gestión de Proyectos"};
         String[] telematics = {"Redes de Datos", "Telecomunicaciones", "Electrónica Digital", "Sistemas Operativos",
-                "Seguridad de Redes", "Servicios Telemáticos", "Comunicaciones Inalámbricas", "Gestión de Infraestructura"};
+                "Seguridad de Redes", "Servicios Telemáticos", "Comunicaciones Inalámbricas",
+                "Gestión de Infraestructura"};
         for (int level = 1; level <= 10; level++) {
             for (int slot = 1; slot <= 8; slot++) {
                 if (!(slot == 1 && level <= 3)) {
-                    createSubject(CAREER_1_ID, "SW-%02d-%02d".formatted(level, slot), software[slot - 1] + " " + level, level);
+                    createSubject(CAREER_1_ID, "SW-%02d-%02d".formatted(level, slot),
+                            software[slot - 1] + " " + level, level);
                 }
-                createSubject(telematicsCareerId, "TEL-%02d-%02d".formatted(level, slot), telematics[slot - 1] + " " + level, level);
+                createSubject(telematicsCareerId, "TEL-%02d-%02d".formatted(level, slot),
+                        telematics[slot - 1] + " " + level, level);
             }
         }
     }
@@ -211,14 +215,19 @@ public class InitialAcademicDataBootstrap implements ApplicationRunner {
         UUID id = id(String.format("3B000000-0000-0000-0000-%012d", n));
         if (!subjects.existsById(id)) {
             MateriaEntity e = new MateriaEntity(); e.setId(id); e.setCarreraId(careerId); e.setCodigo(code);
-            e.setNombre(name); e.setNumeroHoras(64); e.setNivel(((n - 1) % 3) + 1); e.setActivo(true); entityManager.persist(e);
+            e.setNombre(name); e.setNumeroHoras(64); e.setNivel(((n - 1) % 3) + 1);
+            e.setActivo(true); entityManager.persist(e);
         }
     }
 
     private void createSubject(UUID careerId, String code, String name, int level) {
-        if (subjects.findByCodigo(code).isPresent()) return;
-        MateriaEntity e = new MateriaEntity(); e.setId(stableId("subject:" + code)); e.setCarreraId(careerId);
-        e.setCodigo(code); e.setNombre(name); e.setNumeroHoras(64); e.setNivel(level); e.setActivo(true); subjects.save(e);
+        if (subjects.findByCodigo(code).isPresent()) {
+            return;
+        }
+        MateriaEntity e = new MateriaEntity();
+        e.setId(stableId("subject:" + code)); e.setCarreraId(careerId);
+        e.setCodigo(code); e.setNombre(name); e.setNumeroHoras(64); e.setNivel(level);
+        e.setActivo(true); subjects.save(e);
     }
 
     private void createLab(UUID id, UUID floorId, String code, String name) {
@@ -248,5 +257,7 @@ public class InitialAcademicDataBootstrap implements ApplicationRunner {
         }
     }
     private static UUID id(String value) { return UUID.fromString(value); }
-    private static UUID stableId(String value) { return UUID.nameUUIDFromBytes(("scli-integral-test:" + value).getBytes(StandardCharsets.UTF_8)); }
+    private static UUID stableId(String value) {
+        return UUID.nameUUIDFromBytes(("scli-integral-test:" + value).getBytes(StandardCharsets.UTF_8));
+    }
 }
