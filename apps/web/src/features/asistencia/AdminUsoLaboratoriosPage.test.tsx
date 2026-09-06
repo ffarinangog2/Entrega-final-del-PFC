@@ -174,15 +174,20 @@ describe('AdminUsoLaboratoriosPage', () => {
     ).toBeInTheDocument()
   })
 
-  it('7. Muestra mensaje de error accesible si falla la consulta', async () => {
-    vi.mocked(api.listarUsosPiso).mockRejectedValue(
+  it('7. Muestra mensaje de error accesible si falla la consulta (Error y no-Error)', async () => {
+    vi.mocked(api.listarUsosPiso).mockRejectedValueOnce(
       new Error('Error al conectar con el servicio de reservas'),
     )
 
-    render(<AdminUsoLaboratoriosPage />)
-
+    const { unmount } = render(<AdminUsoLaboratoriosPage />)
     const alerta = await screen.findByRole('alert')
     expect(alerta).toHaveTextContent('Error al conectar con el servicio de reservas')
+    unmount()
+
+    // Error no estándar (string)
+    vi.mocked(api.listarUsosPiso).mockRejectedValueOnce('fallo de red')
+    render(<AdminUsoLaboratoriosPage />)
+    expect(await screen.findByRole('alert')).toHaveTextContent('No fue posible cargar los registros')
   })
 
   it('8. Verifica que la pantalla sea de solo lectura y no exponga acciones de modificación', async () => {
@@ -211,5 +216,83 @@ describe('AdminUsoLaboratoriosPage', () => {
     expect(screen.queryByRole('button', { name: /aprobar/i })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /rechazar/i })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /propuesta/i })).not.toBeInTheDocument()
+  })
+
+  it('9. Permite interactuar con todos los filtros y consultar con los valores seleccionados', async () => {
+    render(<AdminUsoLaboratoriosPage />)
+    await screen.findByRole('heading', { name: 'Registro de uso de laboratorios' })
+
+    const fechaInput = screen.getByLabelText('Fecha')
+    fireEvent.change(fechaInput, { target: { value: '2026-09-08' } })
+
+    const periodoSelect = screen.getByLabelText('Período')
+    fireEvent.change(periodoSelect, { target: { value: 'periodo-uuid-1' } })
+
+    const labSelect = screen.getByLabelText('Laboratorio')
+    fireEvent.change(labSelect, { target: { value: 'lab-uuid-1' } })
+
+    const materiaSelect = screen.getByLabelText('Materia')
+    fireEvent.change(materiaSelect, { target: { value: 'materia-uuid-1' } })
+
+    const estadoSelect = screen.getByLabelText('Estado')
+    fireEvent.change(estadoSelect, { target: { value: 'ABIERTA' } })
+
+    const aplicarBtn = screen.getByRole('button', { name: 'Aplicar filtros' })
+    fireEvent.click(aplicarBtn)
+
+    await waitFor(() => {
+      expect(api.listarUsosPiso).toHaveBeenCalledWith({
+        fecha: '2026-09-08',
+        periodoId: 'periodo-uuid-1',
+        laboratorioId: 'lab-uuid-1',
+        materiaId: 'materia-uuid-1',
+        estado: 'ABIERTA',
+      })
+    })
+  })
+
+  it('10. Muestra valores por defecto cuando campos del uso y detalle son nulos', async () => {
+    const usoIncompleto: api.SesionAsistencia = {
+      id: 'uso-inc-1',
+      reservaId: null,
+      bloqueId: 'bloque-uuid-2',
+      fechaClase: '2026-09-09',
+      abiertaEn: '2026-09-09T08:00:00Z',
+      expiraEn: '2026-09-09T08:15:00Z',
+      cerradaEn: null,
+      estado: 'ABIERTA',
+      token: null,
+      temaActividad: null,
+      observacionUso: null,
+      carreraId: null,
+      periodoId: null,
+      nivel: 1,
+      materiaId: null,
+      docenteId: 'docente-1',
+      laboratorioId: null,
+      pisoId: 'piso-uuid-1',
+      diaSemana: 'MIERCOLES',
+      horaInicio: '08:00',
+      horaFin: '10:00',
+      esperados: undefined,
+      presentes: undefined,
+      ausentes: undefined,
+    }
+
+    vi.mocked(api.listarUsosPiso).mockResolvedValue([usoIncompleto])
+    vi.mocked(api.listarParticipantesUsoPiso).mockResolvedValue([])
+
+    render(<AdminUsoLaboratoriosPage />)
+
+    const tabla = await screen.findByRole('table')
+    const tbody = tabla.querySelector('tbody')!
+    expect(within(tbody).getByText('Laboratorio')).toBeInTheDocument()
+    expect(within(tbody).getByText('Materia')).toBeInTheDocument()
+
+    // Abrir detalle
+    fireEvent.click(within(tabla).getByText('2026-09-09'))
+    expect(await screen.findByText('Pendiente de registrar')).toBeInTheDocument()
+    expect(screen.getByText('Sin observaciones')).toBeInTheDocument()
+    expect(screen.getByText('En curso')).toBeInTheDocument()
   })
 })
