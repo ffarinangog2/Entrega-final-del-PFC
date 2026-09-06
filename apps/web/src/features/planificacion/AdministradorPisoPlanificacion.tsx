@@ -115,11 +115,15 @@ export function AdministradorPisoPlanificacion() {
       ),
     [paquete, planes],
   )
-  const planActual = agregados.find((item) => item.id === paquete)
-  const pendiente = planActual?.estado === 'EN_REVISION'
   const materia = (id: string) => materias.find((item) => item.id === id)
   const laboratorio = (id: string) =>
     laboratorios.find((item) => item.id === id)
+  const planActual = agregados.find((item) => item.id === paquete)
+  const pisoActual = laboratorio(visibles[0]?.laboratorioId ?? '')?.pisoId
+  const miRevision = planActual?.revisiones?.find(
+    (item) => item.vigente === true && item.pisoId === pisoActual,
+  )
+  const pendiente = miRevision ? miRevision.estado === 'PENDIENTE' : planActual?.estado === 'EN_REVISION'
   const carrera = carreras.find((item) => item.id === visibles[0]?.carreraId)
 
   async function ejecutar(
@@ -235,6 +239,7 @@ export function AdministradorPisoPlanificacion() {
               <strong>{carrera?.nombre ?? 'Carrera institucional'}</strong>
               <span>Periodo: {periodo?.codigo ?? 'No disponible'}</span>
               <span>Estado: {planActual?.estado ?? estadoPaquete(visibles)}</span>
+              {miRevision?.estado === 'APROBADA' && <span className="status">Aprobada por este piso</span>}
               <span>{visibles.length} bloques en su piso</span>
             </div>
             {solicitudes.filter(s=>s.estado==='PENDIENTE').map(s=><article className="floor-planning__summary" key={s.id}><strong>Solicitud de cambio · {s.tipo}</strong><span>{s.motivo}</span><span>El horario original continúa vigente.</span><button disabled={ocupado} onClick={()=>void ejecutar(()=>aprobarSolicitudCambio(paquete,s.id),'¿Aprobar y revalidar este cambio?')}>Aprobar cambio</button><button disabled={ocupado} onClick={()=>{const motivo=window.prompt('Motivo del rechazo');if(motivo?.trim())void ejecutar(()=>rechazarSolicitudCambio(paquete,s.id,motivo.trim()),'¿Rechazar esta solicitud?')}}>Rechazar cambio</button></article>)}

@@ -9,5 +9,7 @@ public interface SesionAsistenciaJpaRepository extends JpaRepository<SesionAsist
  Optional<SesionAsistenciaJpaEntity> findByIdAndDocenteId(UUID id,UUID docenteId);
  Optional<SesionAsistenciaJpaEntity> findFirstByReservaIdAndEstado(UUID reservaId, EstadoSesionAsistencia estado);
  Optional<SesionAsistenciaJpaEntity> findFirstByBloquePlanificacionIdAndFechaClaseAndEstado(UUID bloqueId, java.time.LocalDate fecha, EstadoSesionAsistencia estado);
+ Optional<SesionAsistenciaJpaEntity> findByBloquePlanificacionIdAndFechaClase(UUID bloqueId, java.time.LocalDate fecha);
  List<SesionAsistenciaJpaEntity> findByEstado(EstadoSesionAsistencia estado);
+ List<SesionAsistenciaJpaEntity> findByPisoIdSnapshot(UUID pisoId);
 }

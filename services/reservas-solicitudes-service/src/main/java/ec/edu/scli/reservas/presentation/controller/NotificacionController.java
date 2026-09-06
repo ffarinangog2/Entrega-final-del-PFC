@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.security.Principal;
@@ -49,6 +50,12 @@ public class NotificacionController {
     }
 
     @GetMapping
+    public Object listar(@RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size, Principal principal) {
+        return page == null && size == null ? service.listar(perfil(principal))
+                : service.listar(perfil(principal), page == null ? 0 : page, size == null ? 20 : size);
+    }
+
     public List<NotificacionInternaResponse> listar(Principal principal) {
         return service.listar(perfil(principal));
     }

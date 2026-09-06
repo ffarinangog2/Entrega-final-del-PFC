@@ -97,9 +97,26 @@ export interface SesionAsistencia {
   fechaClase?: string | null
   abiertaEn: string
   expiraEn: string
+  cerradaEn?: string | null
   estado: string
   token: string | null
+  temaActividad?: string | null
+  observacionUso?: string | null
+  carreraId?: string | null
+  periodoId?: string | null
+  nivel?: number | null
+  materiaId?: string | null
+  docenteId?: string | null
+  laboratorioId?: string | null
+  pisoId?: string | null
+  diaSemana?: string | null
+  horaInicio?: string | null
+  horaFin?: string | null
+  esperados?: number
+  presentes?: number
+  ausentes?: number
 }
+export interface ParticipanteUso { id:string; sesionId:string; estudiantePerfilId:string; estado:'PENDIENTE'|'PRESENTE'|'AUSENTE'; registradaEn:string|null; registradoPorPerfilId:string|null; observacion:string|null }
 export interface RegistroAsistencia {
   id: string
   sesionId: string
@@ -131,6 +148,9 @@ export const cerrarAsistencia = (id: string) =>
     `/api/v1/asistencias/sesiones/${encodeURIComponent(id)}/cerrar`,
     { method: 'POST' },
   )
+export const completarUsoLaboratorio = (id:string,body:{temaActividad:string;observacionUso?:string}) => apiRequest<SesionAsistencia>(`/api/v1/asistencias/sesiones/${encodeURIComponent(id)}/uso`,{method:'PATCH',body:JSON.stringify(body)})
+export const listarParticipantesUso = (id:string) => apiRequest<ParticipanteUso[]>(`/api/v1/asistencias/sesiones/${encodeURIComponent(id)}/participantes`)
+export const ajustarParticipanteUso = (id:string,perfilId:string,body:{estado:'PRESENTE'|'AUSENTE';observacion:string}) => apiRequest<ParticipanteUso>(`/api/v1/asistencias/sesiones/${encodeURIComponent(id)}/participantes/${encodeURIComponent(perfilId)}`,{method:'PATCH',body:JSON.stringify(body)})
 export const listarAsistentes = (id: string) =>
   apiRequest<RegistroAsistencia[]>(
     `/api/v1/asistencias/sesiones/${encodeURIComponent(id)}/registros`,
@@ -149,8 +169,15 @@ export const registrarAsistenciaPropia = (id: string) =>
     `/api/v1/asistencias/sesiones/${encodeURIComponent(id)}/registro-propio`,
     { method: 'POST' },
   )
+export interface FiltrosUsoPiso { fecha?:string;periodoId?:string;laboratorioId?:string;materiaId?:string;docenteId?:string;estado?:string }
+export const listarUsosPiso = (filtros:FiltrosUsoPiso={}) => { const q=new URLSearchParams();Object.entries(filtros).forEach(([k,v])=>{if(v)q.set(k,v)});return apiRequest<SesionAsistencia[]>(`/api/v1/asistencias/usos-piso${q.size?`?${q}`:''}`) }
+export const consultarUsoPiso = (id:string) => apiRequest<SesionAsistencia>(`/api/v1/asistencias/usos-piso/${encodeURIComponent(id)}`)
+export const listarParticipantesUsoPiso = (id:string) => apiRequest<ParticipanteUso[]>(`/api/v1/asistencias/usos-piso/${encodeURIComponent(id)}/participantes`)
 export interface NotificacionInterna { id: string; titulo: string; cuerpo: string; tipo: string | null; referenciaId: string | null; leida: boolean; creadaEn: string }
 export const listarNotificaciones = () => apiRequest<NotificacionInterna[]>('/api/v1/notificaciones')
+export interface PaginaNotificaciones { content:NotificacionInterna[];number:number;size:number;totalElements:number;totalPages:number }
+export const listarNotificacionesPaginadas = (page=0,size=10) => apiRequest<PaginaNotificaciones>(`/api/v1/notificaciones?page=${page}&size=${size}`)
+export const contarNotificacionesNoLeidas = () => apiRequest<{cantidad:number}>('/api/v1/notificaciones/no-leidas')
 export const marcarNotificacionLeida = (id: string) => apiRequest<NotificacionInterna>(`/api/v1/notificaciones/${encodeURIComponent(id)}/leer`, { method: 'POST' })
 export const marcarTodasNotificacionesLeidas = () => apiRequest<void>('/api/v1/notificaciones/leer-todas', { method: 'POST' })
 export interface SolicitudCambio { id:string; planificacionId:string; bloqueId:string; tipo:'LABORATORIO'|'HORARIO'|'DOCENTE'|'CANCELACION'; estado:'PENDIENTE'|'APROBADA'|'RECHAZADA'; motivo:string; laboratorioAnteriorId:string; laboratorioPropuestoId:string; docenteAnteriorId:string|null; docentePropuestoId:string|null; diaAnterior:string; diaPropuesto:string; horaInicioAnterior:string; horaInicioPropuesta:string; horaFinAnterior:string; horaFinPropuesta:string; creadaEn:string }

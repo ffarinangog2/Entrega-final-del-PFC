@@ -213,6 +213,12 @@ class PlanificacionAgregadaServiceTest {
         assertThat(plan.getEstado()).isEqualTo(EstadoPlanificacionAgregada.EN_REVISION);
 
         pendiente.setEstado(EstadoRevisionPlanificacion.APROBADA);
+        RevisionPlanificacionPisoJpaEntity nuevaRonda = new RevisionPlanificacionPisoJpaEntity();
+        nuevaRonda.setId(UUID.randomUUID()); nuevaRonda.setPlanificacionId(planId); nuevaRonda.setPisoId(piso);
+        nuevaRonda.setEstado(EstadoRevisionPlanificacion.PENDIENTE);
+        when(revisiones.findByPlanificacionIdAndPisoIdAndVigenteTrue(planId, piso))
+                .thenReturn(Optional.of(nuevaRonda));
+        when(revisiones.findByPlanificacionIdAndVigenteTrue(planId)).thenReturn(List.of(nuevaRonda, pendiente));
         service.aprobarPiso(planId);
         assertThat(plan.getEstado()).isEqualTo(EstadoPlanificacionAgregada.APROBADA);
     }

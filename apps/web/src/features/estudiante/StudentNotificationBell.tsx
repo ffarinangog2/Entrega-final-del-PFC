@@ -1,20 +1,28 @@
 import { useCallback, useContext, useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { AuthContext } from '../../auth'
 import { obtenerLaboratorios, obtenerMaterias } from '../../services/academicoApi'
 import {
   listarNotificaciones,
   marcarNotificacionLeida,
+  marcarTodasNotificacionesLeidas,
   listarSesionesAbiertas,
   obtenerMiHorario,
   type NotificacionInterna,
   type Planificacion,
   type SesionAsistencia,
 } from '../../services/operationalApi'
+import { destinoNotificacion } from '../notificaciones/notificationNavigation'
 
 export function StudentNotificationBell({ asistencia = true }: { asistencia?: boolean }) {
   const auth = useContext(AuthContext)
   const authenticated = auth ? auth.isAuthenticated : true
+  let navigate: ReturnType<typeof useNavigate> | null = null
+  try {
+    navigate = useNavigate()
+  } catch {
+    navigate = null
+  }
   const [sesiones, setSesiones] = useState<SesionAsistencia[]>([])
   const [abierta, setAbierta] = useState(false)
   const [horario, setHorario] = useState<Planificacion[]>([])
@@ -24,8 +32,15 @@ export function StudentNotificationBell({ asistencia = true }: { asistencia?: bo
 
   const refrescarNotificaciones = useCallback(() => {
     if (!authenticated) return
-    void Promise.resolve(listarNotificaciones()).then((value) => setNotificaciones(value ?? [])).catch(() => undefined)
-  }, [authenticated])
+    void Promise.resolve(listarNotificaciones())
+      .then((value) => setNotificaciones(value ?? []))
+      .catch(() => undefined)
+    if (asistencia) {
+      void Promise.resolve(listarSesionesAbiertas())
+        .then((items) => setSesiones(items ?? []))
+        .catch(() => undefined)
+    }
+  }, [asistencia, authenticated])
 
   useEffect(() => {
     let activo = true
@@ -92,54 +107,99 @@ export function StudentNotificationBell({ asistencia = true }: { asistencia?: bo
     }
   }, [authenticated, refrescarNotificaciones])
 
+  async function abrirItem(item: NotificacionInterna) {
+    if (!item.leida) {
+      const leida = await marcarNotificacionLeida(item.id)
+      setNotificaciones((actuales) =>
+        actuales.map((actual) => (actual.id === leida.id ? leida : actual)),
+      )
+    }
+    setAbierta(false)
+    if (navigate) {
+      navigate(destinoNotificacion(item))
+    }
+  }
+
+  async function leerTodas() {
+    await marcarTodasNotificacionesLeidas().catch(() => undefined)
+    setNotificaciones((actuales) => actuales.map((x) => ({ ...x, leida: true })))
+  }
+
+  const noLeidas = notificaciones.filter((item) => !item.leida).length
+  const totalPendientes = noLeidas + (asistencia ? sesiones.length : 0)
+
   return (
     <div className="student-bell">
       <button
-        aria-label={`Notificaciones: ${notificaciones.filter((item) => !item.leida).length + sesiones.length} pendientes`}
+        aria-label={`Notificaciones: ${totalPendientes} pendientes`}
+        aria-expanded={abierta}
         onClick={() => setAbierta((value) => !value)}
       >
         🔔
-        {notificaciones.filter((item) => !item.leida).length + sesiones.length > 0 && (
-          <span>{notificaciones.filter((item) => !item.leida).length + sesiones.length}</span>
-        )}
+        {totalPendientes > 0 && <span>{totalPendientes}</span>}
       </button>
       {abierta && (
-        <div role="dialog" aria-label="Notificaciones">
-          {notificaciones.length === 0 && sesiones.length === 0 ? (
-            <p>No hay notificaciones.</p>
-          ) : (
-            <>
-              {notificaciones.slice(0, 5).map((item) => (
-                <button
-                  key={item.id}
-                  className={item.leida ? '' : 'is-unread'}
-                  onClick={() =>
-                    void marcarNotificacionLeida(item.id).then((leida) =>
-                      setNotificaciones((actuales) =>
-                        actuales.map((actual) => (actual.id === leida.id ? leida : actual)),
-                      ),
-                    )
-                  }
-                >
-                  <strong>{item.titulo}</strong>
-                  <span>{item.cuerpo}</span>
-                </button>
-              ))}
-              {sesiones.slice(0, 5).map((sesion) => {
-                const bloque = horario.find((item) => item.id === sesion.bloqueId)
-                return (
-                  <Link key={sesion.id} to="/asistencia">
-                    Asistencia disponible · {materias.get(bloque?.materiaId ?? '') ?? 'Actividad de laboratorio'} ·{' '}
-                    {labs.get(bloque?.laboratorioId ?? '') ?? 'Laboratorio'} · hasta{' '}
-                    {new Date(sesion.expiraEn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </Link>
-                )
-              })}
-            </>
-          )}
-          <Link to="/notificaciones">Ver todas las notificaciones</Link>
+        <div className="student-bell__panel" role="dialog" aria-label="Notificaciones">
+          <header>
+            <div>
+              <strong>Notificaciones</strong>
+              <small>{noLeidas} sin leer</small>
+            </div>
+            <button disabled={!noLeidas} onClick={() => void leerTodas()}>
+              Marcar todas como leídas
+            </button>
+          </header>
+          <div className="student-bell__items">
+            {notificaciones.length === 0 && sesiones.length === 0 ? (
+              <p>No hay notificaciones.</p>
+            ) : (
+              <>
+                {notificaciones.slice(0, 5).map((item) => (
+                  <button
+                    key={item.id}
+                    className={item.leida ? '' : 'is-unread'}
+                    onClick={() => void abrirItem(item)}
+                  >
+                    <span className="student-bell__icon" aria-hidden="true">
+                      {icono(item.tipo)}
+                    </span>
+                    <span>
+                      <strong>{item.titulo}</strong>
+                      <small>{item.cuerpo}</small>
+                      <time>{new Date(item.creadaEn).toLocaleString()}</time>
+                    </span>
+                  </button>
+                ))}
+                {sesiones.slice(0, 5).map((sesion) => {
+                  const bloque = horario.find((item) => item.id === sesion.bloqueId)
+                  return (
+                    <Link key={sesion.id} to="/asistencia" onClick={() => setAbierta(false)}>
+                      Asistencia disponible · {materias.get(bloque?.materiaId ?? '') ?? 'Actividad de laboratorio'} ·{' '}
+                      {labs.get(bloque?.laboratorioId ?? '') ?? 'Laboratorio'} · hasta{' '}
+                      {new Date(sesion.expiraEn).toLocaleTimeString([], {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </Link>
+                  )
+                })}
+              </>
+            )}
+          </div>
+          <footer>
+            <Link to="/notificaciones" onClick={() => setAbierta(false)}>
+              Ver todas las notificaciones
+            </Link>
+          </footer>
         </div>
       )}
     </div>
   )
+}
+
+function icono(tipo: string | null) {
+  if (tipo?.includes('RETIRO')) return '↩'
+  if (tipo?.includes('USO') || tipo?.includes('ASISTENCIA')) return '✓'
+  if (tipo?.includes('PLANIFICACION') || tipo?.includes('HORARIO')) return '▦'
+  return 'i'
 }
