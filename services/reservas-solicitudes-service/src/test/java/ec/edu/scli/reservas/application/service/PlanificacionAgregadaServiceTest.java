@@ -29,6 +29,7 @@ import org.springframework.security.access.AccessDeniedException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -259,11 +260,13 @@ class PlanificacionAgregadaServiceTest {
     @Test
     void listarExponeFinalizadaPorFechaSinPersistirCambios() {
         var plan = plan(UUID.randomUUID(), EstadoPlanificacionAgregada.APROBADA);
+        LocalDate hoy = LocalDate.now(ZoneId.of("America/Guayaquil"));
         when(actores.obtener()).thenReturn(new ActorAutenticado(perfil, Set.of("ROLE_ADMINISTRADOR")));
         when(planes.findAll()).thenReturn(List.of(plan));
         when(bloques.findByPlanificacionId(plan.getId())).thenReturn(List.of());
         when(academico.obtenerPeriodo(plan.getPeriodoId())).thenReturn(new PeriodoExternoResponse(
-                plan.getPeriodoId(), "P", "P", LocalDate.now().minusMonths(2), LocalDate.now().minusDays(1), "FINALIZADO", "P", "PPA", 1));
+                plan.getPeriodoId(), "P", "P", hoy.minusMonths(2), hoy.minusDays(1),
+                "FINALIZADO", "P", "PPA", 1));
         assertThat(service.listar()).singleElement().extracting(x -> x.estado()).isEqualTo("FINALIZADA");
         assertThat(plan.getEstado()).isEqualTo(EstadoPlanificacionAgregada.APROBADA);
         verify(planes, never()).save(any());

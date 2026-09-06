@@ -29,6 +29,7 @@ import org.springframework.security.access.AccessDeniedException;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -160,9 +161,10 @@ class SolicitudCambioPlanificacionServiceTest {
     @Test
     void crearRechazaSiPeriodoEsHistorico() {
         var plan = crearPlan(EstadoPlanificacionAgregada.APROBADA);
+        LocalDate hoy = LocalDate.now(ZoneId.of("America/Guayaquil"));
         when(planes.findById(planId)).thenReturn(Optional.of(plan));
         when(academico.obtenerPeriodo(periodo)).thenReturn(new PeriodoExternoResponse(periodo, "P", "P",
-                LocalDate.now().minusMonths(2), LocalDate.now().minusDays(1), "CERRADO", "PPA", "PPA", 1));
+                hoy.minusMonths(2), hoy.minusDays(1), "CERRADO", "PPA", "PPA", 1));
 
         assertThatThrownBy(() -> service.crear(planId, new CrearSolicitudCambioRequest(bloqueId, TipoSolicitudCambio.CANCELACION, "Motivo", null, null, null, null, null)))
                 .isInstanceOf(IllegalStateException.class)
