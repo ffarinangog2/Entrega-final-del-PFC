@@ -88,27 +88,6 @@ public class InitialProfilesBootstrap implements ApplicationRunner {
         UUID profileId = profileId(number);
         var existente = administradores.findByPerfilId(profileId);
         if (existente.isPresent()) {
-            var admin = existente.get();
-            boolean modificado = false;
-            if (!java.util.Objects.equals(admin.getPisoId(), pisoId)) {
-                admin.setPisoId(pisoId);
-                modificado = true;
-            }
-            if (!java.util.Objects.equals(admin.getCodigoAdministrador(), code)) {
-                admin.setCodigoAdministrador(code);
-                modificado = true;
-            }
-            if (!java.util.Objects.equals(admin.getCargo(), position)) {
-                admin.setCargo(position);
-                modificado = true;
-            }
-            if (!Boolean.TRUE.equals(admin.getActivo())) {
-                admin.setActivo(true);
-                modificado = true;
-            }
-            if (modificado) {
-                administradores.save(admin);
-            }
             return;
         }
         Administrador admin = new Administrador(); admin.setPerfil(perfiles.getReferenceById(profileId));
@@ -196,16 +175,12 @@ public class InitialProfilesBootstrap implements ApplicationRunner {
         UUID profileId = stableId("profile:" + username);
         var existing = administradores.findByPerfilId(profileId);
         if (existing.isPresent()) {
-            Administrador admin = existing.get();
-            if (!floorId.equals(admin.getPisoId()) || !Boolean.TRUE.equals(admin.getActivo())) {
-                admin.setPisoId(floorId); admin.setActivo(true); administradores.save(admin);
-            }
             return;
         }
         Administrador admin = new Administrador(); admin.setId(stableId("admin:" + username));
         admin.setPerfil(perfiles.getReferenceById(profileId)); admin.setCodigoAdministrador(code);
         admin.setCargo("Administración de piso"); admin.setPisoId(floorId); admin.setActivo(true);
-        administradores.save(admin);
+        entityManager.persist(admin);
     }
 
     private void createNamedTeacher(String username, String code) {
@@ -215,7 +190,7 @@ public class InitialProfilesBootstrap implements ApplicationRunner {
         teacher.setPerfil(perfiles.getReferenceById(profileId)); teacher.setCodigoDocente(code);
         teacher.setTituloAcademico("Magíster"); teacher.setDepartamento("Tecnologías de la Información");
         teacher.setTipoContrato("Tiempo completo"); teacher.setDedicacion("40 horas"); teacher.setActivo(true);
-        docentes.save(teacher);
+        entityManager.persist(teacher);
     }
 
     private Estudiante createNamedStudent(String username, int careerIndex, int level, int number) {
@@ -225,7 +200,8 @@ public class InitialProfilesBootstrap implements ApplicationRunner {
             value.setPerfil(perfiles.getReferenceById(profileId));
             value.setMatricula("%s-%02d-%02d".formatted(careerIndex == 0 ? "SW" : "TEL", level, number));
             value.setCarreraId(carreras.get(careerIndex)); value.setSemestre(level); value.setActivo(true);
-            return estudiantes.save(value);
+            entityManager.persist(value);
+            return value;
         });
     }
 
@@ -236,7 +212,7 @@ public class InitialProfilesBootstrap implements ApplicationRunner {
         context.setId(stableId("context:" + student.getId() + ":" + periodoActualId));
         context.setEstudianteId(student.getId()); context.setCarreraId(careerId);
         context.setPeriodoId(periodoActualId); context.setNivel(level); context.setActivo(true);
-        contextos.save(context);
+        entityManager.persist(context);
     }
 
     private void createNamedAffiliation(String username, UUID careerId) {

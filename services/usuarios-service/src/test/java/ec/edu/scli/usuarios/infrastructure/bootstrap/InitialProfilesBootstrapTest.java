@@ -3,6 +3,8 @@ package ec.edu.scli.usuarios.infrastructure.bootstrap;
 import ec.edu.scli.usuarios.domain.model.TipoAmbitoInstitucional;
 import ec.edu.scli.usuarios.infrastructure.persistence.entity.Administrador;
 import ec.edu.scli.usuarios.infrastructure.persistence.entity.AdscripcionInstitucionalEntity;
+import ec.edu.scli.usuarios.infrastructure.persistence.entity.ContextoAcademicoEstudianteEntity;
+import ec.edu.scli.usuarios.infrastructure.persistence.entity.Docente;
 import ec.edu.scli.usuarios.infrastructure.persistence.entity.Perfil;
 import ec.edu.scli.usuarios.infrastructure.persistence.entity.Estudiante;
 import ec.edu.scli.usuarios.infrastructure.persistence.jpa.AdministradorRepository;
@@ -19,6 +21,8 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.mock;
@@ -62,14 +66,32 @@ class InitialProfilesBootstrapTest {
 
         bootstrap.run(null);
 
-        var perfilesPersistidos = org.mockito.ArgumentCaptor.forClass(Perfil.class);
-        verify(entityManager, org.mockito.Mockito.times(228)).persist(perfilesPersistidos.capture());
-        assertEquals(228, perfilesPersistidos.getAllValues().stream().map(Perfil::getId).distinct().count());
+        var entidadesPersistidas = org.mockito.ArgumentCaptor.forClass(Object.class);
+        verify(entityManager, org.mockito.Mockito.times(646)).persist(entidadesPersistidas.capture());
+        assertEquals(228, entidadesPersistidas.getAllValues().stream().filter(Perfil.class::isInstance).count());
+        assertEquals(2, entidadesPersistidas.getAllValues().stream().filter(Administrador.class::isInstance).count());
+        assertEquals(18, entidadesPersistidas.getAllValues().stream().filter(Docente.class::isInstance).count());
+        assertEquals(198, entidadesPersistidas.getAllValues().stream().filter(Estudiante.class::isInstance).count());
+        assertEquals(200, entidadesPersistidas.getAllValues().stream()
+                .filter(ContextoAcademicoEstudianteEntity.class::isInstance).count());
+        assertTrue(entidadesPersistidas.getAllValues().stream()
+                .filter(Administrador.class::isInstance).map(Administrador.class::cast)
+                .allMatch(value -> value.getId() != null));
+        assertTrue(entidadesPersistidas.getAllValues().stream()
+                .filter(Docente.class::isInstance).map(Docente.class::cast)
+                .allMatch(value -> value.getId() != null));
+        assertTrue(entidadesPersistidas.getAllValues().stream()
+                .filter(Estudiante.class::isInstance).map(Estudiante.class::cast)
+                .allMatch(value -> value.getId() != null));
+        assertTrue(entidadesPersistidas.getAllValues().stream()
+                .filter(ContextoAcademicoEstudianteEntity.class::isInstance)
+                .map(ContextoAcademicoEstudianteEntity.class::cast)
+                .allMatch(value -> value.getId() != null));
         verify(perfiles, never()).save(any());
-        verify(administradores, org.mockito.Mockito.times(6)).save(any());
-        verify(docentes, org.mockito.Mockito.times(20)).save(any());
-        verify(estudiantes, org.mockito.Mockito.times(200)).save(any());
-        verify(contextos, org.mockito.Mockito.times(200)).save(any());
+        verify(administradores, org.mockito.Mockito.times(4)).save(any());
+        verify(docentes, org.mockito.Mockito.times(2)).save(any());
+        verify(estudiantes, org.mockito.Mockito.times(2)).save(any());
+        verify(contextos, never()).save(any());
         verify(adscripciones, org.mockito.Mockito.times(26)).save(any());
 
         when(perfiles.existsById(any())).thenReturn(true);
@@ -100,7 +122,7 @@ class InitialProfilesBootstrapTest {
     }
 
     @Test
-    void actualizaAdministradorSiPisoODatosCambian() {
+    void conservaAdministradoresExistentesYCompletaRegistrosFaltantes() {
         PerfilRepository perfiles = mock(PerfilRepository.class);
         AdministradorRepository administradores = mock(AdministradorRepository.class);
         DocenteRepository docentes = mock(DocenteRepository.class);
@@ -140,8 +162,8 @@ class InitialProfilesBootstrapTest {
 
         bootstrap.run(null);
 
-        assertEquals(pisoUno, admin3.getPisoId());
-        verify(administradores).save(admin3);
+        assertNull(admin3.getPisoId());
+        verify(administradores, never()).save(admin3);
         verify(administradores, never()).save(admin1);
         verify(administradores, never()).save(admin2);
         verify(administradores, never()).save(admin4);
