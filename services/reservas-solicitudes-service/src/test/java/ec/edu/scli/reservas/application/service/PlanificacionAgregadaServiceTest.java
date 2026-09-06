@@ -40,6 +40,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -79,6 +80,7 @@ class PlanificacionAgregadaServiceTest {
         when(contextos.obtenerPorPerfilId(perfil)).thenReturn(
                 new ContextoInstitucional(true, true, false, false, false, null, List.of(carrera)));
         when(planes.saveAndFlush(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(planes.findLockedById(any())).thenAnswer(invocation -> planes.findById(invocation.getArgument(0)));
         when(revisiones.findByPlanificacionId(any())).thenReturn(List.of());
         when(observaciones.findByRevisionId(any())).thenReturn(List.of());
         when(usuarios.obtenerAdministradoresPorPiso(any())).thenReturn(List.of(UUID.randomUUID()));
@@ -106,6 +108,88 @@ class PlanificacionAgregadaServiceTest {
         verify(revisiones, times(2)).save(captor.capture());
         assertThat(captor.getAllValues()).extracting(RevisionPlanificacionPisoJpaEntity::getPisoId)
                 .containsExactlyInAnyOrder(pisoUno, pisoDos);
+        assertThat(captor.getAllValues()).allSatisfy(revision -> {
+            assertThat(revision.getRonda()).isEqualTo(1);
+            assertThat(revision.getVigente()).isTrue();
+            assertThat(revision.getEstado()).isEqualTo(EstadoRevisionPlanificacion.PENDIENTE);
+        });
+    }
+
+    @Test
+    void reenvioConservaHistorialYCreaRondasIndependientesSinDuplicarVigentes() {
+        UUID planId = UUID.randomUUID();
+        UUID pisoUno = UUID.randomUUID();
+        UUID pisoDos = UUID.randomUUID();
+        UUID revisor = UUID.randomUUID();
+        PlanificacionAgregadaJpaEntity plan = plan(planId, EstadoPlanificacionAgregada.REQUIERE_CAMBIOS);
+        PlanificacionJpaEntity bloqueUno = bloque(planId, 2, UUID.randomUUID(), UUID.randomUUID());
+        PlanificacionJpaEntity bloqueDos = bloque(planId, 4, UUID.randomUUID(), UUID.randomUUID());
+        RevisionPlanificacionPisoJpaEntity rondaUno = revision(planId, pisoUno, 1, true);
+        rondaUno.setEstado(EstadoRevisionPlanificacion.RECHAZADA);
+        rondaUno.setObservacion("Conservar observacion historica");
+        rondaUno.setRevisadaPorPerfilId(revisor);
+        Instant actualizada = Instant.parse("2026-08-20T10:15:30Z");
+        rondaUno.setActualizadaEn(actualizada);
+        RevisionPlanificacionPisoJpaEntity rondaTresPisoDos = revision(planId, pisoDos, 3, false);
+        rondaTresPisoDos.setEstado(EstadoRevisionPlanificacion.RECHAZADA);
+        when(planes.findById(planId)).thenReturn(Optional.of(plan));
+        when(bloques.findByPlanificacionId(planId)).thenReturn(List.of(bloqueUno, bloqueDos));
+        when(academico.obtenerLaboratorio(bloqueUno.getLaboratorioId()))
+                .thenReturn(laboratorio(bloqueUno, pisoUno));
+        when(academico.obtenerLaboratorio(bloqueDos.getLaboratorioId()))
+                .thenReturn(laboratorio(bloqueDos, pisoDos));
+        when(revisiones.findByPlanificacionId(planId)).thenReturn(List.of(rondaUno, rondaTresPisoDos));
+
+        service.enviar(planId);
+
+        assertThat(rondaUno.getVigente()).isFalse();
+        assertThat(rondaUno.getEstado()).isEqualTo(EstadoRevisionPlanificacion.RECHAZADA);
+        assertThat(rondaUno.getObservacion()).isEqualTo("Conservar observacion historica");
+        assertThat(rondaUno.getRevisadaPorPerfilId()).isEqualTo(revisor);
+        assertThat(rondaUno.getActualizadaEn()).isEqualTo(actualizada);
+        var captor = org.mockito.ArgumentCaptor.forClass(RevisionPlanificacionPisoJpaEntity.class);
+        verify(revisiones, times(2)).save(captor.capture());
+        assertThat(captor.getAllValues()).filteredOn(item -> pisoUno.equals(item.getPisoId()))
+                .singleElement().satisfies(item -> assertThat(item.getRonda()).isEqualTo(2));
+        assertThat(captor.getAllValues()).filteredOn(item -> pisoDos.equals(item.getPisoId()))
+                .singleElement().satisfies(item -> assertThat(item.getRonda()).isEqualTo(4));
+        assertThat(captor.getAllValues()).allSatisfy(item -> {
+            assertThat(item.getEstado()).isEqualTo(EstadoRevisionPlanificacion.PENDIENTE);
+            assertThat(item.getVigente()).isTrue();
+        });
+        var orden = inOrder(revisiones);
+        orden.verify(revisiones).saveAllAndFlush(List.of(rondaUno));
+        orden.verify(revisiones, times(2)).save(any());
+    }
+
+    @Test
+    void reintentoDeEnvioEnRevisionEsIdempotente() {
+        UUID planId = UUID.randomUUID();
+        UUID piso = UUID.randomUUID();
+        PlanificacionAgregadaJpaEntity plan = plan(planId, EstadoPlanificacionAgregada.BORRADOR);
+        PlanificacionJpaEntity bloque = bloque(planId, 2, UUID.randomUUID(), UUID.randomUUID());
+        when(planes.findById(planId)).thenReturn(Optional.of(plan));
+        when(bloques.findByPlanificacionId(planId)).thenReturn(List.of(bloque));
+        when(academico.obtenerLaboratorio(bloque.getLaboratorioId())).thenReturn(laboratorio(bloque, piso));
+
+        service.enviar(planId);
+        service.enviar(planId);
+
+        verify(revisiones, times(1)).save(any());
+        verify(revisiones, never()).saveAllAndFlush(any());
+    }
+
+    @Test
+    void planificacionAprobadaNoAbreNuevaRonda() {
+        UUID planId = UUID.randomUUID();
+        when(planes.findById(planId)).thenReturn(Optional.of(
+                plan(planId, EstadoPlanificacionAgregada.APROBADA)));
+
+        assertThatThrownBy(() -> service.enviar(planId))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("no se encuentra editable");
+        verify(revisiones, never()).save(any());
+        verify(revisiones, never()).saveAllAndFlush(any());
     }
 
     @Test
@@ -506,5 +590,15 @@ class PlanificacionAgregadaServiceTest {
 
     private LaboratorioExternoResponse laboratorio(PlanificacionJpaEntity bloque, UUID piso) {
         return new LaboratorioExternoResponse(bloque.getLaboratorioId(), piso, true, true, "DISPONIBLE", 30);
+    }
+
+    private RevisionPlanificacionPisoJpaEntity revision(UUID planId, UUID pisoId, int ronda, boolean vigente) {
+        RevisionPlanificacionPisoJpaEntity revision = new RevisionPlanificacionPisoJpaEntity();
+        revision.setId(UUID.randomUUID());
+        revision.setPlanificacionId(planId);
+        revision.setPisoId(pisoId);
+        revision.setRonda(ronda);
+        revision.setVigente(vigente);
+        return revision;
     }
 }

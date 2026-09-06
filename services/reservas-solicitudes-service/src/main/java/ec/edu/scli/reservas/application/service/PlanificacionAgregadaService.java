@@ -125,7 +125,10 @@ public class PlanificacionAgregadaService {
 
     @Transactional
     public PlanificacionAgregadaResponse enviar(UUID id) {
-        PlanificacionAgregadaJpaEntity plan = propia(id);
+        PlanificacionAgregadaJpaEntity plan = propiaParaEnvio(id);
+        if (plan.getEstado() == EstadoPlanificacionAgregada.EN_REVISION) {
+            return map(plan);
+        }
         if (plan.getEstado() != EstadoPlanificacionAgregada.BORRADOR
                 && plan.getEstado() != EstadoPlanificacionAgregada.REQUIERE_CAMBIOS) {
             throw new IllegalStateException("La planificacion no se encuentra editable");
@@ -147,10 +150,13 @@ public class PlanificacionAgregadaService {
         }
         Instant ahora = Instant.now();
         List<RevisionPlanificacionPisoJpaEntity> anteriores = revisiones.findByPlanificacionId(id);
-        int ronda = anteriores.stream().map(RevisionPlanificacionPisoJpaEntity::getRonda)
-                .filter(java.util.Objects::nonNull).max(Integer::compareTo).orElse(0) + 1;
-        anteriores.stream().filter(item -> Boolean.TRUE.equals(item.getVigente())).forEach(item -> item.setVigente(false));
-        revisiones.saveAll(anteriores);
+        List<RevisionPlanificacionPisoJpaEntity> vigentes = anteriores.stream()
+                .filter(item -> Boolean.TRUE.equals(item.getVigente()))
+                .toList();
+        vigentes.forEach(item -> item.setVigente(false));
+        if (!vigentes.isEmpty()) {
+            revisiones.saveAllAndFlush(vigentes);
+        }
         for (UUID pisoId : pisos) {
             var administradores = usuarios.obtenerAdministradoresPorPiso(pisoId);
             if (administradores.isEmpty()) {
@@ -162,7 +168,7 @@ public class PlanificacionAgregadaService {
             revision.setEstado(EstadoRevisionPlanificacion.PENDIENTE);
             revision.setCreadaEn(ahora);
             revision.setActualizadaEn(ahora);
-            revision.setRonda(ronda);
+            revision.setRonda(siguienteRonda(anteriores, pisoId));
             revision.setVigente(true);
             revisiones.save(revision);
             administradores.forEach(perfilId ->
@@ -177,6 +183,15 @@ public class PlanificacionAgregadaService {
         plan.setEnviadaEn(ahora);
         plan.setActualizadaEn(ahora);
         return map(planes.saveAndFlush(plan));
+    }
+
+    private int siguienteRonda(List<RevisionPlanificacionPisoJpaEntity> anteriores, UUID pisoId) {
+        return anteriores.stream()
+                .filter(item -> pisoId.equals(item.getPisoId()))
+                .map(RevisionPlanificacionPisoJpaEntity::getRonda)
+                .filter(java.util.Objects::nonNull)
+                .max(Integer::compareTo)
+                .orElse(0) + 1;
     }
 
     @Transactional
@@ -372,6 +387,16 @@ public class PlanificacionAgregadaService {
         PlanificacionAgregadaJpaEntity plan = obtener(id);
         ActorAutenticado actor = coordinador();
         if (!carrera(actor).equals(plan.getCarreraId())) throw new AccessDeniedException("La carrera no pertenece al coordinador");
+        return plan;
+    }
+
+    private PlanificacionAgregadaJpaEntity propiaParaEnvio(UUID id) {
+        PlanificacionAgregadaJpaEntity plan = planes.findLockedById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Planificacion no encontrada"));
+        ActorAutenticado actor = coordinador();
+        if (!carrera(actor).equals(plan.getCarreraId())) {
+            throw new AccessDeniedException("La carrera no pertenece al coordinador");
+        }
         return plan;
     }
 
