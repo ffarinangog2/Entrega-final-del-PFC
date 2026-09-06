@@ -384,6 +384,47 @@ describe('CoordinadorPlanificacion', () => {
     await waitFor(() => expect(api.crearSolicitudRetiro)
       .toHaveBeenCalledWith('aggregate-1', 'Corregir asignaciones'))
   })
+
+
+  it('al abrir modal de cambio de laboratorio muestra las opciones con nombre de piso resuelto del catálogo y mantiene el bloque original', async () => {
+    preparar([{ ...base, estado: 'CONFIRMADA' }], 'APROBADA')
+    vi.mocked(api.crearSolicitudCambio).mockResolvedValue({} as api.SolicitudCambio)
+    const user = userEvent.setup()
+    renderPage()
+
+    const botonCambio = await screen.findByRole('button', { name: 'Solicitar cambio' })
+    await user.click(botonCambio)
+
+    expect(await screen.findByRole('heading', { name: 'Solicitar cambio' })).toBeInTheDocument()
+    expect(
+      screen.getByText('El horario aprobado seguirá vigente hasta que todos los pisos afectados autoricen la solicitud.'),
+    ).toBeInTheDocument()
+
+    const opcionLab1 = screen.getByRole('option', { name: 'Piso 2 · LAB-01 — DISPONIBLE' })
+    const opcionLab2 = screen.getByRole('option', { name: 'Piso 1 · LAB-02 — DISPONIBLE' })
+    expect(opcionLab1).toBeInTheDocument()
+    expect(opcionLab2).toBeInTheDocument()
+
+    await user.selectOptions(screen.getByLabelText('Laboratorio propuesto'), 'lab-2')
+    await user.type(screen.getByLabelText('Motivo'), 'Reubicación por requerimiento técnico')
+    await user.click(screen.getByRole('button', { name: 'Enviar solicitud' }))
+
+    await waitFor(() =>
+      expect(api.crearSolicitudCambio).toHaveBeenCalledWith(
+        'aggregate-1',
+        expect.objectContaining({
+          bloqueId: 'plan-1',
+          tipo: 'LABORATORIO',
+          laboratorioId: 'lab-2',
+          motivo: 'Reubicación por requerimiento técnico',
+        }),
+      ),
+    )
+
+    // El horario original del bloque se mantiene visible en la cuadrícula
+    expect(screen.getByText('07:30–09:30')).toBeInTheDocument()
+    expect(screen.getByText('Programación')).toBeInTheDocument()
+  })
 })
 
 describe('filtro por pisoId real', () => {

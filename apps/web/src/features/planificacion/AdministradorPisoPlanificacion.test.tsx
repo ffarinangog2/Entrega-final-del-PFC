@@ -37,6 +37,18 @@ describe('AdministradorPisoPlanificacion', () => {
     vi.clearAllMocks()
     vi.spyOn(window, 'confirm').mockReturnValue(true)
     vi.mocked(operational.listarSolicitudesRetiro).mockResolvedValue([])
+    vi.mocked(operational.listarSolicitudesRetiro).mockResolvedValue([])
+    vi.mocked(operational.listarSolicitudesCambio).mockResolvedValue([])
+    vi.mocked(operational.aprobarSolicitudCambio).mockResolvedValue({} as operational.SolicitudCambio)
+    vi.mocked(operational.rechazarSolicitudCambio).mockResolvedValue({} as operational.SolicitudCambio)
+    vi.mocked(academico.obtenerPisos).mockResolvedValue([
+      { id: 'piso-uuid', bloqueId: 'bloque-1', numero: 1, descripcion: 'Primer Piso', activo: true },
+      { id: 'piso-destino-uuid', bloqueId: 'bloque-1', numero: 2, descripcion: 'Segundo Piso', activo: true },
+    ])
+    vi.mocked(academico.obtenerDocentesPlanificacion).mockResolvedValue([
+      { id: 'docente-uuid', perfilId: 'perfil-1', codigoDocente: 'DOC-CARLOS', activo: true },
+      { id: 'docente-dest-uuid', perfilId: 'perfil-2', codigoDocente: 'DOC-ANA', activo: true },
+    ])
     vi.mocked(operational.listarPlanificacionesAgregadas).mockResolvedValue([{
       id: 'aggregate-1', carreraId: 'carrera-uuid', periodoId: 'periodo-uuid',
       estado: 'EN_REVISION', bloques: [plan('plan-1'), plan('plan-2')],
@@ -59,6 +71,18 @@ describe('AdministradorPisoPlanificacion', () => {
         codigo: 'LAB-01',
         nombre: 'Laboratorio de Software',
         capacidad: 30,
+        descripcion: '',
+        estado: 'DISPONIBLE',
+        activo: true,
+        creadoEn: '',
+        actualizadoEn: '',
+      },
+      {
+        id: 'laboratorio-destino-uuid',
+        pisoId: 'piso-destino-uuid',
+        codigo: 'LAB-02',
+        nombre: 'Laboratorio de Redes',
+        capacidad: 25,
         descripcion: '',
         estado: 'DISPONIBLE',
         activo: true,
@@ -170,5 +194,133 @@ describe('AdministradorPisoPlanificacion', () => {
     expect(estadoPaquete([plan('p', 'PROPUESTA_CAMBIO')])).toBe(
       'Devuelta con observaciones',
     )
+  })
+
+  const solicitudBase: operational.SolicitudCambio = {
+    id: 'sol-1',
+    planificacionId: 'aggregate-1',
+    bloqueId: 'plan-1',
+    tipo: 'LABORATORIO',
+    estado: 'PENDIENTE',
+    motivo: 'Mantenimiento del laboratorio original',
+    solicitantePerfilId: 'perfil-coord',
+    laboratorioAnteriorId: 'laboratorio-uuid',
+    laboratorioPropuestoId: 'laboratorio-destino-uuid',
+    docenteAnteriorId: 'docente-uuid',
+    docentePropuestoId: 'docente-uuid',
+    diaAnterior: 'LUNES',
+    diaPropuesto: 'LUNES',
+    horaInicioAnterior: '07:30',
+    horaInicioPropuesta: '07:30',
+    horaFinAnterior: '09:30',
+    horaFinPropuesta: '09:30',
+    creadaEn: '2026-09-06T10:00:00Z',
+    revisiones: [
+      { pisoId: 'piso-uuid', estado: 'PENDIENTE', revisorPerfilId: null, observacion: null, resueltaEn: null },
+      { pisoId: 'piso-destino-uuid', estado: 'PENDIENTE', revisorPerfilId: null, observacion: null, resueltaEn: null },
+    ],
+  }
+
+  it('renderiza tarjeta enriquecida sin UUID visibles y con transición de nombres de piso', async () => {
+    vi.mocked(operational.listarSolicitudesCambio).mockResolvedValue([solicitudBase])
+    render(<AdministradorPisoPlanificacion />)
+
+    expect(await screen.findByText('Solicitud de cambio · LABORATORIO')).toBeInTheDocument()
+    expect(screen.getByText('Solicitante: Coordinación académica')).toBeInTheDocument()
+    expect(screen.getByText(/Bloque afectado: Programación Web \(Lunes 07:30–09:30\)/)).toBeInTheDocument()
+    expect(screen.getByText(/Laboratorio: LAB-01 \(Primer Piso\) → LAB-02 \(Segundo Piso\)/)).toBeInTheDocument()
+    expect(screen.getByText(/Piso: Primer Piso → Segundo Piso/)).toBeInTheDocument()
+    expect(screen.getByText('Motivo: Mantenimiento del laboratorio original')).toBeInTheDocument()
+    expect(screen.getByText(/El horario original continúa vigente mientras la solicitud esté pendiente/)).toBeInTheDocument()
+
+    expect(screen.queryByText('laboratorio-uuid')).not.toBeInTheDocument()
+    expect(screen.queryByText('piso-uuid')).not.toBeInTheDocument()
+    expect(screen.queryByText('perfil-coord')).not.toBeInTheDocument()
+  })
+
+  it('muestra botones de aprobar/rechazar solo si la solicitud está pendiente para este piso', async () => {
+    vi.mocked(operational.listarSolicitudesCambio).mockResolvedValue([solicitudBase])
+    render(<AdministradorPisoPlanificacion />)
+
+    expect(await screen.findByRole('button', { name: 'Aprobar cambio' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Rechazar cambio' })).toBeInTheDocument()
+  })
+
+  it("muestra 'Cambio aprobado por este piso' y oculta botones cuando este piso ya aprobó", async () => {
+    vi.mocked(operational.listarSolicitudesCambio).mockResolvedValue([{
+      ...solicitudBase,
+      revisiones: [
+        { pisoId: 'piso-uuid', estado: 'APROBADA', revisorPerfilId: 'rev-1', observacion: 'Aprobado', resueltaEn: '2026-09-06T11:00:00Z' },
+        { pisoId: 'piso-destino-uuid', estado: 'PENDIENTE', revisorPerfilId: null, observacion: null, resueltaEn: null },
+      ],
+    }])
+    render(<AdministradorPisoPlanificacion />)
+
+    expect(await screen.findByText('Cambio aprobado por este piso')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Aprobar cambio' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Rechazar cambio' })).not.toBeInTheDocument()
+  })
+
+  it("muestra 'Cambio rechazado por este piso' y oculta botones cuando este piso ya rechazó", async () => {
+    vi.mocked(operational.listarSolicitudesCambio).mockResolvedValue([{
+      ...solicitudBase,
+      revisiones: [
+        { pisoId: 'piso-uuid', estado: 'RECHAZADA', revisorPerfilId: 'rev-1', observacion: 'Rechazado', resueltaEn: '2026-09-06T11:00:00Z' },
+      ],
+    }])
+    render(<AdministradorPisoPlanificacion />)
+
+    expect(await screen.findByText('Cambio rechazado por este piso')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Aprobar cambio' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Rechazar cambio' })).not.toBeInTheDocument()
+  })
+
+  it('al pulsar aprobar llama a aprobarSolicitudCambio y refresca para ocultar botones', async () => {
+    vi.mocked(operational.listarSolicitudesCambio).mockResolvedValue([solicitudBase])
+    vi.mocked(operational.aprobarSolicitudCambio).mockImplementation(async () => {
+      vi.mocked(operational.listarSolicitudesCambio).mockResolvedValue([{
+        ...solicitudBase,
+        revisiones: [
+          { pisoId: 'piso-uuid', estado: 'APROBADA', revisorPerfilId: 'rev-1', observacion: 'Ok', resueltaEn: '2026-09-06T12:00:00Z' },
+        ],
+      }])
+      return {} as operational.SolicitudCambio
+    })
+
+    render(<AdministradorPisoPlanificacion />)
+    const botonAprobar = await screen.findByRole('button', { name: 'Aprobar cambio' })
+    fireEvent.click(botonAprobar)
+
+    await waitFor(() => {
+      expect(operational.aprobarSolicitudCambio).toHaveBeenCalledWith('aggregate-1', 'sol-1')
+    })
+    expect(await screen.findByText('Cambio aprobado por este piso')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Aprobar cambio' })).not.toBeInTheDocument()
+  })
+
+  it('al pulsar rechazar solicita motivo con prompt, llama a rechazarSolicitudCambio y refresca', async () => {
+    vi.spyOn(window, 'prompt').mockReturnValue('Sin disponibilidad en el piso')
+    vi.mocked(operational.listarSolicitudesCambio).mockResolvedValue([solicitudBase])
+    vi.mocked(operational.rechazarSolicitudCambio).mockImplementation(async () => {
+      vi.mocked(operational.listarSolicitudesCambio).mockResolvedValue([{
+        ...solicitudBase,
+        estado: 'RECHAZADA',
+        revisiones: [
+          { pisoId: 'piso-uuid', estado: 'RECHAZADA', revisorPerfilId: 'rev-1', observacion: 'Sin disponibilidad en el piso', resueltaEn: '2026-09-06T12:00:00Z' },
+        ],
+      }])
+      return {} as operational.SolicitudCambio
+    })
+
+    render(<AdministradorPisoPlanificacion />)
+    const botonRechazar = await screen.findByRole('button', { name: 'Rechazar cambio' })
+    fireEvent.click(botonRechazar)
+
+    expect(window.prompt).toHaveBeenCalledWith('Motivo del rechazo')
+    await waitFor(() => {
+      expect(operational.rechazarSolicitudCambio).toHaveBeenCalledWith('aggregate-1', 'sol-1', 'Sin disponibilidad en el piso')
+    })
+    expect(await screen.findByText('Cambio rechazado por este piso')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Rechazar cambio' })).not.toBeInTheDocument()
   })
 })
