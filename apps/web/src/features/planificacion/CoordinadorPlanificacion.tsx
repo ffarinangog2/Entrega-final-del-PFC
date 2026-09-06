@@ -11,6 +11,10 @@ import * as api from '../../services/operationalApi'
 import './CoordinadorPlanificacion.css'
 import { useAcademicPeriod } from '../../academicPeriodContext'
 import { etiquetaPeriodo } from '../../academicPeriodHelpers'
+import {
+  laboratoriosDelPiso,
+  pisoDelLaboratorio,
+} from './planificacionLaboratorioFilter'
 
 const dias = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES'] as const
 const horas = Array.from(
@@ -164,9 +168,7 @@ export function CoordinadorPlanificacion() {
     [catalogos.materias, nivel],
   )
   const laboratoriosFiltrados = useMemo(
-    () => pisoFiltro
-      ? catalogos.laboratorios.filter((item) => item.pisoId === pisoFiltro)
-      : catalogos.laboratorios,
+    () => laboratoriosDelPiso(catalogos.laboratorios, pisoFiltro),
     [catalogos.laboratorios, pisoFiltro],
   )
 
@@ -225,7 +227,7 @@ export function CoordinadorPlanificacion() {
   }
   function editar(item: api.Planificacion) {
     setEditandoId(item.id)
-    setPisoFiltro(laboratorio(item.laboratorioId)?.pisoId ?? '')
+    setPisoFiltro(pisoDelLaboratorio(catalogos.laboratorios, item.laboratorioId))
     setError('')
     setForm({
       planificacionId: item.planificacionId ?? plan?.id ?? '',
@@ -703,9 +705,10 @@ export function CoordinadorPlanificacion() {
                 <select value={pisoFiltro} onChange={(event) => {
                   const pisoId = event.target.value
                   setPisoFiltro(pisoId)
-                  if (pisoId && laboratorio(form.laboratorioId)?.pisoId !== pisoId) {
-                    setForm({ ...form, laboratorioId: '' })
-                  }
+                  setForm((actual) => pisoId
+                    && pisoDelLaboratorio(catalogos.laboratorios, actual.laboratorioId) !== pisoId
+                    ? { ...actual, laboratorioId: '' }
+                    : actual)
                 }}>
                   <option value="">Todos los pisos</option>
                   {catalogos.pisos.map((item) => (

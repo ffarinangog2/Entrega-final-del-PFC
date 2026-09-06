@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as academico from '../../services/academicoApi'
 import * as api from '../../services/operationalApi'
 import { CoordinadorPlanificacion } from './CoordinadorPlanificacion'
+import { laboratoriosDelPiso, pisoDelLaboratorio } from './planificacionLaboratorioFilter'
 import { AcademicPeriodContext, type AcademicPeriodContextValue } from '../../academicPeriodContext'
 
 vi.mock('../../services/academicoApi')
@@ -250,6 +251,21 @@ describe('CoordinadorPlanificacion', () => {
     expect(laboratorio).toHaveTextContent('LAB-02')
   })
 
+  it('deriva el piso real al editar y limpia un laboratorio incompatible', async () => {
+    const user = userEvent.setup()
+    renderPage()
+    await screen.findByText(/Programaci/)
+    await user.click(screen.getAllByRole('button', { name: 'Editar' })[0])
+
+    expect(screen.getByLabelText('Piso')).toHaveValue('piso-2')
+    expect(screen.getByLabelText('Laboratorio')).toHaveValue('lab-1')
+
+    await user.selectOptions(screen.getByLabelText('Piso'), 'piso-1')
+    expect(screen.getByLabelText('Laboratorio')).toHaveValue('')
+    expect(screen.getByLabelText('Laboratorio')).not.toHaveTextContent('LAB-01')
+    expect(screen.getByLabelText('Laboratorio')).toHaveTextContent('LAB-02')
+  })
+
   it('cambia de nivel y presenta únicamente sus bloques', async () => {
     preparar([base, { ...segunda, nivel: 2 }])
     const user = userEvent.setup()
@@ -367,5 +383,38 @@ describe('CoordinadorPlanificacion', () => {
     await user.click(screen.getByRole('button', { name: 'Confirmar solicitud' }))
     await waitFor(() => expect(api.crearSolicitudRetiro)
       .toHaveBeenCalledWith('aggregate-1', 'Corregir asignaciones'))
+  })
+})
+
+describe('filtro por pisoId real', () => {
+  const pisos = [1, 2, 3, 4].map((numero) =>
+    `35000000-0000-0000-0000-${String(numero).padStart(12, '0')}`,
+  )
+  const laboratorio = (id: string, pisoId: string, codigo: string): academico.Laboratorio => ({
+    id, pisoId, codigo, nombre: codigo, capacidad: 30, descripcion: '',
+    estado: 'DISPONIBLE', activo: true, creadoEn: '', actualizadoEn: '',
+  })
+  const laboratorios = [
+    laboratorio('l1', pisos[0], 'LAB-P2-ENGANOSO'),
+    laboratorio('l2', pisos[1], 'LAB-P1-03'),
+    laboratorio('l3', pisos[1], 'LAB-03'),
+    laboratorio('l4', pisos[2], 'LAB-P3-01'),
+    laboratorio('l5', pisos[3], 'LAB-P4-01'),
+  ]
+
+  it.each([
+    [pisos[0], ['LAB-P2-ENGANOSO']],
+    [pisos[1], ['LAB-P1-03', 'LAB-03']],
+    [pisos[2], ['LAB-P3-01']],
+    [pisos[3], ['LAB-P4-01']],
+  ])('muestra solo laboratorios cuyo pisoId es %s', (pisoId, esperados) => {
+    expect(laboratoriosDelPiso(laboratorios, pisoId).map((item) => item.codigo))
+      .toEqual(esperados)
+  })
+
+  it('Piso 1 no incluye laboratorios asignados realmente a Piso 2', () => {
+    expect(laboratoriosDelPiso(laboratorios, pisos[0]).map((item) => item.codigo))
+      .not.toEqual(expect.arrayContaining(['LAB-P1-03', 'LAB-03']))
+    expect(pisoDelLaboratorio(laboratorios, 'l2')).toBe(pisos[1])
   })
 })
