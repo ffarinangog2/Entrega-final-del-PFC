@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { render, screen, fireEvent } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { NotificationsPage } from './NotificationsPage'
 import * as api from '../../services/operationalApi'
@@ -49,7 +50,11 @@ describe('NotificationsPage', () => {
   })
 
   it('lista y permite marcar una notificación propia como leída', async () => {
-    render(<NotificationsPage />)
+    render(
+      <MemoryRouter>
+        <NotificationsPage />
+      </MemoryRouter>,
+    )
     expect(await screen.findByText('Planificación aprobada')).toBeInTheDocument()
     expect(screen.getByText('Sesión finalizada')).toBeInTheDocument()
 
@@ -58,7 +63,11 @@ describe('NotificationsPage', () => {
   })
 
   it('permite filtrar solo no leídas y marcar todas como leídas', async () => {
-    render(<NotificationsPage />)
+    render(
+      <MemoryRouter>
+        <NotificationsPage />
+      </MemoryRouter>,
+    )
     expect(await screen.findByText('Planificación aprobada')).toBeInTheDocument()
 
     const checkbox = screen.getByLabelText('Solo no leídas')
@@ -74,13 +83,21 @@ describe('NotificationsPage', () => {
 
   it('muestra estado vacío cuando no existen notificaciones', async () => {
     vi.mocked(api.listarNotificaciones).mockResolvedValue([])
-    render(<NotificationsPage />)
+    render(
+      <MemoryRouter>
+        <NotificationsPage />
+      </MemoryRouter>,
+    )
     expect(await screen.findByText('No hay notificaciones.')).toBeInTheDocument()
   })
 
   it('muestra mensaje de error si falla la carga', async () => {
     vi.mocked(api.listarNotificaciones).mockRejectedValue(new Error('Fallo al listar'))
-    render(<NotificationsPage />)
+    render(
+      <MemoryRouter>
+        <NotificationsPage />
+      </MemoryRouter>,
+    )
     expect(await screen.findByRole('alert')).toHaveTextContent('Fallo al listar')
   })
 })

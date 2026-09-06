@@ -15,14 +15,9 @@ import {
 import { destinoNotificacion } from '../notificaciones/notificationNavigation'
 
 export function StudentNotificationBell({ asistencia = true }: { asistencia?: boolean }) {
+  const navigate = useNavigate()
   const auth = useContext(AuthContext)
   const authenticated = auth ? auth.isAuthenticated : true
-  let navigate: ReturnType<typeof useNavigate> | null = null
-  try {
-    navigate = useNavigate()
-  } catch {
-    navigate = null
-  }
   const [sesiones, setSesiones] = useState<SesionAsistencia[]>([])
   const [abierta, setAbierta] = useState(false)
   const [horario, setHorario] = useState<Planificacion[]>([])
@@ -115,9 +110,7 @@ export function StudentNotificationBell({ asistencia = true }: { asistencia?: bo
       )
     }
     setAbierta(false)
-    if (navigate) {
-      navigate(destinoNotificacion(item))
-    }
+    navigate(destinoNotificacion(item))
   }
 
   async function leerTodas() {

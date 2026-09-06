@@ -11,12 +11,7 @@ import {
 import { destinoNotificacion } from './notificationNavigation'
 
 export function NotificationsPage() {
-  let navigate: ReturnType<typeof useNavigate> | null = null
-  try {
-    navigate = useNavigate()
-  } catch {
-    navigate = null
-  }
+  const navigate = useNavigate()
   const [items, setItems] = useState<NotificacionInterna[]>([])
   const [pagina, setPagina] = useState(0)
   const [total, setTotal] = useState(1)
@@ -89,9 +84,7 @@ export function NotificationsPage() {
         actual.map((x) => (x.id === leida.id ? leida : x)),
       )
     }
-    if (navigate) {
-      navigate(destinoNotificacion(item))
-    }
+    navigate(destinoNotificacion(item))
   }
 
   async function marcarUna(id: string) {
