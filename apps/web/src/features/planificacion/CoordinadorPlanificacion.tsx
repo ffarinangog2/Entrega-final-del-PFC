@@ -40,7 +40,7 @@ const etiquetas: Record<api.EstadoPlanificacion, string> = {
 }
 
 export function CoordinadorPlanificacion() {
-  const { periodoVigente } = useAcademicPeriod()
+  const { periodoVigente, cargando: cargandoPeriodo, error: errorPeriodo } = useAcademicPeriod()
   const [items, setItems] = useState<api.Planificacion[]>([])
   const [plan, setPlan] = useState<api.PlanificacionAgregada | null>(null)
   const [nivel, setNivel] = useState(1)
@@ -104,6 +104,7 @@ export function CoordinadorPlanificacion() {
         throw new Error(
           'No se encontró la carrera institucional del coordinador.',
         )
+      if (errorPeriodo) throw new Error(errorPeriodo)
       if (!periodoVigente) throw new Error('Sin período académico actual')
       const cicloId = periodoVigente.id
       const periodo = periodoVigente
@@ -137,10 +138,11 @@ export function CoordinadorPlanificacion() {
     } finally {
       setCargando(false)
     }
-  }, [periodoVigente])
+  }, [errorPeriodo, periodoVigente])
   useEffect(() => {
+    if (cargandoPeriodo) return
     void cargar()
-  }, [cargar])
+  }, [cargar, cargandoPeriodo])
 
   const visibles = useMemo(
     () => items.filter((item) => item.estado !== 'CANCELADA'),
@@ -403,7 +405,11 @@ export function CoordinadorPlanificacion() {
             <h1>Planificación semanal</h1>
             <span>
               {catalogos.carrera?.nombre ?? 'Mi carrera'} ·{' '}
-              {catalogos.periodo ? etiquetaPeriodo(catalogos.periodo) : 'Sin período académico actual'}
+              {catalogos.periodo
+                ? etiquetaPeriodo(catalogos.periodo)
+                : cargandoPeriodo
+                  ? 'Cargando período…'
+                  : errorPeriodo || 'Sin período académico actual'}
             </span>
           </div>
           <div>

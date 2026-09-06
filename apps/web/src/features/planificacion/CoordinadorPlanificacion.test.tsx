@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as academico from '../../services/academicoApi'
 import * as api from '../../services/operationalApi'
 import { CoordinadorPlanificacion } from './CoordinadorPlanificacion'
-import { AcademicPeriodContext } from '../../academicPeriodContext'
+import { AcademicPeriodContext, type AcademicPeriodContextValue } from '../../academicPeriodContext'
 
 vi.mock('../../services/academicoApi')
 vi.mock('../../services/operationalApi')
@@ -157,10 +157,10 @@ function preparar(
   })
 }
 
-function renderPage() {
+function renderPage(periodContext: AcademicPeriodContextValue = { periodos: [periodoActual], periodoVigente: periodoActual, periodoSeleccionado: periodoActual, seleccionarPeriodo: vi.fn(), cargando: false }) {
   return render(
     <MemoryRouter>
-      <AcademicPeriodContext.Provider value={{ periodos: [periodoActual], periodoVigente: periodoActual, periodoSeleccionado: periodoActual, seleccionarPeriodo: vi.fn(), cargando: false }}>
+      <AcademicPeriodContext.Provider value={periodContext}>
         <CoordinadorPlanificacion />
       </AcademicPeriodContext.Provider>
     </MemoryRouter>,
@@ -171,6 +171,21 @@ describe('CoordinadorPlanificacion', () => {
   beforeEach(() => {
     vi.resetAllMocks()
     preparar()
+  })
+
+  it('no muestra ausencia de período ni carga catálogos mientras el período está cargando', () => {
+    renderPage({ periodos: [], periodoVigente: null, periodoSeleccionado: null, seleccionarPeriodo: vi.fn(), cargando: true })
+
+    expect(screen.getByRole('heading', { name: 'Planificación semanal' }).nextElementSibling)
+      .toHaveTextContent('Cargando período…')
+    expect(screen.queryByText('Sin período académico actual')).not.toBeInTheDocument()
+    expect(api.listarPlanificacionesAgregadas).not.toHaveBeenCalled()
+  })
+
+  it('muestra ausencia real cuando terminó la consulta sin período vigente', async () => {
+    renderPage({ periodos: [], periodoVigente: null, periodoSeleccionado: null, seleccionarPeriodo: vi.fn(), cargando: false })
+
+    expect(await screen.findAllByText('Sin período académico actual')).not.toHaveLength(0)
   })
 
   it('muestra la planificación propia con catálogos humanos y sin UUID visibles', async () => {

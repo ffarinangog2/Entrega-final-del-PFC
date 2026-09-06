@@ -234,6 +234,89 @@ class PlanificacionAgregadaServiceTest {
     }
 
     @Test
+    void enviarIgnoraBloqueCanceladoYNoLoReactiva() {
+        UUID planId = UUID.randomUUID();
+        UUID laboratorio = UUID.randomUUID();
+        UUID piso = UUID.randomUUID();
+        PlanificacionJpaEntity cancelado = bloque(planId, 2, UUID.randomUUID(), laboratorio);
+        cancelado.setEstado(EstadoPlanificacion.CANCELADA);
+        PlanificacionJpaEntity activo = bloque(planId, 3, UUID.randomUUID(), laboratorio);
+        activo.setHoraInicio(cancelado.getHoraInicio());
+        activo.setHoraFin(cancelado.getHoraFin());
+        when(planes.findById(planId)).thenReturn(Optional.of(
+                plan(planId, EstadoPlanificacionAgregada.BORRADOR)));
+        when(bloques.findByPlanificacionId(planId)).thenReturn(List.of(cancelado, activo));
+        when(academico.obtenerLaboratorio(laboratorio)).thenReturn(laboratorio(activo, piso));
+
+        service.enviar(planId);
+
+        assertThat(activo.getEstado()).isEqualTo(EstadoPlanificacion.ENVIADA);
+        assertThat(cancelado.getEstado()).isEqualTo(EstadoPlanificacion.CANCELADA);
+        verify(bloques).saveAll(List.of(activo));
+    }
+
+    @Test
+    void enviarRechazaPlanificacionSinBloquesActivos() {
+        UUID planId = UUID.randomUUID();
+        PlanificacionJpaEntity cancelado = bloque(planId, 2, UUID.randomUUID(), UUID.randomUUID());
+        cancelado.setEstado(EstadoPlanificacion.CANCELADA);
+        when(planes.findById(planId)).thenReturn(Optional.of(
+                plan(planId, EstadoPlanificacionAgregada.BORRADOR)));
+        when(bloques.findByPlanificacionId(planId)).thenReturn(List.of(cancelado));
+
+        assertThatThrownBy(() -> service.enviar(planId))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("bloques activos");
+    }
+
+    @Test
+    void permiteLaboratoriosDistintosEnLaMismaFranja() {
+        UUID planId = UUID.randomUUID();
+        PlanificacionAgregadaJpaEntity plan = plan(planId, EstadoPlanificacionAgregada.BORRADOR);
+        PlanificacionJpaEntity primero = bloque(planId, 2, UUID.randomUUID(), UUID.randomUUID());
+        PlanificacionJpaEntity segundo = bloque(planId, 3, UUID.randomUUID(), UUID.randomUUID());
+        segundo.setHoraInicio(primero.getHoraInicio());
+        segundo.setHoraFin(primero.getHoraFin());
+        when(academico.obtenerLaboratorio(primero.getLaboratorioId()))
+                .thenReturn(laboratorio(primero, UUID.randomUUID()));
+        when(academico.obtenerLaboratorio(segundo.getLaboratorioId()))
+                .thenReturn(laboratorio(segundo, UUID.randomUUID()));
+
+        service.validarOcupacionOficial(plan, List.of(primero, segundo));
+    }
+
+    @Test
+    void permiteFranjasContiguasEnElMismoLaboratorio() {
+        UUID planId = UUID.randomUUID();
+        UUID laboratorio = UUID.randomUUID();
+        PlanificacionAgregadaJpaEntity plan = plan(planId, EstadoPlanificacionAgregada.BORRADOR);
+        PlanificacionJpaEntity primero = bloque(planId, 2, UUID.randomUUID(), laboratorio);
+        primero.setHoraInicio(LocalTime.of(7, 30));
+        primero.setHoraFin(LocalTime.of(8, 30));
+        PlanificacionJpaEntity segundo = bloque(planId, 3, UUID.randomUUID(), laboratorio);
+        segundo.setHoraInicio(LocalTime.of(8, 30));
+        segundo.setHoraFin(LocalTime.of(9, 30));
+        when(academico.obtenerLaboratorio(laboratorio))
+                .thenReturn(laboratorio(primero, UUID.randomUUID()));
+
+        service.validarOcupacionOficial(plan, List.of(primero, segundo));
+    }
+
+    @Test
+    void rechazaBloquesSolapadosDelMismoNivel() {
+        UUID planId = UUID.randomUUID();
+        PlanificacionAgregadaJpaEntity plan = plan(planId, EstadoPlanificacionAgregada.BORRADOR);
+        PlanificacionJpaEntity primero = bloque(planId, 4, UUID.randomUUID(), UUID.randomUUID());
+        PlanificacionJpaEntity segundo = bloque(planId, 4, UUID.randomUUID(), UUID.randomUUID());
+        segundo.setHoraInicio(primero.getHoraInicio());
+        segundo.setHoraFin(primero.getHoraFin());
+
+        assertThatThrownBy(() -> service.validarOcupacionOficial(plan, List.of(primero, segundo)))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("nivel");
+    }
+
+    @Test
     void rechazarPisoExigeUnaObservacionHumana() {
         assertThatThrownBy(() -> service.rechazarPiso(UUID.randomUUID(), " "))
                 .isInstanceOf(IllegalArgumentException.class)

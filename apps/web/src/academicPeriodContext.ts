@@ -7,6 +7,7 @@ export type AcademicPeriodContextValue = {
   periodoSeleccionado: PeriodoLectivo | null
   seleccionarPeriodo: (id: string) => void
   cargando: boolean
+  error?: string
 }
 
 export const STORAGE_KEY = 'scli.selectedAcademicPeriod'
@@ -21,5 +22,6 @@ export function useAcademicPeriod() {
     periodoSeleccionado: null,
     seleccionarPeriodo: () => undefined,
     cargando: false,
+    error: undefined,
   }
 }

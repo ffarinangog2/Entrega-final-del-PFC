@@ -131,10 +131,13 @@ public class PlanificacionAgregadaService {
             throw new IllegalStateException("La planificacion no se encuentra editable");
         }
         List<PlanificacionJpaEntity> items = bloques.findByPlanificacionId(id);
-        if (items.isEmpty()) throw new IllegalStateException("La planificacion no contiene bloques");
-        validarOcupacionOficial(plan, items);
+        List<PlanificacionJpaEntity> activos = items.stream()
+                .filter(item -> item.getEstado() != EstadoPlanificacion.CANCELADA)
+                .toList();
+        if (activos.isEmpty()) throw new IllegalStateException("La planificacion no contiene bloques activos");
+        validarOcupacionOficial(plan, activos);
         Set<UUID> pisos = new LinkedHashSet<>();
-        for (PlanificacionJpaEntity item : items) {
+        for (PlanificacionJpaEntity item : activos) {
             var laboratorio = academico.obtenerLaboratorio(item.getLaboratorioId());
             if (laboratorio == null || !laboratorio.existe() || !laboratorio.activo()
                     || !"DISPONIBLE".equalsIgnoreCase(laboratorio.estado())) {
@@ -169,8 +172,8 @@ public class PlanificacionAgregadaService {
                             java.util.Map.of("tipo", "PLANIFICACION", "planificacionId", id.toString())));
         }
         plan.setEstado(EstadoPlanificacionAgregada.EN_REVISION);
-        items.forEach(item -> item.setEstado(EstadoPlanificacion.ENVIADA));
-        bloques.saveAll(items);
+        activos.forEach(item -> item.setEstado(EstadoPlanificacion.ENVIADA));
+        bloques.saveAll(activos);
         plan.setEnviadaEn(ahora);
         plan.setActualizadaEn(ahora);
         return map(planes.saveAndFlush(plan));
@@ -353,6 +356,9 @@ public class PlanificacionAgregadaService {
                 }
                 if (primero.getDocenteId() != null && primero.getDocenteId().equals(segundo.getDocenteId())) {
                     throw new IllegalStateException("Un docente tiene bloques solapados entre niveles");
+                }
+                if (primero.getNivel().equals(segundo.getNivel())) {
+                    throw new IllegalStateException("Un nivel tiene bloques solapados");
                 }
             }
         }
