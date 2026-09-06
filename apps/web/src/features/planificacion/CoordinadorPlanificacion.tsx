@@ -60,6 +60,9 @@ export function CoordinadorPlanificacion() {
   const [guardando, setGuardando] = useState(false)
   const [enviando, setEnviando] = useState(false)
   const [retirando, setRetirando] = useState(false)
+  const [retiroAbierto, setRetiroAbierto] = useState(false)
+  const [motivoRetiro, setMotivoRetiro] = useState('')
+  const [retiros, setRetiros] = useState<api.SolicitudRetiro[]>([])
   const [editorAbierto, setEditorAbierto] = useState(false)
   const [confirmando, setConfirmando] = useState(false)
   const [error, setError] = useState('')
@@ -113,6 +116,7 @@ export function CoordinadorPlanificacion() {
       setPeriodoId(cicloId)
       setPlan(planActual)
       setItems(planActual?.bloques ?? [])
+      setRetiros(planActual ? (await api.listarSolicitudesRetiro(planActual.id) ?? []) : [])
       setIniciado(planActual !== null)
       setCatalogos({
         periodo,
@@ -341,20 +345,20 @@ export function CoordinadorPlanificacion() {
 
   async function retirarCompleta() {
     if (retirando || !plan || plan.estado !== 'EN_REVISION') return
-    if (!confirm('¿Retirar la planificación para volver a corregirla?')) return
+    if (!motivoRetiro.trim()) {
+      setError('El motivo del retiro es obligatorio.')
+      return
+    }
     setRetirando(true)
     setError('')
     try {
-      const retirada = await api.retirarPlanificacionCompleta(plan.id)
-      setPlan(retirada)
-      setItems(retirada.bloques)
-      setMensaje('Planificación retirada. Puede volver a editar el borrador.')
+      const solicitud = await api.crearSolicitudRetiro(plan.id, motivoRetiro.trim())
+      setRetiros((actuales) => [solicitud, ...actuales.filter((item) => item.id !== solicitud.id)])
+      setRetiroAbierto(false)
+      setMotivoRetiro('')
+      setMensaje('Solicitud de retiro enviada a los administradores de los pisos afectados.')
     } catch (cause) {
-      setError(
-        cause instanceof Error
-          ? cause.message
-          : 'No fue posible retirar la planificación.',
-      )
+      setError(cause instanceof Error ? cause.message : 'No fue posible solicitar el retiro de la planificacion.')
     } finally {
       setRetirando(false)
     }
@@ -612,18 +616,41 @@ export function CoordinadorPlanificacion() {
                 </button>
               </div>
             )}
-            {plan?.estado === 'EN_REVISION' && (
-              <div className="weekly-planning__send">
-                <button
-                  type="button"
-                  onClick={() => void retirarCompleta()}
-                  disabled={retirando}
-                >
-                  {retirando ? 'Retirando…' : 'Retirar para corregir'}
-                </button>
-              </div>
-            )}
+            {plan?.estado === 'EN_REVISION' && (() => {
+              const solicitud = (retiros ?? [])[0]
+              const pendienteRetiro = solicitud?.estado === 'PENDIENTE'
+              return (
+                <div className="weekly-planning__send">
+                  {solicitud && (
+                    <p>
+                      {solicitud.estado === 'PENDIENTE'
+                        ? `Retiro pendiente de autorizacion / ${solicitud.pisosAprobados} de ${solicitud.totalPisos} pisos aprobaron`
+                        : solicitud.estado === 'RECHAZADA' ? 'Solicitud de retiro rechazada' : 'Retiro autorizado'}
+                    </p>
+                  )}
+                  <button type="button" onClick={() => setRetiroAbierto(true)}
+                    disabled={retirando || pendienteRetiro}>
+                    Solicitar retiro para editar
+                  </button>
+                </div>
+              )
+            })()}
           </>
+        )}
+        {retiroAbierto && (
+          <div className="planning-dialog" role="dialog" aria-modal="true" aria-labelledby="withdraw-title">
+            <form onSubmit={(event) => { event.preventDefault(); void retirarCompleta() }}>
+              <h2 id="withdraw-title">Solicitar retiro para editar</h2>
+              <label>Motivo
+                <textarea required value={motivoRetiro}
+                  onChange={(event) => setMotivoRetiro(event.target.value)} />
+              </label>
+              <button type="submit" disabled={retirando || !motivoRetiro.trim()}>
+                {retirando ? 'Enviando...' : 'Confirmar solicitud'}
+              </button>
+              <button type="button" onClick={() => setRetiroAbierto(false)}>Cancelar</button>
+            </form>
+          </div>
         )}
         {editorAbierto && (
           <div

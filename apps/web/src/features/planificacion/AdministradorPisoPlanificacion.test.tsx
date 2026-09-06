@@ -36,6 +36,7 @@ describe('AdministradorPisoPlanificacion', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.spyOn(window, 'confirm').mockReturnValue(true)
+    vi.mocked(operational.listarSolicitudesRetiro).mockResolvedValue([])
     vi.mocked(operational.listarPlanificacionesAgregadas).mockResolvedValue([{
       id: 'aggregate-1', carreraId: 'carrera-uuid', periodoId: 'periodo-uuid',
       estado: 'EN_REVISION', bloques: [plan('plan-1'), plan('plan-2')],

@@ -18,6 +18,7 @@ import {
   type PlanificacionAgregada,
   type Planificacion,
   type SolicitudCambio, listarSolicitudesCambio, aprobarSolicitudCambio, rechazarSolicitudCambio,
+  type SolicitudRetiro, listarSolicitudesRetiro, aprobarSolicitudRetiro, rechazarSolicitudRetiro,
 } from '../../services/operationalApi'
 import './AdministradorPisoPlanificacion.css'
 import { estadoPaquete } from './adminPisoPlanificacionState'
@@ -49,6 +50,8 @@ export function AdministradorPisoPlanificacion() {
   const [mensaje, setMensaje] = useState('')
   const [cargando, setCargando] = useState(true)
   const [solicitudes,setSolicitudes]=useState<SolicitudCambio[]>([])
+  const [retiros, setRetiros] = useState<SolicitudRetiro[]>([])
+  const [observacionRetiro, setObservacionRetiro] = useState('')
 
   const cargar = useCallback(async () => {
     setCargando(true)
@@ -67,13 +70,16 @@ export function AdministradorPisoPlanificacion() {
         obtenerCarreras(),
         obtenerPeriodoActual(),
       ])
-      setAgregados(planesData)
-      setPlanes(planesData.flatMap((item) => item.bloques))
+      const planesConBloques = planesData.filter((item) =>
+        item.bloques.some((bloque) => bloque.estado !== 'CANCELADA'),
+      )
+      setAgregados(planesConBloques)
+      setPlanes(planesConBloques.flatMap((item) => item.bloques))
       setMaterias(materiasData)
       setLaboratorios(laboratoriosData)
       setCarreras(carrerasData)
       setPeriodo(periodoData)
-      const primera = planesData[0]
+      const primera = planesConBloques[0]
       setPaquete((actual) => actual || primera?.id || '')
     } catch (cause) {
       setError(
@@ -87,6 +93,11 @@ export function AdministradorPisoPlanificacion() {
   }, [])
   useEffect(() => void cargar(), [cargar])
   useEffect(()=>{if(paquete)void Promise.resolve(listarSolicitudesCambio(paquete)).then(value=>setSolicitudes(value??[])).catch(()=>setSolicitudes([]))},[paquete,agregados])
+  useEffect(() => {
+    if (!paquete) return
+    void Promise.resolve(listarSolicitudesRetiro(paquete))
+      .then((value) => setRetiros(value ?? [])).catch(() => setRetiros([]))
+  }, [paquete, agregados])
 
   const paquetes = useMemo(
     () =>
@@ -227,6 +238,24 @@ export function AdministradorPisoPlanificacion() {
               <span>{visibles.length} bloques en su piso</span>
             </div>
             {solicitudes.filter(s=>s.estado==='PENDIENTE').map(s=><article className="floor-planning__summary" key={s.id}><strong>Solicitud de cambio · {s.tipo}</strong><span>{s.motivo}</span><span>El horario original continúa vigente.</span><button disabled={ocupado} onClick={()=>void ejecutar(()=>aprobarSolicitudCambio(paquete,s.id),'¿Aprobar y revalidar este cambio?')}>Aprobar cambio</button><button disabled={ocupado} onClick={()=>{const motivo=window.prompt('Motivo del rechazo');if(motivo?.trim())void ejecutar(()=>rechazarSolicitudCambio(paquete,s.id,motivo.trim()),'¿Rechazar esta solicitud?')}}>Rechazar cambio</button></article>)}
+            {retiros.filter((item) => item.estado === 'PENDIENTE').map((item) => (
+              <article className="floor-planning__summary" key={item.id}>
+                <strong>Solicitud de retiro para edici&oacute;n</strong>
+                <span>{item.motivo}</span>
+                <time>{new Date(item.creadaEn).toLocaleString()}</time>
+                <label>Observaci&oacute;n opcional
+                  <textarea value={observacionRetiro} onChange={(event) => setObservacionRetiro(event.target.value)} />
+                </label>
+                <button disabled={ocupado} onClick={() => void ejecutar(
+                  () => aprobarSolicitudRetiro(paquete, item.id, observacionRetiro),
+                  'Autorizar el retiro para edicion?',
+                )}>Aprobar retiro</button>
+                <button className="danger" disabled={ocupado} onClick={() => void ejecutar(
+                  () => rechazarSolicitudRetiro(paquete, item.id, observacionRetiro),
+                  'Rechazar el retiro para edicion?',
+                )}>Rechazar retiro</button>
+              </article>
+            ))}
             <div className="floor-planning__grid-wrap">
               <table className="floor-planning__grid">
                 <thead>
@@ -240,7 +269,7 @@ export function AdministradorPisoPlanificacion() {
                 <tbody>
                   {horas.map((hora) => (
                     <tr key={hora}>
-                      <th>{hora}</th>
+                      <th>{hora}&ndash;{`${String(Number(hora.slice(0, 2)) + 1).padStart(2, '0')}:30`}</th>
                       {dias.map((dia) => {
                         const fin = `${String(Number(hora.slice(0, 2)) + 1).padStart(2, '0')}:30`
                         const bloques = visibles.filter(

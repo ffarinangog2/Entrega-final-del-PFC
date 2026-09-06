@@ -103,9 +103,10 @@ public class PlanificacionAgregadaService {
         if (actor.tiene("ROLE_ADMINISTRADOR")) return planes.findAll().stream().map(this::map).toList();
         if (actor.tiene("ROLE_ADMINISTRADOR_PISO")) {
             UUID pisoId = ambitoLaboratorio.pisoGestionado();
-            return revisiones.findAll().stream().filter(item -> pisoId.equals(item.getPisoId()))
+            return revisiones.findByPisoIdAndVigenteTrue(pisoId).stream()
                     .map(item -> planes.findById(item.getPlanificacionId()).orElse(null))
-                    .filter(java.util.Objects::nonNull).distinct().map(this::mapParaPiso).toList();
+                    .filter(java.util.Objects::nonNull).distinct().map(this::mapParaPiso)
+                    .filter(item -> !item.bloques().isEmpty()).toList();
         }
         throw new AccessDeniedException("No puede consultar planificaciones agregadas");
     }
@@ -157,6 +158,8 @@ public class PlanificacionAgregadaService {
         if (!vigentes.isEmpty()) {
             revisiones.saveAllAndFlush(vigentes);
         }
+        var periodoExterno = academico.obtenerPeriodo(plan.getPeriodoId());
+        String periodo = periodoExterno == null ? plan.getPeriodoId().toString() : periodoExterno.codigo();
         for (UUID pisoId : pisos) {
             var administradores = usuarios.obtenerAdministradoresPorPiso(pisoId);
             if (administradores.isEmpty()) {
@@ -168,13 +171,15 @@ public class PlanificacionAgregadaService {
             revision.setEstado(EstadoRevisionPlanificacion.PENDIENTE);
             revision.setCreadaEn(ahora);
             revision.setActualizadaEn(ahora);
-            revision.setRonda(siguienteRonda(anteriores, pisoId));
+            int ronda = siguienteRonda(anteriores, pisoId);
+            revision.setRonda(ronda);
             revision.setVigente(true);
             revisiones.save(revision);
             administradores.forEach(perfilId ->
-                    notificaciones.notificarPerfil(perfilId,
+                    notificaciones.notificarPerfilIdempotente(perfilId,
+                            "PLANIFICACION:ENVIADA:" + id + ":" + ronda + ":" + pisoId + ":" + perfilId,
                             "Nueva planificacion academica pendiente de revision",
-                            "Revise la planificacion completa correspondiente a su piso",
+                            "Carrera " + plan.getCarreraId() + " · periodo " + periodo,
                             java.util.Map.of("tipo", "PLANIFICACION", "planificacionId", id.toString())));
         }
         plan.setEstado(EstadoPlanificacionAgregada.EN_REVISION);
@@ -200,19 +205,7 @@ public class PlanificacionAgregadaService {
         if (plan.getEstado() != EstadoPlanificacionAgregada.EN_REVISION) {
             throw new IllegalStateException("Solo puede retirarse una planificacion en revision");
         }
-        List<RevisionPlanificacionPisoJpaEntity> actuales = revisiones.findByPlanificacionIdAndVigenteTrue(id);
-        if (actuales.stream().anyMatch(item ->
-                item.getEstado() != EstadoRevisionPlanificacion.PENDIENTE)) {
-            throw new IllegalStateException("La revision ya fue atendida por un piso");
-        }
-        actuales.forEach(item -> item.setVigente(false));
-        revisiones.saveAll(actuales);
-        bloques.findByPlanificacionId(id).stream().filter(item -> item.getEstado() == EstadoPlanificacion.ENVIADA)
-                .forEach(item -> item.setEstado(EstadoPlanificacion.BORRADOR));
-        plan.setEstado(EstadoPlanificacionAgregada.BORRADOR);
-        plan.setEnviadaEn(null);
-        plan.setActualizadaEn(Instant.now());
-        return map(planes.saveAndFlush(plan));
+        throw new IllegalStateException("Debe solicitar el retiro para editar y obtener autorizacion de los pisos");
     }
 
     @Transactional
@@ -426,6 +419,7 @@ public class PlanificacionAgregadaService {
     private PlanificacionAgregadaResponse mapParaPiso(PlanificacionAgregadaJpaEntity plan) {
         UUID pisoId = ambitoLaboratorio.pisoGestionado();
         return response(plan, bloques.findByPlanificacionId(plan.getId()).stream()
+                .filter(item -> item.getEstado() != EstadoPlanificacion.CANCELADA)
                 .filter(item -> pisoId.equals(academico.obtenerLaboratorio(item.getLaboratorioId()).pisoId())).toList());
     }
 

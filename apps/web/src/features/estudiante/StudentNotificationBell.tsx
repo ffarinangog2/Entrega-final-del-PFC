@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from 'react'
+import { useCallback, useContext, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AuthContext } from '../../auth'
 import { obtenerLaboratorios, obtenerMaterias } from '../../services/academicoApi'
@@ -21,6 +21,11 @@ export function StudentNotificationBell({ asistencia = true }: { asistencia?: bo
   const [materias, setMaterias] = useState<Map<string, string>>(new Map())
   const [labs, setLabs] = useState<Map<string, string>>(new Map())
   const [notificaciones, setNotificaciones] = useState<NotificacionInterna[]>([])
+
+  const refrescarNotificaciones = useCallback(() => {
+    if (!authenticated) return
+    void Promise.resolve(listarNotificaciones()).then((value) => setNotificaciones(value ?? [])).catch(() => undefined)
+  }, [authenticated])
 
   useEffect(() => {
     let activo = true
@@ -75,6 +80,17 @@ export function StudentNotificationBell({ asistencia = true }: { asistencia?: bo
       activo = false
     }
   }, [asistencia, authenticated])
+
+  useEffect(() => {
+    if (!authenticated) return undefined
+    const alRecuperarFoco = () => refrescarNotificaciones()
+    window.addEventListener('focus', alRecuperarFoco)
+    const polling = window.setInterval(refrescarNotificaciones, 45_000)
+    return () => {
+      window.removeEventListener('focus', alRecuperarFoco)
+      window.clearInterval(polling)
+    }
+  }, [authenticated, refrescarNotificaciones])
 
   return (
     <div className="student-bell">

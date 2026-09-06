@@ -247,7 +247,7 @@ class PlanificacionAgregadaServiceTest {
     }
 
     @Test
-    void retirarPlanificacionEnRevisionConservaBloquesYVuelveABorrador() {
+    void retirarPlanificacionEnRevisionExigeSolicitudAutorizada() {
         UUID planId = UUID.randomUUID();
         PlanificacionAgregadaJpaEntity plan = plan(planId,
                 EstadoPlanificacionAgregada.EN_REVISION);
@@ -262,13 +262,12 @@ class PlanificacionAgregadaServiceTest {
         when(revisiones.findByPlanificacionIdAndVigenteTrue(planId)).thenReturn(List.of(revision));
         when(bloques.findByPlanificacionId(planId)).thenReturn(List.of(bloque));
 
-        var response = service.retirar(planId);
-
-        assertThat(response.estado()).isEqualTo("BORRADOR");
-        assertThat(response.bloques()).hasSize(1);
-        assertThat(plan.getEnviadaEn()).isNull();
-        assertThat(revision.getVigente()).isFalse();
-        verify(revisiones).saveAll(List.of(revision));
+        assertThatThrownBy(() -> service.retirar(planId))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("solicitar el retiro");
+        assertThat(plan.getEstado()).isEqualTo(EstadoPlanificacionAgregada.EN_REVISION);
+        assertThat(plan.getEnviadaEn()).isNotNull();
+        verify(revisiones, never()).saveAll(any());
     }
 
     @Test
@@ -454,15 +453,35 @@ class PlanificacionAgregadaServiceTest {
         when(actores.obtener()).thenReturn(new ActorAutenticado(perfil,
                 Set.of("ROLE_ADMINISTRADOR_PISO")));
         when(ambito.pisoGestionado()).thenReturn(piso);
-        when(revisiones.findAll()).thenReturn(List.of(propia, ajena));
+        when(revisiones.findByPisoIdAndVigenteTrue(piso)).thenReturn(List.of(propia));
         when(planes.findById(visible.getId())).thenReturn(Optional.of(visible));
-        when(bloques.findByPlanificacionId(visible.getId())).thenReturn(List.of());
+        PlanificacionJpaEntity bloque = bloque(visible.getId(), 1, UUID.randomUUID(), UUID.randomUUID());
+        PlanificacionJpaEntity cancelado = bloque(visible.getId(), 2, UUID.randomUUID(), UUID.randomUUID());
+        cancelado.setEstado(EstadoPlanificacion.CANCELADA);
+        PlanificacionJpaEntity ajeno = bloque(visible.getId(), 3, UUID.randomUUID(), UUID.randomUUID());
+        when(bloques.findByPlanificacionId(visible.getId())).thenReturn(List.of(bloque, cancelado, ajeno));
+        when(academico.obtenerLaboratorio(bloque.getLaboratorioId())).thenReturn(laboratorio(bloque, piso));
+        when(academico.obtenerLaboratorio(ajeno.getLaboratorioId())).thenReturn(laboratorio(ajeno, otroPiso));
 
         var resultado = service.listar();
 
         assertThat(resultado).singleElement()
+                .satisfies(response -> assertThat(response.bloques()).extracting(item -> item.id())
+                        .containsExactly(bloque.getId()))
                 .extracting(response -> response.id())
                 .isEqualTo(visible.getId());
+    }
+
+    @Test
+    void administradorPisoNoVeRevisionHistoricaNiPlanificacionSinBloquesActivos() {
+        UUID piso = UUID.randomUUID();
+        when(actores.obtener()).thenReturn(new ActorAutenticado(perfil,
+                Set.of("ROLE_ADMINISTRADOR_PISO")));
+        when(ambito.pisoGestionado()).thenReturn(piso);
+        when(revisiones.findByPisoIdAndVigenteTrue(piso)).thenReturn(List.of());
+
+        assertThat(service.listar()).isEmpty();
+        verify(revisiones, never()).findAll();
     }
 
     @Test

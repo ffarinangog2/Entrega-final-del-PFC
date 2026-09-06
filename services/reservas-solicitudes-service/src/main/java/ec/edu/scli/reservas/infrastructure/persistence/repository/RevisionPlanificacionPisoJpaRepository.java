@@ -11,4 +11,5 @@ public interface RevisionPlanificacionPisoJpaRepository extends JpaRepository<Re
     Optional<RevisionPlanificacionPisoJpaEntity> findByPlanificacionIdAndPisoId(UUID planificacionId, UUID pisoId);
     List<RevisionPlanificacionPisoJpaEntity> findByPlanificacionIdAndVigenteTrue(UUID planificacionId);
     Optional<RevisionPlanificacionPisoJpaEntity> findByPlanificacionIdAndPisoIdAndVigenteTrue(UUID planificacionId, UUID pisoId);
+    List<RevisionPlanificacionPisoJpaEntity> findByPisoIdAndVigenteTrue(UUID pisoId);
 }

@@ -56,6 +56,7 @@ function preparar(
   items: api.Planificacion[] = [base, segunda],
   estado: api.EstadoPlanificacionAgregada = 'BORRADOR',
 ) {
+  vi.mocked(api.listarSolicitudesRetiro).mockResolvedValue([])
   vi.mocked(api.obtenerDisponibilidadPlanificacion).mockResolvedValue({ docentesOcupados: [], laboratoriosOcupados: [] })
   const aggregate: api.PlanificacionAgregada = {
     id: 'aggregate-1',
@@ -352,18 +353,19 @@ describe('CoordinadorPlanificacion', () => {
       'Servicio temporalmente no disponible',
     )
   })
-  it('permite retirar una planificación en revisión', async () => {
+  it('solicita con motivo el retiro de una planificaci?n en revisi?n', async () => {
     preparar([base], 'EN_REVISION')
-    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    vi.mocked(api.crearSolicitudRetiro).mockResolvedValue({
+      id: 'retiro-1', planificacionId: 'aggregate-1', solicitantePerfilId: 'perfil-1',
+      motivo: 'Corregir asignaciones', estado: 'PENDIENTE', creadaEn: new Date().toISOString(),
+      resueltaEn: null, pisosAprobados: 0, totalPisos: 2, decisiones: [],
+    })
     const user = userEvent.setup()
     renderPage()
-    await user.click(
-      await screen.findByRole('button', { name: 'Retirar para corregir' }),
-    )
-    await waitFor(() =>
-      expect(api.retirarPlanificacionCompleta).toHaveBeenCalledWith(
-        'aggregate-1',
-      ),
-    )
+    await user.click(await screen.findByRole('button', { name: 'Solicitar retiro para editar' }))
+    await user.type(screen.getByLabelText('Motivo'), 'Corregir asignaciones')
+    await user.click(screen.getByRole('button', { name: 'Confirmar solicitud' }))
+    await waitFor(() => expect(api.crearSolicitudRetiro)
+      .toHaveBeenCalledWith('aggregate-1', 'Corregir asignaciones'))
   })
 })

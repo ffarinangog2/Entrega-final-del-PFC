@@ -159,6 +159,25 @@ export const crearSolicitudCambio=(planId:string,body:{bloqueId:string;tipo:Soli
 export const aprobarSolicitudCambio=(planId:string,id:string,observacion='')=>apiRequest<SolicitudCambio>(`/api/v1/planificaciones-agregadas/${encodeURIComponent(planId)}/solicitudes-cambio/${encodeURIComponent(id)}/aprobar`,{method:'POST',body:JSON.stringify({observacion})})
 export const rechazarSolicitudCambio=(planId:string,id:string,observacion:string)=>apiRequest<SolicitudCambio>(`/api/v1/planificaciones-agregadas/${encodeURIComponent(planId)}/solicitudes-cambio/${encodeURIComponent(id)}/rechazar`,{method:'POST',body:JSON.stringify({observacion})})
 
+export interface SolicitudRetiro {
+  id: string; planificacionId: string; solicitantePerfilId: string; motivo: string
+  estado: 'PENDIENTE' | 'APROBADA' | 'RECHAZADA'; creadaEn: string; resueltaEn: string | null
+  pisosAprobados: number; totalPisos: number
+  decisiones: { pisoId: string; estado: 'PENDIENTE' | 'APROBADA' | 'RECHAZADA';
+    revisadaPorPerfilId: string | null; observacion: string | null; creadaEn: string; resueltaEn: string | null }[]
+}
+export const listarSolicitudesRetiro = (planId: string) =>
+  apiRequest<SolicitudRetiro[]>(`/api/v1/planificaciones-agregadas/${encodeURIComponent(planId)}/solicitudes-retiro`)
+export const crearSolicitudRetiro = (planId: string, motivo: string) =>
+  apiRequest<SolicitudRetiro>(`/api/v1/planificaciones-agregadas/${encodeURIComponent(planId)}/solicitudes-retiro`,
+    { method: 'POST', body: JSON.stringify({ motivo }) })
+export const aprobarSolicitudRetiro = (planId: string, id: string, observacion = '') =>
+  apiRequest<SolicitudRetiro>(`/api/v1/planificaciones-agregadas/${encodeURIComponent(planId)}/solicitudes-retiro/${encodeURIComponent(id)}/aprobar`,
+    { method: 'POST', body: JSON.stringify({ observacion }) })
+export const rechazarSolicitudRetiro = (planId: string, id: string, observacion = '') =>
+  apiRequest<SolicitudRetiro>(`/api/v1/planificaciones-agregadas/${encodeURIComponent(planId)}/solicitudes-retiro/${encodeURIComponent(id)}/rechazar`,
+    { method: 'POST', body: JSON.stringify({ observacion }) })
+
 export interface Incidente {
   id: string
   laboratorioEquipo: string
