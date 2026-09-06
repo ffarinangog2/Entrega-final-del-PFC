@@ -1,5 +1,6 @@
 package ec.edu.scli.usuarios.infrastructure.persistence.entity;
 
+import ec.edu.scli.usuarios.infrastructure.persistence.generator.AssignedOrGeneratedUuid;
 import jakarta.persistence.*;
 
 import java.time.OffsetDateTime;
@@ -10,7 +11,7 @@ import java.util.UUID;
 public class Administrador {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @AssignedOrGeneratedUuid
     private UUID id;
 
     @OneToOne(fetch = FetchType.LAZY, optional = false)

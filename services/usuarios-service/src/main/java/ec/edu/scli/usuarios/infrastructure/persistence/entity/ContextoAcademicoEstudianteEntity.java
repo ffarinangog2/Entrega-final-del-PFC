@@ -1,5 +1,6 @@
 package ec.edu.scli.usuarios.infrastructure.persistence.entity;
 
+import ec.edu.scli.usuarios.infrastructure.persistence.generator.AssignedOrGeneratedUuid;
 import jakarta.persistence.*;
 import java.time.OffsetDateTime;
 import java.util.UUID;
@@ -8,7 +9,7 @@ import java.util.UUID;
 @Table(name = "contextos_academicos_estudiante", uniqueConstraints =
         @UniqueConstraint(name = "uq_contexto_estudiante_periodo", columnNames = {"estudiante_id", "periodo_id"}))
 public class ContextoAcademicoEstudianteEntity {
-    @Id @GeneratedValue(strategy = GenerationType.UUID) private UUID id;
+    @Id @AssignedOrGeneratedUuid private UUID id;
     @Column(nullable = false) private UUID estudianteId;
     @Column(nullable = false) private UUID carreraId;
     @Column(nullable = false) private UUID periodoId;
