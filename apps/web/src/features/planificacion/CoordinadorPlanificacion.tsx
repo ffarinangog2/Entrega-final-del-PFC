@@ -45,6 +45,7 @@ export function CoordinadorPlanificacion() {
   const [plan, setPlan] = useState<api.PlanificacionAgregada | null>(null)
   const [nivel, setNivel] = useState(1)
   const [periodoId, setPeriodoId] = useState('')
+  const [pisoFiltro, setPisoFiltro] = useState('')
   const [form, setForm] = useState(inicial)
   const [editandoId, setEditandoId] = useState<string | null>(null)
   const [catalogos, setCatalogos] = useState<{
@@ -52,8 +53,9 @@ export function CoordinadorPlanificacion() {
     carrera?: academico.Carrera
     materias: academico.Materia[]
     docentes: academico.Docente[]
+    pisos: academico.Piso[]
     laboratorios: academico.Laboratorio[]
-  }>({ materias: [], docentes: [], laboratorios: [] })
+  }>({ materias: [], docentes: [], pisos: [], laboratorios: [] })
   const [cargando, setCargando] = useState(true)
   const [guardando, setGuardando] = useState(false)
   const [enviando, setEnviando] = useState(false)
@@ -81,11 +83,12 @@ export function CoordinadorPlanificacion() {
     setCargando(true)
     setError(''); setErrorEditor('')
     try {
-      const [planes, materias, docentes, laboratorios, carreras] =
+      const [planes, materias, docentes, pisos, laboratorios, carreras] =
         await Promise.all([
           api.listarPlanificacionesAgregadas(),
           academico.obtenerMaterias(),
           academico.obtenerDocentesPlanificacion(),
+          academico.obtenerPisos(),
           academico.obtenerLaboratorios(),
           academico.obtenerCarreras(),
         ])
@@ -115,6 +118,7 @@ export function CoordinadorPlanificacion() {
         carrera,
         materias: materias.filter((item) => item.activo),
         docentes: docentes.filter((item) => item.activo),
+        pisos: pisos.filter((item) => item.activo),
         laboratorios: laboratorios.filter((item) => item.activo),
       })
       setForm((actual) => ({
@@ -152,6 +156,12 @@ export function CoordinadorPlanificacion() {
         (item) => item.nivel == null || item.nivel === nivel,
       ),
     [catalogos.materias, nivel],
+  )
+  const laboratoriosFiltrados = useMemo(
+    () => pisoFiltro
+      ? catalogos.laboratorios.filter((item) => item.pisoId === pisoFiltro)
+      : catalogos.laboratorios,
+    [catalogos.laboratorios, pisoFiltro],
   )
 
   const editables = visibles.filter((item) =>
@@ -193,6 +203,7 @@ export function CoordinadorPlanificacion() {
   function abrirNuevo(diaSemana: string, horaInicio: string) {
     const fin = `${String(Number(horaInicio.slice(0, 2)) + 1).padStart(2, '0')}:30`
     setEditandoId(null)
+    setPisoFiltro('')
     setError('')
     setForm({
       ...inicial,
@@ -208,6 +219,7 @@ export function CoordinadorPlanificacion() {
   }
   function editar(item: api.Planificacion) {
     setEditandoId(item.id)
+    setPisoFiltro(laboratorio(item.laboratorioId)?.pisoId ?? '')
     setError('')
     setForm({
       planificacionId: item.planificacionId ?? plan?.id ?? '',
@@ -654,6 +666,21 @@ export function CoordinadorPlanificacion() {
                 </select>
               </label>
               <label>
+                Piso
+                <select value={pisoFiltro} onChange={(event) => {
+                  const pisoId = event.target.value
+                  setPisoFiltro(pisoId)
+                  if (pisoId && laboratorio(form.laboratorioId)?.pisoId !== pisoId) {
+                    setForm({ ...form, laboratorioId: '' })
+                  }
+                }}>
+                  <option value="">Todos los pisos</option>
+                  {catalogos.pisos.map((item) => (
+                    <option key={item.id} value={item.id}>Piso {item.numero}</option>
+                  ))}
+                </select>
+              </label>
+              <label>
                 Laboratorio
                 <select
                   required
@@ -663,7 +690,7 @@ export function CoordinadorPlanificacion() {
                   }
                 >
                   <option value="">Seleccione un laboratorio</option>
-                  {catalogos.laboratorios.map((item) => (
+                  {laboratoriosFiltrados.map((item) => (
                     <option key={item.id} value={item.id} disabled={item.estado !== 'DISPONIBLE' || ocupacion.laboratoriosOcupados.includes(item.id)}>
                       {item.codigo} — {item.nombre} · Capacidad {item.capacidad} — {item.estado !== 'DISPONIBLE' ? item.estado : ocupacion.laboratoriosOcupados.includes(item.id) ? 'OCUPADO en esta franja' : 'DISPONIBLE'}
                     </option>

@@ -15,7 +15,7 @@ import static org.mockito.Mockito.*;
 
 class InitialIdentityBootstrapTest {
     @Test
-    void createsTenPersistentAccountsWithBcryptEncoderAndOneFunctionalRole() throws Exception {
+    void createsPersistentAccountsWithConfiguredEncoderAndOneFunctionalRole() throws Exception {
         UsuarioAuthRepository users = mock(UsuarioAuthRepository.class);
         RolRepository roles = mock(RolRepository.class);
         PasswordEncoder encoder = mock(PasswordEncoder.class);
@@ -23,12 +23,18 @@ class InitialIdentityBootstrapTest {
         when(roles.findByCodigoIgnoreCase(any())).thenReturn(Optional.of(role));
         when(encoder.encode("configured-secret")).thenReturn("$2a$12$hash");
 
-        new InitialIdentityBootstrap(users, roles, encoder, "configured-secret")
-                .run(new DefaultApplicationArguments());
+        var bootstrap = new InitialIdentityBootstrap(users, roles, encoder, "configured-secret");
+        bootstrap.run(new DefaultApplicationArguments());
 
-        verify(users, times(10)).save(argThat(user -> user.getRoles().size() == 1
+        verify(users, times(228)).save(argThat(user -> user.getRoles().size() == 1
                 && user.getPasswordHash().startsWith("$2a$")));
-        verify(encoder, times(10)).encode("configured-secret");
+        verify(encoder, times(228)).encode("configured-secret");
+
+        clearInvocations(users, encoder);
+        when(users.existsByUsernameIgnoreCase(any())).thenReturn(true);
+        bootstrap.run(new DefaultApplicationArguments());
+        verify(users, never()).save(any());
+        verify(encoder, never()).encode(any());
     }
 
     @Test

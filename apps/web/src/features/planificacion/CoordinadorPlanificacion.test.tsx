@@ -103,10 +103,14 @@ function preparar(
       activo: true,
     },
   ])
+  vi.mocked(academico.obtenerPisos).mockResolvedValue([
+    { id: 'piso-1', bloqueId: 'bloque-1', numero: 1, descripcion: 'Piso 1', activo: true },
+    { id: 'piso-2', bloqueId: 'bloque-1', numero: 2, descripcion: 'Piso 2', activo: true },
+  ])
   vi.mocked(academico.obtenerLaboratorios).mockResolvedValue([
     {
       id: 'lab-1',
-      pisoId: 'piso-1',
+      pisoId: 'piso-2',
       codigo: 'LAB-01',
       nombre: 'Laboratorio de Software',
       capacidad: 30,
@@ -209,6 +213,25 @@ describe('CoordinadorPlanificacion', () => {
       ),
     )
     expect(screen.getAllByText('Bases de Datos')).toHaveLength(2)
+  })
+
+  it('filtra laboratorios por piso sin añadir el piso a la planificación', async () => {
+    const user = userEvent.setup()
+    renderPage()
+    await screen.findByText('Programación')
+    await user.click(screen.getByRole('button', { name: 'Agregar MIERCOLES 10:30' }))
+
+    const laboratorio = screen.getByLabelText('Laboratorio')
+    expect(laboratorio).toHaveTextContent('LAB-01')
+    expect(laboratorio).toHaveTextContent('LAB-02')
+
+    await user.selectOptions(screen.getByLabelText('Piso'), 'piso-2')
+    expect(laboratorio).toHaveTextContent('LAB-01')
+    expect(laboratorio).not.toHaveTextContent('LAB-02')
+
+    await user.selectOptions(screen.getByLabelText('Piso'), '')
+    expect(laboratorio).toHaveTextContent('LAB-01')
+    expect(laboratorio).toHaveTextContent('LAB-02')
   })
 
   it('cambia de nivel y presenta únicamente sus bloques', async () => {

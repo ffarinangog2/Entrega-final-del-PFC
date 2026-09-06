@@ -49,32 +49,42 @@ class InitialAcademicDataBootstrapTest {
         bootstrap.run(null);
 
         var entities = org.mockito.ArgumentCaptor.forClass(Object.class);
-        verify(entityManager, org.mockito.Mockito.times(43)).persist(entities.capture());
+        verify(entityManager, org.mockito.Mockito.times(54)).persist(entities.capture());
         var ids = entities.getAllValues().stream()
                 .map(InitialAcademicDataBootstrapTest::entityId)
                 .collect(java.util.stream.Collectors.toSet());
-        assertEquals(43, ids.size());
+        assertEquals(54, ids.size());
         assertTrue(ids.contains(InitialAcademicDataBootstrap.CAMPUS_ID));
         assertTrue(ids.contains(InitialAcademicDataBootstrap.BLOCK_ID));
-        assertTrue(ids.contains(InitialAcademicDataBootstrap.CAREER_2_ID));
+        assertTrue(ids.contains(InitialAcademicDataBootstrap.CAREER_TI_ID));
+        assertTrue(ids.contains(InitialAcademicDataBootstrap.CAREER_TELEMATICA_ID));
         verify(campuses, never()).save(any(CampusEntity.class));
+        verify(subjects, org.mockito.Mockito.times(157)).save(any());
 
         when(campuses.existsById(any())).thenReturn(true);
         when(blocks.existsById(any())).thenReturn(true);
         when(floors.existsById(any())).thenReturn(true);
         when(faculties.existsById(any())).thenReturn(true);
         when(careers.existsById(any())).thenReturn(true);
+        var telematics = new ec.edu.scli.academico.infrastructure.persistence.entity.CarreraEntity();
+        telematics.setId(InitialAcademicDataBootstrap.CAREER_TELEMATICA_ID);
+        telematics.setCodigo("CAR-TEL"); telematics.setNombre("Telemática");
+        when(careers.findFirstByNombreIgnoreCase("Telemática")).thenReturn(java.util.Optional.of(telematics));
         when(periods.existsById(any())).thenReturn(true);
         when(subjects.existsById(any())).thenReturn(true);
+        when(subjects.findByCodigo(any())).thenReturn(java.util.Optional.of(new ec.edu.scli.academico.infrastructure.persistence.entity.MateriaEntity()));
         when(labs.existsById(any())).thenReturn(true);
         when(equipmentTypes.existsById(any())).thenReturn(true);
         when(equipment.existsById(any())).thenReturn(true);
         when(schedules.existsById(any())).thenReturn(true);
-        clearInvocations(entityManager);
+        clearInvocations(entityManager, subjects, labs, careers);
 
         bootstrap.run(null);
 
         verify(entityManager, never()).persist(any());
+        verify(subjects, never()).save(any());
+        verify(labs, never()).save(any());
+        verify(careers, never()).save(any());
     }
 
     private static UUID entityId(Object entity) {

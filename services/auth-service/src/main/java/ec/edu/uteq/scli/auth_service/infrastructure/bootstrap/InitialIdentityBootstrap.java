@@ -12,13 +12,15 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
 @Component
 @ConditionalOnProperty(name = "app.initial-data.enabled", havingValue = "true")
 public class InitialIdentityBootstrap implements ApplicationRunner {
-    static final List<Account> ACCOUNTS = List.of(
+    private static final List<Account> BASE_ACCOUNTS = List.of(
             account(1, "administrador.facultad01", "ADMINISTRADOR"),
             account(2, "administrador.facultad02", "ADMINISTRADOR"),
             account(3, "adminpiso.01", "ADMINISTRADOR_PISO"),
@@ -29,6 +31,25 @@ public class InitialIdentityBootstrap implements ApplicationRunner {
             account(8, "docente.lab02", "DOCENTE"),
             account(9, "estudiante.lab01", "ESTUDIANTE"),
             account(10, "estudiante.lab02", "ESTUDIANTE"));
+    static final List<Account> ACCOUNTS = buildAccounts();
+
+    private static List<Account> buildAccounts() {
+        List<Account> accounts = new ArrayList<>(BASE_ACCOUNTS);
+        accounts.add(namedAccount("adminpiso.03", "ADMINISTRADOR_PISO"));
+        accounts.add(namedAccount("adminpiso.04", "ADMINISTRADOR_PISO"));
+        for (int number = 3; number <= 20; number++) {
+            accounts.add(namedAccount("docente.%02d".formatted(number), "DOCENTE"));
+        }
+        for (String career : List.of("software", "telematica")) {
+            for (int level = 1; level <= 10; level++) {
+                for (int student = 1; student <= 10; student++) {
+                    if (level == 1 && student == 1) continue;
+                    accounts.add(namedAccount("estudiante.%s.%02d.%02d".formatted(career, level, student), "ESTUDIANTE"));
+                }
+            }
+        }
+        return List.copyOf(accounts);
+    }
 
     private final UsuarioAuthRepository usuarios;
     private final RolRepository roles;
@@ -59,7 +80,7 @@ public class InitialIdentityBootstrap implements ApplicationRunner {
             user.setId(account.authId());
             user.setPerfilId(account.profileId());
             user.setUsername(account.username());
-            user.setEmail(account.username() + "@scli.local");
+            user.setEmail(account.username() + (account.authId().toString().startsWith("11000000") ? "@scli.local" : "@scli.edu.ec"));
             user.setPasswordHash(encoder.encode(password));
             user.setActivo(true);
             user.setCuentaBloqueada(false);
@@ -75,6 +96,14 @@ public class InitialIdentityBootstrap implements ApplicationRunner {
     private static Account account(int suffix, String username, String role) {
         return new Account(UUID.fromString("11000000-0000-0000-0000-0000000000" + String.format("%02d", suffix)),
                 UUID.fromString("22000000-0000-0000-0000-0000000000" + String.format("%02d", suffix)), username, role);
+    }
+
+    private static Account namedAccount(String username, String role) {
+        return new Account(stableId("auth:" + username), stableId("profile:" + username), username, role);
+    }
+
+    private static UUID stableId(String value) {
+        return UUID.nameUUIDFromBytes(("scli-integral-test:" + value).getBytes(StandardCharsets.UTF_8));
     }
 
     record Account(UUID authId, UUID profileId, String username, String role) { }

@@ -35,6 +35,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
 @Component
@@ -49,7 +50,8 @@ public class InitialAcademicDataBootstrap implements ApplicationRunner {
     public static final UUID FLOOR_4_ID = id("35000000-0000-0000-0000-000000000004");
     public static final UUID FACULTY_ID = id("36000000-0000-0000-0000-000000000001");
     public static final UUID CAREER_1_ID = id("37000000-0000-0000-0000-000000000001");
-    public static final UUID CAREER_2_ID = id("37000000-0000-0000-0000-000000000002");
+    public static final UUID CAREER_TI_ID = id("37000000-0000-0000-0000-000000000002");
+    public static final UUID CAREER_TELEMATICA_ID = stableId("career:telematica");
     private static final UUID PERIOD_ACTIVE_ID = id("38000000-0000-0000-0000-000000000001");
     private static final UUID PERIOD_FINISHED_ID = id("38000000-0000-0000-0000-000000000002");
 
@@ -60,6 +62,7 @@ public class InitialAcademicDataBootstrap implements ApplicationRunner {
     private final TipoEquipoJpaRepository equipmentTypes; private final EquipoJpaRepository equipment;
     private final HorarioAcademicoJpaRepository schedules;
     private final EntityManager entityManager;
+    private UUID telematicsCareerId;
 
     public InitialAcademicDataBootstrap(CampusJpaRepository campuses, BloqueJpaRepository blocks,
             PisoJpaRepository floors, FacultadJpaRepository faculties, CarreraJpaRepository careers,
@@ -73,7 +76,7 @@ public class InitialAcademicDataBootstrap implements ApplicationRunner {
     }
 
     @Override @Transactional public void run(ApplicationArguments args) {
-        campusAndStructure(); facultyAndCareers(); periods(); subjects(); laboratoriesAndEquipment(); schedules();
+        campusAndStructure(); facultyAndCareers(); subjects(); laboratoriesAndEquipment(); schedules();
     }
 
     private void campusAndStructure() {
@@ -92,8 +95,11 @@ public class InitialAcademicDataBootstrap implements ApplicationRunner {
             FacultadEntity e = new FacultadEntity(); e.setId(FACULTY_ID); e.setCodigo("FAC-TEC");
             e.setNombre("Facultad de Ciencias y Tecnologia"); e.setActivo(true); entityManager.persist(e);
         }
-        createCareer(CAREER_1_ID, "CAR-SW", "Ingenieria de Software");
-        createCareer(CAREER_2_ID, "CAR-TI", "Tecnologias de la Informacion");
+        createCareerIfMissing(CAREER_1_ID, "CAR-SW", "Ingeniería de Software");
+        createCareerIfMissing(CAREER_TI_ID, "CAR-TI", "Tecnologías de la Información");
+        telematicsCareerId = careers.findFirstByNombreIgnoreCase("Telemática")
+                .map(CarreraEntity::getId)
+                .orElseGet(() -> createCareerIfMissing(CAREER_TELEMATICA_ID, "CAR-TEL", "Telemática"));
     }
 
     private void periods() {
@@ -107,9 +113,21 @@ public class InitialAcademicDataBootstrap implements ApplicationRunner {
         createSubject(1, CAREER_1_ID, "SW-101", "Programacion I");
         createSubject(2, CAREER_1_ID, "SW-202", "Bases de Datos");
         createSubject(3, CAREER_1_ID, "SW-303", "Ingenieria de Software");
-        createSubject(4, CAREER_2_ID, "TI-101", "Redes de Computadores");
-        createSubject(5, CAREER_2_ID, "TI-202", "Sistemas Operativos");
-        createSubject(6, CAREER_2_ID, "TI-303", "Seguridad Informatica");
+        createSubject(4, CAREER_TI_ID, "TI-101", "Redes de Computadores");
+        createSubject(5, CAREER_TI_ID, "TI-202", "Sistemas Operativos");
+        createSubject(6, CAREER_TI_ID, "TI-303", "Seguridad Informatica");
+        String[] software = {"Programación", "Matemática para Computación", "Arquitectura de Software",
+                "Bases de Datos", "Ingeniería de Requisitos", "Calidad de Software", "Sistemas Distribuidos", "Gestión de Proyectos"};
+        String[] telematics = {"Redes de Datos", "Telecomunicaciones", "Electrónica Digital", "Sistemas Operativos",
+                "Seguridad de Redes", "Servicios Telemáticos", "Comunicaciones Inalámbricas", "Gestión de Infraestructura"};
+        for (int level = 1; level <= 10; level++) {
+            for (int slot = 1; slot <= 8; slot++) {
+                if (!(slot == 1 && level <= 3)) {
+                    createSubject(CAREER_1_ID, "SW-%02d-%02d".formatted(level, slot), software[slot - 1] + " " + level, level);
+                }
+                createSubject(telematicsCareerId, "TEL-%02d-%02d".formatted(level, slot), telematics[slot - 1] + " " + level, level);
+            }
+        }
     }
 
     private void laboratoriesAndEquipment() {
@@ -122,6 +140,16 @@ public class InitialAcademicDataBootstrap implements ApplicationRunner {
         for (int i = 0; i < 8; i++) {
             labIds[i] = id(String.format("39000000-0000-0000-0000-%012d", i + 1));
             createLab(labIds[i], floorIds[i], "LAB-%02d".formatted(i + 1), names[i]);
+        }
+        String[] floorCodes = {"PB", "P1", "P2", "P3"};
+        String[] specialties = {"Desarrollo Colaborativo", "Computación Avanzada", "Redes Convergentes"};
+        UUID[] distinctFloors = {FLOOR_1_ID, FLOOR_2_ID, FLOOR_3_ID, FLOOR_4_ID};
+        for (int floor = 0; floor < distinctFloors.length; floor++) {
+            for (int slot = 3; slot <= 5; slot++) {
+                String code = "LAB-%s-%02d".formatted(floorCodes[floor], slot);
+                createLab(stableId("lab:" + code), distinctFloors[floor], code,
+                        "Laboratorio de " + specialties[slot - 3] + " " + (floor + 1));
+            }
         }
         UUID computer = createType(1, "COMPUTO", "Equipos de computo");
         UUID network = createType(2, "REDES", "Equipos de red");
@@ -141,7 +169,7 @@ public class InitialAcademicDataBootstrap implements ApplicationRunner {
             if (!schedules.existsById(scheduleId)) {
                 HorarioAcademicoEntity e = new HorarioAcademicoEntity(); e.setId(scheduleId);
                 e.setMateriaId(id(String.format("3B000000-0000-0000-0000-%012d", i + 1)));
-                e.setPeriodoLectivoId(PERIOD_ACTIVE_ID); e.setLaboratorioId(labIds[i]);
+                e.setPeriodoLectivoId(id("3f000000-0000-0000-0000-000000000001")); e.setLaboratorioId(labIds[i]);
                 e.setDocenteId(id(String.format("22000000-0000-0000-0000-0000000000%02d", 7 + (i % 2))));
                 e.setDiaSemana(DiaSemana.values()[i]); e.setHoraInicio(LocalTime.of(8 + i, 0));
                 e.setHoraFin(LocalTime.of(10 + i, 0)); e.setParalelo("A"); e.setActivo(true); entityManager.persist(e);
@@ -163,11 +191,12 @@ public class InitialAcademicDataBootstrap implements ApplicationRunner {
         }
     }
 
-    private void createCareer(UUID id, String code, String name) {
+    private UUID createCareerIfMissing(UUID id, String code, String name) {
         if (!careers.existsById(id)) {
             CarreraEntity e = new CarreraEntity(); e.setId(id); e.setFacultadId(FACULTY_ID); e.setCodigo(code);
             e.setNombre(name); e.setActivo(true); entityManager.persist(e);
         }
+        return id;
     }
 
     private void createPeriod(UUID id, String name, EstadoPeriodo state, LocalDate start, LocalDate end, int type) {
@@ -182,12 +211,18 @@ public class InitialAcademicDataBootstrap implements ApplicationRunner {
         UUID id = id(String.format("3B000000-0000-0000-0000-%012d", n));
         if (!subjects.existsById(id)) {
             MateriaEntity e = new MateriaEntity(); e.setId(id); e.setCarreraId(careerId); e.setCodigo(code);
-            e.setNombre(name); e.setNumeroHoras(64); e.setActivo(true); entityManager.persist(e);
+            e.setNombre(name); e.setNumeroHoras(64); e.setNivel(((n - 1) % 3) + 1); e.setActivo(true); entityManager.persist(e);
         }
     }
 
+    private void createSubject(UUID careerId, String code, String name, int level) {
+        if (subjects.findByCodigo(code).isPresent()) return;
+        MateriaEntity e = new MateriaEntity(); e.setId(stableId("subject:" + code)); e.setCarreraId(careerId);
+        e.setCodigo(code); e.setNombre(name); e.setNumeroHoras(64); e.setNivel(level); e.setActivo(true); subjects.save(e);
+    }
+
     private void createLab(UUID id, UUID floorId, String code, String name) {
-        if (!labs.existsById(id)) {
+        if (!labs.existsById(id) && labs.findByCodigo(code).isEmpty()) {
             LaboratorioEntity e = new LaboratorioEntity(); e.setId(id); e.setPisoId(floorId); e.setCodigo(code);
             e.setNombre(name); e.setCapacidad(30); e.setDescripcion("Espacio academico equipado");
             e.setEstado(EstadoLaboratorio.DISPONIBLE); e.setActivo(true); entityManager.persist(e);
@@ -213,4 +248,5 @@ public class InitialAcademicDataBootstrap implements ApplicationRunner {
         }
     }
     private static UUID id(String value) { return UUID.fromString(value); }
+    private static UUID stableId(String value) { return UUID.nameUUIDFromBytes(("scli-integral-test:" + value).getBytes(StandardCharsets.UTF_8)); }
 }

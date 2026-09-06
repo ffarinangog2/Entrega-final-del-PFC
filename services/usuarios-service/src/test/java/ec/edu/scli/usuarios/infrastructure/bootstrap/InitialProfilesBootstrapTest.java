@@ -4,10 +4,12 @@ import ec.edu.scli.usuarios.domain.model.TipoAmbitoInstitucional;
 import ec.edu.scli.usuarios.infrastructure.persistence.entity.Administrador;
 import ec.edu.scli.usuarios.infrastructure.persistence.entity.AdscripcionInstitucionalEntity;
 import ec.edu.scli.usuarios.infrastructure.persistence.entity.Perfil;
+import ec.edu.scli.usuarios.infrastructure.persistence.entity.Estudiante;
 import ec.edu.scli.usuarios.infrastructure.persistence.jpa.AdministradorRepository;
 import ec.edu.scli.usuarios.infrastructure.persistence.jpa.AdscripcionInstitucionalRepository;
 import ec.edu.scli.usuarios.infrastructure.persistence.jpa.DocenteRepository;
 import ec.edu.scli.usuarios.infrastructure.persistence.jpa.EstudianteRepository;
+import ec.edu.scli.usuarios.infrastructure.persistence.jpa.ContextoAcademicoEstudianteRepository;
 import ec.edu.scli.usuarios.infrastructure.persistence.jpa.PerfilRepository;
 import ec.edu.scli.usuarios.infrastructure.security.HmacIdentificacionService;
 import jakarta.persistence.EntityManager;
@@ -32,30 +34,43 @@ class InitialProfilesBootstrapTest {
         AdministradorRepository administradores = mock(AdministradorRepository.class);
         DocenteRepository docentes = mock(DocenteRepository.class);
         EstudianteRepository estudiantes = mock(EstudianteRepository.class);
+        ContextoAcademicoEstudianteRepository contextos = mock(ContextoAcademicoEstudianteRepository.class);
         AdscripcionInstitucionalRepository adscripciones = mock(AdscripcionInstitucionalRepository.class);
         EntityManager entityManager = mock(EntityManager.class);
         HmacIdentificacionService hmac = mock(HmacIdentificacionService.class);
         UUID pisoUno = UUID.fromString("35000000-0000-0000-0000-000000000001");
         UUID pisoDos = UUID.fromString("35000000-0000-0000-0000-000000000002");
+        UUID pisoTres = UUID.fromString("35000000-0000-0000-0000-000000000003");
+        UUID pisoCuatro = UUID.fromString("35000000-0000-0000-0000-000000000004");
         UUID carreraUno = UUID.fromString("37000000-0000-0000-0000-000000000001");
-        UUID carreraDos = UUID.fromString("37000000-0000-0000-0000-000000000002");
+        UUID carreraDos = UUID.fromString("55584c85-0359-3f3f-8fa1-55000611374b");
         InitialProfilesBootstrap bootstrap = new InitialProfilesBootstrap(
-                perfiles, administradores, docentes, estudiantes, adscripciones, entityManager, hmac,
-                pisoUno + "," + pisoDos, carreraUno + "," + carreraDos);
+                perfiles, administradores, docentes, estudiantes, contextos, adscripciones, entityManager, hmac,
+                pisoUno + "," + pisoDos + "," + pisoTres + "," + pisoCuatro, carreraUno + "," + carreraDos,
+                UUID.fromString("3f000000-0000-0000-0000-000000000001"));
 
         when(hmac.calcularHash(any())).thenReturn("hash");
+        when(perfiles.getReferenceById(any())).thenAnswer(invocation -> {
+            Perfil perfil = new Perfil(); perfil.setId(invocation.getArgument(0)); return perfil;
+        });
+        when(estudiantes.save(any())).thenAnswer(invocation -> {
+            Estudiante estudiante = invocation.getArgument(0);
+            if (estudiante.getId() == null) estudiante.setId(UUID.randomUUID());
+            return estudiante;
+        });
         when(adscripciones.findByPerfilIdOrderByTipoAmbitoAscAmbitoIdAsc(any())).thenReturn(List.of());
 
         bootstrap.run(null);
 
         var perfilesPersistidos = org.mockito.ArgumentCaptor.forClass(Perfil.class);
-        verify(entityManager, org.mockito.Mockito.times(10)).persist(perfilesPersistidos.capture());
-        assertEquals(
-                java.util.stream.IntStream.rangeClosed(1, 10)
-                        .mapToObj(InitialProfilesBootstrapTest::perfilId)
-                        .toList(),
-                perfilesPersistidos.getAllValues().stream().map(Perfil::getId).toList());
+        verify(entityManager, org.mockito.Mockito.times(228)).persist(perfilesPersistidos.capture());
+        assertEquals(228, perfilesPersistidos.getAllValues().stream().map(Perfil::getId).distinct().count());
         verify(perfiles, never()).save(any());
+        verify(administradores, org.mockito.Mockito.times(6)).save(any());
+        verify(docentes, org.mockito.Mockito.times(20)).save(any());
+        verify(estudiantes, org.mockito.Mockito.times(200)).save(any());
+        verify(contextos, org.mockito.Mockito.times(200)).save(any());
+        verify(adscripciones, org.mockito.Mockito.times(26)).save(any());
 
         when(perfiles.existsById(any())).thenReturn(true);
         when(administradores.existsByPerfilId(any())).thenReturn(true);
@@ -65,18 +80,22 @@ class InitialProfilesBootstrapTest {
         });
         when(docentes.existsByPerfilId(any())).thenReturn(true);
         when(estudiantes.existsByPerfilId(any())).thenReturn(true);
-        when(adscripciones.findByPerfilIdOrderByTipoAmbitoAscAmbitoIdAsc(perfilId(5)))
-                .thenReturn(List.of(adscripcion(carreraUno)));
-        when(adscripciones.findByPerfilIdOrderByTipoAmbitoAscAmbitoIdAsc(perfilId(6)))
-                .thenReturn(List.of(adscripcion(carreraDos)));
-        clearInvocations(entityManager, administradores, docentes, estudiantes, adscripciones);
+        when(estudiantes.findByPerfilId(any())).thenAnswer(invocation -> {
+            Estudiante estudiante = new Estudiante(); estudiante.setId(UUID.randomUUID());
+            Perfil perfil = new Perfil(); perfil.setId(invocation.getArgument(0)); estudiante.setPerfil(perfil);
+            return java.util.Optional.of(estudiante);
+        });
+        when(contextos.findByEstudianteIdAndPeriodoId(any(), any())).thenReturn(java.util.Optional.of(new ec.edu.scli.usuarios.infrastructure.persistence.entity.ContextoAcademicoEstudianteEntity()));
+        when(adscripciones.findByPerfilIdOrderByTipoAmbitoAscAmbitoIdAsc(any()))
+                .thenReturn(List.of(adscripcion(carreraUno), adscripcion(carreraDos)));
+        clearInvocations(entityManager, administradores, docentes, estudiantes, contextos, adscripciones);
 
         bootstrap.run(null);
 
         verify(entityManager, never()).persist(any());
-        verify(administradores, never()).save(any());
         verify(docentes, never()).save(any());
         verify(estudiantes, never()).save(any());
+        verify(contextos, never()).save(any());
         verify(adscripciones, never()).save(any());
     }
 
@@ -86,18 +105,24 @@ class InitialProfilesBootstrapTest {
         AdministradorRepository administradores = mock(AdministradorRepository.class);
         DocenteRepository docentes = mock(DocenteRepository.class);
         EstudianteRepository estudiantes = mock(EstudianteRepository.class);
+        ContextoAcademicoEstudianteRepository contextos = mock(ContextoAcademicoEstudianteRepository.class);
         AdscripcionInstitucionalRepository adscripciones = mock(AdscripcionInstitucionalRepository.class);
         EntityManager entityManager = mock(EntityManager.class);
         HmacIdentificacionService hmac = mock(HmacIdentificacionService.class);
         UUID pisoUno = UUID.fromString("35000000-0000-0000-0000-000000000001");
         UUID pisoDos = UUID.fromString("35000000-0000-0000-0000-000000000002");
+        UUID pisoTres = UUID.fromString("35000000-0000-0000-0000-000000000003");
+        UUID pisoCuatro = UUID.fromString("35000000-0000-0000-0000-000000000004");
         UUID carreraUno = UUID.fromString("37000000-0000-0000-0000-000000000001");
-        UUID carreraDos = UUID.fromString("37000000-0000-0000-0000-000000000002");
+        UUID carreraDos = UUID.fromString("55584c85-0359-3f3f-8fa1-55000611374b");
         InitialProfilesBootstrap bootstrap = new InitialProfilesBootstrap(
-                perfiles, administradores, docentes, estudiantes, adscripciones, entityManager, hmac,
-                pisoUno + "," + pisoDos, carreraUno + "," + carreraDos);
+                perfiles, administradores, docentes, estudiantes, contextos, adscripciones, entityManager, hmac,
+                pisoUno + "," + pisoDos + "," + pisoTres + "," + pisoCuatro, carreraUno + "," + carreraDos,
+                UUID.fromString("3f000000-0000-0000-0000-000000000001"));
 
         when(perfiles.existsById(any())).thenReturn(true);
+        when(perfiles.getReferenceById(any())).thenAnswer(invocation -> { Perfil perfil = new Perfil(); perfil.setId(invocation.getArgument(0)); return perfil; });
+        when(estudiantes.save(any())).thenAnswer(invocation -> { Estudiante estudiante = invocation.getArgument(0); if (estudiante.getId() == null) estudiante.setId(UUID.randomUUID()); return estudiante; });
         when(docentes.existsByPerfilId(any())).thenReturn(true);
         when(estudiantes.existsByPerfilId(any())).thenReturn(true);
         when(adscripciones.findByPerfilIdOrderByTipoAmbitoAscAmbitoIdAsc(any())).thenReturn(List.of());

@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface LaboratorioJpaRepository
@@ -17,6 +18,8 @@ public interface LaboratorioJpaRepository
     List<LaboratorioEntity> findByEstadoAndActivoTrue(EstadoLaboratorio estado);
 
     boolean existsByCodigo(String codigo);
+
+    Optional<LaboratorioEntity> findByCodigo(String codigo);
 
     boolean existsByCodigoAndIdNot(String codigo, UUID id);
 

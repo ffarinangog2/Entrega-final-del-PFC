@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface CarreraJpaRepository
@@ -12,6 +13,8 @@ public interface CarreraJpaRepository
         JpaSpecificationExecutor<CarreraEntity> {
 
     List<CarreraEntity> findByFacultadId(UUID facultadId);
+
+    Optional<CarreraEntity> findFirstByNombreIgnoreCase(String nombre);
 
     boolean existsByCodigo(String codigo);
 
