@@ -214,7 +214,6 @@ public class PlanificacionAgregadaService {
         UUID pisoId = ambitoLaboratorio.pisoGestionado();
         RevisionPlanificacionPisoJpaEntity revision = revisiones.findByPlanificacionIdAndPisoIdAndVigenteTrue(id, pisoId)
                 .orElseThrow(() -> new AccessDeniedException("La planificacion no corresponde a su piso"));
-        exigirRevisionPendiente(revision);
         revision.setEstado(EstadoRevisionPlanificacion.APROBADA);
         revision.setRevisadaPorPerfilId(actor.perfilId());
         revision.setActualizadaEn(Instant.now());
@@ -309,7 +308,6 @@ public class PlanificacionAgregadaService {
         UUID pisoId = ambitoLaboratorio.pisoGestionado();
         RevisionPlanificacionPisoJpaEntity revision = revisiones.findByPlanificacionIdAndPisoIdAndVigenteTrue(id, pisoId)
                 .orElseThrow(() -> new AccessDeniedException("La planificacion no corresponde a su piso"));
-        exigirRevisionPendiente(revision);
         PlanificacionJpaEntity bloque = bloques.findById(request.bloqueId())
                 .orElseThrow(() -> new ResourceNotFoundException("Bloque no encontrado"));
         if (!id.equals(bloque.getPlanificacionId())
@@ -337,7 +335,6 @@ public class PlanificacionAgregadaService {
         UUID pisoId = ambitoLaboratorio.pisoGestionado();
         RevisionPlanificacionPisoJpaEntity revision = revisiones.findByPlanificacionIdAndPisoIdAndVigenteTrue(id, pisoId)
                 .orElseThrow(() -> new AccessDeniedException("La planificacion no corresponde a su piso"));
-        exigirRevisionPendiente(revision);
         revision.setEstado(estado);
         revision.setObservacion(observacion);
         revision.setRevisadaPorPerfilId(actor.perfilId());
@@ -351,12 +348,6 @@ public class PlanificacionAgregadaService {
         notificaciones.notificarPerfil(plan.getCoordinadorPerfilId(), "Planificacion devuelta",
                 observacion, java.util.Map.of("tipo", "PLANIFICACION_DEVUELTA", "planificacionId", id.toString()));
         return planes.saveAndFlush(plan);
-    }
-
-    private void exigirRevisionPendiente(RevisionPlanificacionPisoJpaEntity revision) {
-        if (revision.getEstado() != EstadoRevisionPlanificacion.PENDIENTE) {
-            throw new IllegalStateException("La decisión de este piso ya está cerrada para la ronda vigente");
-        }
     }
 
     private void validarConflictos(List<PlanificacionJpaEntity> items) {

@@ -2,17 +2,13 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { DashboardLayout } from '../../components/DashboardLayout'
 import {
   obtenerCarreras,
-  obtenerDocentesPlanificacion,
   obtenerLaboratorios,
   obtenerMaterias,
   obtenerPeriodoActual,
-  obtenerPisos,
   type Carrera,
-  type Docente,
   type Laboratorio,
   type Materia,
   type PeriodoLectivo,
-  type Piso,
 } from '../../services/academicoApi'
 import {
   aprobarPlanificacionPiso,
@@ -53,9 +49,7 @@ export function AdministradorPisoPlanificacion() {
   const [error, setError] = useState('')
   const [mensaje, setMensaje] = useState('')
   const [cargando, setCargando] = useState(true)
-  const [pisos, setPisos] = useState<Piso[]>([])
-  const [docentes, setDocentes] = useState<Docente[]>([])
-  const [solicitudes, setSolicitudes] = useState<SolicitudCambio[]>([])
+  const [solicitudes,setSolicitudes]=useState<SolicitudCambio[]>([])
   const [retiros, setRetiros] = useState<SolicitudRetiro[]>([])
   const [observacionRetiro, setObservacionRetiro] = useState('')
 
@@ -69,16 +63,12 @@ export function AdministradorPisoPlanificacion() {
         laboratoriosData,
         carrerasData,
         periodoData,
-        pisosData,
-        docentesData,
       ] = await Promise.all([
         listarPlanificacionesAgregadas(),
         obtenerMaterias(),
         obtenerLaboratorios(),
         obtenerCarreras(),
         obtenerPeriodoActual(),
-        obtenerPisos(),
-        obtenerDocentesPlanificacion(),
       ])
       const planesConBloques = planesData.filter((item) =>
         item.bloques.some((bloque) => bloque.estado !== 'CANCELADA'),
@@ -89,8 +79,6 @@ export function AdministradorPisoPlanificacion() {
       setLaboratorios(laboratoriosData)
       setCarreras(carrerasData)
       setPeriodo(periodoData)
-      setPisos(pisosData)
-      setDocentes(docentesData)
       const primera = planesConBloques[0]
       setPaquete((actual) => actual || primera?.id || '')
     } catch (cause) {
@@ -127,58 +115,12 @@ export function AdministradorPisoPlanificacion() {
       ),
     [paquete, planes],
   )
+  const planActual = agregados.find((item) => item.id === paquete)
+  const pendiente = planActual?.estado === 'EN_REVISION'
   const materia = (id: string) => materias.find((item) => item.id === id)
   const laboratorio = (id: string) =>
     laboratorios.find((item) => item.id === id)
-  const docente = (id?: string | null) =>
-    docentes.find((item) => item.id === id)
-  const planActual = agregados.find((item) => item.id === paquete)
-  const pisoActual = laboratorio(visibles[0]?.laboratorioId ?? '')?.pisoId
-
-  const nombrePiso = (pisoId?: string) => {
-    if (!pisoId) return 'Sin piso'
-    const p = pisos.find((item) => item.id === pisoId)
-    return p?.descripcion?.trim() ? p.descripcion : (p ? `Piso ${p.numero}` : 'Sin piso')
-  }
-
-  const pisoDeLaboratorio = (labId?: string | null) => {
-    if (!labId) return 'Sin piso'
-    const lab = laboratorio(labId)
-    if (!lab) return 'Sin piso'
-    return nombrePiso(lab.pisoId)
-  }
-  const miRevision = planActual?.revisiones?.find(
-    (item) => item.vigente === true && item.pisoId === pisoActual,
-  )
-  const pendiente = miRevision ? miRevision.estado === 'PENDIENTE' : planActual?.estado === 'EN_REVISION'
   const carrera = carreras.find((item) => item.id === visibles[0]?.carreraId)
-
-  async function ejecutarSolicitudCambio(
-    operacion: () => Promise<unknown>,
-    confirmacion: string,
-  ) {
-    if (ocupado || !window.confirm(confirmacion)) return
-    setOcupado(true)
-    setError('')
-    setMensaje('')
-    try {
-      await operacion()
-      setMensaje('La solicitud de cambio fue procesada correctamente.')
-      if (paquete) {
-        const actualizadas = await listarSolicitudesCambio(paquete)
-        setSolicitudes(actualizadas ?? [])
-      }
-      await cargar()
-    } catch (cause) {
-      setError(
-        cause instanceof Error
-          ? cause.message
-          : 'No fue posible procesar la solicitud de cambio.',
-      )
-    } finally {
-      setOcupado(false)
-    }
-  }
 
   async function ejecutar(
     operacion: () => Promise<unknown>,
@@ -293,101 +235,9 @@ export function AdministradorPisoPlanificacion() {
               <strong>{carrera?.nombre ?? 'Carrera institucional'}</strong>
               <span>Periodo: {periodo?.codigo ?? 'No disponible'}</span>
               <span>Estado: {planActual?.estado ?? estadoPaquete(visibles)}</span>
-              {miRevision?.estado === 'APROBADA' && <span className="status">Aprobada por este piso</span>}
               <span>{visibles.length} bloques en su piso</span>
             </div>
-            {solicitudes.map((s) => {
-              const miRevision = s.revisiones?.find((r) => r.pisoId === pisoActual)
-              const puedeDecidir = s.estado === 'PENDIENTE' && (!miRevision || miRevision.estado === 'PENDIENTE')
-              const b = planes.find((p) => p.id === s.bloqueId)
-              const mat = materia(b?.materiaId ?? '')
-              const diaTxt = etiquetaDia(s.diaAnterior)
-              const pisoOrig = pisoDeLaboratorio(s.laboratorioAnteriorId)
-              const pisoDest = pisoDeLaboratorio(s.laboratorioPropuestoId)
-              const labOrig = laboratorio(s.laboratorioAnteriorId)
-              const labDest = laboratorio(s.laboratorioPropuestoId)
-              const docOrig = docente(s.docenteAnteriorId)
-              const docDest = docente(s.docentePropuestoId)
-
-              return (
-                <article className="floor-planning__summary" key={s.id}>
-                  <strong>Solicitud de cambio · {s.tipo}</strong>
-                  <span>Solicitante: Coordinación académica</span>
-                  <span>
-                    Bloque afectado: {mat?.nombre ?? 'Materia'} ({diaTxt} {s.horaInicioAnterior}–{s.horaFinAnterior})
-                  </span>
-                  {s.tipo === 'LABORATORIO' && (
-                    <>
-                      <span>
-                        Laboratorio: {labOrig?.codigo ?? 'Actual'} ({pisoOrig}) → {labDest?.codigo ?? 'Propuesto'} ({pisoDest})
-                      </span>
-                      <span>
-                        Piso: {pisoOrig} → {pisoDest}
-                      </span>
-                    </>
-                  )}
-                  {s.tipo === 'HORARIO' && (
-                    <span>
-                      Horario propuesto: {etiquetaDia(s.diaPropuesto)} {s.horaInicioPropuesta}–{s.horaFinPropuesta}
-                    </span>
-                  )}
-                  {s.tipo === 'DOCENTE' && (
-                    <span>
-                      Docente propuesto: {docOrig?.codigoDocente ?? 'Docente actual'} → {docDest?.codigoDocente ?? 'Docente propuesto'}
-                    </span>
-                  )}
-                  {s.tipo === 'CANCELACION' && (
-                    <span>Propuesta: Cancelación excepcional del bloque</span>
-                  )}
-                  <span>Motivo: {s.motivo}</span>
-                  {s.estado === 'PENDIENTE' && (
-                    <small>El horario original continúa vigente mientras la solicitud esté pendiente.</small>
-                  )}
-                  {miRevision?.estado === 'APROBADA' && (
-                    <span className="status">Cambio aprobado por este piso</span>
-                  )}
-                  {miRevision?.estado === 'RECHAZADA' && (
-                    <span className="status danger">Cambio rechazado por este piso</span>
-                  )}
-                  {s.estado === 'APROBADA' && (
-                    <span className="status">Solicitud de cambio aprobada</span>
-                  )}
-                  {s.estado === 'RECHAZADA' && !miRevision && (
-                    <span className="status danger">Solicitud de cambio rechazada</span>
-                  )}
-                  {puedeDecidir && (
-                    <div>
-                      <button
-                        disabled={ocupado}
-                        onClick={() =>
-                          void ejecutarSolicitudCambio(
-                            () => aprobarSolicitudCambio(paquete, s.id),
-                            '¿Aprobar y revalidar este cambio?',
-                          )
-                        }
-                      >
-                        Aprobar cambio
-                      </button>
-                      <button
-                        className="danger"
-                        disabled={ocupado}
-                        onClick={() => {
-                          const mot = window.prompt('Motivo del rechazo')
-                          if (mot?.trim()) {
-                            void ejecutarSolicitudCambio(
-                              () => rechazarSolicitudCambio(paquete, s.id, mot.trim()),
-                              '¿Rechazar esta solicitud?',
-                            )
-                          }
-                        }}
-                      >
-                        Rechazar cambio
-                      </button>
-                    </div>
-                  )}
-                </article>
-              )
-            })}
+            {solicitudes.filter(s=>s.estado==='PENDIENTE').map(s=><article className="floor-planning__summary" key={s.id}><strong>Solicitud de cambio · {s.tipo}</strong><span>{s.motivo}</span><span>El horario original continúa vigente.</span><button disabled={ocupado} onClick={()=>void ejecutar(()=>aprobarSolicitudCambio(paquete,s.id),'¿Aprobar y revalidar este cambio?')}>Aprobar cambio</button><button disabled={ocupado} onClick={()=>{const motivo=window.prompt('Motivo del rechazo');if(motivo?.trim())void ejecutar(()=>rechazarSolicitudCambio(paquete,s.id,motivo.trim()),'¿Rechazar esta solicitud?')}}>Rechazar cambio</button></article>)}
             {retiros.filter((item) => item.estado === 'PENDIENTE').map((item) => (
               <article className="floor-planning__summary" key={item.id}>
                 <strong>Solicitud de retiro para edici&oacute;n</strong>

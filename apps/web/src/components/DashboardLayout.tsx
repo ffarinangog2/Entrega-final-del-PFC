@@ -48,7 +48,6 @@ export function DashboardLayout({
   const verAsistencia =
     (docente || estudiante) &&
     hasAnyPermission(usuario, ['RESERVA_LEER', 'ACADEMICO_LEER'])
-  const verUsoLaboratorios = administradorPiso
   const verIncidentes =
     (administrador || administradorPiso || docente) &&
     hasAnyPermission(usuario, [
@@ -114,11 +113,6 @@ export function DashboardLayout({
               <NavLink className="dashboard__nav-item" to="/reservas">
                 <span aria-hidden="true">R</span>
                 {t('dashboard.nav.reservations')}
-              </NavLink>
-            )}
-            {verUsoLaboratorios && (
-              <NavLink className="dashboard__nav-item" to="/uso-laboratorios">
-                <span aria-hidden="true">U</span>Uso de laboratorios
               </NavLink>
             )}
             {crearSolicitud && (

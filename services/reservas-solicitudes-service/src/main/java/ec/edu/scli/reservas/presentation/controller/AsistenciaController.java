@@ -4,9 +4,6 @@ import ec.edu.scli.reservas.application.service.AsistenciaService; import ec.edu
  @PostMapping("/sesiones") public ResponseEntity<SesionAsistenciaResponse> abrir(@Valid @RequestBody AbrirSesionAsistenciaRequest r,Principal p){return ResponseEntity.status(HttpStatus.CREATED).body(service.abrir(r,id(p)));}
  @GetMapping("/sesiones/{id}") public SesionAsistenciaResponse consultar(@PathVariable UUID id,Principal p){return service.consultar(id,id(p));}
  @PostMapping("/sesiones/{id}/cerrar") @ResponseStatus(HttpStatus.NO_CONTENT) public void cerrar(@PathVariable UUID id,Principal p){service.cerrar(id,id(p));}
- @PatchMapping("/sesiones/{id}/uso") public SesionAsistenciaResponse completar(@PathVariable UUID id,@Valid @RequestBody CompletarUsoLaboratorioRequest r,Principal p){return service.completar(id,r,id(p));}
- @GetMapping("/sesiones/{id}/participantes") public List<ParticipanteUsoResponse> participantes(@PathVariable UUID id,Principal p){return service.participantes(id,id(p));}
- @PatchMapping("/sesiones/{id}/participantes/{perfilId}") public ParticipanteUsoResponse ajustar(@PathVariable UUID id,@PathVariable UUID perfilId,@Valid @RequestBody AjustarPresenciaRequest r,Principal p){return service.ajustar(id,perfilId,r,id(p));}
  @GetMapping("/sesiones/{id}/registros") public List<RegistroAsistenciaResponse> listar(@PathVariable UUID id,Principal p){return service.listar(id,id(p));}
  @PostMapping("/sesiones/{id}/registros") public ResponseEntity<RegistroAsistenciaResponse> registrar(@PathVariable UUID id,@Valid @RequestBody RegistrarAsistenciaRequest r,Principal p){if(SecurityContextHolder.getContext().getAuthentication().getAuthorities().stream().noneMatch(a -> "ROLE_ESTUDIANTE".equals(a.getAuthority()))) throw new AccessDeniedException("Solo estudiantes pueden registrar asistencia");return ResponseEntity.status(HttpStatus.CREATED).body(service.registrar(id,r,id(p)));}
  @GetMapping("/historial") public List<RegistroAsistenciaResponse> historial(@RequestParam(required=false) UUID periodoId,Principal p){return periodoId==null?service.historial(id(p)):service.historial(id(p),periodoId);}
@@ -15,8 +12,5 @@ import ec.edu.scli.reservas.application.service.AsistenciaService; import ec.edu
  @GetMapping("/mis-clases-hoy") public List<PlanificacionResponse> clasesHoy(Principal p){return service.clasesDocenteHoy(id(p));}
  @GetMapping("/mi-horario-docente") public List<PlanificacionResponse> horarioDocente(@RequestParam(required=false) UUID periodoId,Principal p){return service.horarioDocente(id(p),periodoId);}
  @PostMapping("/sesiones/{id}/registro-propio") public ResponseEntity<RegistroAsistenciaResponse> registrarPropia(@PathVariable UUID id,Principal p){return ResponseEntity.status(HttpStatus.CREATED).body(service.registrarPropia(id,id(p)));}
- @GetMapping("/usos-piso") public List<SesionAsistenciaResponse> usosPiso(@RequestParam(required=false) java.time.LocalDate fecha,@RequestParam(required=false) UUID periodoId,@RequestParam(required=false) UUID laboratorioId,@RequestParam(required=false) UUID materiaId,@RequestParam(required=false) UUID docenteId,@RequestParam(required=false) String estado){return service.usosPiso(fecha,periodoId,laboratorioId,materiaId,docenteId,estado);}
- @GetMapping("/usos-piso/{id}") public SesionAsistenciaResponse usoPiso(@PathVariable UUID id){return service.usoPiso(id);}
- @GetMapping("/usos-piso/{id}/participantes") public List<ParticipanteUsoResponse> participantesPiso(@PathVariable UUID id){return service.participantesPiso(id);}
  private UUID id(Principal p){return UUID.fromString(p.getName());}
 }

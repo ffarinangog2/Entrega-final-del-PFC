@@ -562,16 +562,3 @@
   gap: 0.75rem;
   align-items: center;
 }
-.student-bell { position: relative; }
-.student-bell > button { position: relative; border: 1px solid var(--border, #dbe3ea); border-radius: 12px; background: #fff; padding: .65rem; }
-.student-bell > button > span { position: absolute; top: -.45rem; right: -.45rem; min-width: 1.25rem; border-radius: 999px; background: #b42318; color: white; font-size: .72rem; padding: .15rem; }
-.student-bell__panel { position: absolute; z-index: 30; right: 0; top: calc(100% + .6rem); width: min(25rem, calc(100vw - 2rem)); max-height: 32rem; overflow: hidden; border: 1px solid #dbe3ea; border-radius: 16px; background: #fff; box-shadow: 0 18px 48px rgb(15 23 42 / 18%); }
-.student-bell__panel header,.student-bell__panel footer { display: flex; justify-content: space-between; gap: .75rem; align-items: center; padding: .9rem 1rem; border-bottom: 1px solid #edf1f4; }
-.student-bell__panel footer { border-top: 1px solid #edf1f4; border-bottom: 0; justify-content: center; }
-.student-bell__panel header div,.student-bell__items button > span:last-child { display: grid; gap: .2rem; text-align: left; }
-.student-bell__items { max-height: 23rem; overflow-y: auto; }
-.student-bell__items > button { width: 100%; display: grid; grid-template-columns: 2rem 1fr; gap: .7rem; border: 0; border-bottom: 1px solid #edf1f4; background: #fff; padding: .85rem 1rem; }
-.student-bell__items > button.is-unread { background: #f0f7ff; box-shadow: inset 3px 0 #2563eb; }
-.student-bell__items small,.student-bell__items time { color: #64748b; font-size: .76rem; }
-.student-bell__icon { display: grid; place-items: center; width: 2rem; height: 2rem; border-radius: 10px; background: #e8f1ff; color: #174ea6; }
-@media (max-width: 640px) { .student-bell__panel { position: fixed; top: 4.5rem; right: 1rem; left: 1rem; width: auto; } }

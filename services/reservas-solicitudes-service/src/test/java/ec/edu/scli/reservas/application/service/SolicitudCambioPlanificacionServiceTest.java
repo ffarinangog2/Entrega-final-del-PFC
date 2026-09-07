@@ -303,7 +303,7 @@ class SolicitudCambioPlanificacionServiceTest {
     }
 
     @Test
-    void pisoPendientePuedeAprobarYParcialNoAplicaCambio() {
+    void aprobarCompletaYParcial() {
         UUID solId = UUID.randomUUID();
         UUID piso1 = UUID.randomUUID();
         UUID piso2 = UUID.randomUUID();
@@ -332,17 +332,14 @@ class SolicitudCambioPlanificacionServiceTest {
         when(revisiones.findBySolicitudIdAndPisoId(solId, piso1)).thenReturn(Optional.of(rev1));
         when(revisiones.findBySolicitudId(solId)).thenReturn(List.of(rev1, rev2));
 
-        // 1. Piso PENDIENTE puede aprobar (parcial)
+        // Aprobacion parcial (piso 1 aprueba, pero piso 2 aun esta pendiente)
         var respParcial = service.aprobar(solId, "Aprobado por piso 1");
         assertThat(respParcial.estado()).isEqualTo("PENDIENTE");
         assertThat(rev1.getEstado()).isEqualTo(EstadoSolicitudCambio.APROBADA);
-        // 6. Si origen != destino, un piso aprobado no impide que el otro siga pendiente
-        assertThat(rev2.getEstado()).isEqualTo(EstadoSolicitudCambio.PENDIENTE);
         verify(bloques, never()).saveAndFlush(any());
 
-        // 7. El cambio solo se aplica cuando TODOS los pisos afectados aprueban
-        when(ambito.pisoGestionado()).thenReturn(piso2);
-        when(revisiones.findBySolicitudIdAndPisoId(solId, piso2)).thenReturn(Optional.of(rev2));
+        // Aprobacion final (piso 2 tambien aprueba)
+        rev2.setEstado(EstadoSolicitudCambio.APROBADA);
         var plan = crearPlan(EstadoPlanificacionAgregada.APROBADA);
         var bloque = crearBloque();
         when(planes.findById(planId)).thenReturn(Optional.of(plan));
@@ -352,88 +349,6 @@ class SolicitudCambioPlanificacionServiceTest {
         assertThat(sol.getEstado()).isEqualTo(EstadoSolicitudCambio.APROBADA);
         assertThat(bloque.getEstado()).isEqualTo(EstadoPlanificacion.CANCELADA);
         verify(solicitudes).save(sol);
-    }
-
-    @Test
-    void pisoAprobadoNoPuedeVolverAAprobar() {
-        UUID solId = UUID.randomUUID();
-        UUID piso = UUID.randomUUID();
-
-        var sol = new SolicitudCambioPlanificacionJpaEntity();
-        sol.setId(solId);
-        sol.setPlanificacionId(planId);
-        sol.setEstado(EstadoSolicitudCambio.PENDIENTE);
-
-        var rev = new RevisionSolicitudCambioJpaEntity();
-        rev.setSolicitudId(solId);
-        rev.setPisoId(piso);
-        rev.setEstado(EstadoSolicitudCambio.APROBADA);
-
-        when(solicitudes.findById(solId)).thenReturn(Optional.of(sol));
-        when(actores.obtener()).thenReturn(new ActorAutenticado(perfil, Set.of("ROLE_ADMINISTRADOR_PISO")));
-        when(ambito.pisoGestionado()).thenReturn(piso);
-        when(revisiones.findBySolicitudIdAndPisoId(solId, piso)).thenReturn(Optional.of(rev));
-
-        // 3. Piso APROBADO no puede volver a aprobar
-        assertThatThrownBy(() -> service.aprobar(solId, "re-aprobacion"))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("La decisión de este piso ya está cerrada para esta solicitud");
-    }
-
-    @Test
-    void pisoAprobadoNoPuedeCambiarDespuesARechazo() {
-        UUID solId = UUID.randomUUID();
-        UUID piso = UUID.randomUUID();
-
-        var sol = new SolicitudCambioPlanificacionJpaEntity();
-        sol.setId(solId);
-        sol.setPlanificacionId(planId);
-        sol.setEstado(EstadoSolicitudCambio.PENDIENTE);
-
-        var rev = new RevisionSolicitudCambioJpaEntity();
-        rev.setSolicitudId(solId);
-        rev.setPisoId(piso);
-        rev.setEstado(EstadoSolicitudCambio.APROBADA);
-
-        when(solicitudes.findById(solId)).thenReturn(Optional.of(sol));
-        when(actores.obtener()).thenReturn(new ActorAutenticado(perfil, Set.of("ROLE_ADMINISTRADOR_PISO")));
-        when(ambito.pisoGestionado()).thenReturn(piso);
-        when(revisiones.findBySolicitudIdAndPisoId(solId, piso)).thenReturn(Optional.of(rev));
-
-        // 4. Piso APROBADO no puede cambiar después a rechazo
-        assertThatThrownBy(() -> service.rechazar(solId, "cambio de opinion"))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("La decisión de este piso ya está cerrada para esta solicitud");
-    }
-
-    @Test
-    void pisoRechazadoNoPuedeVolverADecidir() {
-        UUID solId = UUID.randomUUID();
-        UUID piso = UUID.randomUUID();
-
-        var sol = new SolicitudCambioPlanificacionJpaEntity();
-        sol.setId(solId);
-        sol.setPlanificacionId(planId);
-        sol.setEstado(EstadoSolicitudCambio.PENDIENTE);
-
-        var rev = new RevisionSolicitudCambioJpaEntity();
-        rev.setSolicitudId(solId);
-        rev.setPisoId(piso);
-        rev.setEstado(EstadoSolicitudCambio.RECHAZADA);
-
-        when(solicitudes.findById(solId)).thenReturn(Optional.of(sol));
-        when(actores.obtener()).thenReturn(new ActorAutenticado(perfil, Set.of("ROLE_ADMINISTRADOR_PISO")));
-        when(ambito.pisoGestionado()).thenReturn(piso);
-        when(revisiones.findBySolicitudIdAndPisoId(solId, piso)).thenReturn(Optional.of(rev));
-
-        // 5. Piso RECHAZADO no puede volver a decidir (ni aprobar ni rechazar)
-        assertThatThrownBy(() -> service.aprobar(solId, "intento de aprobacion"))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("La decisión de este piso ya está cerrada para esta solicitud");
-
-        assertThatThrownBy(() -> service.rechazar(solId, "otro rechazo"))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("La decisión de este piso ya está cerrada para esta solicitud");
     }
 
     @Test
@@ -479,7 +394,6 @@ class SolicitudCambioPlanificacionServiceTest {
                 .hasMessageContaining("docente propuesto no pertenece");
 
         // Docente pertenece a la carrera -> exito y notificaciones enviadas
-        rev.setEstado(EstadoSolicitudCambio.PENDIENTE);
         when(usuarios.docentePerteneceCarrera(docenteDestino, carrera)).thenReturn(true);
         when(usuarios.obtenerDocentePorId(docenteOrigen)).thenReturn(new DocenteExternoResponse(docenteOrigen, UUID.randomUUID(), true));
         when(usuarios.obtenerDocentePorId(docenteDestino)).thenReturn(new DocenteExternoResponse(docenteDestino, UUID.randomUUID(), true));

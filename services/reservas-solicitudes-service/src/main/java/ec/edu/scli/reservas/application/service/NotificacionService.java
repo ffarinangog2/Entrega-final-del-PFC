@@ -12,9 +12,6 @@ import ec.edu.scli.reservas.infrastructure.persistence.repository.NotificacionIn
 import ec.edu.scli.reservas.infrastructure.persistence.entity.NotificacionInternaJpaEntity;
 import ec.edu.scli.reservas.presentation.dto.response.NotificacionInternaResponse;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
-import ec.edu.scli.reservas.presentation.dto.response.PaginaNotificacionesResponse;
 @Service
 public class NotificacionService {
     private final DispositivoNotificacionRepository repository; private final NotificationPort sender; private final NotificacionInternaJpaRepository bandeja;
@@ -44,9 +41,6 @@ public class NotificacionService {
         });
     }
     @Transactional(readOnly=true) public List<NotificacionInternaResponse> listar(UUID perfilId){return bandeja.findTop50ByPerfilIdOrderByCreadaEnDesc(perfilId).stream().map(this::response).toList();}
-    @Transactional(readOnly=true) public PaginaNotificacionesResponse listar(UUID perfilId,int page,int size){
-        var result=bandeja.findByPerfilId(perfilId,PageRequest.of(Math.max(0,page),Math.min(50,Math.max(1,size)),Sort.by(Sort.Direction.DESC,"creadaEn")));
-        return new PaginaNotificacionesResponse(result.getContent().stream().map(this::response).toList(),result.getNumber(),result.getSize(),result.getTotalElements(),result.getTotalPages());}
     @Transactional(readOnly=true) public long noLeidas(UUID perfilId){return bandeja.countByPerfilIdAndLeidaFalse(perfilId);}
     @Transactional public NotificacionInternaResponse leer(UUID id,UUID perfilId){var n=bandeja.findByIdAndPerfilId(id,perfilId).orElseThrow();n.setLeida(true);n.setLeidaEn(Instant.now());return response(bandeja.save(n));}
     @Transactional public void leerTodas(UUID perfilId){var items=bandeja.findByPerfilIdAndLeidaFalse(perfilId);items.forEach(n->{n.setLeida(true);n.setLeidaEn(Instant.now());});bandeja.saveAll(items);}
