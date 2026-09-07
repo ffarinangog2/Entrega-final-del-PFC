@@ -38,16 +38,32 @@
 }
 .usuarios-page__search {
   display: grid;
-  gap: 6px;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
   margin-bottom: 16px;
 }
-.usuarios-page__search input {
+.usuarios-page__search label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-text-user);
+}
+.usuarios-page__search input,
+.usuarios-page__search select {
   min-height: 38px;
   padding: 0 12px;
   border: 1px solid var(--color-border-logout);
   border-radius: 7px;
   background: var(--color-bg);
   color: var(--color-text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+}
+.usuarios-page__search select:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .usuarios-page__table {
@@ -75,6 +91,63 @@
   border-bottom: none;
 }
 
+.usuarios-page__pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 16px;
+  font-size: 13px;
+  color: var(--color-text-user);
+}
+
+.usuarios-page__pagination-size {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+}
+
+.usuarios-page__pagination-size select {
+  min-height: 32px;
+  padding: 0 8px;
+  border: 1px solid var(--color-border-logout);
+  border-radius: 6px;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: 'DM Sans', sans-serif;
+}
+
+.usuarios-page__pagination-info {
+  color: var(--color-text-breadcrumb);
+  font-size: 13px;
+}
+
+.usuarios-page__pagination-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.usuarios-page__pagination-actions button {
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--color-border-logout);
+  border-radius: 6px;
+  background: var(--color-bg);
+  color: var(--color-text);
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.usuarios-page__pagination-actions button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .usuarios-page__form {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -94,7 +167,8 @@
   color: var(--color-text-user);
 }
 
-.usuarios-page__field input {
+.usuarios-page__field input,
+.usuarios-page__field select {
   min-height: 38px;
   padding: 0 12px;
   border: 1px solid var(--color-border-logout);
@@ -105,7 +179,8 @@
   font-size: 13px;
 }
 
-.usuarios-page__field input:focus-visible {
+.usuarios-page__field input:focus-visible,
+.usuarios-page__field select:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
 }

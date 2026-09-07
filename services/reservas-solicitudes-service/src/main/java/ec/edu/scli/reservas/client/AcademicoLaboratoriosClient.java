@@ -7,6 +7,7 @@ import ec.edu.scli.reservas.client.dto.PeriodoExternoResponse;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
@@ -64,9 +65,14 @@ public class AcademicoLaboratoriosClient {
         ExisteExternoResponse response = verificarPeriodoLectivo(periodoLectivoId);
         return response != null && response.existe();
     }
+
     public PeriodoExternoResponse obtenerPeriodo(UUID periodoId) {
-        return executeWithReadRetries(() -> restClient.get().uri("/api/v1/internal/periodos-lectivos/{id}", periodoId)
-                .retrieve().body(PeriodoExternoResponse.class));
+        try {
+            return executeWithReadRetries(() -> restClient.get().uri("/api/v1/internal/periodos-lectivos/{id}", periodoId)
+                    .retrieve().body(PeriodoExternoResponse.class));
+        } catch (HttpClientErrorException.NotFound exception) {
+            return null;
+        }
     }
 
     private <T> T executeWithReadRetries(Supplier<T> operation) {

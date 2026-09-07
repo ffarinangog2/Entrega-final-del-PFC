@@ -15,6 +15,14 @@ import './Reservas.css'
 
 const initialForm = { docenteId: '', laboratorioId: '', materiaId: '', periodoLectivoId: '', fechaReserva: '', horaInicio: '', horaFin: '', numeroParticipantes: 1, motivo: '', observacion: '' }
 
+export function obtenerFechaLocalHoy(): string {
+  const fecha = new Date()
+  const year = fecha.getFullYear()
+  const month = String(fecha.getMonth() + 1).padStart(2, '0')
+  const day = String(fecha.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
 export function NuevaSolicitudPage() {
   const { usuario } = useAuth()
   const navigate = useNavigate()
@@ -37,11 +45,41 @@ export function NuevaSolicitudPage() {
   const idempotencyKey = useRef(generarIdempotencyKey())
   const esDocente = hasRole(usuario, 'DOCENTE')
 
+  const hoy = useMemo(() => obtenerFechaLocalHoy(), [])
+  const fechaMinima = useMemo(() => {
+    if (!periodo?.fechaInicio) return hoy
+    return periodo.fechaInicio < hoy ? hoy : periodo.fechaInicio
+  }, [periodo?.fechaInicio, hoy])
+
+  const fechaMaxima = useMemo(() => {
+    return periodo?.fechaFin || ''
+  }, [periodo?.fechaFin])
+
+  const sinFechasDisponibles = useMemo(() => {
+    if (!periodo?.fechaFin) return false
+    return hoy > periodo.fechaFin
+  }, [periodo?.fechaFin, hoy])
+
   useEffect(() => {
     if (periodo?.id) {
-      setForm((current) => ({ ...current, periodoLectivoId: periodo.id }))
+      setForm((current) => {
+        let nuevaFecha = current.fechaReserva
+        if (nuevaFecha) {
+          const hoyStr = obtenerFechaLocalHoy()
+          const fMin = !periodo.fechaInicio || periodo.fechaInicio < hoyStr ? hoyStr : periodo.fechaInicio
+          const fMax = periodo.fechaFin || ''
+          if (nuevaFecha < fMin || (fMax && nuevaFecha > fMax)) {
+            nuevaFecha = ''
+          }
+        }
+        return {
+          ...current,
+          periodoLectivoId: periodo.id,
+          fechaReserva: nuevaFecha,
+        }
+      })
     }
-  }, [periodo?.id])
+  }, [periodo?.id, periodo?.fechaInicio, periodo?.fechaFin])
 
   useEffect(() => {
     if (!usuario?.perfilId) return
@@ -138,6 +176,14 @@ export function NuevaSolicitudPage() {
   }
 
   const comprobar = async () => {
+    if (sinFechasDisponibles) {
+      setError('No existen fechas disponibles para reservas dentro de este período académico.')
+      return
+    }
+    if (form.fechaReserva && (form.fechaReserva < fechaMinima || (fechaMaxima && form.fechaReserva > fechaMaxima))) {
+      setError(`La fecha de la reserva debe estar comprendida entre ${periodo?.fechaInicio ?? ''} y ${periodo?.fechaFin ?? ''} para el período académico seleccionado.`)
+      return
+    }
     setConsultando(true); setError(null)
     try { setDisponibilidad(await consultarDisponibilidad(form.laboratorioId, form.fechaReserva, form.horaInicio, form.horaFin)) }
     catch (cause) { setError(cause instanceof Error ? cause.message : 'No se pudo consultar la disponibilidad.') }
@@ -147,6 +193,14 @@ export function NuevaSolicitudPage() {
   const enviar = async (event: FormEvent) => {
     event.preventDefault()
     if (enviando || !usuario || !form.periodoLectivoId) return
+    if (sinFechasDisponibles) {
+      setError('No existen fechas disponibles para reservas dentro de este período académico.')
+      return
+    }
+    if (form.fechaReserva < fechaMinima || (fechaMaxima && form.fechaReserva > fechaMaxima)) {
+      setError(`La fecha de la reserva debe estar comprendida entre ${periodo?.fechaInicio ?? ''} y ${periodo?.fechaFin ?? ''} para el período académico seleccionado.`)
+      return
+    }
     setEnviando(true); setError(null)
     try {
       const solicitud = await crearSolicitud({ ...form, solicitanteId: usuario.perfilId }, idempotencyKey.current)
@@ -162,6 +216,11 @@ export function NuevaSolicitudPage() {
     {!cargando && !periodo && !cargandoPeriodo && (
       <p role="status" className="reservas-panel__message--warning">
         No existe un período académico activo disponible para la fecha actual.
+      </p>
+    )}
+    {!cargando && periodo && sinFechasDisponibles && (
+      <p role="status" className="reservas-panel__message--warning">
+        No existen fechas disponibles para reservas dentro de este período académico.
       </p>
     )}
     {!cargando && <form className="reserva-form" onSubmit={enviar}>
@@ -202,13 +261,13 @@ export function NuevaSolicitudPage() {
           })}
         </select>
       </label>
-      <label>Fecha<input required type="date" min={new Date().toISOString().slice(0, 10)} value={form.fechaReserva} onChange={(e) => cambiar('fechaReserva', e.target.value)} /></label>
+      <label>Fecha<input required type="date" min={fechaMinima} max={fechaMaxima || undefined} disabled={sinFechasDisponibles} value={form.fechaReserva} onChange={(e) => cambiar('fechaReserva', e.target.value)} /></label>
       <label>Hora inicio<input required type="time" value={form.horaInicio} onChange={(e) => cambiar('horaInicio', e.target.value)} /></label>
       <label>Hora fin<input required type="time" value={form.horaFin} onChange={(e) => cambiar('horaFin', e.target.value)} /></label>
       <label>Participantes<input required min="1" type="number" value={form.numeroParticipantes} onChange={(e) => cambiar('numeroParticipantes', Number(e.target.value))} /></label>
       <label className="reserva-form__wide">Motivo<textarea required maxLength={500} value={form.motivo} onChange={(e) => cambiar('motivo', e.target.value)} /></label>
       <label className="reserva-form__wide">Observación<textarea maxLength={2000} value={form.observacion} onChange={(e) => cambiar('observacion', e.target.value)} /></label>
-      <div className="reserva-form__actions"><button type="button" disabled={consultando || !form.laboratorioId || !form.fechaReserva || !form.horaInicio || !form.horaFin || form.horaFin <= form.horaInicio} onClick={() => void comprobar()}>{consultando ? 'Consultando...' : 'Comprobar disponibilidad'}</button><button type="submit" disabled={enviando || !form.docenteId || !form.materiaId || !form.periodoLectivoId}>{enviando ? 'Enviando...' : 'Crear solicitud'}</button></div>
+      <div className="reserva-form__actions"><button type="button" disabled={consultando || sinFechasDisponibles || !form.laboratorioId || !form.fechaReserva || !form.horaInicio || !form.horaFin || form.horaFin <= form.horaInicio} onClick={() => void comprobar()}>{consultando ? 'Consultando...' : 'Comprobar disponibilidad'}</button><button type="submit" disabled={enviando || sinFechasDisponibles || !form.docenteId || !form.materiaId || !form.periodoLectivoId}>{enviando ? 'Enviando...' : 'Crear solicitud'}</button></div>
       {disponibilidad && <p role="status" className={disponibilidad.disponible ? 'availability--ok' : 'availability--conflict'}>{disponibilidad.disponible ? 'Disponible' : `No disponible${disponibilidad.motivo ? `: ${disponibilidad.motivo}` : ''}`}</p>}
     </form>}
     {error && <p role="alert" className="reservas-panel__message--error">{error}</p>}

@@ -62,6 +62,14 @@ export interface ContextoAcademicoEstudiante {
   activo: boolean
   creadoEn: string
 }
+export interface ContextoEstudianteResumen {
+  perfilId: string
+  estudianteId: string
+  carreraId: string
+  periodoId: string
+  nivel: number
+  activo: boolean
+}
 export interface DocenteResumen { id:string; nombres:string; apellidos:string; codigoDocente:string|null }
 
 interface PageResponse<T> {
@@ -116,11 +124,32 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 }
 
 export async function listarPerfiles(filtro = ''): Promise<Perfil[]> {
-  const query = filtro
-    ? `?nombre=${encodeURIComponent(filtro)}&size=100`
-    : '?size=100'
-  return (await request<PageResponse<Perfil>>(`/api/v1/perfiles${query}`))
-    .content
+  const queryBase = filtro ? `nombre=${encodeURIComponent(filtro)}&` : ''
+  const pageSize = 100
+  const primeraPagina = await request<PageResponse<Perfil>>(
+    `/api/v1/perfiles?${queryBase}page=0&size=${pageSize}`,
+  )
+  const todos: Perfil[] = [...(primeraPagina?.content ?? [])]
+  const totalPaginas = primeraPagina?.totalPages ?? 1
+
+  if (totalPaginas > 1) {
+    const promesas: Promise<PageResponse<Perfil>>[] = []
+    for (let p = 1; p < totalPaginas; p++) {
+      promesas.push(
+        request<PageResponse<Perfil>>(
+          `/api/v1/perfiles?${queryBase}page=${p}&size=${pageSize}`,
+        ),
+      )
+    }
+    const siguientes = await Promise.all(promesas)
+    for (const pag of siguientes) {
+      if (pag?.content) {
+        todos.push(...pag.content)
+      }
+    }
+  }
+
+  return todos
 }
 
 export function crearPerfil(datos: CrearPerfilRequest): Promise<Perfil> {
@@ -173,6 +202,10 @@ export const obtenerMisContextosAcademicos = () =>
   request<ContextoAcademicoEstudiante[]>('/api/v1/estudiantes/mis-contextos')
 export const obtenerContextosAcademicos = (perfilId: string) =>
   request<ContextoAcademicoEstudiante[]>(`/api/v1/estudiantes/perfil/${encodeURIComponent(perfilId)}/contextos`)
+export const listarContextosEstudiantesMasivos = (periodoId?: string) => {
+  const query = periodoId ? `?periodoId=${encodeURIComponent(periodoId)}` : ''
+  return request<ContextoEstudianteResumen[]>(`/api/v1/estudiantes/contextos${query}`)
+}
 export const asignarContextoAcademico = (perfilId: string, body: { carreraId: string; periodoId: string; nivel: number }) =>
   request<ContextoAcademicoEstudiante>(`/api/v1/estudiantes/perfil/${encodeURIComponent(perfilId)}/contextos`, { method: 'POST', body: JSON.stringify(body) })
 export const obtenerDocenteResumen = (id:string) => request<DocenteResumen>(`/api/v1/docentes/${encodeURIComponent(id)}/resumen`)

@@ -83,6 +83,10 @@ class SolicitudReservaServiceImplTest {
                         laboratorioId, UUID.randomUUID(), true, true, "ACTIVO", 30));
         when(academico.verificarMateria(materiaId)).thenReturn(new ExisteExternoResponse(materiaId, true));
         when(academico.verificarPeriodoLectivo(periodoId)).thenReturn(new ExisteExternoResponse(periodoId, true));
+        when(academico.obtenerPeriodo(periodoId)).thenReturn(new PeriodoExternoResponse(
+                periodoId, "2026-A", "Periodo 2026-A",
+                LocalDate.now().minusDays(10), LocalDate.now().plusMonths(3),
+                "ACTIVO", "PPA-1", "PPA Uno", 1));
         when(disponibilidad.consultar(any(), any(), any(), any()))
                 .thenReturn(new DisponibilidadResponse(
                         laboratorioId, LocalDate.now(), LocalTime.of(8, 0), LocalTime.of(10, 0), true, null));
@@ -693,5 +697,197 @@ class SolicitudReservaServiceImplTest {
         r.setLaboratorioId(laboratorioId); r.setResponsableId(usuarioId); r.setFechaReserva(LocalDate.now());
         r.setHoraInicio(LocalTime.of(8, 0)); r.setHoraFin(LocalTime.of(10, 0)); r.setEstado(estado);
         r.setCodigoReserva("RES-1"); r.setVersion(0L); return r;
+    }
+
+    @Test
+    void crearSolicitudFechaIgualAFechaInicioEsValida() {
+        LocalDate fechaInicio = LocalDate.now().minusDays(10);
+        when(academico.obtenerPeriodo(periodoId))
+                .thenReturn(new PeriodoExternoResponse(periodoId, "2026-A", "Periodo 2026-A",
+                        fechaInicio, LocalDate.now().plusMonths(3), "ACTIVO", "PPA-1", "PPA Uno", 1));
+        CrearSolicitudReservaRequest req = new CrearSolicitudReservaRequest(
+                solicitanteId, docenteId, laboratorioId, materiaId, periodoId,
+                fechaInicio, LocalTime.of(8, 0), LocalTime.of(10, 0), 10, "clase", "obs");
+        when(idempotenciaCreaciones.buscarParaActualizar("clave-inicio"))
+                .thenReturn(Optional.of(new IdempotenciaCreacionSolicitud("clave-inicio", "CREAR_SOLICITUD",
+                        usuarioId, service.hashCreacion(req), null)));
+
+        var res = service.crear(req, "clave-inicio", usuarioId);
+        assertNotNull(res);
+        assertEquals(fechaInicio, res.fechaReserva());
+    }
+
+    @Test
+    void crearSolicitudFechaIgualAFechaFinEsValida() {
+        LocalDate fechaFin = LocalDate.now().plusMonths(3);
+        when(academico.obtenerPeriodo(periodoId))
+                .thenReturn(new PeriodoExternoResponse(periodoId, "2026-A", "Periodo 2026-A",
+                        LocalDate.now().minusDays(10), fechaFin, "ACTIVO", "PPA-1", "PPA Uno", 1));
+        CrearSolicitudReservaRequest req = new CrearSolicitudReservaRequest(
+                solicitanteId, docenteId, laboratorioId, materiaId, periodoId,
+                fechaFin, LocalTime.of(8, 0), LocalTime.of(10, 0), 10, "clase", "obs");
+        when(idempotenciaCreaciones.buscarParaActualizar("clave-fin"))
+                .thenReturn(Optional.of(new IdempotenciaCreacionSolicitud("clave-fin", "CREAR_SOLICITUD",
+                        usuarioId, service.hashCreacion(req), null)));
+
+        var res = service.crear(req, "clave-fin", usuarioId);
+        assertNotNull(res);
+        assertEquals(fechaFin, res.fechaReserva());
+    }
+
+    @Test
+    void crearSolicitudFechaAnteriorAFechaInicioLanzaExcepcion() {
+        LocalDate fechaInicio = LocalDate.now().plusDays(5);
+        LocalDate fechaFin = LocalDate.now().plusMonths(2);
+        when(academico.obtenerPeriodo(periodoId))
+                .thenReturn(new PeriodoExternoResponse(periodoId, "2026-A", "Periodo 2026-A",
+                        fechaInicio, fechaFin, "ACTIVO", "PPA-1", "PPA Uno", 1));
+        CrearSolicitudReservaRequest req = new CrearSolicitudReservaRequest(
+                solicitanteId, docenteId, laboratorioId, materiaId, periodoId,
+                fechaInicio.minusDays(1), LocalTime.of(8, 0), LocalTime.of(10, 0), 10, "clase", "obs");
+        when(idempotenciaCreaciones.buscarParaActualizar("clave-antes"))
+                .thenReturn(Optional.of(new IdempotenciaCreacionSolicitud("clave-antes", "CREAR_SOLICITUD",
+                        usuarioId, service.hashCreacion(req), null)));
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> service.crear(req, "clave-antes", usuarioId));
+        assertTrue(ex.getMessage().contains("debe estar comprendida entre"));
+    }
+
+    @Test
+    void crearSolicitudFechaPosteriorAFechaFinLanzaExcepcion() {
+        LocalDate fechaInicio = LocalDate.now().minusDays(5);
+        LocalDate fechaFin = LocalDate.now().plusMonths(1);
+        when(academico.obtenerPeriodo(periodoId))
+                .thenReturn(new PeriodoExternoResponse(periodoId, "2026-A", "Periodo 2026-A",
+                        fechaInicio, fechaFin, "ACTIVO", "PPA-1", "PPA Uno", 1));
+        CrearSolicitudReservaRequest req = new CrearSolicitudReservaRequest(
+                solicitanteId, docenteId, laboratorioId, materiaId, periodoId,
+                fechaFin.plusDays(1), LocalTime.of(8, 0), LocalTime.of(10, 0), 10, "clase", "obs");
+        when(idempotenciaCreaciones.buscarParaActualizar("clave-despues"))
+                .thenReturn(Optional.of(new IdempotenciaCreacionSolicitud("clave-despues", "CREAR_SOLICITUD",
+                        usuarioId, service.hashCreacion(req), null)));
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> service.crear(req, "clave-despues", usuarioId));
+        assertTrue(ex.getMessage().contains("debe estar comprendida entre"));
+    }
+
+    @Test
+    void crearSolicitudConPeriodoIdCorrectoYFechaDeOtroPeriodoLanzaExcepcion() {
+        LocalDate fechaInicio = LocalDate.of(2026, 3, 1);
+        LocalDate fechaFin = LocalDate.of(2026, 7, 31);
+        when(academico.obtenerPeriodo(periodoId))
+                .thenReturn(new PeriodoExternoResponse(periodoId, "2026-A", "Periodo 2026-A",
+                        fechaInicio, fechaFin, "ACTIVO", "PPA-1", "PPA Uno", 1));
+        LocalDate fechaOtroPeriodo = LocalDate.of(2026, 10, 15);
+        CrearSolicitudReservaRequest req = new CrearSolicitudReservaRequest(
+                solicitanteId, docenteId, laboratorioId, materiaId, periodoId,
+                fechaOtroPeriodo, LocalTime.of(8, 0), LocalTime.of(10, 0), 10, "clase", "obs");
+        when(idempotenciaCreaciones.buscarParaActualizar("clave-otro"))
+                .thenReturn(Optional.of(new IdempotenciaCreacionSolicitud("clave-otro", "CREAR_SOLICITUD",
+                        usuarioId, service.hashCreacion(req), null)));
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> service.crear(req, "clave-otro", usuarioId));
+        assertTrue(ex.getMessage().contains("debe estar comprendida entre"));
+    }
+
+    @Test
+    void actualizarSolicitudConFechaFueraDePeriodoLanzaExcepcion() {
+        SolicitudReserva solicitud = solicitud(EstadoSolicitud.PENDIENTE);
+        solicitud.setSolicitanteId(usuarioId);
+        when(solicitudes.buscarPorId(solicitud.getId())).thenReturn(Optional.of(solicitud));
+        LocalDate fechaFuera = LocalDate.now().plusMonths(6);
+        ActualizarSolicitudReservaRequest req = new ActualizarSolicitudReservaRequest(
+                docenteId, laboratorioId, materiaId, periodoId,
+                fechaFuera, LocalTime.of(9, 0), LocalTime.of(11, 0), 12, "actualizado", "obs2");
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> service.actualizar(solicitud.getId(), req, usuarioId));
+        assertTrue(ex.getMessage().contains("debe estar comprendida entre"));
+    }
+
+    @Test
+    void proponerAlternativaConFechaFueraDePeriodoLanzaExcepcion() {
+        SolicitudReserva solicitud = solicitud(EstadoSolicitud.EN_REVISION);
+        prepararBloqueo(solicitud);
+        LocalDate fechaFuera = LocalDate.now().plusMonths(6);
+        ProponerAlternativaRequest req = new ProponerAlternativaRequest(
+                fechaFuera, LocalTime.of(14, 0), LocalTime.of(16, 0), laboratorioId, "propuesta fuera");
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> service.proponerAlternativa(solicitud.getId(), req, usuarioId));
+        assertTrue(ex.getMessage().contains("debe estar comprendida entre"));
+    }
+
+    @Test
+    void aceptarPropuestaConFechaFueraDePeriodoLanzaExcepcion() {
+        SolicitudReserva solicitud = solicitud(EstadoSolicitud.PROPUESTA);
+        solicitud.setSolicitanteId(usuarioId);
+        solicitud.setPropuestaLaboratorioId(laboratorioId);
+        solicitud.setPropuestaFecha(LocalDate.now().plusMonths(6));
+        solicitud.setPropuestaHoraInicio(LocalTime.of(10, 0));
+        solicitud.setPropuestaHoraFin(LocalTime.of(12, 0));
+        prepararBloqueo(solicitud);
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> service.aceptarPropuesta(solicitud.getId(), new ResponderPropuestaRequest("acepto"), usuarioId));
+        assertTrue(ex.getMessage().contains("debe estar comprendida entre"));
+    }
+
+    @Test
+    void aprobarSolicitudHistoricaConFechaFueraDePeriodoLanzaExcepcion() {
+        SolicitudReserva solicitud = solicitud(EstadoSolicitud.EN_REVISION);
+        solicitud.setFechaReserva(LocalDate.now().plusMonths(6));
+        prepararBloqueo(solicitud);
+        prepararIdempotenciaPendiente("clave-aprob-fuera", solicitud.getId());
+        when(reservas.existePorSolicitudId(solicitud.getId())).thenReturn(false);
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> service.aprobar(solicitud.getId(), new AprobarSolicitudRequest(usuarioId, "aprobada"), "clave-aprob-fuera", usuarioId));
+        assertTrue(ex.getMessage().contains("debe estar comprendida entre"));
+    }
+
+    @Test
+    void solicitudValidaDentroDePeriodoContinuaFuncionando() {
+        var respuesta = service.crear(crearRequest(), "clave-valida", usuarioId);
+        assertNotNull(respuesta);
+        assertEquals(EstadoSolicitud.PENDIENTE, respuesta.estado());
+        assertEquals(laboratorioId, respuesta.laboratorioId());
+    }
+
+    @Test
+    void crearSolicitudPeriodoConFechaInicioNullLanzaIllegalStateExceptionYNoPersiste() {
+        when(academico.obtenerPeriodo(periodoId)).thenReturn(new PeriodoExternoResponse(
+                periodoId, "2026-A", "Periodo 2026-A",
+                null, LocalDate.now().plusMonths(3),
+                "ACTIVO", "PPA-1", "PPA Uno", 1));
+        CrearSolicitudReservaRequest req = crearRequest();
+        when(idempotenciaCreaciones.buscarParaActualizar("clave-inicio-null"))
+                .thenReturn(Optional.of(new IdempotenciaCreacionSolicitud("clave-inicio-null", "CREAR_SOLICITUD",
+                        usuarioId, service.hashCreacion(req), null)));
+
+        IllegalStateException ex = assertThrows(IllegalStateException.class,
+                () -> service.crear(req, "clave-inicio-null", usuarioId));
+        assertTrue(ex.getMessage().contains("fechas de vigencia"));
+        verify(solicitudes, never()).guardar(any());
+    }
+
+    @Test
+    void crearSolicitudPeriodoConFechaFinNullLanzaIllegalStateExceptionYNoPersiste() {
+        when(academico.obtenerPeriodo(periodoId)).thenReturn(new PeriodoExternoResponse(
+                periodoId, "2026-A", "Periodo 2026-A",
+                LocalDate.now().minusDays(10), null,
+                "ACTIVO", "PPA-1", "PPA Uno", 1));
+        CrearSolicitudReservaRequest req = crearRequest();
+        when(idempotenciaCreaciones.buscarParaActualizar("clave-fin-null"))
+                .thenReturn(Optional.of(new IdempotenciaCreacionSolicitud("clave-fin-null", "CREAR_SOLICITUD",
+                        usuarioId, service.hashCreacion(req), null)));
+
+        IllegalStateException ex = assertThrows(IllegalStateException.class,
+                () -> service.crear(req, "clave-fin-null", usuarioId));
+        assertTrue(ex.getMessage().contains("fechas de vigencia"));
+        verify(solicitudes, never()).guardar(any());
     }
 }

@@ -3,7 +3,8 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as api from './reservasApi'
 import * as academicoApi from '../../services/academicoApi'
-import { NuevaSolicitudPage } from './NuevaSolicitudPage'
+import { AcademicPeriodContext, type AcademicPeriodContextValue } from '../../academicPeriodContext'
+import { NuevaSolicitudPage, obtenerFechaLocalHoy } from './NuevaSolicitudPage'
 
 vi.mock('./reservasApi', async (original) => ({ ...(await original<typeof import('./reservasApi')>()), crearSolicitud: vi.fn(), consultarDisponibilidad: vi.fn() }))
 vi.mock('../../services/academicoApi')
@@ -35,14 +36,24 @@ describe('NuevaSolicitudPage', () => {
     vi.mocked(academicoApi.obtenerHorariosDocente).mockResolvedValue([horario])
   })
 
-  function renderForm() {
+  function renderForm(contextValue?: Partial<AcademicPeriodContextValue>) {
+    const value: AcademicPeriodContextValue = {
+      periodos: [],
+      periodoVigente: null,
+      periodoSeleccionado: null,
+      seleccionarPeriodo: vi.fn(),
+      cargando: false,
+      ...contextValue,
+    }
     return render(
-      <MemoryRouter initialEntries={['/reservas/nueva']}>
-        <Routes>
-          <Route path="/reservas/nueva" element={<NuevaSolicitudPage />} />
-          <Route path="/solicitudes/:id" element={<div>Detalle Solicitud</div>} />
-        </Routes>
-      </MemoryRouter>,
+      <AcademicPeriodContext.Provider value={value}>
+        <MemoryRouter initialEntries={['/reservas/nueva']}>
+          <Routes>
+            <Route path="/reservas/nueva" element={<NuevaSolicitudPage />} />
+            <Route path="/solicitudes/:id" element={<div>Detalle Solicitud</div>} />
+          </Routes>
+        </MemoryRouter>
+      </AcademicPeriodContext.Provider>,
     )
   }
 
@@ -234,5 +245,240 @@ describe('NuevaSolicitudPage', () => {
       }),
       expect.stringMatching(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i),
     )
+  })
+
+  it('asigna min y max en input de fecha cuando fechaInicio es futura', async () => {
+    const periodoFuturo = {
+      id: 'per-futuro',
+      codigo: '2027-B',
+      nombre: 'Periodo Futuro',
+      fechaInicio: '2027-01-10',
+      fechaFin: '2027-06-30',
+      estado: 'ACTIVO' as const,
+    }
+    renderForm({ periodoSeleccionado: periodoFuturo })
+    const fechaInput = (await screen.findByLabelText('Fecha')) as HTMLInputElement
+    expect(fechaInput.min).toBe('2027-01-10')
+    expect(fechaInput.max).toBe('2027-06-30')
+  })
+
+  it('asigna min con la fecha de hoy cuando fechaInicio está en el pasado', async () => {
+    const hoy = new Date().toISOString().slice(0, 10)
+    const periodoPasadoInicio = {
+      id: 'per-vigente',
+      codigo: '2026-A',
+      nombre: 'Periodo Vigente',
+      fechaInicio: '2020-01-01',
+      fechaFin: '2099-12-31',
+      estado: 'ACTIVO' as const,
+    }
+    renderForm({ periodoSeleccionado: periodoPasadoInicio })
+    const fechaInput = (await screen.findByLabelText('Fecha')) as HTMLInputElement
+    expect(fechaInput.min).toBe(hoy)
+    expect(fechaInput.max).toBe('2099-12-31')
+  })
+
+  it('rechaza submit si fechaReserva es anterior a fechaMinima', async () => {
+    const periodoPrueba = {
+      id: 'per-test',
+      codigo: '2027-A',
+      nombre: 'Periodo 2027',
+      fechaInicio: '2027-02-01',
+      fechaFin: '2027-07-31',
+      estado: 'ACTIVO' as const,
+    }
+    renderForm({ periodoSeleccionado: periodoPrueba })
+    await completar()
+    fireEvent.change(screen.getByLabelText('Fecha'), { target: { value: '2027-01-15' } })
+    fireEvent.submit(screen.getByRole('button', { name: 'Crear solicitud' }).closest('form')!)
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'La fecha de la reserva debe estar comprendida entre 2027-02-01 y 2027-07-31 para el período académico seleccionado.'
+    )
+    expect(api.crearSolicitud).not.toHaveBeenCalled()
+  })
+
+  it('rechaza submit si fechaReserva es posterior a fechaFin', async () => {
+    const periodoPrueba = {
+      id: 'per-test',
+      codigo: '2027-A',
+      nombre: 'Periodo 2027',
+      fechaInicio: '2027-02-01',
+      fechaFin: '2027-07-31',
+      estado: 'ACTIVO' as const,
+    }
+    renderForm({ periodoSeleccionado: periodoPrueba })
+    await completar()
+    fireEvent.change(screen.getByLabelText('Fecha'), { target: { value: '2027-08-01' } })
+    fireEvent.submit(screen.getByRole('button', { name: 'Crear solicitud' }).closest('form')!)
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'La fecha de la reserva debe estar comprendida entre 2027-02-01 y 2027-07-31 para el período académico seleccionado.'
+    )
+    expect(api.crearSolicitud).not.toHaveBeenCalled()
+  })
+
+  it('permite enviar solicitud con fecha válida dentro del per\u00edodo', async () => {
+    const periodoPrueba = {
+      id: 'per-test',
+      codigo: '2027-A',
+      nombre: 'Periodo 2027',
+      fechaInicio: '2027-02-01',
+      fechaFin: '2027-07-31',
+      estado: 'ACTIVO' as const,
+    }
+    vi.mocked(api.crearSolicitud).mockResolvedValue({
+      id: 'sol-ok',
+      laboratorioId: 'lab-1',
+      docenteId: 'doc-1',
+      solicitanteId: 'perfil-1',
+      materiaId: 'mat-1',
+      periodoLectivoId: 'per-test',
+      fechaReserva: '2027-03-15',
+      horaInicio: '08:00',
+      horaFin: '10:00',
+      numeroParticipantes: 1,
+      motivo: 'Clase práctica',
+      observacion: '',
+      estado: 'PENDIENTE',
+      propuestaFecha: null,
+      propuestaHoraInicio: null,
+      propuestaHoraFin: null,
+      propuestaLaboratorioId: null,
+      propuestaObservacion: null,
+      reservaId: null,
+      creadaEn: '',
+      actualizadaEn: '',
+      version: 0,
+    })
+    renderForm({ periodoSeleccionado: periodoPrueba })
+    await completar()
+    fireEvent.change(screen.getByLabelText('Fecha'), { target: { value: '2027-03-15' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Crear solicitud' }))
+
+    expect(await screen.findByText('Detalle Solicitud')).toBeInTheDocument()
+    expect(api.crearSolicitud).toHaveBeenCalledWith(
+      expect.objectContaining({
+        periodoLectivoId: 'per-test',
+        fechaReserva: '2027-03-15',
+      }),
+      expect.any(String),
+    )
+  })
+
+  it('rechaza comprobar disponibilidad si fechaReserva está fuera del per\u00edodo', async () => {
+    const periodoPrueba = {
+      id: 'per-test',
+      codigo: '2027-A',
+      nombre: 'Periodo 2027',
+      fechaInicio: '2027-02-01',
+      fechaFin: '2027-07-31',
+      estado: 'ACTIVO' as const,
+    }
+    renderForm({ periodoSeleccionado: periodoPrueba })
+    await completar()
+    fireEvent.change(screen.getByLabelText('Fecha'), { target: { value: '2027-08-10' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Comprobar disponibilidad' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'La fecha de la reserva debe estar comprendida entre 2027-02-01 y 2027-07-31 para el período académico seleccionado.'
+    )
+    expect(api.consultarDisponibilidad).not.toHaveBeenCalled()
+  })
+
+  it('muestra advertencia y deshabilita botones cuando hoy supera fechaFin del per\u00edodo', async () => {
+    const periodoVencido = {
+      id: 'per-vencido',
+      codigo: '2020-A',
+      nombre: 'Periodo Vencido',
+      fechaInicio: '2020-01-01',
+      fechaFin: '2020-06-30',
+      estado: 'FINALIZADO' as const,
+    }
+    renderForm({ periodoSeleccionado: periodoVencido })
+    expect(await screen.findByText('No existen fechas disponibles para reservas dentro de este período académico.')).toBeInTheDocument()
+    const btnSubmit = screen.getByRole('button', { name: 'Crear solicitud' })
+    const btnCheck = screen.getByRole('button', { name: 'Comprobar disponibilidad' })
+    const inputFecha = screen.getByLabelText('Fecha') as HTMLInputElement
+
+    expect(btnSubmit).toBeDisabled()
+    expect(btnCheck).toBeDisabled()
+    expect(inputFecha).toBeDisabled()
+  })
+
+  it('limpia fechaReserva si el cambio de per\u00edodo la deja fuera de rango', async () => {
+    const periodo1 = {
+      id: 'per-1',
+      codigo: '2027-A',
+      nombre: 'Periodo 1',
+      fechaInicio: '2027-01-01',
+      fechaFin: '2027-06-30',
+      estado: 'ACTIVO' as const,
+    }
+    const periodo2 = {
+      id: 'per-2',
+      codigo: '2027-B',
+      nombre: 'Periodo 2',
+      fechaInicio: '2027-07-01',
+      fechaFin: '2027-12-31',
+      estado: 'ACTIVO' as const,
+    }
+    const { rerender } = renderForm({ periodoSeleccionado: periodo1 })
+    await completar()
+    const inputFecha = screen.getByLabelText('Fecha') as HTMLInputElement
+    fireEvent.change(inputFecha, { target: { value: '2027-03-15' } })
+    expect(inputFecha.value).toBe('2027-03-15')
+
+    // Rerender with periodo2
+    rerender(
+      <AcademicPeriodContext.Provider
+        value={{
+          periodos: [periodo1, periodo2],
+          periodoVigente: null,
+          periodoSeleccionado: periodo2,
+          seleccionarPeriodo: vi.fn(),
+          cargando: false,
+        }}
+      >
+        <MemoryRouter initialEntries={['/reservas/nueva']}>
+          <Routes>
+            <Route path="/reservas/nueva" element={<NuevaSolicitudPage />} />
+          </Routes>
+        </MemoryRouter>
+      </AcademicPeriodContext.Provider>,
+    )
+
+    // 2027-03-15 is before periodo2.fechaInicio (2027-07-01), so fechaReserva should be reset to ''
+    expect(inputFecha.value).toBe('')
+  })
+
+  it('considera la fecha local y no el día siguiente de UTC en horas de la noche', async () => {
+    const fechaUtc = new Date('2026-09-08T01:00:00.000Z')
+    const spyYear = vi.spyOn(Date.prototype, 'getFullYear').mockReturnValue(2026)
+    const spyMonth = vi.spyOn(Date.prototype, 'getMonth').mockReturnValue(8)
+    const spyDate = vi.spyOn(Date.prototype, 'getDate').mockReturnValue(7)
+
+    try {
+      expect(fechaUtc.toISOString().slice(0, 10)).toBe('2026-09-08')
+      expect(obtenerFechaLocalHoy()).toBe('2026-09-07')
+
+      const periodoVigente = {
+        id: 'per-vigente',
+        codigo: '2026-B',
+        nombre: 'Periodo 2026-B',
+        fechaInicio: '2026-09-01',
+        fechaFin: '2027-01-31',
+        estado: 'ACTIVO' as const,
+      }
+      renderForm({ periodoSeleccionado: periodoVigente })
+
+      const inputFecha = (await screen.findByLabelText('Fecha')) as HTMLInputElement
+      expect(inputFecha.min).toBe('2026-09-07')
+      expect(inputFecha.min).not.toBe('2026-09-08')
+    } finally {
+      spyYear.mockRestore()
+      spyMonth.mockRestore()
+      spyDate.mockRestore()
+    }
   })
 })

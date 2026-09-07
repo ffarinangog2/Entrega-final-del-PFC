@@ -2,6 +2,7 @@ package ec.edu.scli.reservas.application.service.impl;
 
 import ec.edu.scli.reservas.client.AcademicoLaboratoriosClient;
 import ec.edu.scli.reservas.client.dto.ExisteExternoResponse;
+import ec.edu.scli.reservas.client.dto.PeriodoExternoResponse;
 import ec.edu.scli.reservas.client.dto.LaboratorioExternoResponse;
 import ec.edu.scli.reservas.presentation.dto.request.ActualizarSolicitudReservaRequest;
 import ec.edu.scli.reservas.presentation.dto.request.AprobarSolicitudRequest;
@@ -203,7 +204,7 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
         UUID docenteId = resolverDocente(request.docenteId(), usuarioAutenticadoId);
         validarLaboratorio(request.laboratorioId());
         validarMateria(request.materiaId());
-        validarPeriodoLectivo(request.periodoLectivoId());
+        validarFechaDentroPeriodo(request.periodoLectivoId(), request.fechaReserva());
         validarDisponibilidad(
                 request.laboratorioId(), request.fechaReserva(), request.horaInicio(), request.horaFin());
         validarDisponibilidadDocente(
@@ -321,7 +322,7 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
         UUID docenteId = resolverDocente(request.docenteId(), usuarioAutenticadoId);
         validarLaboratorio(request.laboratorioId());
         validarMateria(request.materiaId());
-        validarPeriodoLectivo(request.periodoLectivoId());
+        validarFechaDentroPeriodo(request.periodoLectivoId(), request.fechaReserva());
         validarDisponibilidad(
                 request.laboratorioId(), request.fechaReserva(), request.horaInicio(), request.horaFin());
         validarDisponibilidadDocente(
@@ -408,12 +409,27 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
         }
     }
 
-    private void validarPeriodoLectivo(UUID periodoLectivoId) {
-        ExisteExternoResponse periodo =
-                academicoLaboratoriosClient.verificarPeriodoLectivo(periodoLectivoId);
-        if (periodo == null || !periodo.existe()) {
+    private PeriodoExternoResponse validarFechaDentroPeriodo(UUID periodoLectivoId, LocalDate fecha) {
+        PeriodoExternoResponse periodo = academicoLaboratoriosClient.obtenerPeriodo(periodoLectivoId);
+        if (periodo == null || periodo.id() == null) {
             throw new ResourceNotFoundException("El período lectivo indicado no existe");
         }
+        if (periodo.fechaInicio() == null || periodo.fechaFin() == null) {
+            throw new IllegalStateException("El período académico no contiene fechas de vigencia configuradas");
+        }
+        if (fecha != null) {
+            if (fecha.isBefore(periodo.fechaInicio()) || fecha.isAfter(periodo.fechaFin())) {
+                throw new IllegalArgumentException(
+                        "La fecha de la reserva debe estar comprendida entre "
+                                + periodo.fechaInicio() + " y " + periodo.fechaFin()
+                                + " para el período académico seleccionado.");
+            }
+        }
+        return periodo;
+    }
+
+    private void validarPeriodoLectivo(UUID periodoLectivoId) {
+        validarFechaDentroPeriodo(periodoLectivoId, null);
     }
 
     private void validarDisponibilidad(
@@ -529,6 +545,8 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
             throw new IllegalStateException(
                     "La solicitud ya tiene una reserva asociada");
         }
+
+        validarFechaDentroPeriodo(solicitud.getPeriodoLectivoId(), solicitud.getFechaReserva());
 
         agendaMutex.bloquear(solicitud.getLaboratorioId(), solicitud.getFechaReserva());
         validarDisponibilidad(
@@ -683,6 +701,7 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
         validarGestion(solicitud, actorId);
         politicaAmbito.validarGestion(request.laboratorioId());
         validarLaboratorio(request.laboratorioId());
+        validarFechaDentroPeriodo(solicitud.getPeriodoLectivoId(), request.fecha());
         validarDisponibilidad(request.laboratorioId(), request.fecha(),
                 request.horaInicio(), request.horaFin());
         validarDisponibilidadDocente(
@@ -712,6 +731,7 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
         validarPropietario(solicitud, actorId);
         EstadoSolicitud nuevoEstado = SolicitudReservaStates.desde(solicitud.getEstado())
                 .aceptarPropuesta();
+        validarFechaDentroPeriodo(solicitud.getPeriodoLectivoId(), solicitud.getPropuestaFecha());
         validarDisponibilidad(solicitud.getPropuestaLaboratorioId(), solicitud.getPropuestaFecha(),
                 solicitud.getPropuestaHoraInicio(), solicitud.getPropuestaHoraFin());
         validarDisponibilidadDocente(
