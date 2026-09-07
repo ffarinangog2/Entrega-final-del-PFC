@@ -89,16 +89,18 @@ export function AcademicPeriodSelector() {
             </button>
           </header>
 
-          <div className="academic-period-panel__search-wrapper">
-            <input
-              type="text"
-              className="academic-period-panel__search-input"
-              placeholder="Buscar período..."
-              value={busqueda}
-              onChange={(e) => setBusqueda(e.target.value)}
-              aria-label="Buscar período"
-            />
-          </div>
+          {periodos.length > 1 && (
+            <div className="academic-period-panel__search-wrapper">
+              <input
+                type="text"
+                className="academic-period-panel__search-input"
+                placeholder="Buscar período..."
+                value={busqueda}
+                onChange={(e) => setBusqueda(e.target.value)}
+                aria-label="Buscar período"
+              />
+            </div>
+          )}
 
           <div className="academic-period-panel__subheading">
             <span>PERÍODOS DISPONIBLES</span>

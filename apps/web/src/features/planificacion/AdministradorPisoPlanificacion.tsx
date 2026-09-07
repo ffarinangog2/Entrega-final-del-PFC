@@ -5,10 +5,12 @@ import {
   obtenerLaboratorios,
   obtenerMaterias,
   obtenerPeriodoActual,
+  obtenerPisos,
   type Carrera,
   type Laboratorio,
   type Materia,
   type PeriodoLectivo,
+  type Piso,
 } from '../../services/academicoApi'
 import {
   aprobarPlanificacionPiso,
@@ -22,6 +24,7 @@ import {
 } from '../../services/operationalApi'
 import './AdministradorPisoPlanificacion.css'
 import { estadoPaquete } from './adminPisoPlanificacionState'
+import { formatPisoLabel } from './planificacionLaboratorioFilter'
 
 const dias = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES']
 const horas = Array.from(
@@ -50,6 +53,7 @@ export function AdministradorPisoPlanificacion() {
   const [mensaje, setMensaje] = useState('')
   const [cargando, setCargando] = useState(true)
   const [solicitudes, setSolicitudes] = useState<SolicitudCambio[]>([])
+  const [pisos, setPisos] = useState<Piso[]>([])
   const [retiros, setRetiros] = useState<SolicitudRetiro[]>([])
   const [observacionRetiro, setObservacionRetiro] = useState('')
 
@@ -63,12 +67,14 @@ export function AdministradorPisoPlanificacion() {
         laboratoriosData,
         carrerasData,
         periodoData,
+        pisosData,
       ] = await Promise.all([
         listarPlanificacionesAgregadas(),
         obtenerMaterias(),
         obtenerLaboratorios(),
         obtenerCarreras(),
         obtenerPeriodoActual(),
+        Promise.resolve(typeof obtenerPisos === 'function' ? obtenerPisos() : []).then(p => Array.isArray(p) ? p : []).catch(() => []),
       ])
       setAgregados(planesData)
       setPlanes(planesData.flatMap((item) => item.bloques))
@@ -76,6 +82,7 @@ export function AdministradorPisoPlanificacion() {
       setLaboratorios(laboratoriosData)
       setCarreras(carrerasData)
       setPeriodo(periodoData)
+      setPisos(pisosData)
       const primera = planesData[0]
       setPaquete((actual) => actual || primera?.id || '')
     } catch (cause) {
@@ -136,6 +143,95 @@ export function AdministradorPisoPlanificacion() {
       null
     )
   }, [planActual, agregados, laboratorios, visibles])
+
+  const solicitudesAccionables = useMemo(() => {
+    return solicitudes.filter((s) => {
+      const miRevision = s.revisiones?.find((r) => r.pisoId === miPisoId)
+      return s.estado === 'PENDIENTE' && miRevision?.estado === 'PENDIENTE'
+    })
+  }, [solicitudes, miPisoId])
+
+  const solicitudesInformativas = useMemo(() => {
+    return solicitudes
+      .filter((s) => s.revisiones?.some((r) => r.pisoId === miPisoId))
+      .filter(
+        (s) =>
+          !(
+            s.estado === 'PENDIENTE' &&
+            s.revisiones?.find((r) => r.pisoId === miPisoId)?.estado === 'PENDIENTE'
+          ),
+      )
+      .slice(0, 3)
+  }, [solicitudes, miPisoId])
+
+  const renderEstadosRevisiones = (s: SolicitudCambio) => {
+    if (!s.revisiones || s.revisiones.length === 0) return null
+    return (
+      <div className="floor-planning__revisions-list" style={{ display: 'flex', flexDirection: 'column', gap: '4px', margin: '6px 0' }}>
+        {s.revisiones.map((rev) => {
+          const pisoObj = pisos.find((p) => p.id === rev.pisoId)
+          const labelPiso = formatPisoLabel(pisoObj)
+          const estadoTexto =
+            rev.estado === 'APROBADA'
+              ? '✓ Aprobado'
+              : rev.estado === 'RECHAZADA'
+                ? '✕ Rechazado'
+                : 'Pendiente'
+          const badgeColor =
+            rev.estado === 'APROBADA'
+              ? '#15803d'
+              : rev.estado === 'RECHAZADA'
+                ? '#b91c1c'
+                : '#b45309'
+          return (
+            <div key={rev.pisoId} style={{ fontSize: '0.9rem' }}>
+              <strong>{labelPiso}:</strong>{' '}
+              <span style={{ color: badgeColor, fontWeight: 600 }}>{estadoTexto}</span>
+              {rev.observacion ? <span> — {rev.observacion}</span> : null}
+            </div>
+          )
+        })}
+      </div>
+    )
+  }
+
+  const renderDetalleSolicitud = (s: SolicitudCambio) => {
+    const labActual = laboratorios.find((l) => l.id === s.laboratorioAnteriorId)
+    const labPropuesto = laboratorios.find((l) => l.id === s.laboratorioPropuestoId)
+    const pisoActual = pisos.find((p) => p.id === labActual?.pisoId)
+    const pisoPropuesto = pisos.find((p) => p.id === labPropuesto?.pisoId)
+
+    const materiaNombre =
+      (s.materiaId ? materias.find((m) => m.id === s.materiaId)?.nombre : null) ??
+      materias.find((m) => m.id === planes.find((b) => b.id === s.bloqueId)?.materiaId)?.nombre ??
+      'Asignatura asignada'
+
+    const diaTexto = s.diaAnterior ? etiquetaDia(s.diaAnterior) : ''
+    const horarioTexto = `${diaTexto} · ${s.horaInicioAnterior} - ${s.horaFinAnterior}`
+
+    const textoLabActual = `${labActual?.codigo ?? 'Lab'} · ${formatPisoLabel(pisoActual)}`
+    const textoLabPropuesto = `${labPropuesto?.codigo ?? 'Lab'} · ${formatPisoLabel(pisoPropuesto)}`
+
+    if (s.tipo === 'LABORATORIO') {
+      return (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', margin: '4px 0' }}>
+          <span><strong>Asignatura:</strong> {materiaNombre}</span>
+          <span><strong>Horario:</strong> {horarioTexto}</span>
+          <span><strong>Actual:</strong> {textoLabActual}</span>
+          <span><strong>Solicitado:</strong> {textoLabPropuesto}</span>
+          <span><strong>Motivo:</strong> {s.motivo}</span>
+        </div>
+      )
+    }
+
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', margin: '4px 0' }}>
+        <span><strong>Asignatura:</strong> {materiaNombre}</span>
+        <span><strong>Horario:</strong> {horarioTexto}</span>
+        <span><strong>Motivo:</strong> {s.motivo}</span>
+      </div>
+    )
+  }
 
   async function ejecutar(
     operacion: () => Promise<unknown>,
@@ -252,16 +348,22 @@ export function AdministradorPisoPlanificacion() {
               <span>Estado: {planActual?.estado ?? estadoPaquete(visibles)}</span>
               <span>{visibles.length} bloques en su piso</span>
             </div>
-            {solicitudes
-              .filter((s) => {
-                const miRevision = s.revisiones?.find((r) => r.pisoId === miPisoId)
-                return s.estado === 'PENDIENTE' && miRevision?.estado === 'PENDIENTE'
-              })
-              .map((s) => (
-                <article className="floor-planning__summary" key={s.id}>
-                  <strong>Solicitud de cambio · {s.tipo}</strong>
-                  <span>{s.motivo}</span>
-                  <span>El horario original continúa vigente.</span>
+            {solicitudesAccionables.map((s) => (
+              <article
+                className="floor-planning__summary"
+                key={s.id}
+                style={{ display: 'grid', gap: '6px' }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <strong>{s.tipo === 'LABORATORIO' ? 'Cambio de laboratorio' : `Solicitud de cambio · ${s.tipo}`}</strong>
+                  <span style={{ backgroundColor: '#fef3c7', color: '#92400e', padding: '2px 8px', borderRadius: '4px', fontWeight: 600, fontSize: '0.85rem' }}>
+                    🟡 Cambio pendiente
+                  </span>
+                </div>
+                {renderDetalleSolicitud(s)}
+                {renderEstadosRevisiones(s)}
+                <span style={{ fontSize: '0.9rem', color: 'var(--color-muted)' }}>El horario original continúa vigente.</span>
+                <div style={{ display: 'flex', gap: '8px', marginTop: '6px' }}>
                   <button
                     disabled={ocupado}
                     onClick={() =>
@@ -291,8 +393,57 @@ export function AdministradorPisoPlanificacion() {
                   >
                     Rechazar cambio
                   </button>
+                </div>
+              </article>
+            ))}
+            {solicitudesInformativas.map((s) => {
+              const esAprobada = s.estado === 'APROBADA'
+              const esRechazada = s.estado === 'RECHAZADA'
+              const todasPendientes = s.revisiones?.every((r) => r.estado === 'PENDIENTE')
+              const mensajeExplicativo = esAprobada
+                ? 'El cambio fue aprobado por todos los pisos involucrados.'
+                : esRechazada
+                  ? 'El cambio solicitado no fue aplicado.'
+                  : todasPendientes
+                    ? 'Esperando aprobación de los pisos involucrados.'
+                    : 'El cambio se aplicará cuando todos los pisos requeridos lo aprueben.'
+              return (
+                <article
+                  className="floor-planning__summary"
+                  key={s.id}
+                  style={{
+                    display: 'grid',
+                    gap: '6px',
+                    borderLeft: esAprobada ? '4px solid #16a34a' : esRechazada ? '4px solid #dc2626' : '4px solid #d97706',
+                    backgroundColor: esAprobada ? '#f0fdf4' : esRechazada ? '#fef2f2' : '#fffbeb',
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <strong>{s.tipo === 'LABORATORIO' ? 'Cambio de laboratorio' : `Solicitud de cambio · ${s.tipo}`}</strong>
+                    <span
+                      style={{
+                        padding: '2px 8px',
+                        borderRadius: '4px',
+                        fontWeight: 600,
+                        fontSize: '0.85rem',
+                        backgroundColor: esAprobada ? '#dcfce7' : esRechazada ? '#fee2e2' : '#fef3c7',
+                        color: esAprobada ? '#15803d' : esRechazada ? '#991b1b' : '#92400e',
+                      }}
+                    >
+                      {esAprobada ? '🟢 Cambio aprobado' : esRechazada ? '🔴 Cambio rechazado' : '🟡 Cambio pendiente'}
+                    </span>
+                  </div>
+                  {renderDetalleSolicitud(s)}
+                  {renderEstadosRevisiones(s)}
+                  <p style={{ margin: '4px 0', fontStyle: 'italic', fontSize: '0.9rem' }}>{mensajeExplicativo}</p>
+                  {esRechazada && s.resolucion ? (
+                    <div style={{ color: '#991b1b', fontSize: '0.9rem' }}>
+                      <strong>Motivo del rechazo:</strong> {s.resolucion}
+                    </div>
+                  ) : null}
                 </article>
-              ))}
+              )
+            })}
             {retiros.filter((item) => item.estado === 'PENDIENTE').map((item) => (
               <article className="floor-planning__summary" key={item.id}>
                 <strong>Solicitud de retiro para edici&oacute;n</strong>
@@ -342,7 +493,7 @@ export function AdministradorPisoPlanificacion() {
                                     'Materia asignada'}
                                 </strong>
                                 <span>
-                                  {item.horaInicio}–{item.horaFin}
+                                  {item.horaInicio}&ndash;{item.horaFin}
                                 </span>
                                 <span>
                                   {laboratorio(item.laboratorioId)?.codigo ??
@@ -401,7 +552,7 @@ export function AdministradorPisoPlanificacion() {
               return (
                 <fieldset key={id} className="floor-planning__proposal">
                   <legend>
-                    {etiquetaDia(item.diaSemana)} {item.horaInicio}–
+                    {etiquetaDia(item.diaSemana)} {item.horaInicio}&ndash;
                     {item.horaFin}
                   </legend>
                   <label>
@@ -417,7 +568,7 @@ export function AdministradorPisoPlanificacion() {
                     >
                       {laboratorios.map((lab) => (
                         <option key={lab.id} value={lab.id}>
-                          {lab.codigo} — {lab.nombre}
+                          {lab.codigo} &mdash; {lab.nombre}
                         </option>
                       ))}
                     </select>

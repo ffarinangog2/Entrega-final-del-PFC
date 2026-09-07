@@ -66,6 +66,35 @@ describe('AdministradorPisoPlanificacion', () => {
         creadoEn: '',
         actualizadoEn: '',
       },
+      {
+        id: 'lab-origen',
+        pisoId: 'piso-origen-uuid',
+        codigo: 'LAB-PB-01',
+        nombre: 'Laboratorio Planta Baja',
+        capacidad: 25,
+        descripcion: '',
+        estado: 'DISPONIBLE',
+        activo: true,
+        creadoEn: '',
+        actualizadoEn: '',
+      },
+      {
+        id: 'lab-destino',
+        pisoId: 'piso-destino-uuid',
+        codigo: 'LAB-P1-02',
+        nombre: 'Laboratorio Piso 1',
+        capacidad: 30,
+        descripcion: '',
+        estado: 'DISPONIBLE',
+        activo: true,
+        creadoEn: '',
+        actualizadoEn: '',
+      },
+    ])
+    vi.mocked(academico.obtenerPisos).mockResolvedValue([
+      { id: 'piso-uuid', bloqueId: 'b1', numero: 1, descripcion: '', activo: true },
+      { id: 'piso-origen-uuid', bloqueId: 'b1', numero: 0, descripcion: 'Planta Baja', activo: true },
+      { id: 'piso-destino-uuid', bloqueId: 'b1', numero: 1, descripcion: 'Piso 1', activo: true },
     ])
     vi.mocked(academico.obtenerCarreras).mockResolvedValue([
       {
@@ -212,7 +241,7 @@ describe('AdministradorPisoPlanificacion', () => {
 
     render(<AdministradorPisoPlanificacion />)
     expect(await screen.findByText('0 bloques en su piso')).toBeInTheDocument()
-    expect(screen.getByText('Solicitud de cambio · LABORATORIO')).toBeInTheDocument()
+    expect(screen.getByText('Cambio de laboratorio')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Aprobar cambio' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Rechazar cambio' })).toBeInTheDocument()
   })
@@ -256,7 +285,6 @@ describe('AdministradorPisoPlanificacion', () => {
 
     render(<AdministradorPisoPlanificacion />)
     await screen.findByText('0 bloques en su piso')
-    expect(screen.queryByText('Solicitud de cambio · LABORATORIO')).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Aprobar cambio' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Rechazar cambio' })).not.toBeInTheDocument()
   })
@@ -300,7 +328,6 @@ describe('AdministradorPisoPlanificacion', () => {
 
     render(<AdministradorPisoPlanificacion />)
     await screen.findByText('0 bloques en su piso')
-    expect(screen.queryByText('Solicitud de cambio · LABORATORIO')).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Aprobar cambio' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Rechazar cambio' })).not.toBeInTheDocument()
   })
@@ -344,8 +371,246 @@ describe('AdministradorPisoPlanificacion', () => {
 
     render(<AdministradorPisoPlanificacion />)
     await screen.findByText('0 bloques en su piso')
-    expect(screen.queryByText('Solicitud de cambio · LABORATORIO')).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Aprobar cambio' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Rechazar cambio' })).not.toBeInTheDocument()
+  })
+
+  describe('ETAPA 5A - Detalles de solicitud y migración de bloques (13 a 24)', () => {
+    const solicitudBase: operational.SolicitudCambio = {
+      id: 'sol-5a',
+      planificacionId: 'aggregate-1',
+      bloqueId: 'plan-1',
+      tipo: 'LABORATORIO',
+      estado: 'PENDIENTE',
+      motivo: 'Falta de equipamiento especializado en origen',
+      laboratorioAnteriorId: 'lab-origen',
+      laboratorioPropuestoId: 'lab-destino',
+      materiaId: 'materia-uuid',
+      docenteAnteriorId: null,
+      docentePropuestoId: null,
+      diaAnterior: 'LUNES',
+      diaPropuesto: 'LUNES',
+      horaInicioAnterior: '07:30',
+      horaInicioPropuesta: '07:30',
+      horaFinAnterior: '09:30',
+      horaFinPropuesta: '09:30',
+      creadaEn: new Date().toISOString(),
+      revisiones: [
+        { pisoId: 'piso-origen-uuid', estado: 'PENDIENTE' },
+        { pisoId: 'piso-destino-uuid', estado: 'PENDIENTE' },
+      ],
+    }
+
+    it('13. muestra laboratorio actual', async () => {
+      vi.mocked(operational.listarPlanificacionesAgregadas).mockResolvedValue([{
+        id: 'aggregate-1', carreraId: 'carrera-uuid', periodoId: 'periodo-uuid',
+        estado: 'APROBADA', bloques: [plan('plan-1')], revisiones: [],
+        pisoGestionadoId: 'piso-origen-uuid',
+      }])
+      vi.mocked(operational.listarSolicitudesCambio).mockResolvedValue([solicitudBase])
+
+      render(<AdministradorPisoPlanificacion />)
+      expect(await screen.findByText('Actual:')).toBeInTheDocument()
+      expect(screen.getByText(/LAB-PB-01/)).toBeInTheDocument()
+    })
+
+    it('14. muestra laboratorio solicitado', async () => {
+      vi.mocked(operational.listarPlanificacionesAgregadas).mockResolvedValue([{
+        id: 'aggregate-1', carreraId: 'carrera-uuid', periodoId: 'periodo-uuid',
+        estado: 'APROBADA', bloques: [plan('plan-1')], revisiones: [],
+        pisoGestionadoId: 'piso-origen-uuid',
+      }])
+      vi.mocked(operational.listarSolicitudesCambio).mockResolvedValue([solicitudBase])
+
+      render(<AdministradorPisoPlanificacion />)
+      expect(await screen.findByText('Solicitado:')).toBeInTheDocument()
+      expect(screen.getByText(/LAB-P1-02/)).toBeInTheDocument()
+    })
+
+    it('15. muestra horario', async () => {
+      vi.mocked(operational.listarPlanificacionesAgregadas).mockResolvedValue([{
+        id: 'aggregate-1', carreraId: 'carrera-uuid', periodoId: 'periodo-uuid',
+        estado: 'APROBADA', bloques: [plan('plan-1')], revisiones: [],
+        pisoGestionadoId: 'piso-origen-uuid',
+      }])
+      vi.mocked(operational.listarSolicitudesCambio).mockResolvedValue([solicitudBase])
+
+      render(<AdministradorPisoPlanificacion />)
+      expect(await screen.findByText('Horario:')).toBeInTheDocument()
+      expect(screen.getByText(/Lunes · 07:30 - 09:30/)).toBeInTheDocument()
+    })
+
+    it('16. muestra motivo', async () => {
+      vi.mocked(operational.listarPlanificacionesAgregadas).mockResolvedValue([{
+        id: 'aggregate-1', carreraId: 'carrera-uuid', periodoId: 'periodo-uuid',
+        estado: 'APROBADA', bloques: [plan('plan-1')], revisiones: [],
+        pisoGestionadoId: 'piso-origen-uuid',
+      }])
+      vi.mocked(operational.listarSolicitudesCambio).mockResolvedValue([solicitudBase])
+
+      render(<AdministradorPisoPlanificacion />)
+      expect(await screen.findByText('Motivo:')).toBeInTheDocument()
+      expect(screen.getByText('Falta de equipamiento especializado en origen')).toBeInTheDocument()
+    })
+
+    it('17. muestra estados de revisiones por piso', async () => {
+      vi.mocked(operational.listarPlanificacionesAgregadas).mockResolvedValue([{
+        id: 'aggregate-1', carreraId: 'carrera-uuid', periodoId: 'periodo-uuid',
+        estado: 'APROBADA', bloques: [plan('plan-1')], revisiones: [],
+        pisoGestionadoId: 'piso-origen-uuid',
+      }])
+      vi.mocked(operational.listarSolicitudesCambio).mockResolvedValue([{
+        ...solicitudBase,
+        revisiones: [
+          { pisoId: 'piso-origen-uuid', estado: 'APROBADA' },
+          { pisoId: 'piso-destino-uuid', estado: 'PENDIENTE' },
+        ],
+      }])
+
+      render(<AdministradorPisoPlanificacion />)
+      expect(await screen.findByText('✓ Aprobado')).toBeInTheDocument()
+      expect(screen.getByText('Pendiente')).toBeInTheDocument()
+    })
+
+    it('18. propia PENDIENTE -> muestra botones Aprobar / Rechazar', async () => {
+      vi.mocked(operational.listarPlanificacionesAgregadas).mockResolvedValue([{
+        id: 'aggregate-1', carreraId: 'carrera-uuid', periodoId: 'periodo-uuid',
+        estado: 'APROBADA', bloques: [plan('plan-1')], revisiones: [],
+        pisoGestionadoId: 'piso-origen-uuid',
+      }])
+      vi.mocked(operational.listarSolicitudesCambio).mockResolvedValue([solicitudBase])
+
+      render(<AdministradorPisoPlanificacion />)
+      expect(await screen.findByRole('button', { name: 'Aprobar cambio' })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Rechazar cambio' })).toBeInTheDocument()
+    })
+
+    it('19. propia APROBADA -> sin botones + "Aprobado"', async () => {
+      vi.mocked(operational.listarPlanificacionesAgregadas).mockResolvedValue([{
+        id: 'aggregate-1', carreraId: 'carrera-uuid', periodoId: 'periodo-uuid',
+        estado: 'APROBADA', bloques: [plan('plan-1')], revisiones: [],
+        pisoGestionadoId: 'piso-origen-uuid',
+      }])
+      vi.mocked(operational.listarSolicitudesCambio).mockResolvedValue([{
+        ...solicitudBase,
+        revisiones: [
+          { pisoId: 'piso-origen-uuid', estado: 'APROBADA' },
+          { pisoId: 'piso-destino-uuid', estado: 'PENDIENTE' },
+        ],
+      }])
+
+      render(<AdministradorPisoPlanificacion />)
+      expect(await screen.findByText('✓ Aprobado')).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'Aprobar cambio' })).not.toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'Rechazar cambio' })).not.toBeInTheDocument()
+    })
+
+    it('20. ajena pendiente -> muestra claramente "Pendiente"', async () => {
+      vi.mocked(operational.listarPlanificacionesAgregadas).mockResolvedValue([{
+        id: 'aggregate-1', carreraId: 'carrera-uuid', periodoId: 'periodo-uuid',
+        estado: 'APROBADA', bloques: [plan('plan-1')], revisiones: [],
+        pisoGestionadoId: 'piso-origen-uuid',
+      }])
+      vi.mocked(operational.listarSolicitudesCambio).mockResolvedValue([{
+        ...solicitudBase,
+        revisiones: [
+          { pisoId: 'piso-origen-uuid', estado: 'APROBADA' },
+          { pisoId: 'piso-destino-uuid', estado: 'PENDIENTE' },
+        ],
+      }])
+
+      render(<AdministradorPisoPlanificacion />)
+      expect(await screen.findByText('Pendiente')).toBeInTheDocument()
+      expect(screen.getByText(/El cambio se aplicará cuando todos los pisos requeridos lo aprueben/)).toBeInTheDocument()
+    })
+
+    it('21. solicitud RECHAZADA -> feedback notorio y sin botones', async () => {
+      vi.mocked(operational.listarPlanificacionesAgregadas).mockResolvedValue([{
+        id: 'aggregate-1', carreraId: 'carrera-uuid', periodoId: 'periodo-uuid',
+        estado: 'APROBADA', bloques: [plan('plan-1')], revisiones: [],
+        pisoGestionadoId: 'piso-origen-uuid',
+      }])
+      vi.mocked(operational.listarSolicitudesCambio).mockResolvedValue([{
+        ...solicitudBase,
+        estado: 'RECHAZADA',
+        resolucion: 'No hay disponibilidad en el horario propuesto',
+        revisiones: [
+          { pisoId: 'piso-origen-uuid', estado: 'APROBADA' },
+          { pisoId: 'piso-destino-uuid', estado: 'RECHAZADA' },
+        ],
+      }])
+
+      render(<AdministradorPisoPlanificacion />)
+      expect(await screen.findByText('🔴 Cambio rechazado')).toBeInTheDocument()
+      expect(screen.getByText(/El cambio solicitado no fue aplicado/)).toBeInTheDocument()
+      expect(screen.getByText(/No hay disponibilidad en el horario propuesto/)).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'Aprobar cambio' })).not.toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'Rechazar cambio' })).not.toBeInTheDocument()
+    })
+
+    it('22. solicitud APROBADA -> feedback notorio', async () => {
+      vi.mocked(operational.listarPlanificacionesAgregadas).mockResolvedValue([{
+        id: 'aggregate-1', carreraId: 'carrera-uuid', periodoId: 'periodo-uuid',
+        estado: 'APROBADA', bloques: [plan('plan-1')], revisiones: [],
+        pisoGestionadoId: 'piso-origen-uuid',
+      }])
+      vi.mocked(operational.listarSolicitudesCambio).mockResolvedValue([{
+        ...solicitudBase,
+        estado: 'APROBADA',
+        revisiones: [
+          { pisoId: 'piso-origen-uuid', estado: 'APROBADA' },
+          { pisoId: 'piso-destino-uuid', estado: 'APROBADA' },
+        ],
+      }])
+
+      render(<AdministradorPisoPlanificacion />)
+      expect(await screen.findByText('🟢 Cambio aprobado')).toBeInTheDocument()
+      expect(screen.getByText(/El cambio fue aprobado por todos los pisos involucrados/)).toBeInTheDocument()
+    })
+
+    it('23. tras aprobación completa, bloque desaparece de origen', async () => {
+      // Piso origen ve la planificación, pero la lista de bloques en su piso ya no contiene el bloque migrado
+      vi.mocked(operational.listarPlanificacionesAgregadas).mockResolvedValue([{
+        id: 'aggregate-1', carreraId: 'carrera-uuid', periodoId: 'periodo-uuid',
+        estado: 'APROBADA', bloques: [], revisiones: [],
+        pisoGestionadoId: 'piso-origen-uuid',
+      }])
+      vi.mocked(operational.listarSolicitudesCambio).mockResolvedValue([])
+
+      render(<AdministradorPisoPlanificacion />)
+      expect(await screen.findByText('0 bloques en su piso')).toBeInTheDocument()
+      expect(screen.queryByText('Programación Web')).not.toBeInTheDocument()
+    })
+
+    it('24. bloque aparece en destino', async () => {
+      // Piso destino ahora recibe en su lista agregada el bloque migrado con lab-destino
+      const bloqueMigrado: operational.Planificacion = {
+        id: 'plan-1', // MISMO ID DE BLOQUE
+        planificacionId: 'aggregate-1',
+        periodoId: 'periodo-uuid',
+        carreraId: 'carrera-uuid',
+        materiaId: 'materia-uuid',
+        docenteId: 'docente-uuid',
+        laboratorioId: 'lab-destino', // Ahora en lab de piso destino
+        diaSemana: 'LUNES',
+        horaInicio: '07:30',
+        horaFin: '09:30',
+        estado: 'CONFIRMADA',
+        observacion: null,
+        version: 1,
+      }
+
+      vi.mocked(operational.listarPlanificacionesAgregadas).mockResolvedValue([{
+        id: 'aggregate-1', carreraId: 'carrera-uuid', periodoId: 'periodo-uuid',
+        estado: 'APROBADA', bloques: [bloqueMigrado], revisiones: [],
+        pisoGestionadoId: 'piso-destino-uuid',
+      }])
+      vi.mocked(operational.listarSolicitudesCambio).mockResolvedValue([])
+
+      render(<AdministradorPisoPlanificacion />)
+      expect(await screen.findByText('1 bloques en su piso')).toBeInTheDocument()
+      expect(screen.getByText('Programación Web')).toBeInTheDocument()
+      expect(screen.getByText('LAB-P1-02')).toBeInTheDocument()
+    })
   })
 })

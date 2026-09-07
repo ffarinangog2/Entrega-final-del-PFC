@@ -7,6 +7,10 @@ import {
 import { AcademicPeriodContext } from './academicPeriodContext'
 import { AuthContext } from './auth'
 import { ApiError } from './services/apiClient'
+import {
+  estaPeriodoDisponible,
+  filtrarPeriodosDisponibles,
+} from './academicPeriodHelpers'
 
 export function AcademicPeriodProvider({ children }: { children: ReactNode }) {
   const auth = useContext(AuthContext)
@@ -57,23 +61,36 @@ export function AcademicPeriodProvider({ children }: { children: ReactNode }) {
           combinados.unshift(vigente)
         }
 
-        setPeriodos(combinados)
-        setPeriodoVigente(vigente)
+        const hoy = new Date().toISOString().slice(0, 10)
+        const disponibles = filtrarPeriodosDisponibles(combinados, hoy)
+
+        // El período vigente y seleccionado deben pertenecer estrictamente a los disponibles hoy.
+        // Si obtenerPeriodoActual() retorna un período ajeno o fuera de rango, no se toma como válido
+        // y se usa el período regular disponible para hoy del catálogo.
+        const vigenteValido =
+          vigente && estaPeriodoDisponible(vigente, hoy) ? vigente : null
+        const seleccionadoInicial =
+          vigenteValido ?? (disponibles.length > 0 ? disponibles[0] : null)
+
+        setPeriodos(disponibles)
+        setPeriodoVigente(seleccionadoInicial)
         setPeriodoSeleccionado((prev) => {
-          if (prev && combinados.some((p) => p.id === prev.id)) {
+          if (prev && disponibles.some((p) => p.id === prev.id)) {
             return prev
           }
-          return vigente ?? (combinados.length > 0 ? combinados[0] : null)
+          return seleccionadoInicial
         })
 
         if (vigenteResult.status === 'rejected') {
           const cause = vigenteResult.reason
           if (!(cause instanceof ApiError && cause.status === 404)) {
-            setError(
-              cause instanceof Error
-                ? cause.message
-                : 'No se pudo consultar el período académico actual.',
-            )
+            if (disponibles.length === 0) {
+              setError(
+                cause instanceof Error
+                  ? cause.message
+                  : 'No se pudo consultar el período académico actual.',
+              )
+            }
           }
         }
       })

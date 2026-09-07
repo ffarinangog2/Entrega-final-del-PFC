@@ -139,6 +139,12 @@ public class PlanificacionAgregadaService {
                         .filter(java.util.Objects::nonNull)
                         .forEach(planesRelevantes::add);
             }
+            planes.findAll().stream()
+                    .filter(p -> !planesRelevantes.contains(p))
+                    .filter(p -> bloques.findByPlanificacionId(p.getId()).stream()
+                            .anyMatch(b -> b.getEstado() != EstadoPlanificacion.CANCELADA &&
+                                    pisoId.equals(pisoDeLaboratorio(b.getLaboratorioId()))))
+                    .forEach(planesRelevantes::add);
             return planesRelevantes.stream().map(this::mapParaPiso).toList();
         }
         throw new AccessDeniedException("No puede consultar planificaciones agregadas");
@@ -449,11 +455,21 @@ public class PlanificacionAgregadaService {
         return response(plan, bloques.findByPlanificacionId(plan.getId()));
     }
 
+    private UUID pisoDeLaboratorio(UUID laboratorioId) {
+        if (laboratorioId == null) return null;
+        try {
+            var lab = academico.obtenerLaboratorio(laboratorioId);
+            return lab != null ? lab.pisoId() : null;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
     private PlanificacionAgregadaResponse mapParaPiso(PlanificacionAgregadaJpaEntity plan) {
         UUID pisoId = ambitoLaboratorio.pisoGestionado();
         return response(plan, bloques.findByPlanificacionId(plan.getId()).stream()
                 .filter(item -> item.getEstado() != EstadoPlanificacion.CANCELADA)
-                .filter(item -> pisoId.equals(academico.obtenerLaboratorio(item.getLaboratorioId()).pisoId())).toList(),
+                .filter(item -> pisoId.equals(pisoDeLaboratorio(item.getLaboratorioId()))).toList(),
                 pisoId);
     }
 

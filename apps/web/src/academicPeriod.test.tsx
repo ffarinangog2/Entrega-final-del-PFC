@@ -1,7 +1,8 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AcademicPeriodProvider } from './academicPeriod'
 import { useAcademicPeriod } from './academicPeriodContext'
+import { AcademicPeriodSelector } from './components/AcademicPeriodSelector'
 import { AuthContext } from './auth'
 import type { AuthContextValue } from './auth/context'
 import * as academico from './services/academicoApi'
@@ -9,28 +10,60 @@ import { ApiError } from './services/apiClient'
 
 vi.mock('./services/academicoApi')
 
-const periodo: academico.PeriodoLectivo = {
-  id: 'periodo-actual',
-  codigo: 'REGULAR-2026-2027-PPA',
-  nombre: 'REGULAR 2026-2027 PPA',
+const periodoPPA: academico.PeriodoLectivo = {
+  id: 'periodo-ppa',
+  codigo: 'PPA-2026-2027-C1',
+  nombre: 'Ciclo academico Mayo-Septiembre',
   fechaInicio: '2026-05-01',
-  fechaFin: '2026-10-31',
+  fechaFin: '2026-09-18',
   estado: 'ACTIVO',
-  ppaCodigo: 'PPA',
-  ppaNombre: 'PPA',
+  ppaCodigo: 'REGULAR-2026-2027-PPA',
+  ppaNombre: 'REGULAR - 2026-2027 PPA',
   cicloAcademico: 1,
 }
 
-const periodo2: academico.PeriodoLectivo = {
-  id: 'periodo-secundario',
-  codigo: 'REGULAR-2026-2027-SPA',
-  nombre: 'REGULAR 2026-2027 SPA',
+const periodoSPA: academico.PeriodoLectivo = {
+  id: 'periodo-spa',
+  codigo: 'PPA-2026-2027-C2',
+  nombre: 'Ciclo academico Noviembre-Abril',
   fechaInicio: '2026-11-01',
   fechaFin: '2027-04-30',
   estado: 'PLANIFICADO',
-  ppaCodigo: 'SPA',
-  ppaNombre: 'SPA',
+  ppaCodigo: 'REGULAR-2026-2027-PPA',
+  ppaNombre: 'REGULAR - 2026-2027 PPA',
   cicloAcademico: 2,
+}
+
+const periodoPasado: academico.PeriodoLectivo = {
+  id: 'periodo-pasado',
+  codigo: 'PPA-2025-2026-C2',
+  nombre: 'Ciclo academico Noviembre-Abril',
+  fechaInicio: '2025-11-01',
+  fechaFin: '2026-04-30',
+  estado: 'FINALIZADO',
+  ppaCodigo: 'REGULAR-2025-2026-PPA',
+  ppaNombre: 'REGULAR - 2025-2026 PPA',
+  cicloAcademico: 2,
+}
+
+const periodoAjenoA: academico.PeriodoLectivo = {
+  id: 'periodo-ajeno-a',
+  codigo: '2026-A',
+  nombre: 'Periodo Lectivo 2026-A',
+  fechaInicio: '2026-01-01',
+  fechaFin: '2026-12-31',
+  estado: 'ACTIVO',
+  cicloAcademico: null,
+}
+
+const periodoAjenoB: academico.PeriodoLectivo = {
+  id: 'periodo-ajeno-b',
+  codigo: '2026-B',
+  nombre: 'Periodo Lectivo 2026-B',
+  fechaInicio: '2026-01-01',
+  fechaFin: '2026-12-31',
+  estado: 'ACTIVO',
+  cicloAcademico: null,
 }
 
 const authBase: AuthContextValue = {
@@ -42,9 +75,21 @@ const authBase: AuthContextValue = {
   refreshSession: vi.fn(),
 }
 
+const authAutenticado: AuthContextValue = {
+  ...authBase,
+  usuario: { id: 'usr-1', nombre: 'Admin', roles: ['ROLE_COORDINADOR'] } as unknown as AuthContextValue['usuario'],
+  isAuthenticated: true,
+  isLoading: false,
+}
+
 function EstadoPeriodo() {
-  const { periodoVigente, periodoSeleccionado, seleccionarPeriodo, cargando, error } =
-    useAcademicPeriod()
+  const {
+    periodoVigente,
+    periodoSeleccionado,
+    seleccionarPeriodo,
+    cargando,
+    error,
+  } = useAcademicPeriod()
   return (
     <div>
       <p data-testid="estado">
@@ -55,11 +100,14 @@ function EstadoPeriodo() {
       <p data-testid="seleccionado">{periodoSeleccionado?.nombre ?? 'ninguno'}</p>
       <button
         type="button"
-        onClick={() => seleccionarPeriodo('periodo-secundario')}
+        onClick={() => seleccionarPeriodo('periodo-spa')}
       >
-        Cambiar a Secundario
+        Cambiar a SPA
       </button>
-      <button type="button" onClick={() => seleccionarPeriodo('periodo-fantasma')}>
+      <button
+        type="button"
+        onClick={() => seleccionarPeriodo('periodo-fantasma')}
+      >
         Cambiar a Fantasma
       </button>
     </div>
@@ -71,54 +119,44 @@ function vista(auth: AuthContextValue) {
     <AuthContext.Provider value={auth}>
       <AcademicPeriodProvider>
         <EstadoPeriodo />
+        <AcademicPeriodSelector />
       </AcademicPeriodProvider>
     </AuthContext.Provider>
   )
 }
 
-describe('AcademicPeriodProvider', () => {
+describe('AcademicPeriodProvider & AcademicPeriodSelector (ETAPA 5B)', () => {
   beforeEach(() => {
     vi.resetAllMocks()
-    vi.mocked(academico.obtenerPeriodos).mockResolvedValue([periodo, periodo2])
+    // Reloj determinista: 15 de julio de 2026 (dentro del rango de PPA: 2026-05-01 a 2026-09-18)
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    vi.setSystemTime(new Date('2026-07-15T12:00:00Z'))
+    vi.mocked(academico.obtenerPeriodos).mockResolvedValue([
+      periodoPPA,
+      periodoSPA,
+      periodoPasado,
+      periodoAjenoA,
+      periodoAjenoB,
+    ])
+    vi.mocked(academico.obtenerPeriodoActual).mockResolvedValue(periodoPPA)
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
   })
 
   it('espera la restauración de sesión antes de consultar el período', async () => {
-    vi.mocked(academico.obtenerPeriodoActual).mockResolvedValue(periodo)
     const rendered = render(vista(authBase))
 
     expect(screen.getByTestId('estado')).toHaveTextContent('cargando')
     expect(academico.obtenerPeriodoActual).not.toHaveBeenCalled()
 
-    rendered.rerender(
-      vista({
-        ...authBase,
-        usuario: {} as AuthContextValue['usuario'],
-        isAuthenticated: true,
-        isLoading: false,
-      }),
-    )
+    rendered.rerender(vista(authAutenticado))
 
     await waitFor(() => expect(academico.obtenerPeriodoActual).toHaveBeenCalledOnce())
     await waitFor(() =>
-      expect(screen.getByTestId('estado')).toHaveTextContent('REGULAR 2026-2027 PPA'),
+      expect(screen.getByTestId('estado')).toHaveTextContent('Ciclo academico Mayo-Septiembre'),
     )
-  })
-
-  it('consulta normalmente cuando la sesión ya está autenticada', async () => {
-    vi.mocked(academico.obtenerPeriodoActual).mockResolvedValue(periodo)
-    render(
-      vista({
-        ...authBase,
-        usuario: {} as AuthContextValue['usuario'],
-        isAuthenticated: true,
-        isLoading: false,
-      }),
-    )
-
-    await waitFor(() =>
-      expect(screen.getByTestId('estado')).toHaveTextContent('REGULAR 2026-2027 PPA'),
-    )
-    expect(academico.obtenerPeriodoActual).toHaveBeenCalledOnce()
   })
 
   it('distingue ausencia real de período de un error HTTP', async () => {
@@ -126,58 +164,157 @@ describe('AcademicPeriodProvider', () => {
       new ApiError(404, 'No hay período vigente'),
     )
     vi.mocked(academico.obtenerPeriodos).mockResolvedValue([])
-    render(
-      vista({
-        ...authBase,
-        usuario: {} as AuthContextValue['usuario'],
-        isAuthenticated: true,
-        isLoading: false,
-      }),
-    )
+    render(vista(authAutenticado))
 
     expect(await screen.findByTestId('estado')).toHaveTextContent('sin-periodo')
   })
 
-  it('seleccionarPeriodo actualiza periodoSeleccionado en contexto sin llamar al backend', async () => {
-    vi.mocked(academico.obtenerPeriodoActual).mockResolvedValue(periodo)
-    render(
-      vista({
-        ...authBase,
-        usuario: {} as AuthContextValue['usuario'],
-        isAuthenticated: true,
-        isLoading: false,
-      }),
-    )
+  it('1. PPA vigente por fecha aparece', async () => {
+    render(vista(authAutenticado))
 
     await waitFor(() =>
-      expect(screen.getByTestId('seleccionado')).toHaveTextContent('REGULAR 2026-2027 PPA'),
+      expect(screen.getByRole('button', { name: /Período académico:/ })).toBeInTheDocument(),
     )
 
-    fireEvent.click(screen.getByRole('button', { name: 'Cambiar a Secundario' }))
+    fireEvent.click(screen.getByRole('button', { name: /Período académico:/ }))
 
-    expect(screen.getByTestId('seleccionado')).toHaveTextContent('REGULAR 2026-2027 SPA')
-    // No debe haber más llamadas al backend
-    expect(academico.obtenerPeriodoActual).toHaveBeenCalledOnce()
+    const dialog = screen.getByRole('dialog', { name: 'Período académico' })
+    expect(within(dialog).getByText('REGULAR 2026-2027 PPA')).toBeInTheDocument()
   })
 
-  it('seleccionarPeriodo ignora ids inexistentes sin alterar el seleccionado ni crear ficticios', async () => {
-    vi.mocked(academico.obtenerPeriodoActual).mockResolvedValue(periodo)
-    render(
-      vista({
-        ...authBase,
-        usuario: {} as AuthContextValue['usuario'],
-        isAuthenticated: true,
-        isLoading: false,
-      }),
-    )
+  it('2. SPA futuro NO aparece', async () => {
+    render(vista(authAutenticado))
 
     await waitFor(() =>
-      expect(screen.getByTestId('seleccionado')).toHaveTextContent('REGULAR 2026-2027 PPA'),
+      expect(screen.getByRole('button', { name: /Período académico:/ })).toBeInTheDocument(),
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /Período académico:/ }))
+
+    const dialog = screen.getByRole('dialog', { name: 'Período académico' })
+    expect(within(dialog).queryByText(/SPA/)).not.toBeInTheDocument()
+  })
+
+  it('3. al llegar fechaInicio del SPA, SPA puede aparecer', async () => {
+    // Avanzar reloj al 15 de noviembre de 2026 (SPA inicio: 2026-11-01)
+    vi.setSystemTime(new Date('2026-11-15T12:00:00Z'))
+    vi.mocked(academico.obtenerPeriodoActual).mockResolvedValue(periodoSPA)
+
+    render(vista(authAutenticado))
+
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: /Período académico:/ })).toBeInTheDocument(),
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /Período académico:/ }))
+
+    const dialog = screen.getByRole('dialog', { name: 'Período académico' })
+    expect(within(dialog).getByText('REGULAR 2026-2027 SPA')).toBeInTheDocument()
+    // PPA ya terminó, por tanto no debe figurar como disponible
+    expect(within(dialog).queryByText('REGULAR 2026-2027 PPA')).not.toBeInTheDocument()
+  })
+
+  it('4. período cuya fechaFin ya pasó no aparece como disponible', async () => {
+    render(vista(authAutenticado))
+
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: /Período académico:/ })).toBeInTheDocument(),
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /Período académico:/ }))
+
+    const dialog = screen.getByRole('dialog', { name: 'Período académico' })
+    expect(within(dialog).queryByText('REGULAR 2025-2026 SPA')).not.toBeInTheDocument()
+  })
+
+  it('5. períodos ajenos 2026-A / 2026-B no aparecen si no pertenecen al flujo REGULAR PPA/SPA', async () => {
+    render(vista(authAutenticado))
+
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: /Período académico:/ })).toBeInTheDocument(),
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /Período académico:/ }))
+
+    const dialog = screen.getByRole('dialog', { name: 'Período académico' })
+    expect(within(dialog).queryByText(/2026-A/)).not.toBeInTheDocument()
+    expect(within(dialog).queryByText(/2026-B/)).not.toBeInTheDocument()
+  })
+
+  it('6. con una sola opción, el panel sigue abriendo', async () => {
+    render(vista(authAutenticado))
+
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: /Período académico:/ })).toBeInTheDocument(),
+    )
+
+    const trigger = screen.getByRole('button', { name: /Período académico:/ })
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+
+    fireEvent.click(trigger)
+
+    expect(screen.getByRole('dialog', { name: 'Período académico' })).toBeInTheDocument()
+    expect(screen.getAllByRole('option')).toHaveLength(1)
+  })
+
+  it('7. la opción válida aparece seleccionada', async () => {
+    render(vista(authAutenticado))
+
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: /Período académico:/ })).toBeInTheDocument(),
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /Período académico:/ }))
+
+    const opcion = screen.getByRole('option', { name: /REGULAR 2026-2027 PPA/ })
+    expect(opcion).toHaveAttribute('aria-selected', 'true')
+    expect(opcion).toHaveClass('is-selected')
+    expect(screen.getByLabelText('Seleccionado')).toBeInTheDocument()
+  })
+
+  it('8. no existe POST/PUT/PATCH', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch')
+    render(vista(authAutenticado))
+
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: /Período académico:/ })).toBeInTheDocument(),
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /Período académico:/ }))
+    const opcion = screen.getByRole('option', { name: /REGULAR 2026-2027 PPA/ })
+    fireEvent.click(opcion)
+
+    expect(fetchSpy).not.toHaveBeenCalled()
+    fetchSpy.mockRestore()
+  })
+
+  it('9. no se crean objetos ficticios', async () => {
+    render(vista(authAutenticado))
+
+    await waitFor(() =>
+      expect(screen.getByTestId('seleccionado')).toHaveTextContent('Ciclo academico Mayo-Septiembre'),
     )
 
     fireEvent.click(screen.getByRole('button', { name: 'Cambiar a Fantasma' }))
 
-    // Sigue siendo el original
-    expect(screen.getByTestId('seleccionado')).toHaveTextContent('REGULAR 2026-2027 PPA')
+    // El seleccionado permanece intacto y no muta a ningún objeto ficticio
+    expect(screen.getByTestId('seleccionado')).toHaveTextContent('Ciclo academico Mayo-Septiembre')
+  })
+
+  it('10. con cero períodos válidos aparece el estado vacío', async () => {
+    // Simular que no hay períodos válidos en catálogo ni vigente
+    vi.mocked(academico.obtenerPeriodos).mockResolvedValue([periodoAjenoA, periodoAjenoB])
+    vi.mocked(academico.obtenerPeriodoActual).mockResolvedValue(periodoAjenoA)
+
+    render(vista(authAutenticado))
+
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: /Período académico:/ })).toBeInTheDocument(),
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /Período académico:/ }))
+
+    expect(screen.getByRole('dialog', { name: 'Período académico' })).toBeInTheDocument()
+    expect(screen.getByText('No hay períodos académicos disponibles')).toBeInTheDocument()
   })
 })

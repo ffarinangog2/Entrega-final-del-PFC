@@ -159,6 +159,7 @@ export interface SolicitudCambio {
   id: string
   planificacionId: string
   bloqueId: string
+  materiaId?: string | null
   tipo: 'LABORATORIO' | 'HORARIO' | 'DOCENTE' | 'CANCELACION'
   estado: 'PENDIENTE' | 'APROBADA' | 'RECHAZADA'
   motivo: string
