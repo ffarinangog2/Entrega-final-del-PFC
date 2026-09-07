@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as academico from '../services/academicoApi'
@@ -95,8 +95,10 @@ describe('MainPage', () => {
         <MainPage />
       </MemoryRouter>,
     )
-    expect(await screen.findByText('Programación I')).toBeInTheDocument()
-    expect(screen.getByText('Laboratorio de Software')).toBeInTheDocument()
+    const diaLunes = (await screen.findByRole('heading', { name: 'Lunes' })).closest('section')
+    expect(diaLunes).not.toBeNull()
+    expect(within(diaLunes!).getByText('Programación I')).toBeInTheDocument()
+    expect(within(diaLunes!).getByText('Laboratorio de Software')).toBeInTheDocument()
     expect(academico.obtenerDocentePorPerfil).toHaveBeenCalledWith('perfil-1')
   })
 
