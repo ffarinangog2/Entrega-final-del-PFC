@@ -5,6 +5,7 @@ import ec.edu.scli.usuarios.domain.exception.ResourceNotFoundException;
 import ec.edu.scli.usuarios.infrastructure.client.AcademicoPeriodoClient;
 import ec.edu.scli.usuarios.infrastructure.persistence.entity.ContextoAcademicoEstudianteEntity;
 import ec.edu.scli.usuarios.infrastructure.persistence.entity.Estudiante;
+import ec.edu.scli.usuarios.infrastructure.persistence.entity.Perfil;
 import ec.edu.scli.usuarios.infrastructure.persistence.jpa.ContextoAcademicoEstudianteRepository;
 import ec.edu.scli.usuarios.infrastructure.persistence.jpa.EstudianteRepository;
 import ec.edu.scli.usuarios.presentation.dto.estudiante.ContextoAcademicoEstudianteRequest;
@@ -41,6 +42,10 @@ class ContextoAcademicoEstudianteServiceTest {
 
         var e = new Estudiante();
         e.setId(estudianteId);
+        var p = new Perfil();
+        p.setId(perfilId);
+        e.setPerfil(p);
+
         when(estudiantes.findById(estudianteId)).thenReturn(Optional.of(e));
         when(estudiantes.findByPerfilId(perfilId)).thenReturn(Optional.of(e));
         when(contextos.save(any())).thenAnswer(i -> i.getArgument(0));
@@ -164,6 +169,89 @@ class ContextoAcademicoEstudianteServiceTest {
         assertThatThrownBy(() -> service.autodeclarar(perfilId, new ContextoAcademicoEstudianteRequest(carreraId, periodo, 8)))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("correccion administrativa");
+    }
+
+    @Test
+    @DisplayName("listarContextosMasivos retorna perfilId, estudianteId, carreraId, periodoId, nivel y no modifica datos")
+    void listarContextosMasivosRetornaDatosCompletosSinModificar() {
+        UUID ppaId = UUID.randomUUID();
+        UUID carreraId1 = UUID.randomUUID();
+        UUID estudianteId2 = UUID.randomUUID();
+        UUID perfilId2 = UUID.randomUUID();
+        UUID carreraId2 = UUID.randomUUID();
+
+        var e1 = new Estudiante();
+        e1.setId(estudianteId);
+        var p1 = new Perfil();
+        p1.setId(perfilId);
+        e1.setPerfil(p1);
+
+        var e2 = new Estudiante();
+        e2.setId(estudianteId2);
+        var p2 = new Perfil();
+        p2.setId(perfilId2);
+        e2.setPerfil(p2);
+
+        when(estudiantes.findAll()).thenReturn(List.of(e1, e2));
+
+        var ctx1 = contexto(carreraId1, ppaId, 1, true);
+        var ctx2 = new ContextoAcademicoEstudianteEntity();
+        ctx2.setEstudianteId(estudianteId2);
+        ctx2.setCarreraId(carreraId2);
+        ctx2.setPeriodoId(ppaId);
+        ctx2.setNivel(3);
+        ctx2.setActivo(true);
+
+        when(contextos.findByPeriodoId(ppaId)).thenReturn(List.of(ctx1, ctx2));
+
+        var resultado = service.listarContextosMasivos(ppaId);
+
+        assertThat(resultado).hasSize(2);
+
+        var item1 = resultado.stream().filter(r -> r.estudianteId().equals(estudianteId)).findFirst().orElseThrow();
+        assertThat(item1.perfilId()).isEqualTo(perfilId);
+        assertThat(item1.carreraId()).isEqualTo(carreraId1);
+        assertThat(item1.periodoId()).isEqualTo(ppaId);
+        assertThat(item1.nivel()).isEqualTo(1);
+        assertThat(item1.activo()).isTrue();
+
+        var item2 = resultado.stream().filter(r -> r.estudianteId().equals(estudianteId2)).findFirst().orElseThrow();
+        assertThat(item2.perfilId()).isEqualTo(perfilId2);
+        assertThat(item2.carreraId()).isEqualTo(carreraId2);
+        assertThat(item2.periodoId()).isEqualTo(ppaId);
+        assertThat(item2.nivel()).isEqualTo(3);
+        assertThat(item2.activo()).isTrue();
+
+        // Demostrar que NO se modifican datos en base de datos
+        verify(contextos, never()).save(any());
+        verify(contextos, never()).delete(any());
+        verify(estudiantes, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("listarContextosMasivos con periodoId filtra estrictamente por ese período sin fallback a otro")
+    void listarContextosMasivosFiltraEstrictamenteSinFallback() {
+        UUID periodoPpa = UUID.randomUUID();
+        UUID periodoSpa = UUID.randomUUID();
+        UUID carreraId = UUID.randomUUID();
+
+        var e1 = new Estudiante();
+        e1.setId(estudianteId);
+        var p1 = new Perfil();
+        p1.setId(perfilId);
+        e1.setPerfil(p1);
+
+        when(estudiantes.findAll()).thenReturn(List.of(e1));
+
+        // El estudiante solo tiene contexto en SPA, NO en PPA
+        when(contextos.findByPeriodoId(periodoPpa)).thenReturn(List.of());
+
+        var resultado = service.listarContextosMasivos(periodoPpa);
+
+        assertThat(resultado).isEmpty();
+        // Verifica que no llama a findByActivoTrue ni a otro período
+        verify(contextos, never()).findByActivoTrue();
+        verify(contextos, never()).findByPeriodoId(periodoSpa);
     }
 
     private ContextoAcademicoEstudianteEntity contexto(UUID carrera, UUID periodo, int nivel, boolean activo) {

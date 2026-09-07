@@ -5,9 +5,10 @@ import { hasRole, useAuth } from '../../auth'
 import { useAcademicPeriod } from '../../academicPeriodContext'
 import {
   obtenerDocentePorPerfil, obtenerDocentes, obtenerHorariosDocente,
-  obtenerLaboratorios, obtenerMaterias, obtenerPeriodoActual,
-  type Docente, type HorarioAcademico, type Laboratorio, type Materia, type PeriodoLectivo,
+  obtenerLaboratorios, obtenerMaterias, obtenerPeriodoActual, obtenerPisos,
+  type Docente, type HorarioAcademico, type Laboratorio, type Materia, type PeriodoLectivo, type Piso,
 } from '../../services/academicoApi'
+import { formatPisoLabel, laboratoriosDelPiso } from '../planificacion/planificacionLaboratorioFilter'
 import { consultarDisponibilidad, crearSolicitud, type Disponibilidad } from './reservasApi'
 import { generarIdempotencyKey } from '../../utils/idempotency'
 import './Reservas.css'
@@ -25,6 +26,8 @@ export function NuevaSolicitudPage() {
   const [docentes, setDocentes] = useState<Docente[]>([])
   const [horarios, setHorarios] = useState<HorarioAcademico[]>([])
   const [laboratorios, setLaboratorios] = useState<Laboratorio[]>([])
+  const [pisos, setPisos] = useState<Piso[]>([])
+  const [pisoFiltroId, setPisoFiltroId] = useState('')
   const [materias, setMaterias] = useState<Materia[]>([])
   const [cargando, setCargando] = useState(true)
   const [enviando, setEnviando] = useState(false)
@@ -47,10 +50,11 @@ export function NuevaSolicitudPage() {
       setCargando(true)
       setError(null)
       try {
-        const [labs, materiasDisponibles, periodoActual] = await Promise.all([
+        const [labs, materiasDisponibles, periodoActual, pisosData] = await Promise.all([
           obtenerLaboratorios(),
           obtenerMaterias(),
           (!periodoSeleccionado && !periodoVigente) ? obtenerPeriodoActual().catch(() => null) : Promise.resolve(null),
+          Promise.resolve(typeof obtenerPisos === 'function' ? obtenerPisos() : []).then((p) => Array.isArray(p) ? p : []).catch(() => [] as Piso[]),
         ])
         if (periodoActual) {
           setPeriodoLocal(periodoActual)
@@ -77,6 +81,7 @@ export function NuevaSolicitudPage() {
           : []
         if (!active) return
         setLaboratorios(labs.filter((item) => item.activo))
+        setPisos(pisosData.filter((item) => item.activo))
         setMaterias(materiasDisponibles.filter((item) => item.activo))
         setDocentes(docentesDisponibles)
         setHorarios(horariosDocente.filter((item) => item.activo))
@@ -96,6 +101,23 @@ export function NuevaSolicitudPage() {
     return () => { active = false }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [esDocente, usuario?.perfilId])
+
+  const pisosMap = useMemo(() => new Map(pisos.map((p) => [p.id, p])), [pisos])
+  const pisosOrdenados = useMemo(() => [...pisos].sort((a, b) => a.numero - b.numero), [pisos])
+
+  const laboratoriosVisibles = useMemo(() => {
+    return laboratoriosDelPiso(laboratorios, pisoFiltroId)
+  }, [laboratorios, pisoFiltroId])
+
+  const cambiarPiso = (nuevoPisoId: string) => {
+    setPisoFiltroId(nuevoPisoId)
+    if (nuevoPisoId && form.laboratorioId) {
+      const labActual = laboratorios.find((l) => l.id === form.laboratorioId)
+      if (labActual && labActual.pisoId !== nuevoPisoId) {
+        cambiar('laboratorioId', '')
+      }
+    }
+  }
 
   const materiasVisibles = useMemo(() => {
     if (!esDocente) return materias
@@ -156,7 +178,30 @@ export function NuevaSolicitudPage() {
       </label>
       <label>Materia<select required value={form.materiaId} onChange={(e) => cambiar('materiaId', e.target.value)}><option value="">Seleccione una materia</option>{materiasVisibles.map((m) => <option key={m.id} value={m.id}>{m.codigo} — {m.nombre}</option>)}</select></label>
       <label>Período lectivo<input readOnly value={periodo ? `${periodo.codigo} — ${periodo.nombre}` : 'Sin período lectivo activo'} /></label>
-      <label>Laboratorio<select required value={form.laboratorioId} onChange={(e) => cambiar('laboratorioId', e.target.value)}><option value="">Seleccione un laboratorio</option>{laboratorios.map((lab) => <option key={lab.id} value={lab.id}>{lab.codigo} — {lab.nombre}</option>)}</select></label>
+      <label>Piso
+        <select value={pisoFiltroId} onChange={(e) => cambiarPiso(e.target.value)}>
+          <option value="">Todos los pisos</option>
+          {pisosOrdenados.map((piso) => (
+            <option key={piso.id} value={piso.id}>
+              {formatPisoLabel(piso)}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label>Laboratorio
+        <select required value={form.laboratorioId} onChange={(e) => cambiar('laboratorioId', e.target.value)}>
+          <option value="">Seleccione un laboratorio</option>
+          {laboratoriosVisibles.map((lab) => {
+            const p = pisosMap.get(lab.pisoId)
+            const sufijoPiso = p ? ` — ${formatPisoLabel(p)}` : ''
+            return (
+              <option key={lab.id} value={lab.id}>
+                {lab.codigo} — {lab.nombre}{sufijoPiso}
+              </option>
+            )
+          })}
+        </select>
+      </label>
       <label>Fecha<input required type="date" min={new Date().toISOString().slice(0, 10)} value={form.fechaReserva} onChange={(e) => cambiar('fechaReserva', e.target.value)} /></label>
       <label>Hora inicio<input required type="time" value={form.horaInicio} onChange={(e) => cambiar('horaInicio', e.target.value)} /></label>
       <label>Hora fin<input required type="time" value={form.horaFin} onChange={(e) => cambiar('horaFin', e.target.value)} /></label>

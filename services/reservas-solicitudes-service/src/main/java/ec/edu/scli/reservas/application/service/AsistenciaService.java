@@ -1,5 +1,6 @@
 package ec.edu.scli.reservas.application.service;
 
+import ec.edu.scli.reservas.domain.model.EstadoPlanificacion;
 import ec.edu.scli.reservas.domain.model.EstadoSesionAsistencia;
 import ec.edu.scli.reservas.infrastructure.persistence.entity.RegistroAsistenciaJpaEntity;
 import ec.edu.scli.reservas.infrastructure.persistence.entity.SesionAsistenciaJpaEntity;
@@ -195,7 +196,9 @@ public class AsistenciaService {
         var plan = planes.findByCarreraIdAndPeriodoId(contexto.carreraId(), contexto.periodoId()).orElse(null);
         if (plan == null || (plan.getEstado() != ec.edu.scli.reservas.domain.model.EstadoPlanificacionAgregada.APROBADA
                 && plan.getEstado() != ec.edu.scli.reservas.domain.model.EstadoPlanificacionAgregada.FINALIZADA)) return List.of();
-        return bloques.findByPlanificacionId(plan.getId()).stream().filter(b -> contexto.nivel().equals(b.getNivel()))
+        return bloques.findByPlanificacionId(plan.getId()).stream()
+                .filter(b -> contexto.nivel().equals(b.getNivel()))
+                .filter(b -> b.getEstado() == EstadoPlanificacion.CONFIRMADA)
                 .map(b -> new PlanificacionResponse(b.getId(),b.getPlanificacionId(),b.getNivel(),b.getPeriodoId(),b.getCarreraId(),
                         b.getMateriaId(),b.getDocenteId(),b.getLaboratorioId(),b.getDiaSemana(),b.getHoraInicio(),b.getHoraFin(),
                         b.getEstado().name(),b.getObservacion(),b.getCreadoPorPerfilId(),b.getCreadaEn(),b.getActualizadaEn(),b.getVersion())).toList();

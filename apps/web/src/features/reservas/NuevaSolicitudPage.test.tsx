@@ -11,7 +11,13 @@ const authUser = { perfilId: 'perfil-1', roles: ['DOCENTE'], permisos: ['SOLICIT
 vi.mock('../../auth', async (original) => ({ ...(await original<typeof import('../../auth')>()), useAuth: () => ({ usuario: authUser }) }))
 vi.mock('../../components/DashboardLayout', () => ({ DashboardLayout: ({ children }: { children: React.ReactNode }) => <>{children}</> }))
 
-const lab = { id: 'lab-1', pisoId: 'p1', codigo: 'LAB-1', nombre: 'Redes', capacidad: 20, descripcion: '', estado: 'DISPONIBLE' as const, activo: true, creadoEn: '', actualizadoEn: '' }
+const pisoPB = { id: 'piso-pb', bloqueId: 'b1', numero: 0, descripcion: 'Planta Baja', activo: true }
+const piso1 = { id: 'piso-1', bloqueId: 'b1', numero: 1, descripcion: 'Piso 2', activo: true }
+const piso2 = { id: 'piso-2', bloqueId: 'b1', numero: 2, descripcion: 'Piso 3', activo: true }
+
+const labPB = { id: 'lab-pb-id', pisoId: 'piso-pb', codigo: 'LAB-PB-01', nombre: 'Lab PB', capacidad: 20, descripcion: '', estado: 'DISPONIBLE' as const, activo: true, creadoEn: '', actualizadoEn: '' }
+const lab = { id: 'lab-1', pisoId: 'piso-1', codigo: 'LAB-1', nombre: 'Redes', capacidad: 20, descripcion: '', estado: 'DISPONIBLE' as const, activo: true, creadoEn: '', actualizadoEn: '' }
+const labP2 = { id: 'lab-p2-id', pisoId: 'piso-2', codigo: 'LAB-P2-01', nombre: 'Lab Software', capacidad: 25, descripcion: '', estado: 'DISPONIBLE' as const, activo: true, creadoEn: '', actualizadoEn: '' }
 const docente = { id: 'doc-1', perfilId: 'perfil-1', codigoDocente: 'DOC-01', nombres: 'Carlos', apellidos: 'Andrade', activo: true }
 const materia = { id: 'mat-1', carreraId: 'c1', codigo: 'MAT-1', nombre: 'Redes I', numeroHoras: 40, activo: true }
 const periodo = { id: 'per-1', codigo: '2026-A', nombre: 'Primer período', fechaInicio: '', fechaFin: '', estado: 'ACTIVO' as const }
@@ -20,6 +26,7 @@ const horario = { id: 'h1', materiaId: 'mat-1', periodoLectivoId: 'per-1', labor
 describe('NuevaSolicitudPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(academicoApi.obtenerPisos).mockResolvedValue([pisoPB, piso1, piso2])
     vi.mocked(academicoApi.obtenerLaboratorios).mockResolvedValue([lab])
     vi.mocked(academicoApi.obtenerMaterias).mockResolvedValue([materia])
     vi.mocked(academicoApi.obtenerPeriodoActual).mockResolvedValue(periodo)
@@ -41,7 +48,7 @@ describe('NuevaSolicitudPage', () => {
 
   async function completar() {
     expect(await screen.findByRole('option', { name: 'MAT-1 — Redes I' })).toBeInTheDocument()
-    expect(screen.getByRole('option', { name: 'LAB-1 — Redes' })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: /LAB-1 — Redes/ })).toBeInTheDocument()
     expect(screen.getByRole('option', { name: 'Carlos Andrade (DOC-01)' })).toBeInTheDocument()
     fireEvent.change(screen.getByLabelText('Materia'), { target: { value: 'mat-1' } })
     fireEvent.change(screen.getByLabelText('Laboratorio'), { target: { value: 'lab-1' } })
@@ -54,7 +61,7 @@ describe('NuevaSolicitudPage', () => {
   it('resuelve docente y carga selectores humanos sin inputs UUID manuales mostrando nombre humano', async () => {
     renderForm()
     expect(await screen.findByRole('option', { name: 'MAT-1 — Redes I' })).toBeInTheDocument()
-    expect(screen.getByRole('option', { name: 'LAB-1 — Redes' })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: /LAB-1 — Redes/ })).toBeInTheDocument()
     expect(screen.getByRole('option', { name: 'Carlos Andrade (DOC-01)' })).toBeInTheDocument()
     expect(screen.getByDisplayValue('2026-A — Primer período')).toBeInTheDocument()
     expect(screen.queryByPlaceholderText(/UUID/i)).not.toBeInTheDocument()
@@ -129,5 +136,103 @@ describe('NuevaSolicitudPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Crear solicitud' }))
     fireEvent.click(screen.getByRole('button', { name: 'Enviando...' }))
     expect(api.crearSolicitud).toHaveBeenCalledTimes(1)
+  })
+  it('filtra laboratorios por piso usando exclusivamente pisoId, limpia selección incompatible y restaura al volver a todos', async () => {
+    vi.mocked(academicoApi.obtenerLaboratorios).mockResolvedValue([labPB, lab, labP2])
+    renderForm()
+
+    // 1. "Todos los pisos" muestra todos los laboratorios con su piso humano real
+    expect(await screen.findByRole('option', { name: 'Todos los pisos' })).toBeInTheDocument()
+    const selectPiso = screen.getByLabelText('Piso')
+    const selectLab = screen.getByLabelText('Laboratorio') as HTMLSelectElement
+
+    expect(screen.getByRole('option', { name: 'LAB-PB-01 — Lab PB — Piso 1 · Planta Baja' })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: 'LAB-1 — Redes — Piso 2' })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: 'LAB-P2-01 — Lab Software — Piso 3' })).toBeInTheDocument()
+
+    // 2. Seleccionar Piso 1 · Planta Baja muestra solamente sus laboratorios (pisoId === 'piso-pb', numero 0)
+    fireEvent.change(selectPiso, { target: { value: 'piso-pb' } })
+    expect(screen.getByRole('option', { name: 'LAB-PB-01 — Lab PB — Piso 1 · Planta Baja' })).toBeInTheDocument()
+    expect(screen.queryByRole('option', { name: /LAB-1 — Redes/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('option', { name: /LAB-P2-01 — Lab Software/ })).not.toBeInTheDocument()
+
+    // Seleccionar el laboratorio de Planta Baja
+    fireEvent.change(selectLab, { target: { value: 'lab-pb-id' } })
+    expect(selectLab.value).toBe('lab-pb-id')
+
+    // 3 y 4. Seleccionar otro piso cambia correctamente el conjunto visible usando pisoId
+    fireEvent.change(selectPiso, { target: { value: 'piso-1' } })
+    expect(screen.queryByRole('option', { name: /LAB-PB-01 — Lab PB/ })).not.toBeInTheDocument()
+    expect(screen.getByRole('option', { name: 'LAB-1 — Redes — Piso 2' })).toBeInTheDocument()
+    expect(screen.queryByRole('option', { name: /LAB-P2-01 — Lab Software/ })).not.toBeInTheDocument()
+
+    // 5. Cambiar a piso incompatible elimina la selección de laboratorio previa para no dejar selección invisible
+    expect(selectLab.value).toBe('')
+
+    // 6. Volver a "Todos los pisos" vuelve a mostrar todos
+    fireEvent.change(selectPiso, { target: { value: '' } })
+    expect(screen.getByRole('option', { name: 'LAB-PB-01 — Lab PB — Piso 1 · Planta Baja' })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: 'LAB-1 — Redes — Piso 2' })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: 'LAB-P2-01 — Lab Software — Piso 3' })).toBeInTheDocument()
+  })
+
+  it('crear solicitud con filtro de piso activo envía el laboratorioId real y preserva periodo e idempotencia', async () => {
+    vi.mocked(academicoApi.obtenerLaboratorios).mockResolvedValue([labPB, lab, labP2])
+    vi.mocked(api.crearSolicitud).mockResolvedValue({
+      id: 'sol-pb-1',
+      laboratorioId: 'lab-pb-id',
+      docenteId: 'doc-1',
+      solicitanteId: 'perfil-1',
+      materiaId: 'mat-1',
+      periodoLectivoId: 'per-1',
+      fechaReserva: '2099-09-10',
+      horaInicio: '09:00',
+      horaFin: '11:00',
+      numeroParticipantes: 1,
+      motivo: 'Laboratorio Planta Baja',
+      observacion: '',
+      estado: 'PENDIENTE',
+      propuestaFecha: null,
+      propuestaHoraInicio: null,
+      propuestaHoraFin: null,
+      propuestaLaboratorioId: null,
+      propuestaObservacion: null,
+      reservaId: null,
+      creadaEn: '',
+      actualizadaEn: '',
+      version: 0,
+    })
+
+    renderForm()
+    expect(await screen.findByRole('option', { name: 'Todos los pisos' })).toBeInTheDocument()
+
+    // Filtrar por Planta Baja
+    fireEvent.change(screen.getByLabelText('Piso'), { target: { value: 'piso-pb' } })
+    expect(screen.getByRole('option', { name: 'LAB-PB-01 — Lab PB — Piso 1 · Planta Baja' })).toBeInTheDocument()
+
+    // Completar formulario con lab de PB
+    fireEvent.change(screen.getByLabelText('Materia'), { target: { value: 'mat-1' } })
+    fireEvent.change(screen.getByLabelText('Laboratorio'), { target: { value: 'lab-pb-id' } })
+    fireEvent.change(screen.getByLabelText('Fecha'), { target: { value: '2099-09-10' } })
+    fireEvent.change(screen.getByLabelText('Hora inicio'), { target: { value: '09:00' } })
+    fireEvent.change(screen.getByLabelText('Hora fin'), { target: { value: '11:00' } })
+    fireEvent.change(screen.getByLabelText('Motivo'), { target: { value: 'Laboratorio Planta Baja' } })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Crear solicitud' }))
+
+    expect(await screen.findByText('Detalle Solicitud')).toBeInTheDocument()
+    expect(api.crearSolicitud).toHaveBeenCalledWith(
+      expect.objectContaining({
+        laboratorioId: 'lab-pb-id',
+        docenteId: 'doc-1',
+        materiaId: 'mat-1',
+        periodoLectivoId: 'per-1',
+        fechaReserva: '2099-09-10',
+        horaInicio: '09:00',
+        horaFin: '11:00',
+        motivo: 'Laboratorio Planta Baja',
+      }),
+      expect.stringMatching(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i),
+    )
   })
 })

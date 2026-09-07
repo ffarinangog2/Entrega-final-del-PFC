@@ -8,5 +8,7 @@ public interface ContextoAcademicoEstudianteRepository extends JpaRepository<Con
     List<ContextoAcademicoEstudianteEntity> findByEstudianteIdOrderByCreadoEnDesc(UUID estudianteId);
     Optional<ContextoAcademicoEstudianteEntity> findFirstByEstudianteIdAndActivoTrueOrderByCreadoEnDesc(UUID estudianteId);
     Optional<ContextoAcademicoEstudianteEntity> findByEstudianteIdAndPeriodoId(UUID estudianteId, UUID periodoId);
-    List<ContextoAcademicoEstudianteEntity> findByCarreraIdAndPeriodoIdAndNivelAndActivoTrue(UUID carreraId,UUID periodoId,Integer nivel);
+    List<ContextoAcademicoEstudianteEntity> findByCarreraIdAndPeriodoIdAndNivelAndActivoTrue(UUID carreraId, UUID periodoId, Integer nivel);
+    List<ContextoAcademicoEstudianteEntity> findByPeriodoId(UUID periodoId);
+    List<ContextoAcademicoEstudianteEntity> findByActivoTrue();
 }

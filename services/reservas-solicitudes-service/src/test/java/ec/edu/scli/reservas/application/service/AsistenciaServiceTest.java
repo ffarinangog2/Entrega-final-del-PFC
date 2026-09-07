@@ -7,6 +7,7 @@ import ec.edu.scli.reservas.infrastructure.persistence.repository.SesionAsistenc
 import ec.edu.scli.reservas.presentation.dto.request.AbrirSesionAsistenciaRequest;
 import ec.edu.scli.reservas.presentation.dto.request.RegistrarAsistenciaRequest;
 import ec.edu.scli.reservas.presentation.dto.response.ReservaResponse;
+import ec.edu.scli.reservas.presentation.dto.response.PlanificacionResponse;
 import ec.edu.scli.reservas.domain.port.out.EstudianteInstitucionalPort;
 import ec.edu.scli.reservas.domain.port.out.ReservaRepositoryPort;
 import ec.edu.scli.reservas.domain.port.out.SolicitudReservaRepositoryPort;
@@ -279,8 +280,84 @@ class AsistenciaServiceTest {
         when(planes.findByCarreraIdAndPeriodoId(carrera, periodo)).thenReturn(Optional.of(plan));
         assertThat(service.horario(perfil, periodo)).isEmpty();
         plan.setEstado(EstadoPlanificacionAgregada.APROBADA);
-        when(bloques.findByPlanificacionId(planId)).thenReturn(List.of(bloque(UUID.randomUUID(), planId, 7), bloque(UUID.randomUUID(), planId, 8)));
+        var b1 = bloque(UUID.randomUUID(), planId, 7); b1.setEstado(EstadoPlanificacion.CONFIRMADA);
+        var b2 = bloque(UUID.randomUUID(), planId, 8); b2.setEstado(EstadoPlanificacion.CONFIRMADA);
+        when(bloques.findByPlanificacionId(planId)).thenReturn(List.of(b1, b2));
         assertThat(service.horario(perfil, periodo)).hasSize(1).allMatch(b -> b.nivel() == 7);
+    }
+
+    @Test
+    void horarioEstudianteFiltraBloquesCanceladosYExponeSoloConfirmados() {
+        UUID perfil = UUID.randomUUID(), carrera = UUID.randomUUID(), periodo = UUID.randomUUID(), planId = UUID.randomUUID();
+        when(estudiantes.resolverContexto(perfil, periodo)).thenReturn(
+                new EstudianteInstitucionalPort.Contexto(UUID.randomUUID(), perfil, carrera, periodo, 1));
+        var plan = plan(planId, carrera, periodo, EstadoPlanificacionAgregada.APROBADA);
+        when(planes.findByCarreraIdAndPeriodoId(carrera, periodo)).thenReturn(Optional.of(plan));
+
+        // 4 bloques CONFIRMADA de nivel 1
+        var c1 = bloque(UUID.randomUUID(), planId, 1); c1.setEstado(EstadoPlanificacion.CONFIRMADA);
+        var c2 = bloque(UUID.randomUUID(), planId, 1); c2.setEstado(EstadoPlanificacion.CONFIRMADA);
+        var c3 = bloque(UUID.randomUUID(), planId, 1); c3.setEstado(EstadoPlanificacion.CONFIRMADA);
+        var c4 = bloque(UUID.randomUUID(), planId, 1); c4.setEstado(EstadoPlanificacion.CONFIRMADA);
+
+        // 11 bloques CANCELADA de nivel 1 (caso idéntico al observado en la VM)
+        List<PlanificacionJpaEntity> cancelados = new java.util.ArrayList<>();
+        for (int i = 0; i < 11; i++) {
+            var can = bloque(UUID.randomUUID(), planId, 1);
+            can.setEstado(EstadoPlanificacion.CANCELADA);
+            cancelados.add(can);
+        }
+
+        // 1 bloque CONFIRMADA pero de otro nivel (nivel 2)
+        var otroNivel = bloque(UUID.randomUUID(), planId, 2);
+        otroNivel.setEstado(EstadoPlanificacion.CONFIRMADA);
+
+        var todosLosBloques = new java.util.ArrayList<PlanificacionJpaEntity>();
+        todosLosBloques.addAll(List.of(c1, c2, c3, c4));
+        todosLosBloques.addAll(cancelados);
+        todosLosBloques.add(otroNivel);
+
+        when(bloques.findByPlanificacionId(planId)).thenReturn(todosLosBloques);
+
+        var resultado = service.horario(perfil, periodo);
+
+        // 1. Estudiante SÍ recibe los bloques CONFIRMADA del mismo nivel
+        // 2. Estudiante NO recibe los bloques CANCELADA
+        // 3. Respuesta contiene ÚNICAMENTE los 4 CONFIRMADA
+        // 4. Bloque CONFIRMADA de otro nivel NO es recibido
+        assertThat(resultado).hasSize(4);
+        assertThat(resultado).extracting(PlanificacionResponse::id)
+                .containsExactlyInAnyOrder(c1.getId(), c2.getId(), c3.getId(), c4.getId());
+        assertThat(resultado).allMatch(b -> b.nivel() == 1);
+        assertThat(resultado).allMatch(b -> "CONFIRMADA".equals(b.estado()));
+    }
+
+    @Test
+    void horarioEstudiantePermitePlanFinalizadaYRechazaBorradorYOtrosEstados() {
+        UUID perfil = UUID.randomUUID(), carrera = UUID.randomUUID(), periodo = UUID.randomUUID(), planId = UUID.randomUUID();
+        when(estudiantes.resolverContexto(perfil, periodo)).thenReturn(
+                new EstudianteInstitucionalPort.Contexto(UUID.randomUUID(), perfil, carrera, periodo, 1));
+
+        var bloqueConfirmado = bloque(UUID.randomUUID(), planId, 1);
+        bloqueConfirmado.setEstado(EstadoPlanificacion.CONFIRMADA);
+        when(bloques.findByPlanificacionId(planId)).thenReturn(List.of(bloqueConfirmado));
+
+        // 5. Planificación BORRADOR -> estudiante no recibe horario
+        var planBorrador = plan(planId, carrera, periodo, EstadoPlanificacionAgregada.BORRADOR);
+        when(planes.findByCarreraIdAndPeriodoId(carrera, periodo)).thenReturn(Optional.of(planBorrador));
+        assertThat(service.horario(perfil, periodo)).isEmpty();
+
+        // Planificación EN_REVISION -> estudiante no recibe horario
+        var planRevision = plan(planId, carrera, periodo, EstadoPlanificacionAgregada.EN_REVISION);
+        when(planes.findByCarreraIdAndPeriodoId(carrera, periodo)).thenReturn(Optional.of(planRevision));
+        assertThat(service.horario(perfil, periodo)).isEmpty();
+
+        // 6. Planificación FINALIZADA -> estudiante SÍ recibe horario si está finalizada
+        var planFinalizada = plan(planId, carrera, periodo, EstadoPlanificacionAgregada.FINALIZADA);
+        when(planes.findByCarreraIdAndPeriodoId(carrera, periodo)).thenReturn(Optional.of(planFinalizada));
+        var resFinalizada = service.horario(perfil, periodo);
+        assertThat(resFinalizada).hasSize(1);
+        assertThat(resFinalizada.get(0).id()).isEqualTo(bloqueConfirmado.getId());
     }
 
     @Test void clasesDocenteHoyExigeDocenteActivoYPlanAprobado() {

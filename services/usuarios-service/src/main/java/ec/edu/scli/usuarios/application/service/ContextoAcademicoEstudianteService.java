@@ -4,15 +4,20 @@ import ec.edu.scli.usuarios.domain.exception.BusinessRuleException;
 import ec.edu.scli.usuarios.domain.exception.ResourceNotFoundException;
 import ec.edu.scli.usuarios.infrastructure.client.AcademicoPeriodoClient;
 import ec.edu.scli.usuarios.infrastructure.persistence.entity.ContextoAcademicoEstudianteEntity;
+import ec.edu.scli.usuarios.infrastructure.persistence.entity.Estudiante;
 import ec.edu.scli.usuarios.infrastructure.persistence.jpa.ContextoAcademicoEstudianteRepository;
 import ec.edu.scli.usuarios.infrastructure.persistence.jpa.EstudianteRepository;
 import ec.edu.scli.usuarios.presentation.dto.estudiante.ContextoAcademicoEstudianteRequest;
 import ec.edu.scli.usuarios.presentation.dto.estudiante.ContextoAcademicoEstudianteResponse;
+import ec.edu.scli.usuarios.presentation.dto.estudiante.ContextoEstudianteResumenResponse;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class ContextoAcademicoEstudianteService {
@@ -50,7 +55,42 @@ public class ContextoAcademicoEstudianteService {
         var estudiante = estudiantes.findByPerfilId(perfilId)
                 .orElseThrow(() -> new ResourceNotFoundException("No existe estudiante para el perfil autenticado"));
         return map(contextos.findByEstudianteIdAndPeriodoId(estudiante.getId(), periodoId)
-                .orElseThrow(() -> new ResourceNotFoundException("No existe contexto académico para el ciclo seleccionado")));
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "No existe contexto académico para el ciclo seleccionado")));
+    }
+
+    @Transactional(readOnly = true)
+    public List<ContextoEstudianteResumenResponse> listarContextosMasivos(UUID periodoId) {
+        List<ContextoAcademicoEstudianteEntity> lista = (periodoId != null)
+                ? contextos.findByPeriodoId(periodoId)
+                : contextos.findByActivoTrue();
+        if (lista.isEmpty()) {
+            return List.of();
+        }
+        Map<UUID, UUID> estudianteIdToPerfilId = estudiantes.findAll().stream()
+                .filter(e -> e.getPerfil() != null && e.getPerfil().getId() != null)
+                .collect(Collectors.toMap(
+                        Estudiante::getId,
+                        e -> e.getPerfil().getId(),
+                        (a, b) -> a));
+
+        return lista.stream()
+                .map(c -> {
+                    UUID perfilId = estudianteIdToPerfilId.get(c.getEstudianteId());
+                    if (perfilId == null) {
+                        return null;
+                    }
+                    return new ContextoEstudianteResumenResponse(
+                            perfilId,
+                            c.getEstudianteId(),
+                            c.getCarreraId(),
+                            c.getPeriodoId(),
+                            c.getNivel(),
+                            Boolean.TRUE.equals(c.getActivo())
+                    );
+                })
+                .filter(Objects::nonNull)
+                .toList();
     }
 
     @Transactional
@@ -60,12 +100,14 @@ public class ContextoAcademicoEstudianteService {
         if (request.nivel() == null || request.nivel() < 1 || request.nivel() > 10) {
             throw new BusinessRuleException("El nivel académico debe estar comprendido entre 1 y 10");
         }
-        contextos.findByEstudianteIdOrderByCreadoEnDesc(estudianteId).stream().filter(c -> Boolean.TRUE.equals(c.getActivo()))
+        contextos.findByEstudianteIdOrderByCreadoEnDesc(estudianteId).stream()
+                .filter(c -> Boolean.TRUE.equals(c.getActivo()))
                 .forEach(c -> {
                     c.setActivo(false);
                     contextos.save(c);
                 });
-        var contexto = contextos.findByEstudianteIdAndPeriodoId(estudianteId, request.periodoId()).orElseGet(ContextoAcademicoEstudianteEntity::new);
+        var contexto = contextos.findByEstudianteIdAndPeriodoId(estudianteId, request.periodoId())
+                .orElseGet(ContextoAcademicoEstudianteEntity::new);
         contexto.setEstudianteId(estudianteId);
         contexto.setCarreraId(request.carreraId());
         contexto.setPeriodoId(request.periodoId());
@@ -75,14 +117,16 @@ public class ContextoAcademicoEstudianteService {
     }
 
     @Transactional
-    public ContextoAcademicoEstudianteResponse asignarPorPerfil(UUID perfilId, ContextoAcademicoEstudianteRequest request) {
+    public ContextoAcademicoEstudianteResponse asignarPorPerfil(
+            UUID perfilId, ContextoAcademicoEstudianteRequest request) {
         var estudiante = estudiantes.findByPerfilId(perfilId)
                 .orElseThrow(() -> new ResourceNotFoundException("Estudiante no encontrado"));
         return asignar(estudiante.getId(), request);
     }
 
     @Transactional
-    public ContextoAcademicoEstudianteResponse autodeclarar(UUID perfilId, ContextoAcademicoEstudianteRequest request) {
+    public ContextoAcademicoEstudianteResponse autodeclarar(
+            UUID perfilId, ContextoAcademicoEstudianteRequest request) {
         var estudiante = estudiantes.findByPerfilId(perfilId)
                 .orElseThrow(() -> new ResourceNotFoundException("No existe estudiante para el perfil autenticado"));
 
@@ -103,9 +147,11 @@ public class ContextoAcademicoEstudianteService {
 
         UUID periodoVigente = academico.periodoVigente();
         if (contextos.findByEstudianteIdAndPeriodoId(estudiante.getId(), periodoVigente).isPresent()) {
-            throw new IllegalStateException("El contexto de este periodo ya fue confirmado; solicite una correccion administrativa");
+            throw new IllegalStateException(
+                    "El contexto de este periodo ya fue confirmado; solicite una correccion administrativa");
         }
-        return asignar(estudiante.getId(), new ContextoAcademicoEstudianteRequest(request.carreraId(), periodoVigente, request.nivel()));
+        return asignar(estudiante.getId(), new ContextoAcademicoEstudianteRequest(
+                request.carreraId(), periodoVigente, request.nivel()));
     }
 
     private ContextoAcademicoEstudianteResponse map(ContextoAcademicoEstudianteEntity c) {
