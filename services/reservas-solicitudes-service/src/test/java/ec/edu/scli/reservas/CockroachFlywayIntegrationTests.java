@@ -13,6 +13,7 @@ import ec.edu.scli.reservas.application.service.SolicitudReservaService;
 import ec.edu.scli.reservas.application.service.PoliticaAmbitoLaboratorio;
 import ec.edu.scli.reservas.client.AcademicoLaboratoriosClient;
 import ec.edu.scli.reservas.client.dto.LaboratorioExternoResponse;
+import ec.edu.scli.reservas.client.dto.PeriodoExternoResponse;
 import ec.edu.scli.reservas.domain.model.ActorAutenticado;
 import ec.edu.scli.reservas.presentation.dto.request.AprobarSolicitudRequest;
 import ec.edu.scli.reservas.presentation.dto.request.CancelarSolicitudRequest;
@@ -138,6 +139,19 @@ class CockroachFlywayIntegrationTests {
         when(politicaAmbito.actor()).thenReturn(new ActorAutenticado(
                 actorId, Set.of("ROLE_ADMINISTRADOR", "SOLICITUD_APROBAR")));
         when(politicaAmbito.validarGestion(any())).thenReturn(UUID.randomUUID());
+        when(academicoClient.obtenerPeriodo(any())).thenAnswer(invocation -> {
+            UUID id = invocation.getArgument(0);
+            return new PeriodoExternoResponse(
+                    id != null ? id : UUID.randomUUID(),
+                    "PER-2026-1",
+                    "Período Académico 2026-1",
+                    LocalDate.now().minusMonths(1),
+                    LocalDate.now().plusMonths(6),
+                    "ACTIVO",
+                    "PPA-2026",
+                    "PPA 2026",
+                    1);
+        });
     }
 
     @Test
@@ -240,15 +254,29 @@ class CockroachFlywayIntegrationTests {
     void dosSolicitudesSolapadasAprobadasConcurrentementeCreanComoMaximoUnaReserva() throws Exception {
         UUID laboratorioId = UUID.randomUUID();
         UUID pisoId = UUID.randomUUID();
+        UUID periodoLectivoId = UUID.randomUUID();
         LocalDate fecha = LocalDate.now().plusDays(4);
         when(academicoClient.obtenerLaboratorio(laboratorioId)).thenReturn(
                 new LaboratorioExternoResponse(laboratorioId, pisoId, true, true, "ACTIVO", 40));
+        when(academicoClient.obtenerPeriodo(periodoLectivoId)).thenReturn(
+                new PeriodoExternoResponse(
+                        periodoLectivoId,
+                        "PER-2026-1",
+                        "Período Académico 2026-1",
+                        fecha.minusMonths(1),
+                        fecha.plusMonths(5),
+                        "ACTIVO",
+                        "PPA-2026",
+                        "PPA 2026",
+                        1));
 
         SolicitudReserva primeraSolicitud = nuevaSolicitud(laboratorioId);
+        primeraSolicitud.setPeriodoLectivoId(periodoLectivoId);
         primeraSolicitud.setEstado(EstadoSolicitud.EN_REVISION);
         primeraSolicitud.setPisoId(pisoId);
         primeraSolicitud.setFechaReserva(fecha);
         SolicitudReserva segundaSolicitud = nuevaSolicitud(laboratorioId);
+        segundaSolicitud.setPeriodoLectivoId(periodoLectivoId);
         segundaSolicitud.setEstado(EstadoSolicitud.EN_REVISION);
         segundaSolicitud.setPisoId(pisoId);
         segundaSolicitud.setFechaReserva(fecha);
