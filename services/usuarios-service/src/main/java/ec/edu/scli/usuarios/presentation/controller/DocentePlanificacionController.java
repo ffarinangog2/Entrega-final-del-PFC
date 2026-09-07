@@ -38,11 +38,20 @@ public class DocentePlanificacionController {
         if (carreras.size() != 1) {
             throw new AccessDeniedException("El coordinador no posee una carrera institucional unica y activa");
         }
-        return ResponseEntity.ok(docentes.findActivosByCarreraId(carreras.getFirst()).stream()
-                .map(docente -> new DocenteResponse(docente.getId(), docente.getPerfil().getId(),
-                        docente.getCodigoDocente(), docente.getTituloAcademico(), docente.getDepartamento(),
-                        docente.getTipoContrato(), docente.getDedicacion(), docente.getActivo(),
-                        docente.getCreadoEn(), docente.getActualizadoEn()))
+        return ResponseEntity.ok(docentes.findTodosActivosConPerfil().stream()
+                .map(docente -> new DocenteResponse(
+                        docente.getId(),
+                        docente.getPerfil().getId(),
+                        docente.getCodigoDocente(),
+                        docente.getTituloAcademico(),
+                        docente.getDepartamento(),
+                        docente.getTipoContrato(),
+                        docente.getDedicacion(),
+                        docente.getActivo(),
+                        docente.getCreadoEn(),
+                        docente.getActualizadoEn(),
+                        docente.getPerfil().getNombres(),
+                        docente.getPerfil().getApellidos()))
                 .toList());
     }
 

@@ -25,4 +25,12 @@ public interface DocenteRepository extends JpaRepository<Docente, UUID> {
             order by d.codigoDocente
             """)
     List<Docente> findActivosByCarreraId(@Param("carreraId") UUID carreraId);
+
+    @Query("""
+            select d from Docente d
+            join fetch d.perfil p
+            where d.activo = true
+            order by p.apellidos asc, p.nombres asc, d.codigoDocente asc
+            """)
+    List<Docente> findTodosActivosConPerfil();
 }

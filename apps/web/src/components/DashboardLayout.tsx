@@ -49,7 +49,7 @@ export function DashboardLayout({
     (docente || estudiante) &&
     hasAnyPermission(usuario, ['RESERVA_LEER', 'ACADEMICO_LEER'])
   const verIncidentes =
-    (administrador || administradorPiso || docente) &&
+    (administrador || administradorPiso || docente || estudiante) &&
     hasAnyPermission(usuario, [
       'INCIDENTE_LEER',
       'INCIDENTE_CREAR',
@@ -150,7 +150,8 @@ export function DashboardLayout({
             )}
             {verIncidentes && (
               <NavLink className="dashboard__nav-item" to="/incidentes">
-                <span aria-hidden="true">!</span>Incidentes
+                <span aria-hidden="true">!</span>
+                {estudiante ? 'Reportar incidencia' : 'Incidentes'}
               </NavLink>
             )}
           </nav>

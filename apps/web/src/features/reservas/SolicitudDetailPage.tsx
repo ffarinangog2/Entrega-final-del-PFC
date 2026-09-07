@@ -8,6 +8,7 @@ import {
   ponerEnRevision, proponerAlternativa, rechazarSolicitud, responderPropuesta,
   type HistorialSolicitud, type SolicitudReserva,
 } from './reservasApi'
+import { generarIdempotencyKey } from '../../utils/idempotency'
 import './Reservas.css'
 
 const estadosCancelables = new Set(['PENDIENTE', 'EN_REVISION', 'PROPUESTA', 'APROBADA'])
@@ -23,7 +24,7 @@ export function SolicitudDetailPage() {
   const [ocupado, setOcupado] = useState(false)
   const [comentario, setComentario] = useState('')
   const [propuesta, setPropuesta] = useState({ laboratorioId: '', fecha: '', horaInicio: '', horaFin: '', observacion: '' })
-  const approvalKey = useRef(crypto.randomUUID())
+  const approvalKey = useRef(generarIdempotencyKey())
 
   const cargar = useCallback(async () => {
     if (!id) return

@@ -2,12 +2,14 @@ import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { DashboardLayout } from '../../components/DashboardLayout'
 import { hasRole, useAuth } from '../../auth'
+import { useAcademicPeriod } from '../../academicPeriodContext'
 import {
   obtenerDocentePorPerfil, obtenerDocentes, obtenerHorariosDocente,
   obtenerLaboratorios, obtenerMaterias, obtenerPeriodoActual,
   type Docente, type HorarioAcademico, type Laboratorio, type Materia, type PeriodoLectivo,
 } from '../../services/academicoApi'
 import { consultarDisponibilidad, crearSolicitud, type Disponibilidad } from './reservasApi'
+import { generarIdempotencyKey } from '../../utils/idempotency'
 import './Reservas.css'
 
 const initialForm = { docenteId: '', laboratorioId: '', materiaId: '', periodoLectivoId: '', fechaReserva: '', horaInicio: '', horaFin: '', numeroParticipantes: 1, motivo: '', observacion: '' }
@@ -15,19 +17,28 @@ const initialForm = { docenteId: '', laboratorioId: '', materiaId: '', periodoLe
 export function NuevaSolicitudPage() {
   const { usuario } = useAuth()
   const navigate = useNavigate()
+  const { periodoSeleccionado, periodoVigente, cargando: cargandoPeriodo } = useAcademicPeriod()
+  const [periodoLocal, setPeriodoLocal] = useState<PeriodoLectivo | null>(null)
+  const periodo = periodoSeleccionado ?? periodoVigente ?? periodoLocal
+
   const [form, setForm] = useState(initialForm)
   const [docentes, setDocentes] = useState<Docente[]>([])
   const [horarios, setHorarios] = useState<HorarioAcademico[]>([])
   const [laboratorios, setLaboratorios] = useState<Laboratorio[]>([])
   const [materias, setMaterias] = useState<Materia[]>([])
-  const [periodo, setPeriodo] = useState<PeriodoLectivo | null>(null)
   const [cargando, setCargando] = useState(true)
   const [enviando, setEnviando] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [disponibilidad, setDisponibilidad] = useState<Disponibilidad | null>(null)
   const [consultando, setConsultando] = useState(false)
-  const idempotencyKey = useRef(crypto.randomUUID())
+  const idempotencyKey = useRef(generarIdempotencyKey())
   const esDocente = hasRole(usuario, 'DOCENTE')
+
+  useEffect(() => {
+    if (periodo?.id) {
+      setForm((current) => ({ ...current, periodoLectivoId: periodo.id }))
+    }
+  }, [periodo?.id])
 
   useEffect(() => {
     if (!usuario?.perfilId) return
@@ -37,26 +48,44 @@ export function NuevaSolicitudPage() {
       setError(null)
       try {
         const [labs, materiasDisponibles, periodoActual] = await Promise.all([
-          obtenerLaboratorios(), obtenerMaterias(), obtenerPeriodoActual(),
+          obtenerLaboratorios(),
+          obtenerMaterias(),
+          (!periodoSeleccionado && !periodoVigente) ? obtenerPeriodoActual().catch(() => null) : Promise.resolve(null),
         ])
+        if (periodoActual) {
+          setPeriodoLocal(periodoActual)
+        }
         let docentesDisponibles: Docente[]
         let docenteSeleccionado: Docente
         if (esDocente) {
-          docenteSeleccionado = await obtenerDocentePorPerfil(usuario!.perfilId)
-          docentesDisponibles = [docenteSeleccionado]
+          const porPerfil = await obtenerDocentePorPerfil(usuario!.perfilId).catch(() => null)
+          if (porPerfil) {
+            docenteSeleccionado = porPerfil
+            docentesDisponibles = [porPerfil]
+          } else {
+            docentesDisponibles = (await obtenerDocentes().catch(() => [] as Docente[])).filter((item) => item.activo)
+            if (docentesDisponibles.length === 0) throw new Error('No existen docentes activos disponibles.')
+            docenteSeleccionado = docentesDisponibles[0]
+          }
         } else {
           docentesDisponibles = (await obtenerDocentes()).filter((item) => item.activo)
           if (docentesDisponibles.length === 0) throw new Error('No existen docentes activos disponibles.')
           docenteSeleccionado = docentesDisponibles[0]
         }
-        const horariosDocente = await obtenerHorariosDocente(docenteSeleccionado.id)
+        const horariosDocente = docenteSeleccionado
+          ? await obtenerHorariosDocente(docenteSeleccionado.id).catch(() => [] as HorarioAcademico[])
+          : []
         if (!active) return
         setLaboratorios(labs.filter((item) => item.activo))
         setMaterias(materiasDisponibles.filter((item) => item.activo))
-        setPeriodo(periodoActual)
         setDocentes(docentesDisponibles)
         setHorarios(horariosDocente.filter((item) => item.activo))
-        setForm((current) => ({ ...current, docenteId: docenteSeleccionado.id, periodoLectivoId: periodoActual.id }))
+        const pId = periodo?.id ?? periodoActual?.id
+        setForm((current) => ({
+          ...current,
+          docenteId: docenteSeleccionado.id,
+          periodoLectivoId: pId ?? current.periodoLectivoId,
+        }))
       } catch (cause) {
         if (active) setError(cause instanceof Error ? cause.message : 'No se pudieron cargar los datos académicos.')
       } finally {
@@ -65,7 +94,8 @@ export function NuevaSolicitudPage() {
     }
     void cargar()
     return () => { active = false }
-  }, [esDocente, usuario])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [esDocente, usuario?.perfilId])
 
   const materiasVisibles = useMemo(() => {
     if (!esDocente) return materias
@@ -75,7 +105,7 @@ export function NuevaSolicitudPage() {
 
   const cambiar = (name: string, value: string | number) => {
     setForm((current) => ({ ...current, [name]: value }))
-    idempotencyKey.current = crypto.randomUUID()
+    idempotencyKey.current = generarIdempotencyKey()
     setDisponibilidad(null)
   }
 
@@ -94,7 +124,7 @@ export function NuevaSolicitudPage() {
 
   const enviar = async (event: FormEvent) => {
     event.preventDefault()
-    if (enviando || !usuario) return
+    if (enviando || !usuario || !form.periodoLectivoId) return
     setEnviando(true); setError(null)
     try {
       const solicitud = await crearSolicitud({ ...form, solicitanteId: usuario.perfilId }, idempotencyKey.current)
@@ -107,14 +137,25 @@ export function NuevaSolicitudPage() {
   return <DashboardLayout breadcrumb="Reservas / Nueva solicitud"><section className="reservas-panel">
     <h1>Nueva solicitud</h1>
     {cargando && <p role="status">Cargando información académica...</p>}
+    {!cargando && !periodo && !cargandoPeriodo && (
+      <p role="status" className="reservas-panel__message--warning">
+        No existe un período académico activo disponible para la fecha actual.
+      </p>
+    )}
     {!cargando && <form className="reserva-form" onSubmit={enviar}>
       <label>Docente
         <select value={form.docenteId} disabled={esDocente} onChange={(event) => void cambiarDocente(event.target.value)}>
-          {docentes.map((docente) => <option key={docente.id} value={docente.id}>{docente.codigoDocente || 'Docente autenticado'}</option>)}
+          {docentes.map((docente) => (
+            <option key={docente.id} value={docente.id}>
+              {docente.nombres && docente.apellidos
+                ? `${docente.nombres} ${docente.apellidos} (${docente.codigoDocente || 'DOC'})`
+                : (docente.codigoDocente || 'Docente autenticado')}
+            </option>
+          ))}
         </select>
       </label>
       <label>Materia<select required value={form.materiaId} onChange={(e) => cambiar('materiaId', e.target.value)}><option value="">Seleccione una materia</option>{materiasVisibles.map((m) => <option key={m.id} value={m.id}>{m.codigo} — {m.nombre}</option>)}</select></label>
-      <label>Período lectivo<input readOnly value={periodo ? `${periodo.codigo} — ${periodo.nombre}` : ''} /></label>
+      <label>Período lectivo<input readOnly value={periodo ? `${periodo.codigo} — ${periodo.nombre}` : 'Sin período lectivo activo'} /></label>
       <label>Laboratorio<select required value={form.laboratorioId} onChange={(e) => cambiar('laboratorioId', e.target.value)}><option value="">Seleccione un laboratorio</option>{laboratorios.map((lab) => <option key={lab.id} value={lab.id}>{lab.codigo} — {lab.nombre}</option>)}</select></label>
       <label>Fecha<input required type="date" min={new Date().toISOString().slice(0, 10)} value={form.fechaReserva} onChange={(e) => cambiar('fechaReserva', e.target.value)} /></label>
       <label>Hora inicio<input required type="time" value={form.horaInicio} onChange={(e) => cambiar('horaInicio', e.target.value)} /></label>

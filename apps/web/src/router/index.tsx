@@ -65,10 +65,11 @@ export function AppRoutes() {
         <Route path="/notificaciones" element={<NotificationsPage />} />
         <Route element={<ProtectedRoute roles={['ADMINISTRADOR', 'ADMINISTRADOR_PISO', 'COORDINADOR']} permissions={['PLANIFICACION_GESTIONAR', 'SOLICITUD_APROBAR']} />}><Route path="/planificacion" element={<PlanificacionPage />} /></Route>
         <Route element={<ProtectedRoute roles={['DOCENTE', 'ESTUDIANTE']} permissions={['RESERVA_LEER', 'ACADEMICO_LEER']} />}><Route path="/asistencia" element={<AsistenciaPage />} /></Route>
-        <Route element={<ProtectedRoute roles={['ADMINISTRADOR', 'ADMINISTRADOR_PISO', 'DOCENTE']} permissions={['INCIDENTE_LEER', 'INCIDENTE_CREAR', 'INCIDENTE_GESTIONAR']} />}><Route path="/incidentes" element={<IncidentesPage />} /></Route>
+        <Route element={<ProtectedRoute roles={['ADMINISTRADOR', 'ADMINISTRADOR_PISO', 'DOCENTE', 'ESTUDIANTE']} permissions={['INCIDENTE_LEER', 'INCIDENTE_CREAR', 'INCIDENTE_GESTIONAR']} />}><Route path="/incidentes" element={<IncidentesPage />} /></Route>
         <Route element={<ProtectedRoute roles={['ADMINISTRADOR', 'ADMINISTRADOR_PISO', 'DOCENTE']} permissions={['RESERVA_LEER', 'SOLICITUD_LEER']} />}>
           <Route path="/reservas" element={<ReservasListPage />} />
           <Route path="/reservas/:id" element={<ReservaDetailPage />} />
+          <Route path="/reservas/solicitudes/:id" element={<SolicitudDetailPage />} />
           <Route path="/solicitudes/:id" element={<SolicitudDetailPage />} />
         </Route>
         <Route element={<ProtectedRoute roles={['DOCENTE']} permissions={['SOLICITUD_CREAR']} />}>

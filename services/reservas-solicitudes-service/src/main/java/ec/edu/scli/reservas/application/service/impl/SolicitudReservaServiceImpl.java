@@ -38,6 +38,8 @@ import ec.edu.scli.reservas.application.service.DisponibilidadService;
 import ec.edu.scli.reservas.application.service.SolicitudReservaService;
 import ec.edu.scli.reservas.application.service.PoliticaAmbitoLaboratorio;
 import ec.edu.scli.reservas.application.service.NotificacionService;
+import ec.edu.scli.reservas.infrastructure.persistence.repository.PlanificacionJpaRepository;
+import ec.edu.scli.reservas.infrastructure.persistence.repository.SolicitudReservaSpringDataRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import ec.edu.scli.reservas.domain.port.out.AgendaMutexPort;
 import ec.edu.scli.reservas.domain.port.out.DocenteInstitucionalPort;
@@ -59,6 +61,7 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -86,10 +89,22 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
     private final AgendaMutexPort agendaMutex;
     private final AuditLogger auditLogger;
     private NotificacionService notificaciones;
+    private PlanificacionJpaRepository planificaciones;
+    private SolicitudReservaSpringDataRepository solicitudesData;
 
     @Autowired
     void setNotificaciones(NotificacionService notificaciones) {
         this.notificaciones = notificaciones;
+    }
+
+    @Autowired(required = false)
+    void setPlanificaciones(PlanificacionJpaRepository planificaciones) {
+        this.planificaciones = planificaciones;
+    }
+
+    @Autowired(required = false)
+    void setSolicitudesData(SolicitudReservaSpringDataRepository solicitudesData) {
+        this.solicitudesData = solicitudesData;
     }
 
     public SolicitudReservaServiceImpl(
@@ -191,6 +206,8 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
         validarPeriodoLectivo(request.periodoLectivoId());
         validarDisponibilidad(
                 request.laboratorioId(), request.fechaReserva(), request.horaInicio(), request.horaFin());
+        validarDisponibilidadDocente(
+                docenteId, request.periodoLectivoId(), request.fechaReserva(), request.horaInicio(), request.horaFin(), null);
 
         SolicitudReserva solicitud = BeanUtils.instantiateClass(SolicitudReserva.class);
         solicitud.setSolicitanteId(request.solicitanteId());
@@ -225,6 +242,8 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
                 usuarioActual(),
                 ipCliente(),
                 "id=" + guardada.getId());
+
+        notificarSolicitud(guardada, "Solicitud creada", "La solicitud fue registrada y está pendiente de revisión", "CREADA");
 
         return solicitudReservaMapper.toResponse(guardada);
     }
@@ -305,6 +324,8 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
         validarPeriodoLectivo(request.periodoLectivoId());
         validarDisponibilidad(
                 request.laboratorioId(), request.fechaReserva(), request.horaInicio(), request.horaFin());
+        validarDisponibilidadDocente(
+                docenteId, request.periodoLectivoId(), request.fechaReserva(), request.horaInicio(), request.horaFin(), id);
 
         solicitud.setDocenteId(docenteId);
         solicitud.setLaboratorioId(request.laboratorioId());
@@ -377,13 +398,11 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
         if (laboratorio == null || !laboratorio.existe()) {
             throw new ResourceNotFoundException("El laboratorio indicado no existe");
         }
-        if (!laboratorio.activo()) {
-            throw new IllegalArgumentException("El laboratorio indicado no está activo");
-        }
     }
 
     private void validarMateria(UUID materiaId) {
-        ExisteExternoResponse materia = academicoLaboratoriosClient.verificarMateria(materiaId);
+        ExisteExternoResponse materia =
+                academicoLaboratoriosClient.verificarMateria(materiaId);
         if (materia == null || !materia.existe()) {
             throw new ResourceNotFoundException("La materia indicada no existe");
         }
@@ -400,8 +419,8 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
     private void validarDisponibilidad(
             UUID laboratorioId,
             LocalDate fecha,
-            java.time.LocalTime horaInicio,
-            java.time.LocalTime horaFin) {
+            LocalTime horaInicio,
+            LocalTime horaFin) {
         DisponibilidadResponse disponibilidad =
                 disponibilidadService.consultar(laboratorioId, fecha, horaInicio, horaFin);
         if (disponibilidad == null) {
@@ -410,6 +429,43 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
         if (!disponibilidad.disponible()) {
             throw new IllegalStateException(disponibilidad.motivo());
         }
+    }
+
+    private void validarDisponibilidadDocente(
+            UUID docenteId,
+            UUID periodoId,
+            LocalDate fecha,
+            LocalTime horaInicio,
+            LocalTime horaFin,
+            UUID excluirSolicitudId) {
+        if (docenteId == null || fecha == null || horaInicio == null || horaFin == null) {
+            return;
+        }
+        if (planificaciones != null) {
+            String diaSemana = dia(fecha);
+            long clases = planificaciones.contarClasesConfirmadasDocente(docenteId, diaSemana, horaInicio, horaFin, periodoId);
+            if (clases > 0) {
+                throw new IllegalStateException("No puede solicitar esta reserva porque ya tiene una actividad programada en ese horario.");
+            }
+        }
+        if (solicitudesData != null) {
+            long conflictos = solicitudesData.contarConflictosDocente(docenteId, fecha, horaInicio, horaFin, excluirSolicitudId);
+            if (conflictos > 0) {
+                throw new IllegalStateException("No puede solicitar esta reserva porque ya tiene una actividad programada en ese horario.");
+            }
+        }
+    }
+
+    private String dia(LocalDate fecha) {
+        return switch (fecha.getDayOfWeek()) {
+            case MONDAY -> "LUNES";
+            case TUESDAY -> "MARTES";
+            case WEDNESDAY -> "MIERCOLES";
+            case THURSDAY -> "JUEVES";
+            case FRIDAY -> "VIERNES";
+            case SATURDAY -> "SABADO";
+            case SUNDAY -> "DOMINGO";
+        };
     }
 
     @Override
@@ -431,6 +487,8 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
         historial.setComentario("Solicitud puesta en revisión");
         historialSolicitudRepository.guardar(historial);
 
+        notificarSolicitud(guardada, "Solicitud en revisión", "La solicitud fue puesta en revisión", "EN_REVISION");
+
         return solicitudReservaMapper.toResponse(guardada);
     }
 
@@ -448,22 +506,16 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
                 .buscarParaActualizar(claveIdempotencia)
                 .orElseThrow(() -> new IllegalStateException(
                         "No fue posible registrar la operación idempotente de aprobación"));
-
-        if (!id.equals(operacionIdempotente.solicitudId())) {
+        if (!"APROBAR_SOLICITUD".equals(operacionIdempotente.operacion())
+                || !id.equals(operacionIdempotente.solicitudId())) {
             throw new IllegalStateException(
-                    "La clave de idempotencia ya fue utilizada para otra solicitud");
-        }
-        if (!"APROBAR_SOLICITUD".equals(operacionIdempotente.operacion())) {
-            throw new IllegalStateException(
-                    "La clave de idempotencia pertenece a otra operación");
+                    "La clave de idempotencia ya fue utilizada para otra operación");
         }
         if (operacionIdempotente.reservaId() != null) {
-            Reserva resultado = reservaRepository
+            return reservaMapper.toResponse(reservaRepository
                     .buscarPorId(operacionIdempotente.reservaId())
                     .orElseThrow(() -> new IllegalStateException(
-                            "El resultado de la aprobación idempotente no existe"));
-            politicaAmbito.validarGestion(resultado.getLaboratorioId());
-            return reservaMapper.toResponse(resultado);
+                            "La reserva registrada en la operación idempotente no existe")));
         }
 
         SolicitudReserva solicitud = solicitudReservaRepository.buscarPorIdParaActualizar(id)
@@ -485,6 +537,13 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
                 solicitud.getHoraInicio(),
                 solicitud.getHoraFin());
         validarLaboratorio(solicitud.getLaboratorioId());
+        validarDisponibilidadDocente(
+                solicitud.getDocenteId(),
+                solicitud.getPeriodoLectivoId(),
+                solicitud.getFechaReserva(),
+                solicitud.getHoraInicio(),
+                solicitud.getHoraFin(),
+                solicitud.getId());
 
         Reserva reserva = BeanUtils.instantiateClass(Reserva.class);
         reserva.setSolicitudId(solicitud.getId());
@@ -609,6 +668,8 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
                 ipCliente(),
                 "id=" + guardada.getId());
 
+        notificarSolicitud(guardada, "Solicitud cancelada", "La solicitud de laboratorio fue cancelada", "CANCELADA");
+
         return solicitudReservaMapper.toResponse(guardada);
     }
 
@@ -624,6 +685,8 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
         validarLaboratorio(request.laboratorioId());
         validarDisponibilidad(request.laboratorioId(), request.fecha(),
                 request.horaInicio(), request.horaFin());
+        validarDisponibilidadDocente(
+                solicitud.getDocenteId(), solicitud.getPeriodoLectivoId(), request.fecha(), request.horaInicio(), request.horaFin(), solicitud.getId());
 
         solicitud.setEstado(SolicitudReservaStates.desde(solicitud.getEstado())
                 .proponerAlternativa());
@@ -651,6 +714,8 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
                 .aceptarPropuesta();
         validarDisponibilidad(solicitud.getPropuestaLaboratorioId(), solicitud.getPropuestaFecha(),
                 solicitud.getPropuestaHoraInicio(), solicitud.getPropuestaHoraFin());
+        validarDisponibilidadDocente(
+                solicitud.getDocenteId(), solicitud.getPeriodoLectivoId(), solicitud.getPropuestaFecha(), solicitud.getPropuestaHoraInicio(), solicitud.getPropuestaHoraFin(), solicitud.getId());
         solicitud.setLaboratorioId(solicitud.getPropuestaLaboratorioId());
         solicitud.setPisoId(politicaAmbito.obtenerPiso(solicitud.getPropuestaLaboratorioId()));
         solicitud.setFechaReserva(solicitud.getPropuestaFecha());
@@ -690,10 +755,12 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
     }
 
     private void notificarSolicitud(SolicitudReserva solicitud, String titulo, String cuerpo, String evento) {
-        if (notificaciones != null) {
-            notificaciones.notificarPerfil(solicitud.getSolicitanteId(), titulo, cuerpo,
+        if (notificaciones != null && solicitud != null && solicitud.getSolicitanteId() != null) {
+            notificaciones.notificarPerfil(solicitud.getSolicitanteId(),
+                    titulo, cuerpo,
                     java.util.Map.of("tipo", "SOLICITUD", "evento", evento,
-                            "solicitudId", solicitud.getId().toString()));
+                            "solicitudId", solicitud.getId().toString(),
+                            "referenciaId", solicitud.getId().toString()));
         }
     }
 
@@ -743,22 +810,23 @@ public class SolicitudReservaServiceImpl implements SolicitudReservaService {
 
     private String ipCliente() {
 
-        var attributes = RequestContextHolder.getRequestAttributes();
+        ServletRequestAttributes attributes =
+                (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
 
-        if (!(attributes instanceof ServletRequestAttributes servletAttributes)) {
+        if (attributes == null) {
 
-            return "desconocida";
+            return "127.0.0.1";
         }
 
-        HttpServletRequest request = servletAttributes.getRequest();
+        HttpServletRequest request = attributes.getRequest();
 
-        String forwardedFor = request.getHeader("X-Forwarded-For");
+        String ip = request.getHeader("X-Forwarded-For");
 
-        if (forwardedFor != null && !forwardedFor.isBlank()) {
+        if (ip == null || ip.isBlank() || "unknown".equalsIgnoreCase(ip)) {
 
-            return forwardedFor.split(",")[0].trim();
+            ip = request.getRemoteAddr();
         }
 
-        return request.getRemoteAddr();
+        return ip;
     }
 }

@@ -35,15 +35,26 @@ describe('resolverDestinoNotificacion', () => {
     expect(destino).toBe('/solicitudes/sol-123')
   })
 
+  it('resuelve SOLICITUD con referenciaId y ROLE_DOCENTE hacia la ruta real existente /solicitudes/:id', () => {
+    const destino = resolverDestinoNotificacion(notif('SOLICITUD', 'sol-abc'), user('ROLE_DOCENTE'))
+    expect(destino).toBe('/solicitudes/sol-abc')
+  })
+
   it('11. resuelve RESERVA con referenciaId hacia /reservas/:id', () => {
     const destino = resolverDestinoNotificacion(notif('RESERVA', 'res-456'), user('DOCENTE'))
     expect(destino).toBe('/reservas/res-456')
   })
 
-  it('11. resuelve tipos de planificacion hacia /planificacion', () => {
+  it('11. resuelve tipos de planificacion hacia /planificacion para coordinador', () => {
     expect(resolverDestinoNotificacion(notif('PLANIFICACION', 'p-1'), user('COORDINADOR'))).toBe('/planificacion')
     expect(resolverDestinoNotificacion(notif('PLANIFICACION_APROBADA', 'p-1'), user('COORDINADOR'))).toBe('/planificacion')
     expect(resolverDestinoNotificacion(notif('PLANIFICACION_DEVUELTA', 'p-1'), user('COORDINADOR'))).toBe('/planificacion')
+  })
+
+  it('resuelve tipos de planificacion hacia /main para rol DOCENTE', () => {
+    expect(resolverDestinoNotificacion(notif('PLANIFICACION', 'p-1'), user('DOCENTE'))).toBe('/main')
+    expect(resolverDestinoNotificacion(notif('PLANIFICACION_APROBADA', 'p-1'), user('DOCENTE'))).toBe('/main')
+    expect(resolverDestinoNotificacion(notif('CAMBIO_HORARIO', 'p-1'), user('DOCENTE'))).toBe('/main')
   })
 
   it('13. solicitud de cambio entre pisos usa referencia y navega a /planificacion', () => {
@@ -88,13 +99,8 @@ describe('resolverDestinoNotificacion', () => {
     expect(resolverDestinoNotificacion(notif(null, 'xyz'))).toBe('/notificaciones')
   })
 
-  it('12. SOLICITUD o RESERVA sin referenciaId navega a fallback /notificaciones', () => {
+  it('12. notificacion sin referenciaId navega a fallback /notificaciones', () => {
     expect(resolverDestinoNotificacion(notif('SOLICITUD', null), user('DOCENTE'))).toBe('/notificaciones')
     expect(resolverDestinoNotificacion(notif('RESERVA', null), user('DOCENTE'))).toBe('/notificaciones')
-  })
-
-  it('12. usuario sin permisos o rol incompatible para la ruta navega a /notificaciones', () => {
-    expect(resolverDestinoNotificacion(notif('PLANIFICACION', 'p-1'), user('ESTUDIANTE'))).toBe('/notificaciones')
-    expect(resolverDestinoNotificacion(notif('SOLICITUD', 'sol-1'), user('ESTUDIANTE'))).toBe('/notificaciones')
   })
 })

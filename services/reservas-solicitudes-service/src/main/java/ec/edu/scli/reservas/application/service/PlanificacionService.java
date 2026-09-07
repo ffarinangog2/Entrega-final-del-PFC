@@ -59,6 +59,7 @@ public class PlanificacionService {
         ActorAutenticado actor = coordinador();
         validarCarrera(actor, request.carreraId());
         validarDatos(request);
+        validarConflictoDocente(request.docenteId(), request.diaSemana(), request.horaInicio(), request.horaFin(), request.periodoId(), null);
         var plan = validarPlanAgregadoEditable(request.planificacionId(), actor, request.periodoId());
         PlanificacionJpaEntity entity = new PlanificacionJpaEntity();
         copiar(request, entity);
@@ -107,6 +108,7 @@ public class PlanificacionService {
             throw new IllegalStateException("Solo puede editarse un borrador o una propuesta de cambio");
         }
         validarDatos(request);
+        validarConflictoDocente(request.docenteId(), request.diaSemana(), request.horaInicio(), request.horaFin(), request.periodoId(), id);
         validarPlanAgregadoEditable(entity.getPlanificacionId(), actor, request.periodoId());
         copiar(request, entity);
         entity.setActualizadaEn(Instant.now());
@@ -188,17 +190,13 @@ public class PlanificacionService {
         return guardar(entity);
     }
 
-    private PlanificacionJpaEntity autorizadaCoordinador(UUID id) {
-        PlanificacionJpaEntity entity = obtener(id);
-        validarCarrera(coordinador(), entity.getCarreraId());
-        return entity;
-    }
-
-    private PlanificacionJpaEntity autorizadaAdministrador(UUID id) {
-        PlanificacionJpaEntity entity = obtener(id);
-        ActorAutenticado actor = actores.obtener();
-        if (!actor.tiene("ROLE_ADMINISTRADOR")) ambitoLaboratorio.validarGestion(entity.getLaboratorioId());
-        return entity;
+    @Transactional
+    public void eliminar(UUID id) {
+        PlanificacionJpaEntity entity = autorizadaCoordinador(id);
+        if (entity.getEstado() != EstadoPlanificacion.BORRADOR) {
+            throw new IllegalStateException("Solo puede eliminarse un borrador");
+        }
+        repository.delete(entity);
     }
 
     private void validarLectura(PlanificacionJpaEntity entity) {
@@ -236,7 +234,24 @@ public class PlanificacionService {
         }
     }
 
+    private PlanificacionJpaEntity autorizadaCoordinador(UUID id) {
+        PlanificacionJpaEntity entity = obtener(id);
+        validarCarrera(coordinador(), entity.getCarreraId());
+        return entity;
+    }
+
+    private PlanificacionJpaEntity autorizadaAdministrador(UUID id) {
+        PlanificacionJpaEntity entity = obtener(id);
+        ActorAutenticado actor = actores.obtener();
+        if (!actor.tiene("ROLE_ADMINISTRADOR")) ambitoLaboratorio.validarGestion(entity.getLaboratorioId());
+        return entity;
+    }
+
     private void validarDatos(GuardarPlanificacionRequest request) {
+        if (request.carreraId() == null) throw new IllegalArgumentException("La carrera es obligatoria");
+        if (request.periodoId() == null) throw new IllegalArgumentException("El periodo es obligatorio");
+        if (request.materiaId() == null) throw new IllegalArgumentException("La materia es obligatoria");
+        if (request.laboratorioId() == null) throw new IllegalArgumentException("El laboratorio es obligatorio");
         if (request.nivel() == null || request.nivel() < 1 || request.nivel() > 10) {
             throw new IllegalArgumentException("El nivel debe estar entre 1 y 10");
         }
@@ -250,14 +265,25 @@ public class PlanificacionService {
         if (request.docenteId() != null) {
             var docente = docentes.obtenerPorDocenteId(request.docenteId());
             if (docente == null || !docente.activo()) throw new IllegalArgumentException("El docente no existe o esta inactivo");
-            if (!usuarios.docentePerteneceCarrera(request.docenteId(), request.carreraId())) {
-                throw new IllegalArgumentException("El docente no pertenece a la carrera planificada");
-            }
         }
         var laboratorio = academico.obtenerLaboratorio(request.laboratorioId());
         if (laboratorio == null || !laboratorio.existe()) throw new IllegalArgumentException("El laboratorio no existe");
         validarHoras(request.horaInicio(), request.horaFin());
         normalizarDia(request.diaSemana());
+    }
+
+    private void validarConflictoDocente(UUID docenteId, String diaSemana, LocalTime horaInicio, LocalTime horaFin, UUID periodoId, UUID excluirId) {
+        if (docenteId == null) return;
+        String dia = normalizarDia(diaSemana);
+        List<PlanificacionJpaEntity> bloquesDocente = repository.findByDocenteIdAndDiaSemana(docenteId, dia);
+        for (PlanificacionJpaEntity b : bloquesDocente) {
+            if (excluirId != null && excluirId.equals(b.getId())) continue;
+            if (b.getEstado() == EstadoPlanificacion.CANCELADA) continue;
+            if (periodoId != null && b.getPeriodoId() != null && !periodoId.equals(b.getPeriodoId())) continue;
+            if (horaInicio.isBefore(b.getHoraFin()) && horaFin.isAfter(b.getHoraInicio())) {
+                throw new IllegalArgumentException("El docente seleccionado ya tiene una clase asignada en ese horario.");
+            }
+        }
     }
 
     private void validarHoras(LocalTime inicio, LocalTime fin) {

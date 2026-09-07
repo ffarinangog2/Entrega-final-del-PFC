@@ -132,4 +132,16 @@ describe('DashboardLayout por permisos', () => {
       screen.queryByRole('link', { name: /Incidentes/ }),
     ).not.toBeInTheDocument()
   })
+  it('ESTUDIANTE con permisos de incidentes ve Reportar incidencia en navegación', () => {
+    menu(['ESTUDIANTE'], ['ACADEMICO_LEER', 'INCIDENTE_CREAR', 'INCIDENTE_LEER'])
+    expect(
+      screen.getByRole('link', { name: /Reportar incidencia/ }),
+    ).toHaveAttribute('href', '/incidentes')
+    expect(
+      screen.queryByRole('link', { name: /Reservas/ }),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('link', { name: /Planificación/ }),
+    ).not.toBeInTheDocument()
+  })
 })

@@ -9,6 +9,7 @@ import ec.edu.scli.reservas.client.dto.*;
 import ec.edu.scli.reservas.domain.model.*;
 import ec.edu.scli.reservas.domain.port.out.*;
 import ec.edu.scli.reservas.infrastructure.audit.AuditLogger;
+import ec.edu.scli.reservas.infrastructure.persistence.repository.PlanificacionJpaRepository;
 import ec.edu.scli.reservas.mapper.*;
 import ec.edu.scli.reservas.observability.BusinessEventMetrics;
 import ec.edu.scli.reservas.presentation.dto.request.*;
@@ -356,7 +357,7 @@ class SolicitudReservaServiceImplTest {
         prepararBloqueo(solicitud);
         when(politica.actor()).thenReturn(new ActorAutenticado(
                 usuarioId, java.util.Set.of("ROLE_DOCENTE", "SOLICITUD_CANCELAR")));
-        doThrow(new org.springframework.security.access.AccessDeniedException("sin gestiÃ³n"))
+        doThrow(new org.springframework.security.access.AccessDeniedException("sin gestión"))
                 .when(politica).validarGestion(laboratorioId);
         assertThrows(org.springframework.security.access.AccessDeniedException.class,
                 () -> service.cancelar(solicitud.getId(), new CancelarSolicitudRequest("no"), usuarioId));
@@ -500,6 +501,162 @@ class SolicitudReservaServiceImplTest {
                 solicitud.getId(), new CancelarSolicitudRequest("cancelada"), usuarioId);
         verify(auditLogger).registrarEvento(
                 eq("solicitud_cancelada"), any(), any(), contains("id=" + respuesta.id()));
+    }
+
+    @Test
+    void notificaEnCreacionConReferenciaId() {
+        var respuesta = service.crear(crearRequest(), "clave-notif-crear", usuarioId);
+        verify(notificaciones).notificarPerfil(
+                eq(solicitanteId),
+                eq("Solicitud creada"),
+                anyString(),
+                argThat(map -> "SOLICITUD".equals(map.get("tipo"))
+                        && "CREADA".equals(map.get("evento"))
+                        && respuesta.id().toString().equals(map.get("referenciaId"))
+                        && respuesta.id().toString().equals(map.get("solicitudId"))));
+    }
+
+    @Test
+    void noDuplicaNotificacionEnReplayCrear() {
+        SolicitudReserva existente = solicitud(EstadoSolicitud.PENDIENTE);
+        when(idempotenciaCreaciones.buscarParaActualizar("clave-replay")).thenReturn(Optional.of(
+                new IdempotenciaCreacionSolicitud("clave-replay", "CREAR_SOLICITUD",
+                        usuarioId, service.hashCreacion(crearRequest()), existente.getId())));
+        when(solicitudes.buscarPorId(existente.getId())).thenReturn(Optional.of(existente));
+
+        service.crear(crearRequest(), "clave-replay", usuarioId);
+        verify(notificaciones, never()).notificarPerfil(any(), any(), any(), any());
+    }
+
+    @Test
+    void notificaEnPonerEnRevisionConReferenciaId() {
+        SolicitudReserva solicitud = solicitud(EstadoSolicitud.PENDIENTE);
+        prepararBloqueo(solicitud);
+        var respuesta = service.ponerEnRevision(solicitud.getId(), usuarioId);
+        verify(notificaciones).notificarPerfil(
+                eq(solicitanteId),
+                eq("Solicitud en revisión"),
+                anyString(),
+                argThat(map -> "SOLICITUD".equals(map.get("tipo"))
+                        && "EN_REVISION".equals(map.get("evento"))
+                        && respuesta.id().toString().equals(map.get("referenciaId"))
+                        && respuesta.id().toString().equals(map.get("solicitudId"))));
+    }
+
+    @Test
+    void notificaEnAprobacionConReferenciaId() {
+        SolicitudReserva solicitud = solicitud(EstadoSolicitud.EN_REVISION);
+        prepararBloqueo(solicitud);
+        prepararIdempotenciaPendiente("clave-notif-aprob", solicitud.getId());
+        when(reservas.existePorSolicitudId(solicitud.getId())).thenReturn(false);
+
+        service.aprobar(solicitud.getId(), new AprobarSolicitudRequest(usuarioId, "aprobada"), "clave-notif-aprob", usuarioId);
+        verify(notificaciones).notificarPerfil(
+                eq(solicitanteId),
+                eq("Solicitud aprobada"),
+                anyString(),
+                argThat(map -> "SOLICITUD".equals(map.get("tipo"))
+                        && "APROBADA".equals(map.get("evento"))
+                        && solicitud.getId().toString().equals(map.get("referenciaId"))
+                        && solicitud.getId().toString().equals(map.get("solicitudId"))));
+    }
+
+    @Test
+    void notificaEnRechazoConReferenciaId() {
+        SolicitudReserva solicitud = solicitud(EstadoSolicitud.EN_REVISION);
+        prepararBloqueo(solicitud);
+        service.rechazar(solicitud.getId(), new RechazarSolicitudRequest("no procede"), usuarioId);
+        verify(notificaciones).notificarPerfil(
+                eq(solicitanteId),
+                eq("Solicitud rechazada"),
+                anyString(),
+                argThat(map -> "SOLICITUD".equals(map.get("tipo"))
+                        && "RECHAZADA".equals(map.get("evento"))
+                        && solicitud.getId().toString().equals(map.get("referenciaId"))
+                        && solicitud.getId().toString().equals(map.get("solicitudId"))));
+    }
+
+    @Test
+    void notificaEnCancelacionConReferenciaId() {
+        SolicitudReserva solicitud = solicitud(EstadoSolicitud.PENDIENTE);
+        prepararBloqueo(solicitud);
+        service.cancelar(solicitud.getId(), new CancelarSolicitudRequest("cancelada"), solicitanteId);
+        verify(notificaciones).notificarPerfil(
+                eq(solicitanteId),
+                eq("Solicitud cancelada"),
+                anyString(),
+                argThat(map -> "SOLICITUD".equals(map.get("tipo"))
+                        && "CANCELADA".equals(map.get("evento"))
+                        && solicitud.getId().toString().equals(map.get("referenciaId"))
+                        && solicitud.getId().toString().equals(map.get("solicitudId"))));
+    }
+
+    @Test
+    void notificaEnPropuestaAlternativaConReferenciaId() {
+        SolicitudReserva solicitud = solicitud(EstadoSolicitud.EN_REVISION);
+        prepararBloqueo(solicitud);
+        ProponerAlternativaRequest request = new ProponerAlternativaRequest(
+                LocalDate.now().plusDays(3),
+                LocalTime.of(14, 0),
+                LocalTime.of(16, 0),
+                laboratorioId,
+                "Propuesta cambio horario");
+
+        service.proponerAlternativa(solicitud.getId(), request, usuarioId);
+
+        verify(notificaciones).notificarPerfil(
+                eq(solicitanteId),
+                eq("Propuesta alternativa"),
+                anyString(),
+                argThat(map -> "SOLICITUD".equals(map.get("tipo"))
+                        && "PROPUESTA".equals(map.get("evento"))
+                        && solicitud.getId().toString().equals(map.get("referenciaId"))
+                        && solicitud.getId().toString().equals(map.get("solicitudId"))));
+    }
+
+    @Test
+    void bloqueMismoHorarioOtroPeriodoNoGeneraConflicto() {
+        PlanificacionJpaRepository planificacionesMock = mock(PlanificacionJpaRepository.class);
+        service.setPlanificaciones(planificacionesMock);
+
+        // En otro período no hay clases en el período solicitado (retorna 0)
+        when(planificacionesMock.contarClasesConfirmadasDocente(
+                eq(docenteId), anyString(), eq(LocalTime.of(8, 0)), eq(LocalTime.of(10, 0)), eq(periodoId)))
+                .thenReturn(0L);
+
+        var respuesta = service.crear(crearRequest(), "clave-otro-periodo", usuarioId);
+        assertNotNull(respuesta);
+        assertEquals(EstadoSolicitud.PENDIENTE, respuesta.estado());
+    }
+
+    @Test
+    void bloqueMismoPeriodoHorarioSolapadoGeneraConflicto() {
+        PlanificacionJpaRepository planificacionesMock = mock(PlanificacionJpaRepository.class);
+        service.setPlanificaciones(planificacionesMock);
+
+        // En el mismo período y horario solapado hay al menos una clase confirmada
+        when(planificacionesMock.contarClasesConfirmadasDocente(
+                eq(docenteId), anyString(), eq(LocalTime.of(8, 0)), eq(LocalTime.of(10, 0)), eq(periodoId)))
+                .thenReturn(1L);
+
+        IllegalStateException ex = assertThrows(IllegalStateException.class, () ->
+                service.crear(crearRequest(), "clave-conflicto-periodo", usuarioId));
+        assertTrue(ex.getMessage().contains("ya tiene una actividad programada en ese horario"));
+    }
+
+    @Test
+    void bloqueContiguoNoGeneraConflicto() {
+        PlanificacionJpaRepository planificacionesMock = mock(PlanificacionJpaRepository.class);
+        service.setPlanificaciones(planificacionesMock);
+
+        // Bloque contiguo no es solapamiento estricto: la consulta retorna 0
+        when(planificacionesMock.contarClasesConfirmadasDocente(
+                eq(docenteId), anyString(), eq(LocalTime.of(8, 0)), eq(LocalTime.of(10, 0)), eq(periodoId)))
+                .thenReturn(0L);
+
+        var respuesta = service.crear(crearRequest(), "clave-contiguo", usuarioId);
+        assertNotNull(respuesta);
+        assertEquals(EstadoSolicitud.PENDIENTE, respuesta.estado());
     }
 
     private void prepararBloqueo(SolicitudReserva solicitud) {

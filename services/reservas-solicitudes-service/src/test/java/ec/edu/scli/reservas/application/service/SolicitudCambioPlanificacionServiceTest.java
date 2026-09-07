@@ -216,6 +216,19 @@ class SolicitudCambioPlanificacionServiceTest {
         assertThatThrownBy(() -> service.crear(planId, new CrearSolicitudCambioRequest(bloqueId, TipoSolicitudCambio.DOCENTE, "Motivo", null, docenteOrigen, null, null, null)))
                 .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("Debe proponer otro docente");
 
+        // DOCENTE con conflicto de horario -> IllegalArgumentException
+        var bloqueEnConflicto = new PlanificacionJpaEntity();
+        bloqueEnConflicto.setId(UUID.randomUUID());
+        bloqueEnConflicto.setDocenteId(docenteDestino);
+        bloqueEnConflicto.setDiaSemana(bloque.getDiaSemana());
+        bloqueEnConflicto.setHoraInicio(bloque.getHoraInicio());
+        bloqueEnConflicto.setHoraFin(bloque.getHoraFin());
+        bloqueEnConflicto.setEstado(EstadoPlanificacion.CONFIRMADA);
+        when(bloques.findByDocenteIdAndDiaSemana(docenteDestino, bloque.getDiaSemana())).thenReturn(List.of(bloqueEnConflicto));
+        assertThatThrownBy(() -> service.crear(planId, new CrearSolicitudCambioRequest(bloqueId, TipoSolicitudCambio.DOCENTE, "Motivo", null, docenteDestino, null, null, null)))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("ya tiene una clase asignada en ese horario");
+        when(bloques.findByDocenteIdAndDiaSemana(docenteDestino, bloque.getDiaSemana())).thenReturn(List.of());
+
         // HORARIO: horario inconsistente o nulo
         assertThatThrownBy(() -> service.crear(planId, new CrearSolicitudCambioRequest(bloqueId, TipoSolicitudCambio.HORARIO, "Motivo", null, null, null, null, null)))
                 .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("horario valido");
@@ -417,16 +430,6 @@ class SolicitudCambioPlanificacionServiceTest {
         when(bloques.findById(bloqueId)).thenReturn(Optional.of(bloque));
         when(bloques.findByPlanificacionId(planId)).thenReturn(List.of(bloque));
 
-        // Docente no pertenece a la carrera -> IllegalStateException
-        when(usuarios.docentePerteneceCarrera(docenteDestino, carrera)).thenReturn(false);
-        assertThatThrownBy(() -> service.aprobar(solId, "Ok"))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("docente propuesto no pertenece");
-
-        rev.setEstado(EstadoSolicitudCambio.PENDIENTE);
-
-        // Docente pertenece a la carrera -> exito y notificaciones enviadas
-        when(usuarios.docentePerteneceCarrera(docenteDestino, carrera)).thenReturn(true);
         when(usuarios.obtenerDocentePorId(docenteOrigen)).thenReturn(new DocenteExternoResponse(docenteOrigen, UUID.randomUUID(), true));
         when(usuarios.obtenerDocentePorId(docenteDestino)).thenReturn(new DocenteExternoResponse(docenteDestino, UUID.randomUUID(), true));
         when(usuarios.obtenerEstudiantesCompatibles(carrera, periodo, bloque.getNivel())).thenReturn(List.of(UUID.randomUUID()));

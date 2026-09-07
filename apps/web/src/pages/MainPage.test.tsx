@@ -120,7 +120,7 @@ describe('MainPage', () => {
     usuario = { perfilId: 'perfil-2', roles: ['ESTUDIANTE'], permisos: [] }
     vi.mocked(academico.obtenerCarreras).mockResolvedValue([{ id: 'c-1', facultadId: 'f', codigo: 'IS', nombre: 'Ingeniería de Software', activo: true }])
     vi.mocked(academico.obtenerPeriodos).mockResolvedValue([{ id: 'p-1', codigo: 'C1', nombre: 'Ciclo actual', fechaInicio: '', fechaFin: '', estado: 'ACTIVO' }])
-    vi.mocked(academico.obtenerPisos).mockResolvedValue([{ id: 'piso-1', bloqueId: 'b', numero: 2, descripcion: '', activo: true }])
+    vi.mocked(academico.obtenerPisos).mockResolvedValue([{ id: 'piso-1', bloqueId: 'b', numero: 1, descripcion: '', activo: true }])
     vi.mocked(operational.obtenerMiHorario).mockResolvedValue([{ id: 'plan-1', planificacionId: 'plan', nivel: 7, periodoId: 'p-1', carreraId: 'c-1', materiaId: 'm-1', docenteId: 'doc-1', laboratorioId: 'l-1', diaSemana: 'LUNES', horaInicio: '07:30', horaFin: '09:30', estado: 'CONFIRMADA', observacion: null, version: 0 }])
     vi.mocked(operational.listarSesionesAbiertas).mockResolvedValue([{ id: 'sesion', reservaId: null, bloqueId: 'plan-1', fechaClase: '', abiertaEn: '', expiraEn: '2026-09-03T15:00:00Z', estado: 'ABIERTA', token: null }])
     vi.mocked(usuarios.obtenerDocenteResumen).mockResolvedValue({ id: 'doc-1', nombres: 'Carlos', apellidos: 'Pérez', codigoDocente: 'DOC-1' })

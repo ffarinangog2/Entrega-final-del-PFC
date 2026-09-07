@@ -2,7 +2,7 @@ import { apiRequest } from './apiClient'
 
 export type EstadoLaboratorio = 'DISPONIBLE' | 'OCUPADO' | 'MANTENIMIENTO' | 'INACTIVO'
 export interface Laboratorio { id: string; pisoId: string; codigo: string; nombre: string; capacidad: number; descripcion: string; estado: EstadoLaboratorio; activo: boolean; creadoEn: string; actualizadoEn: string }
-export interface Docente { id: string; perfilId: string; codigoDocente: string | null; activo: boolean }
+export interface Docente { id: string; perfilId: string; codigoDocente: string | null; activo: boolean; nombres?: string | null; apellidos?: string | null }
 export interface Materia { id: string; carreraId: string; codigo: string; nombre: string; numeroHoras: number; nivel?: number | null; activo: boolean }
 export interface PeriodoLectivo { id: string; codigo: string; nombre: string; fechaInicio: string; fechaFin: string; estado: 'PLANIFICADO' | 'ACTIVO' | 'FINALIZADO'; ppaCodigo?: string | null; ppaNombre?: string | null; cicloAcademico?: number | null }
 export interface Carrera { id:string; facultadId:string; codigo:string; nombre:string; activo:boolean }

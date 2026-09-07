@@ -23,6 +23,8 @@ import {
   obtenerMisContextosAcademicos,
   type ContextoAcademicoEstudiante,
 } from '../../services/usuariosApi'
+import { useAcademicPeriod } from '../../academicPeriodContext'
+import { formatPisoLabel } from '../planificacion/planificacionLaboratorioFilter'
 import '../operaciones/Operations.css'
 
 type Mode = 'horario' | 'laboratorios' | 'historial'
@@ -34,6 +36,8 @@ const minutos = (hora: string) => {
 }
 
 export function StudentAcademicPage({ mode }: { mode: Mode }) {
+  const { periodoSeleccionado, periodoVigente } = useAcademicPeriod()
+  const periodoIdGlobal = periodoSeleccionado?.id ?? periodoVigente?.id
   const [contextos, setContextos] = useState<ContextoAcademicoEstudiante[]>([])
   const [seleccion, setSeleccion] = useState('')
   const [horario, setHorario] = useState<Planificacion[]>([])
@@ -47,6 +51,7 @@ export function StudentAcademicPage({ mode }: { mode: Mode }) {
   const [error, setError] = useState('')
   const [detalle, setDetalle] = useState<Planificacion | null>(null)
   const [docentes, setDocentes] = useState<Map<string, string>>(new Map())
+
   useEffect(() => {
     let activo = true
     Promise.all([
@@ -61,7 +66,10 @@ export function StudentAcademicPage({ mode }: { mode: Mode }) {
         if (!activo) return
         setContextos(ctx)
         setSeleccion(
-          ctx.find((x) => x.activo)?.periodoId ?? ctx[0]?.periodoId ?? '',
+          periodoIdGlobal ||
+            ctx.find((x) => x.activo)?.periodoId ||
+            ctx[0]?.periodoId ||
+            '',
         )
         setMaterias(mat)
         setLabs(lab)
@@ -82,13 +90,28 @@ export function StudentAcademicPage({ mode }: { mode: Mode }) {
     return () => {
       activo = false
     }
-  }, [])
+  }, [periodoIdGlobal])
+
+  useEffect(() => {
+    if (periodoIdGlobal) {
+      setSeleccion(periodoIdGlobal)
+    }
+  }, [periodoIdGlobal])
+
   useEffect(() => {
     if (!seleccion) return
     let activo = true
     setCargando(true)
-    Promise.all([obtenerMiHorario(seleccion), mode === 'historial' ? historialAsistencia(seleccion) : Promise.resolve([])])
-      .then(([bloques, registros]) => { if (activo) { setHorario(bloques); setAsistencias(registros) } })
+    Promise.all([
+      obtenerMiHorario(seleccion),
+      mode === 'historial' ? historialAsistencia(seleccion) : Promise.resolve([]),
+    ])
+      .then(([bloques, registros]) => {
+        if (activo) {
+          setHorario(bloques)
+          setAsistencias(registros)
+        }
+      })
       .catch(
         (e) =>
           activo &&
@@ -101,16 +124,30 @@ export function StudentAcademicPage({ mode }: { mode: Mode }) {
       activo = false
     }
   }, [seleccion, mode])
+
   useEffect(() => {
     const ids = [...new Set(horario.map((item) => item.docenteId).filter((id): id is string => Boolean(id)))]
-    if (ids.length === 0) { setDocentes(new Map()); return }
+    if (ids.length === 0) {
+      setDocentes(new Map())
+      return
+    }
     let activo = true
     void Promise.all(ids.map(obtenerDocenteResumen))
-      .then((items) => { if (activo) setDocentes(new Map(items.map((item) => [item.id, `${item.nombres} ${item.apellidos}`]))) })
-      .catch(() => { if (activo) setDocentes(new Map()) })
-    return () => { activo = false }
+      .then((items) => {
+        if (activo) setDocentes(new Map(items.map((item) => [item.id, `${item.nombres} ${item.apellidos}`])))
+      })
+      .catch(() => {
+        if (activo) setDocentes(new Map())
+      })
+    return () => {
+      activo = false
+    }
   }, [horario])
-  const contexto = contextos.find((x) => x.periodoId === seleccion)
+
+  const contexto =
+    contextos.find((x) => x.periodoId === seleccion) ??
+    contextos.find((x) => x.activo) ??
+    contextos[0]
   const mat = useMemo(() => new Map(materias.map((x) => [x.id, x])), [materias])
   const lab = useMemo(() => new Map(labs.map((x) => [x.id, x])), [labs])
   const piso = useMemo(() => new Map(pisos.map((x) => [x.id, x])), [pisos])
@@ -123,6 +160,7 @@ export function StudentAcademicPage({ mode }: { mode: Mode }) {
   const laboratoriosHorario = [...new Set(horario.map((x) => x.laboratorioId))]
     .map((id) => lab.get(id))
     .filter((x): x is Laboratorio => Boolean(x))
+
   return (
     <DashboardLayout breadcrumb={title}>
       <div className="operations">
@@ -140,7 +178,7 @@ export function StudentAcademicPage({ mode }: { mode: Mode }) {
             {error}
           </p>
         )}
-        {contextos.length > 0 && (
+        {mode === 'historial' && contextos.length > 1 && (
           <label>
             Ciclo consultado
             <select
@@ -181,7 +219,11 @@ export function StudentAcademicPage({ mode }: { mode: Mode }) {
                   <h2>
                     {l.codigo} — {l.nombre}
                   </h2>
-                  <p>Piso {piso.get(l.pisoId)?.numero ?? 'institucional'}</p>
+                  <p>
+                    {piso.get(l.pisoId)
+                      ? formatPisoLabel(piso.get(l.pisoId))
+                      : 'Piso institucional'}
+                  </p>
                   <p>
                     {l.estado} · Capacidad {l.capacidad}
                   </p>
@@ -194,29 +236,83 @@ export function StudentAcademicPage({ mode }: { mode: Mode }) {
             No existe un horario aprobado para el ciclo seleccionado.
           </p>
         ) : (
-          <>{mode === 'historial' && <section className="operations__card"><h2>Mis registros de uso</h2>{asistencias.length === 0 ? <p>Aún no tienes registros en este ciclo.</p> : asistencias.map((registro) => { const bloque = horario.find((item) => item.id === registro.bloqueId); return <p key={registro.id}><strong>{new Date(registro.registradaEn).toLocaleString()}</strong> · {mat.get(bloque?.materiaId ?? '')?.nombre ?? 'Actividad de laboratorio'} · {registro.estado}</p> })}</section>}
-          <div className="operations__table-wrap">
-            <table aria-label="Horario semanal de laboratorio">
-              <thead><tr><th>Hora</th>{DIAS.map((dia) => <th key={dia}>{dia[0] + dia.slice(1).toLowerCase()}</th>)}</tr></thead>
-              <tbody>
-                {HORAS.map((hora) => <tr key={hora}>
-                  <th>{hora}</th>
-                  {DIAS.map((dia) => {
-                    const inicioCelda = minutos(hora)
-                    const bloque = horario.find((item) => item.diaSemana === dia && minutos(item.horaInicio) >= inicioCelda && minutos(item.horaInicio) < inicioCelda + 60)
-                    return <td key={`${dia}-${hora}`}>
-                      {bloque && <button className="student-schedule__block" onClick={() => setDetalle(bloque)}>
-                        <strong>{bloque.horaInicio}–{bloque.horaFin}</strong>
-                        <span>{mat.get(bloque.materiaId)?.nombre ?? 'Materia planificada'}</span>
-                        <span>{lab.get(bloque.laboratorioId)?.codigo ?? 'Laboratorio'} · Piso {piso.get(lab.get(bloque.laboratorioId)?.pisoId ?? '')?.numero ?? '—'}</span>
-                        <span>{bloque.docenteId ? docentes.get(bloque.docenteId) ?? 'Docente asignado' : 'Docente por confirmar'}</span>
-                      </button>}
-                    </td>
-                  })}
-                </tr>)}
-              </tbody>
-            </table>
-          </div></>
+          <>
+            {mode === 'historial' && (
+              <section className="operations__card">
+                <h2>Mis registros de uso</h2>
+                {asistencias.length === 0 ? (
+                  <p>Aún no tienes registros en este ciclo.</p>
+                ) : (
+                  asistencias.map((registro) => {
+                    const bloque = horario.find((item) => item.id === registro.bloqueId)
+                    return (
+                      <p key={registro.id}>
+                        <strong>{new Date(registro.registradaEn).toLocaleString()}</strong>{' '}
+                        · {mat.get(bloque?.materiaId ?? '')?.nombre ?? 'Actividad de laboratorio'}{' '}
+                        · {registro.estado}
+                      </p>
+                    )
+                  })
+                )}
+              </section>
+            )}
+            <div className="operations__table-wrap">
+              <table aria-label="Horario semanal de laboratorio">
+                <thead>
+                  <tr>
+                    <th>Hora</th>
+                    {DIAS.map((dia) => (
+                      <th key={dia}>{dia[0] + dia.slice(1).toLowerCase()}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {HORAS.map((hora) => (
+                    <tr key={hora}>
+                      <th>{hora}</th>
+                      {DIAS.map((dia) => {
+                        const inicioCelda = minutos(hora)
+                        const bloque = horario.find(
+                          (item) =>
+                            item.diaSemana === dia &&
+                            minutos(item.horaInicio) >= inicioCelda &&
+                            minutos(item.horaInicio) < inicioCelda + 60,
+                        )
+                        return (
+                          <td key={`${dia}-${hora}`}>
+                            {bloque && (
+                              <button
+                                className="student-schedule__block"
+                                onClick={() => setDetalle(bloque)}
+                              >
+                                <strong>
+                                  {bloque.horaInicio}–{bloque.horaFin}
+                                </strong>
+                                <span>
+                                  {mat.get(bloque.materiaId)?.nombre ?? 'Materia planificada'}
+                                </span>
+                                <span>
+                                  {lab.get(bloque.laboratorioId)?.codigo ?? 'Laboratorio'} ·{' '}
+                                  {formatPisoLabel(
+                                    piso.get(lab.get(bloque.laboratorioId)?.pisoId ?? ''),
+                                  )}
+                                </span>
+                                <span>
+                                  {bloque.docenteId
+                                    ? docentes.get(bloque.docenteId) ?? 'Docente asignado'
+                                    : 'Docente por confirmar'}
+                                </span>
+                              </button>
+                            )}
+                          </td>
+                        )
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
         {detalle && (
           <section className="operations__card" aria-label="Detalle de clase">
@@ -225,8 +321,8 @@ export function StudentAcademicPage({ mode }: { mode: Mode }) {
               {detalle.diaSemana} · {detalle.horaInicio}–{detalle.horaFin}
             </p>
             <p>
-              {lab.get(detalle.laboratorioId)?.nombre} · Piso{' '}
-              {piso.get(lab.get(detalle.laboratorioId)?.pisoId ?? '')?.numero}
+              {lab.get(detalle.laboratorioId)?.nombre} ·{' '}
+              {formatPisoLabel(piso.get(lab.get(detalle.laboratorioId)?.pisoId ?? ''))}
             </p>
             <p>Solo lectura</p>
             <button onClick={() => setDetalle(null)}>Cerrar</button>
@@ -236,6 +332,7 @@ export function StudentAcademicPage({ mode }: { mode: Mode }) {
     </DashboardLayout>
   )
 }
+
 export const MiHorarioPage = () => <StudentAcademicPage mode="horario" />
 export const StudentLaboratoriosPage = () => (
   <StudentAcademicPage mode="laboratorios" />

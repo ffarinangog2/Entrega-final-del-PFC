@@ -18,6 +18,20 @@ public interface PlanificacionJpaRepository extends JpaRepository<PlanificacionJ
     List<PlanificacionJpaEntity> findByPlanificacionId(UUID planificacionId);
     List<PlanificacionJpaEntity> findByDocenteIdAndDiaSemana(UUID docenteId, String diaSemana);
 
+    @Query("""
+            select count(p) from PlanificacionJpaEntity p
+            where p.docenteId = :docenteId and p.diaSemana = :dia
+              and (:periodoId is null or p.periodoId = :periodoId)
+              and p.estado = ec.edu.scli.reservas.domain.model.EstadoPlanificacion.CONFIRMADA
+              and p.horaInicio < :horaFin and p.horaFin > :horaInicio
+            """)
+    long contarClasesConfirmadasDocente(
+            @Param("docenteId") UUID docenteId,
+            @Param("dia") String dia,
+            @Param("horaInicio") LocalTime horaInicio,
+            @Param("horaFin") LocalTime horaFin,
+            @Param("periodoId") UUID periodoId);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("""
             select p from PlanificacionJpaEntity p

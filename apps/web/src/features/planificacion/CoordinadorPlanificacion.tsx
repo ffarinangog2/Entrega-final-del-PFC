@@ -209,6 +209,13 @@ export function CoordinadorPlanificacion() {
     catalogos.docentes.find((item) => item.id === id)
   const laboratorio = (id: string) =>
     catalogos.laboratorios.find((item) => item.id === id)
+  const formatoDocente = (d?: academico.Docente | null) => {
+    if (!d) return 'Docente por asignar'
+    if (d.nombres && d.apellidos) {
+      return `${d.nombres} ${d.apellidos} (${d.codigoDocente ?? 'DOC'})`
+    }
+    return d.codigoDocente ?? 'Docente institucional'
+  }
 
   function abrirNuevo(diaSemana: string, horaInicio: string) {
     const fin = `${String(Number(horaInicio.slice(0, 2)) + 1).padStart(2, '0')}:30`
@@ -563,8 +570,7 @@ export function CoordinadorPlanificacion() {
                                   {materia(item.materiaId)?.nombre ?? 'Materia'}
                                 </strong>
                                 <span>
-                                  {docente(item.docenteId)?.codigoDocente ??
-                                    'Docente por asignar'}
+                                  {formatoDocente(docente(item.docenteId))}
                                 </span>
                                 <span>
                                   {laboratorio(item.laboratorioId)?.codigo ??
@@ -697,7 +703,7 @@ export function CoordinadorPlanificacion() {
                   <option value="">Seleccione un docente</option>
                   {catalogos.docentes.map((item) => (
                     <option key={item.id} value={item.id} disabled={ocupacion.docentesOcupados.includes(item.id)}>
-                      {item.codigoDocente ?? 'Docente institucional'} — {ocupacion.docentesOcupados.includes(item.id) ? 'OCUPADO en esta franja' : 'DISPONIBLE'}
+                      {formatoDocente(item)} — {ocupacion.docentesOcupados.includes(item.id) ? 'OCUPADO en esta franja' : 'DISPONIBLE'}
                     </option>
                   ))}
                 </select>
@@ -868,7 +874,7 @@ export function CoordinadorPlanificacion() {
               </select>
             </label>
           </>
-        )}{tipoCambio==='DOCENTE'&&<label>Docente propuesto<select required value={propuestaCambio.docenteId} onChange={e=>setPropuestaCambio({...propuestaCambio,docenteId:e.target.value})}>{catalogos.docentes.map(d=><option key={d.id} value={d.id}>{d.codigoDocente??'Docente institucional'}</option>)}</select></label>}{tipoCambio==='HORARIO'&&<><label>Día<select value={propuestaCambio.diaSemana} onChange={e=>setPropuestaCambio({...propuestaCambio,diaSemana:e.target.value})}>{dias.map(d=><option key={d}>{d}</option>)}</select></label><label>Hora inicio<input type="time" required value={propuestaCambio.horaInicio} onChange={e=>setPropuestaCambio({...propuestaCambio,horaInicio:e.target.value})}/></label><label>Hora fin<input type="time" required value={propuestaCambio.horaFin} onChange={e=>setPropuestaCambio({...propuestaCambio,horaFin:e.target.value})}/></label></>}<label className="planning-dialog__wide">Motivo<textarea required value={motivoCambio} onChange={e=>setMotivoCambio(e.target.value)}/></label><div className="planning-dialog__actions"><button type="button" onClick={()=>setCambio(null)}>Cancelar</button><button>Enviar solicitud</button></div></form></div>}
+        )}{tipoCambio==='DOCENTE'&&<label>Docente propuesto<select required value={propuestaCambio.docenteId} onChange={e=>setPropuestaCambio({...propuestaCambio,docenteId:e.target.value})}>{catalogos.docentes.map(d=><option key={d.id} value={d.id}>{formatoDocente(d)}</option>)}</select></label>}{tipoCambio==='HORARIO'&&<><label>Día<select value={propuestaCambio.diaSemana} onChange={e=>setPropuestaCambio({...propuestaCambio,diaSemana:e.target.value})}>{dias.map(d=><option key={d}>{d}</option>)}</select></label><label>Hora inicio<input type="time" required value={propuestaCambio.horaInicio} onChange={e=>setPropuestaCambio({...propuestaCambio,horaInicio:e.target.value})}/></label><label>Hora fin<input type="time" required value={propuestaCambio.horaFin} onChange={e=>setPropuestaCambio({...propuestaCambio,horaFin:e.target.value})}/></label></>}<label className="planning-dialog__wide">Motivo<textarea required value={motivoCambio} onChange={e=>setMotivoCambio(e.target.value)}/></label><div className="planning-dialog__actions"><button type="button" onClick={()=>setCambio(null)}>Cancelar</button><button>Enviar solicitud</button></div></form></div>}
       </main>
     </DashboardLayout>
   )

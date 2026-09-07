@@ -41,12 +41,19 @@ export function resolverDestinoNotificacion(
     case 'SOLICITUD_CAMBIO_RESUELTA':
     case 'SOLICITUD_RETIRO':
     case 'SOLICITUD_RETIRO_RESUELTA':
-      if (
-        !usuario ||
-        hasRole(usuario, 'COORDINADOR') ||
-        hasRole(usuario, 'ADMINISTRADOR_PISO') ||
-        hasRole(usuario, 'ADMINISTRADOR')
-      ) {
+      if (usuario && hasRole(usuario, 'COORDINADOR')) {
+        return '/planificacion'
+      }
+      if (usuario && hasRole(usuario, 'ADMINISTRADOR_PISO')) {
+        return '/planificacion'
+      }
+      if (usuario && hasRole(usuario, 'ADMINISTRADOR')) {
+        return '/planificacion'
+      }
+      if (usuario && hasRole(usuario, 'DOCENTE')) {
+        return '/main'
+      }
+      if (!usuario) {
         return '/planificacion'
       }
       return '/notificaciones'

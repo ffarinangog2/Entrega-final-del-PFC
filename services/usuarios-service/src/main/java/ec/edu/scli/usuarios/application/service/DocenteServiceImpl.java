@@ -254,7 +254,9 @@ public class DocenteServiceImpl implements DocenteService {
                 docente.getDedicacion(),
                 docente.getActivo(),
                 docente.getCreadoEn(),
-                docente.getActualizadoEn()
+                docente.getActualizadoEn(),
+                docente.getPerfil() != null ? docente.getPerfil().getNombres() : null,
+                docente.getPerfil() != null ? docente.getPerfil().getApellidos() : null
         );
     }
 
