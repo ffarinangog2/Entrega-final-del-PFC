@@ -16,11 +16,14 @@ import ec.edu.scli.reservas.infrastructure.persistence.repository.PlanificacionJ
 import ec.edu.scli.reservas.infrastructure.persistence.repository.RevisionPlanificacionPisoJpaRepository;
 import ec.edu.scli.reservas.infrastructure.persistence.repository.ObservacionRevisionPlanificacionJpaRepository;
 import ec.edu.scli.reservas.infrastructure.persistence.repository.ReservaSpringDataRepository;
+import ec.edu.scli.reservas.infrastructure.persistence.repository.SolicitudCambioPlanificacionJpaRepository;
+import ec.edu.scli.reservas.infrastructure.persistence.repository.RevisionSolicitudCambioJpaRepository;
 import ec.edu.scli.reservas.presentation.dto.request.ProponerCambioAgregadoRequest;
 import ec.edu.scli.reservas.presentation.dto.response.PlanificacionAgregadaResponse;
 import ec.edu.scli.reservas.presentation.dto.response.PlanificacionResponse;
 import ec.edu.scli.reservas.presentation.dto.response.DisponibilidadPlanificacionResponse;
 import ec.edu.scli.reservas.presentation.exception.ResourceNotFoundException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -36,6 +39,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import ec.edu.scli.reservas.domain.model.EstadoPlanificacion;
+import ec.edu.scli.reservas.domain.model.EstadoSolicitudCambio;
 
 @Service
 public class PlanificacionAgregadaService {
@@ -50,14 +54,19 @@ public class PlanificacionAgregadaService {
     private final NotificacionService notificaciones;
     private final ObservacionRevisionPlanificacionJpaRepository observaciones;
     private final ReservaSpringDataRepository reservasOperativas;
+    private final SolicitudCambioPlanificacionJpaRepository solicitudesCambio;
+    private final RevisionSolicitudCambioJpaRepository revisionesSolicitudCambio;
 
+    @Autowired
     public PlanificacionAgregadaService(PlanificacionAgregadaJpaRepository planes,
             PlanificacionJpaRepository bloques, RevisionPlanificacionPisoJpaRepository revisiones,
             ActorActualPort actores, ContextoInstitucionalPort contextos,
             AcademicoLaboratoriosClient academico, PoliticaAmbitoLaboratorio ambitoLaboratorio,
             UsuariosClient usuarios, NotificacionService notificaciones,
             ObservacionRevisionPlanificacionJpaRepository observaciones,
-            ReservaSpringDataRepository reservasOperativas) {
+            ReservaSpringDataRepository reservasOperativas,
+            SolicitudCambioPlanificacionJpaRepository solicitudesCambio,
+            RevisionSolicitudCambioJpaRepository revisionesSolicitudCambio) {
         this.planes = planes;
         this.bloques = bloques;
         this.revisiones = revisiones;
@@ -69,6 +78,19 @@ public class PlanificacionAgregadaService {
         this.notificaciones = notificaciones;
         this.observaciones = observaciones;
         this.reservasOperativas = reservasOperativas;
+        this.solicitudesCambio = solicitudesCambio;
+        this.revisionesSolicitudCambio = revisionesSolicitudCambio;
+    }
+
+    public PlanificacionAgregadaService(PlanificacionAgregadaJpaRepository planes,
+            PlanificacionJpaRepository bloques, RevisionPlanificacionPisoJpaRepository revisiones,
+            ActorActualPort actores, ContextoInstitucionalPort contextos,
+            AcademicoLaboratoriosClient academico, PoliticaAmbitoLaboratorio ambitoLaboratorio,
+            UsuariosClient usuarios, NotificacionService notificaciones,
+            ObservacionRevisionPlanificacionJpaRepository observaciones,
+            ReservaSpringDataRepository reservasOperativas) {
+        this(planes, bloques, revisiones, actores, contextos, academico, ambitoLaboratorio,
+                usuarios, notificaciones, observaciones, reservasOperativas, null, null);
     }
 
     @Transactional
@@ -103,10 +125,21 @@ public class PlanificacionAgregadaService {
         if (actor.tiene("ROLE_ADMINISTRADOR")) return planes.findAll().stream().map(this::map).toList();
         if (actor.tiene("ROLE_ADMINISTRADOR_PISO")) {
             UUID pisoId = ambitoLaboratorio.pisoGestionado();
-            return revisiones.findByPisoIdAndVigenteTrue(pisoId).stream()
+            Set<PlanificacionAgregadaJpaEntity> planesRelevantes = new LinkedHashSet<>();
+            revisiones.findByPisoIdAndVigenteTrue(pisoId).stream()
                     .map(item -> planes.findById(item.getPlanificacionId()).orElse(null))
-                    .filter(java.util.Objects::nonNull).distinct().map(this::mapParaPiso)
-                    .filter(item -> !item.bloques().isEmpty()).toList();
+                    .filter(java.util.Objects::nonNull)
+                    .forEach(planesRelevantes::add);
+            if (solicitudesCambio != null && revisionesSolicitudCambio != null) {
+                revisionesSolicitudCambio.findByPisoId(pisoId).stream()
+                        .filter(rev -> rev.getEstado() == EstadoSolicitudCambio.PENDIENTE)
+                        .map(rev -> solicitudesCambio.findById(rev.getSolicitudId()).orElse(null))
+                        .filter(s -> s != null && s.getEstado() == EstadoSolicitudCambio.PENDIENTE)
+                        .map(s -> planes.findById(s.getPlanificacionId()).orElse(null))
+                        .filter(java.util.Objects::nonNull)
+                        .forEach(planesRelevantes::add);
+            }
+            return planesRelevantes.stream().map(this::mapParaPiso).toList();
         }
         throw new AccessDeniedException("No puede consultar planificaciones agregadas");
     }
@@ -420,11 +453,17 @@ public class PlanificacionAgregadaService {
         UUID pisoId = ambitoLaboratorio.pisoGestionado();
         return response(plan, bloques.findByPlanificacionId(plan.getId()).stream()
                 .filter(item -> item.getEstado() != EstadoPlanificacion.CANCELADA)
-                .filter(item -> pisoId.equals(academico.obtenerLaboratorio(item.getLaboratorioId()).pisoId())).toList());
+                .filter(item -> pisoId.equals(academico.obtenerLaboratorio(item.getLaboratorioId()).pisoId())).toList(),
+                pisoId);
     }
 
     private PlanificacionAgregadaResponse response(PlanificacionAgregadaJpaEntity plan,
             List<PlanificacionJpaEntity> items) {
+        return response(plan, items, null);
+    }
+
+    private PlanificacionAgregadaResponse response(PlanificacionAgregadaJpaEntity plan,
+            List<PlanificacionJpaEntity> items, UUID pisoGestionadoId) {
         List<PlanificacionResponse> mapped = items.stream().sorted(Comparator
                         .comparing(PlanificacionJpaEntity::getNivel)
                         .thenComparing(PlanificacionJpaEntity::getDiaSemana)
@@ -440,7 +479,7 @@ public class PlanificacionAgregadaService {
                 .toList();
         return new PlanificacionAgregadaResponse(plan.getId(), plan.getCarreraId(), plan.getPeriodoId(),
                 estadoEfectivo(plan).name(), plan.getCoordinadorPerfilId(), plan.getCreadaEn(), plan.getEnviadaEn(),
-                plan.getAprobadaEn(), mapped, reviews);
+                plan.getAprobadaEn(), mapped, reviews, pisoGestionadoId);
     }
 
     private EstadoPlanificacionAgregada estadoEfectivo(PlanificacionAgregadaJpaEntity plan) {

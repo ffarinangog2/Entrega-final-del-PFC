@@ -37,6 +37,7 @@ describe('AdministradorPisoPlanificacion', () => {
     vi.clearAllMocks()
     vi.spyOn(window, 'confirm').mockReturnValue(true)
     vi.mocked(operational.listarSolicitudesRetiro).mockResolvedValue([])
+    vi.mocked(operational.listarSolicitudesCambio).mockResolvedValue([])
     vi.mocked(operational.listarPlanificacionesAgregadas).mockResolvedValue([{
       id: 'aggregate-1', carreraId: 'carrera-uuid', periodoId: 'periodo-uuid',
       estado: 'EN_REVISION', bloques: [plan('plan-1'), plan('plan-2')],
@@ -170,5 +171,181 @@ describe('AdministradorPisoPlanificacion', () => {
     expect(estadoPaquete([plan('p', 'PROPUESTA_CAMBIO')])).toBe(
       'Devuelta con observaciones',
     )
+  })
+
+  it('muestra paquete y solicitudes a administrador de piso destino aunque tenga 0 bloques', async () => {
+    vi.mocked(operational.listarPlanificacionesAgregadas).mockResolvedValue([
+      {
+        id: 'aggregate-dest',
+        carreraId: 'carrera-uuid',
+        periodoId: 'periodo-uuid',
+        estado: 'APROBADA',
+        bloques: [],
+        revisiones: [],
+        pisoGestionadoId: 'piso-destino-uuid',
+      },
+    ])
+    vi.mocked(operational.listarSolicitudesCambio).mockResolvedValue([
+      {
+        id: 'sol-1',
+        planificacionId: 'aggregate-dest',
+        bloqueId: 'bloque-1',
+        tipo: 'LABORATORIO',
+        estado: 'PENDIENTE',
+        motivo: 'Cambio hacia piso destino',
+        laboratorioAnteriorId: 'lab-origen',
+        laboratorioPropuestoId: 'laboratorio-uuid',
+        docenteAnteriorId: null,
+        docentePropuestoId: null,
+        diaAnterior: 'LUNES',
+        diaPropuesto: 'LUNES',
+        horaInicioAnterior: '08:00',
+        horaInicioPropuesta: '08:00',
+        horaFinAnterior: '10:00',
+        horaFinPropuesta: '10:00',
+        creadaEn: new Date().toISOString(),
+        revisiones: [
+          { pisoId: 'piso-destino-uuid', estado: 'PENDIENTE' },
+        ],
+      },
+    ])
+
+    render(<AdministradorPisoPlanificacion />)
+    expect(await screen.findByText('0 bloques en su piso')).toBeInTheDocument()
+    expect(screen.getByText('Solicitud de cambio · LABORATORIO')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Aprobar cambio' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Rechazar cambio' })).toBeInTheDocument()
+  })
+
+  it('no muestra en la lista de solicitudes pendientes si la revision de este piso ya fue APROBADA', async () => {
+    vi.mocked(operational.listarPlanificacionesAgregadas).mockResolvedValue([
+      {
+        id: 'aggregate-dest',
+        carreraId: 'carrera-uuid',
+        periodoId: 'periodo-uuid',
+        estado: 'APROBADA',
+        bloques: [],
+        revisiones: [],
+        pisoGestionadoId: 'piso-destino-uuid',
+      },
+    ])
+    vi.mocked(operational.listarSolicitudesCambio).mockResolvedValue([
+      {
+        id: 'sol-1',
+        planificacionId: 'aggregate-dest',
+        bloqueId: 'bloque-1',
+        tipo: 'LABORATORIO',
+        estado: 'PENDIENTE',
+        motivo: 'Cambio hacia piso destino',
+        laboratorioAnteriorId: 'lab-origen',
+        laboratorioPropuestoId: 'laboratorio-uuid',
+        docenteAnteriorId: null,
+        docentePropuestoId: null,
+        diaAnterior: 'LUNES',
+        diaPropuesto: 'LUNES',
+        horaInicioAnterior: '08:00',
+        horaInicioPropuesta: '08:00',
+        horaFinAnterior: '10:00',
+        horaFinPropuesta: '10:00',
+        creadaEn: new Date().toISOString(),
+        revisiones: [
+          { pisoId: 'piso-destino-uuid', estado: 'APROBADA' },
+        ],
+      },
+    ])
+
+    render(<AdministradorPisoPlanificacion />)
+    await screen.findByText('0 bloques en su piso')
+    expect(screen.queryByText('Solicitud de cambio · LABORATORIO')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Aprobar cambio' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Rechazar cambio' })).not.toBeInTheDocument()
+  })
+
+  it('no muestra en la lista de solicitudes pendientes si la revision de este piso ya fue RECHAZADA', async () => {
+    vi.mocked(operational.listarPlanificacionesAgregadas).mockResolvedValue([
+      {
+        id: 'aggregate-dest',
+        carreraId: 'carrera-uuid',
+        periodoId: 'periodo-uuid',
+        estado: 'APROBADA',
+        bloques: [],
+        revisiones: [],
+        pisoGestionadoId: 'piso-destino-uuid',
+      },
+    ])
+    vi.mocked(operational.listarSolicitudesCambio).mockResolvedValue([
+      {
+        id: 'sol-1',
+        planificacionId: 'aggregate-dest',
+        bloqueId: 'bloque-1',
+        tipo: 'LABORATORIO',
+        estado: 'PENDIENTE',
+        motivo: 'Cambio hacia piso destino',
+        laboratorioAnteriorId: 'lab-origen',
+        laboratorioPropuestoId: 'laboratorio-uuid',
+        docenteAnteriorId: null,
+        docentePropuestoId: null,
+        diaAnterior: 'LUNES',
+        diaPropuesto: 'LUNES',
+        horaInicioAnterior: '08:00',
+        horaInicioPropuesta: '08:00',
+        horaFinAnterior: '10:00',
+        horaFinPropuesta: '10:00',
+        creadaEn: new Date().toISOString(),
+        revisiones: [
+          { pisoId: 'piso-destino-uuid', estado: 'RECHAZADA' },
+        ],
+      },
+    ])
+
+    render(<AdministradorPisoPlanificacion />)
+    await screen.findByText('0 bloques en su piso')
+    expect(screen.queryByText('Solicitud de cambio · LABORATORIO')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Aprobar cambio' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Rechazar cambio' })).not.toBeInTheDocument()
+  })
+
+  it('no muestra la solicitud si no tiene revision correspondiente a mi piso', async () => {
+    vi.mocked(operational.listarPlanificacionesAgregadas).mockResolvedValue([
+      {
+        id: 'aggregate-dest',
+        carreraId: 'carrera-uuid',
+        periodoId: 'periodo-uuid',
+        estado: 'APROBADA',
+        bloques: [],
+        revisiones: [],
+        pisoGestionadoId: 'piso-destino-uuid',
+      },
+    ])
+    vi.mocked(operational.listarSolicitudesCambio).mockResolvedValue([
+      {
+        id: 'sol-1',
+        planificacionId: 'aggregate-dest',
+        bloqueId: 'bloque-1',
+        tipo: 'LABORATORIO',
+        estado: 'PENDIENTE',
+        motivo: 'Cambio hacia otro piso',
+        laboratorioAnteriorId: 'lab-origen',
+        laboratorioPropuestoId: 'lab-otro',
+        docenteAnteriorId: null,
+        docentePropuestoId: null,
+        diaAnterior: 'LUNES',
+        diaPropuesto: 'LUNES',
+        horaInicioAnterior: '08:00',
+        horaInicioPropuesta: '08:00',
+        horaFinAnterior: '10:00',
+        horaFinPropuesta: '10:00',
+        creadaEn: new Date().toISOString(),
+        revisiones: [
+          { pisoId: 'otro-piso-uuid', estado: 'PENDIENTE' },
+        ],
+      },
+    ])
+
+    render(<AdministradorPisoPlanificacion />)
+    await screen.findByText('0 bloques en su piso')
+    expect(screen.queryByText('Solicitud de cambio · LABORATORIO')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Aprobar cambio' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Rechazar cambio' })).not.toBeInTheDocument()
   })
 })

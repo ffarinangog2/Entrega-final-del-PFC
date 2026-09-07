@@ -115,6 +115,7 @@ describe('cobertura exhaustiva de endpoints de servicios', () => {
     await operational.registrarAsistenciaPropia('ses-1')
 
     await operational.listarNotificaciones()
+    await operational.obtenerNotificacionesNoLeidas()
     await operational.marcarNotificacionLeida('not-1')
     await operational.marcarTodasNotificacionesLeidas()
 

@@ -9,17 +9,22 @@ import ec.edu.scli.reservas.domain.model.ContextoInstitucional;
 import ec.edu.scli.reservas.domain.model.EstadoPlanificacion;
 import ec.edu.scli.reservas.domain.model.EstadoPlanificacionAgregada;
 import ec.edu.scli.reservas.domain.model.EstadoRevisionPlanificacion;
+import ec.edu.scli.reservas.domain.model.EstadoSolicitudCambio;
 import ec.edu.scli.reservas.domain.port.out.ActorActualPort;
 import ec.edu.scli.reservas.domain.port.out.ContextoInstitucionalPort;
 import ec.edu.scli.reservas.infrastructure.persistence.entity.ObservacionRevisionPlanificacionJpaEntity;
 import ec.edu.scli.reservas.infrastructure.persistence.entity.PlanificacionAgregadaJpaEntity;
 import ec.edu.scli.reservas.infrastructure.persistence.entity.PlanificacionJpaEntity;
 import ec.edu.scli.reservas.infrastructure.persistence.entity.RevisionPlanificacionPisoJpaEntity;
+import ec.edu.scli.reservas.infrastructure.persistence.entity.RevisionSolicitudCambioJpaEntity;
+import ec.edu.scli.reservas.infrastructure.persistence.entity.SolicitudCambioPlanificacionJpaEntity;
 import ec.edu.scli.reservas.infrastructure.persistence.repository.ObservacionRevisionPlanificacionJpaRepository;
 import ec.edu.scli.reservas.infrastructure.persistence.repository.PlanificacionAgregadaJpaRepository;
 import ec.edu.scli.reservas.infrastructure.persistence.repository.PlanificacionJpaRepository;
 import ec.edu.scli.reservas.infrastructure.persistence.repository.ReservaSpringDataRepository;
 import ec.edu.scli.reservas.infrastructure.persistence.repository.RevisionPlanificacionPisoJpaRepository;
+import ec.edu.scli.reservas.infrastructure.persistence.repository.RevisionSolicitudCambioJpaRepository;
+import ec.edu.scli.reservas.infrastructure.persistence.repository.SolicitudCambioPlanificacionJpaRepository;
 import ec.edu.scli.reservas.presentation.dto.request.ProponerCambioAgregadoRequest;
 import ec.edu.scli.reservas.presentation.exception.ResourceNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
@@ -58,6 +63,8 @@ class PlanificacionAgregadaServiceTest {
     private ObservacionRevisionPlanificacionJpaRepository observaciones;
     private UsuariosClient usuarios;
     private ReservaSpringDataRepository reservasOperativas;
+    private SolicitudCambioPlanificacionJpaRepository solicitudesCambio;
+    private RevisionSolicitudCambioJpaRepository revisionesSolicitudCambio;
     private final UUID perfil = UUID.randomUUID();
     private final UUID carrera = UUID.randomUUID();
 
@@ -73,9 +80,11 @@ class PlanificacionAgregadaServiceTest {
         observaciones = mock(ObservacionRevisionPlanificacionJpaRepository.class);
         usuarios = mock(UsuariosClient.class);
         reservasOperativas = mock(ReservaSpringDataRepository.class);
+        solicitudesCambio = mock(SolicitudCambioPlanificacionJpaRepository.class);
+        revisionesSolicitudCambio = mock(RevisionSolicitudCambioJpaRepository.class);
         service = new PlanificacionAgregadaService(planes, bloques, revisiones, actores, contextos,
                 academico, ambito, usuarios, mock(NotificacionService.class),
-                observaciones, reservasOperativas);
+                observaciones, reservasOperativas, solicitudesCambio, revisionesSolicitudCambio);
         when(actores.obtener()).thenReturn(new ActorAutenticado(perfil, Set.of("ROLE_COORDINADOR")));
         when(contextos.obtenerPorPerfilId(perfil)).thenReturn(
                 new ContextoInstitucional(true, true, false, false, false, null, List.of(carrera)));
@@ -482,6 +491,130 @@ class PlanificacionAgregadaServiceTest {
 
         assertThat(service.listar()).isEmpty();
         verify(revisiones, never()).findAll();
+    }
+
+    @Test
+    void pisoDestinoConRevisionPendienteYSolicitudGlobalPendienteVePlanificacion() {
+        UUID piso = UUID.randomUUID();
+        UUID planId = UUID.randomUUID();
+        UUID solicitudId = UUID.randomUUID();
+        PlanificacionAgregadaJpaEntity plan = plan(planId, EstadoPlanificacionAgregada.APROBADA);
+
+        RevisionSolicitudCambioJpaEntity revCambio = new RevisionSolicitudCambioJpaEntity();
+        revCambio.setSolicitudId(solicitudId);
+        revCambio.setPisoId(piso);
+        revCambio.setEstado(EstadoSolicitudCambio.PENDIENTE);
+
+        SolicitudCambioPlanificacionJpaEntity sol = new SolicitudCambioPlanificacionJpaEntity();
+        sol.setId(solicitudId);
+        sol.setPlanificacionId(planId);
+        sol.setEstado(EstadoSolicitudCambio.PENDIENTE);
+
+        when(actores.obtener()).thenReturn(new ActorAutenticado(perfil, Set.of("ROLE_ADMINISTRADOR_PISO")));
+        when(ambito.pisoGestionado()).thenReturn(piso);
+        when(revisiones.findByPisoIdAndVigenteTrue(piso)).thenReturn(List.of());
+        when(revisionesSolicitudCambio.findByPisoId(piso)).thenReturn(List.of(revCambio));
+        when(solicitudesCambio.findById(solicitudId)).thenReturn(Optional.of(sol));
+        when(planes.findById(planId)).thenReturn(Optional.of(plan));
+        when(bloques.findByPlanificacionId(planId)).thenReturn(List.of());
+
+        var resultado = service.listar();
+
+        assertThat(resultado).singleElement().satisfies(response -> {
+            assertThat(response.id()).isEqualTo(planId);
+            assertThat(response.bloques()).isEmpty();
+            assertThat(response.pisoGestionadoId()).isEqualTo(piso);
+        });
+    }
+
+    @Test
+    void pisoDestinoNoVePlanificacionSiSuRevisionYaFueAprobadaAunqueSolicitudSigaPendiente() {
+        UUID piso = UUID.randomUUID();
+        UUID planId = UUID.randomUUID();
+        UUID solicitudId = UUID.randomUUID();
+        PlanificacionAgregadaJpaEntity plan = plan(planId, EstadoPlanificacionAgregada.APROBADA);
+
+        RevisionSolicitudCambioJpaEntity revCambio = new RevisionSolicitudCambioJpaEntity();
+        revCambio.setSolicitudId(solicitudId);
+        revCambio.setPisoId(piso);
+        revCambio.setEstado(EstadoSolicitudCambio.APROBADA);
+
+        SolicitudCambioPlanificacionJpaEntity sol = new SolicitudCambioPlanificacionJpaEntity();
+        sol.setId(solicitudId);
+        sol.setPlanificacionId(planId);
+        sol.setEstado(EstadoSolicitudCambio.PENDIENTE);
+
+        when(actores.obtener()).thenReturn(new ActorAutenticado(perfil, Set.of("ROLE_ADMINISTRADOR_PISO")));
+        when(ambito.pisoGestionado()).thenReturn(piso);
+        when(revisiones.findByPisoIdAndVigenteTrue(piso)).thenReturn(List.of());
+        when(revisionesSolicitudCambio.findByPisoId(piso)).thenReturn(List.of(revCambio));
+        when(solicitudesCambio.findById(solicitudId)).thenReturn(Optional.of(sol));
+        when(planes.findById(planId)).thenReturn(Optional.of(plan));
+        when(bloques.findByPlanificacionId(planId)).thenReturn(List.of());
+
+        var resultado = service.listar();
+
+        assertThat(resultado).isEmpty();
+    }
+
+    @Test
+    void solicitudGlobalAprobadaNoMantienePlanificacionVisiblePorCondicionB() {
+        UUID piso = UUID.randomUUID();
+        UUID planId = UUID.randomUUID();
+        UUID solicitudId = UUID.randomUUID();
+        PlanificacionAgregadaJpaEntity plan = plan(planId, EstadoPlanificacionAgregada.APROBADA);
+
+        RevisionSolicitudCambioJpaEntity revCambio = new RevisionSolicitudCambioJpaEntity();
+        revCambio.setSolicitudId(solicitudId);
+        revCambio.setPisoId(piso);
+        revCambio.setEstado(EstadoSolicitudCambio.APROBADA);
+
+        SolicitudCambioPlanificacionJpaEntity sol = new SolicitudCambioPlanificacionJpaEntity();
+        sol.setId(solicitudId);
+        sol.setPlanificacionId(planId);
+        sol.setEstado(EstadoSolicitudCambio.APROBADA);
+
+        when(actores.obtener()).thenReturn(new ActorAutenticado(perfil, Set.of("ROLE_ADMINISTRADOR_PISO")));
+        when(ambito.pisoGestionado()).thenReturn(piso);
+        when(revisiones.findByPisoIdAndVigenteTrue(piso)).thenReturn(List.of());
+        when(revisionesSolicitudCambio.findByPisoId(piso)).thenReturn(List.of(revCambio));
+        when(solicitudesCambio.findById(solicitudId)).thenReturn(Optional.of(sol));
+        when(planes.findById(planId)).thenReturn(Optional.of(plan));
+        when(bloques.findByPlanificacionId(planId)).thenReturn(List.of());
+
+        var resultado = service.listar();
+
+        assertThat(resultado).isEmpty();
+    }
+
+    @Test
+    void solicitudGlobalRechazadaNoMantienePlanificacionVisiblePorCondicionB() {
+        UUID piso = UUID.randomUUID();
+        UUID planId = UUID.randomUUID();
+        UUID solicitudId = UUID.randomUUID();
+        PlanificacionAgregadaJpaEntity plan = plan(planId, EstadoPlanificacionAgregada.APROBADA);
+
+        RevisionSolicitudCambioJpaEntity revCambio = new RevisionSolicitudCambioJpaEntity();
+        revCambio.setSolicitudId(solicitudId);
+        revCambio.setPisoId(piso);
+        revCambio.setEstado(EstadoSolicitudCambio.RECHAZADA);
+
+        SolicitudCambioPlanificacionJpaEntity sol = new SolicitudCambioPlanificacionJpaEntity();
+        sol.setId(solicitudId);
+        sol.setPlanificacionId(planId);
+        sol.setEstado(EstadoSolicitudCambio.RECHAZADA);
+
+        when(actores.obtener()).thenReturn(new ActorAutenticado(perfil, Set.of("ROLE_ADMINISTRADOR_PISO")));
+        when(ambito.pisoGestionado()).thenReturn(piso);
+        when(revisiones.findByPisoIdAndVigenteTrue(piso)).thenReturn(List.of());
+        when(revisionesSolicitudCambio.findByPisoId(piso)).thenReturn(List.of(revCambio));
+        when(solicitudesCambio.findById(solicitudId)).thenReturn(Optional.of(sol));
+        when(planes.findById(planId)).thenReturn(Optional.of(plan));
+        when(bloques.findByPlanificacionId(planId)).thenReturn(List.of());
+
+        var resultado = service.listar();
+
+        assertThat(resultado).isEmpty();
     }
 
     @Test

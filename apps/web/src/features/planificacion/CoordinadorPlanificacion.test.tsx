@@ -1,11 +1,11 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as academico from '../../services/academicoApi'
 import * as api from '../../services/operationalApi'
 import { CoordinadorPlanificacion } from './CoordinadorPlanificacion'
-import { laboratoriosDelPiso, pisoDelLaboratorio } from './planificacionLaboratorioFilter'
+import { formatPisoLabel, laboratoriosDelPiso, pisoDelLaboratorio } from './planificacionLaboratorioFilter'
 import { AcademicPeriodContext, type AcademicPeriodContextValue } from '../../academicPeriodContext'
 
 vi.mock('../../services/academicoApi')
@@ -416,5 +416,185 @@ describe('filtro por pisoId real', () => {
     expect(laboratoriosDelPiso(laboratorios, pisos[0]).map((item) => item.codigo))
       .not.toEqual(expect.arrayContaining(['LAB-P1-03', 'LAB-03']))
     expect(pisoDelLaboratorio(laboratorios, 'l2')).toBe(pisos[1])
+  })
+})
+
+
+describe('formatPisoLabel', () => {
+  it('formatea numero 0 como Piso 1 · Planta Baja', () => {
+    expect(formatPisoLabel({ numero: 0 })).toBe('Piso 1 · Planta Baja')
+  })
+  it('formatea numero 1 como Piso 2', () => {
+    expect(formatPisoLabel({ numero: 1 })).toBe('Piso 2')
+  })
+  it('formatea numero 2 como Piso 3', () => {
+    expect(formatPisoLabel({ numero: 2 })).toBe('Piso 3')
+  })
+  it('formatea numero 3 como Piso 4', () => {
+    expect(formatPisoLabel({ numero: 3 })).toBe('Piso 4')
+  })
+  it('controla ausencia de piso o numero invalido', () => {
+    expect(formatPisoLabel(null)).toBe('Piso')
+    expect(formatPisoLabel(undefined)).toBe('Piso')
+  })
+})
+
+describe('modal Solicitar cambio - filtro de laboratorios por piso', () => {
+  const pisoPB = { id: 'piso-pb-id', bloqueId: 'b-1', numero: 0, descripcion: 'Planta Baja', activo: true }
+  const piso1 = { id: 'piso-1-id', bloqueId: 'b-1', numero: 1, descripcion: 'Piso 1', activo: true }
+  const piso2 = { id: 'piso-2-id', bloqueId: 'b-1', numero: 2, descripcion: 'Piso 2', activo: true }
+
+  const labsMultiPiso: academico.Laboratorio[] = [
+    { id: 'lab-a', pisoId: 'piso-pb-id', codigo: 'LAB-CODE-X', nombre: 'Laboratorio X', capacidad: 20, descripcion: '', estado: 'DISPONIBLE', activo: true, creadoEn: '', actualizadoEn: '' },
+    { id: 'lab-b', pisoId: 'piso-1-id', codigo: 'LAB-CODE-Y', nombre: 'Laboratorio Y', capacidad: 25, descripcion: '', estado: 'DISPONIBLE', activo: true, creadoEn: '', actualizadoEn: '' },
+    { id: 'lab-c', pisoId: 'piso-pb-id', codigo: 'LAB-ENGANOSO-P1', nombre: 'Laboratorio Enganoso', capacidad: 30, descripcion: '', estado: 'DISPONIBLE', activo: true, creadoEn: '', actualizadoEn: '' },
+    { id: 'lab-d', pisoId: 'piso-2-id', codigo: 'LAB-CODE-Z', nombre: 'Laboratorio Z', capacidad: 30, descripcion: '', estado: 'OCUPADO', activo: true, creadoEn: '', actualizadoEn: '' },
+  ]
+
+  const prepararConPisos = () => {
+    preparar([{ ...base, laboratorioId: 'lab-a', estado: 'CONFIRMADA' }], 'APROBADA')
+    vi.mocked(academico.obtenerPisos).mockResolvedValue([pisoPB, piso1, piso2])
+    vi.mocked(academico.obtenerLaboratorios).mockResolvedValue(labsMultiPiso)
+    vi.mocked(api.crearSolicitudCambio).mockResolvedValue({
+      id: 'sol-1',
+      planificacionId: 'aggregate-1',
+      bloqueId: 'plan-1',
+      tipo: 'LABORATORIO',
+      motivo: 'Motivo de prueba',
+      estado: 'PENDIENTE',
+      laboratorioAnteriorId: 'lab-a',
+      laboratorioPropuestoId: 'lab-b',
+      docenteAnteriorId: null,
+      docentePropuestoId: null,
+      diaAnterior: 'LUNES',
+      diaPropuesto: 'LUNES',
+      horaInicioAnterior: '07:30',
+      horaInicioPropuesta: '07:30',
+      horaFinAnterior: '09:30',
+      horaFinPropuesta: '09:30',
+      creadaEn: new Date().toISOString(),
+      resueltaEn: null,
+      revisiones: [],
+    })
+  }
+
+  it('1. "Todos" muestra laboratorios de todos los pisos disponibles con etiqueta descriptiva', async () => {
+    prepararConPisos()
+    const user = userEvent.setup()
+    renderPage()
+
+    await user.click(await screen.findByRole('button', { name: 'Solicitar cambio' }))
+    const dialog = screen.getByRole('dialog', { name: 'Solicitar cambio' })
+    expect(dialog).toBeInTheDocument()
+
+    const selectPiso = within(dialog).getByLabelText('Piso')
+    expect(selectPiso).toHaveValue('')
+
+    const selectLab = within(dialog).getByLabelText('Laboratorio propuesto')
+    expect(selectLab).toHaveTextContent('LAB-CODE-X — Piso 1 · Planta Baja — DISPONIBLE')
+    expect(selectLab).toHaveTextContent('LAB-CODE-Y — Piso 2 — DISPONIBLE')
+    expect(selectLab).toHaveTextContent('LAB-ENGANOSO-P1 — Piso 1 · Planta Baja — DISPONIBLE')
+    expect(selectLab).toHaveTextContent('LAB-CODE-Z — Piso 3 — OCUPADO')
+  })
+
+  it('2, 4 y 5. Piso 1 · Planta Baja muestra únicamente laboratorios con pisoId de numero 0, no por código', async () => {
+    prepararConPisos()
+    const user = userEvent.setup()
+    renderPage()
+
+    await user.click(await screen.findByRole('button', { name: 'Solicitar cambio' }))
+    const dialog = screen.getByRole('dialog', { name: 'Solicitar cambio' })
+
+    const selectPiso = within(dialog).getByLabelText('Piso')
+    await user.selectOptions(selectPiso, 'piso-pb-id')
+
+    const selectLab = within(dialog).getByLabelText('Laboratorio propuesto')
+    expect(selectLab).toHaveTextContent('LAB-CODE-X')
+    expect(selectLab).toHaveTextContent('LAB-ENGANOSO-P1')
+    expect(selectLab).not.toHaveTextContent('LAB-CODE-Y')
+  })
+
+  it('3, 4 y 5. Piso 2 muestra únicamente laboratorios cuyo pisoId corresponde al piso real numero 1', async () => {
+    prepararConPisos()
+    const user = userEvent.setup()
+    renderPage()
+
+    await user.click(await screen.findByRole('button', { name: 'Solicitar cambio' }))
+    const dialog = screen.getByRole('dialog', { name: 'Solicitar cambio' })
+
+    const selectPiso = within(dialog).getByLabelText('Piso')
+    await user.selectOptions(selectPiso, 'piso-1-id')
+
+    const selectLab = within(dialog).getByLabelText('Laboratorio propuesto')
+    expect(selectLab).toHaveTextContent('LAB-CODE-Y')
+    expect(selectLab).not.toHaveTextContent('LAB-CODE-X')
+    expect(selectLab).not.toHaveTextContent('LAB-ENGANOSO-P1')
+  })
+
+  it('6 y 7. El value enviado sigue siendo laboratorio.id y se invoca la función con el contrato esperado', async () => {
+    prepararConPisos()
+    const user = userEvent.setup()
+    renderPage()
+
+    await user.click(await screen.findByRole('button', { name: 'Solicitar cambio' }))
+    const dialog = screen.getByRole('dialog', { name: 'Solicitar cambio' })
+
+    const selectPiso = within(dialog).getByLabelText('Piso')
+    await user.selectOptions(selectPiso, 'piso-1-id')
+
+    const selectLab = within(dialog).getByLabelText('Laboratorio propuesto')
+    await user.selectOptions(selectLab, 'lab-b')
+    expect(selectLab).toHaveValue('lab-b')
+
+    await user.type(within(dialog).getByLabelText('Motivo'), 'Mantenimiento del laboratorio original')
+    await user.click(within(dialog).getByRole('button', { name: 'Enviar solicitud' }))
+
+    await waitFor(() => {
+      expect(api.crearSolicitudCambio).toHaveBeenCalledWith('aggregate-1', {
+        bloqueId: 'plan-1',
+        tipo: 'LABORATORIO',
+        motivo: 'Mantenimiento del laboratorio original',
+        laboratorioId: 'lab-b',
+      })
+    })
+  })
+
+  it('limpia la selección a "Seleccione un laboratorio" si el laboratorio actual no pertenece al piso seleccionado', async () => {
+    prepararConPisos()
+    const user = userEvent.setup()
+    renderPage()
+
+    await user.click(await screen.findByRole('button', { name: 'Solicitar cambio' }))
+    const dialog = screen.getByRole('dialog', { name: 'Solicitar cambio' })
+
+    const selectLab = within(dialog).getByLabelText('Laboratorio propuesto')
+    expect(selectLab).toHaveValue('lab-a')
+
+    const selectPiso = within(dialog).getByLabelText('Piso')
+    await user.selectOptions(selectPiso, 'piso-1-id')
+
+    expect(selectLab).toHaveValue('')
+    expect(within(selectLab).getByRole('option', { name: 'Seleccione un laboratorio' })).toBeInTheDocument()
+  })
+
+  it('8. Cambio de docente y cambio de horario no se afectan por el filtro de piso', async () => {
+    prepararConPisos()
+    const user = userEvent.setup()
+    renderPage()
+
+    await user.click(await screen.findByRole('button', { name: 'Solicitar cambio' }))
+    const dialog = screen.getByRole('dialog', { name: 'Solicitar cambio' })
+
+    // Cambio a DOCENTE
+    await user.selectOptions(within(dialog).getByLabelText('Tipo'), 'DOCENTE')
+    expect(within(dialog).queryByLabelText('Piso')).not.toBeInTheDocument()
+    expect(within(dialog).getByLabelText('Docente propuesto')).toBeInTheDocument()
+
+    // Cambio a HORARIO
+    await user.selectOptions(within(dialog).getByLabelText('Tipo'), 'HORARIO')
+    expect(within(dialog).queryByLabelText('Piso')).not.toBeInTheDocument()
+    expect(within(dialog).getByLabelText('Día')).toBeInTheDocument()
+    expect(within(dialog).getByLabelText('Hora inicio')).toBeInTheDocument()
+    expect(within(dialog).getByLabelText('Hora fin')).toBeInTheDocument()
   })
 })

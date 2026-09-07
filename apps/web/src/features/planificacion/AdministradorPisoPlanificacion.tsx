@@ -49,7 +49,7 @@ export function AdministradorPisoPlanificacion() {
   const [error, setError] = useState('')
   const [mensaje, setMensaje] = useState('')
   const [cargando, setCargando] = useState(true)
-  const [solicitudes,setSolicitudes]=useState<SolicitudCambio[]>([])
+  const [solicitudes, setSolicitudes] = useState<SolicitudCambio[]>([])
   const [retiros, setRetiros] = useState<SolicitudRetiro[]>([])
   const [observacionRetiro, setObservacionRetiro] = useState('')
 
@@ -70,16 +70,13 @@ export function AdministradorPisoPlanificacion() {
         obtenerCarreras(),
         obtenerPeriodoActual(),
       ])
-      const planesConBloques = planesData.filter((item) =>
-        item.bloques.some((bloque) => bloque.estado !== 'CANCELADA'),
-      )
-      setAgregados(planesConBloques)
-      setPlanes(planesConBloques.flatMap((item) => item.bloques))
+      setAgregados(planesData)
+      setPlanes(planesData.flatMap((item) => item.bloques))
       setMaterias(materiasData)
       setLaboratorios(laboratoriosData)
       setCarreras(carrerasData)
       setPeriodo(periodoData)
-      const primera = planesConBloques[0]
+      const primera = planesData[0]
       setPaquete((actual) => actual || primera?.id || '')
     } catch (cause) {
       setError(
@@ -92,11 +89,18 @@ export function AdministradorPisoPlanificacion() {
     }
   }, [])
   useEffect(() => void cargar(), [cargar])
-  useEffect(()=>{if(paquete)void Promise.resolve(listarSolicitudesCambio(paquete)).then(value=>setSolicitudes(value??[])).catch(()=>setSolicitudes([]))},[paquete,agregados])
+  useEffect(() => {
+    if (paquete) {
+      void Promise.resolve(listarSolicitudesCambio(paquete))
+        .then((value) => setSolicitudes(value ?? []))
+        .catch(() => setSolicitudes([]))
+    }
+  }, [paquete, agregados])
   useEffect(() => {
     if (!paquete) return
     void Promise.resolve(listarSolicitudesRetiro(paquete))
-      .then((value) => setRetiros(value ?? [])).catch(() => setRetiros([]))
+      .then((value) => setRetiros(value ?? []))
+      .catch(() => setRetiros([]))
   }, [paquete, agregados])
 
   const paquetes = useMemo(
@@ -120,7 +124,18 @@ export function AdministradorPisoPlanificacion() {
   const materia = (id: string) => materias.find((item) => item.id === id)
   const laboratorio = (id: string) =>
     laboratorios.find((item) => item.id === id)
-  const carrera = carreras.find((item) => item.id === visibles[0]?.carreraId)
+  const carrera = carreras.find(
+    (item) => item.id === (planActual?.carreraId ?? visibles[0]?.carreraId),
+  )
+
+  const miPisoId = useMemo(() => {
+    return (
+      planActual?.pisoGestionadoId ??
+      agregados.find((item) => item.pisoGestionadoId)?.pisoGestionadoId ??
+      laboratorios.find((l) => l.id === visibles[0]?.laboratorioId)?.pisoId ??
+      null
+    )
+  }, [planActual, agregados, laboratorios, visibles])
 
   async function ejecutar(
     operacion: () => Promise<unknown>,
@@ -237,7 +252,47 @@ export function AdministradorPisoPlanificacion() {
               <span>Estado: {planActual?.estado ?? estadoPaquete(visibles)}</span>
               <span>{visibles.length} bloques en su piso</span>
             </div>
-            {solicitudes.filter(s=>s.estado==='PENDIENTE').map(s=><article className="floor-planning__summary" key={s.id}><strong>Solicitud de cambio · {s.tipo}</strong><span>{s.motivo}</span><span>El horario original continúa vigente.</span><button disabled={ocupado} onClick={()=>void ejecutar(()=>aprobarSolicitudCambio(paquete,s.id),'¿Aprobar y revalidar este cambio?')}>Aprobar cambio</button><button disabled={ocupado} onClick={()=>{const motivo=window.prompt('Motivo del rechazo');if(motivo?.trim())void ejecutar(()=>rechazarSolicitudCambio(paquete,s.id,motivo.trim()),'¿Rechazar esta solicitud?')}}>Rechazar cambio</button></article>)}
+            {solicitudes
+              .filter((s) => {
+                const miRevision = s.revisiones?.find((r) => r.pisoId === miPisoId)
+                return s.estado === 'PENDIENTE' && miRevision?.estado === 'PENDIENTE'
+              })
+              .map((s) => (
+                <article className="floor-planning__summary" key={s.id}>
+                  <strong>Solicitud de cambio · {s.tipo}</strong>
+                  <span>{s.motivo}</span>
+                  <span>El horario original continúa vigente.</span>
+                  <button
+                    disabled={ocupado}
+                    onClick={() =>
+                      void ejecutar(
+                        () => aprobarSolicitudCambio(paquete, s.id),
+                        '¿Aprobar y revalidar este cambio?',
+                      )
+                    }
+                  >
+                    Aprobar cambio
+                  </button>
+                  <button
+                    disabled={ocupado}
+                    onClick={() => {
+                      const motivo = window.prompt('Motivo del rechazo')
+                      if (motivo?.trim())
+                        void ejecutar(
+                          () =>
+                            rechazarSolicitudCambio(
+                              paquete,
+                              s.id,
+                              motivo.trim(),
+                            ),
+                          '¿Rechazar esta solicitud?',
+                        )
+                    }}
+                  >
+                    Rechazar cambio
+                  </button>
+                </article>
+              ))}
             {retiros.filter((item) => item.estado === 'PENDIENTE').map((item) => (
               <article className="floor-planning__summary" key={item.id}>
                 <strong>Solicitud de retiro para edici&oacute;n</strong>

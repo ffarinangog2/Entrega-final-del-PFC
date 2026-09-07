@@ -1,143 +1,176 @@
-import { useCallback, useContext, useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useCallback, useContext, useEffect, useRef, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { AuthContext } from '../../auth'
-import { obtenerLaboratorios, obtenerMaterias } from '../../services/academicoApi'
 import {
   listarNotificaciones,
   marcarNotificacionLeida,
-  listarSesionesAbiertas,
-  obtenerMiHorario,
+  obtenerNotificacionesNoLeidas,
   type NotificacionInterna,
-  type Planificacion,
-  type SesionAsistencia,
 } from '../../services/operationalApi'
+import { resolverDestinoNotificacion } from '../notificaciones/notificationNavigation'
+import './StudentNotificationBell.css'
 
-export function StudentNotificationBell({ asistencia = true }: { asistencia?: boolean }) {
+export function StudentNotificationBell(props?: { asistencia?: boolean }) {
+  void props
   const auth = useContext(AuthContext)
+  const navigate = useNavigate()
   const authenticated = auth ? auth.isAuthenticated : true
-  const [sesiones, setSesiones] = useState<SesionAsistencia[]>([])
   const [abierta, setAbierta] = useState(false)
-  const [horario, setHorario] = useState<Planificacion[]>([])
-  const [materias, setMaterias] = useState<Map<string, string>>(new Map())
-  const [labs, setLabs] = useState<Map<string, string>>(new Map())
   const [notificaciones, setNotificaciones] = useState<NotificacionInterna[]>([])
+  const [conteoNoLeidas, setConteoNoLeidas] = useState<number>(0)
+  const bellRef = useRef<HTMLDivElement>(null)
 
   const refrescarNotificaciones = useCallback(() => {
     if (!authenticated) return
-    void Promise.resolve(listarNotificaciones()).then((value) => setNotificaciones(value ?? [])).catch(() => undefined)
+    void Promise.all([
+      listarNotificaciones().catch(() => []),
+      obtenerNotificacionesNoLeidas().catch(() => null),
+    ]).then(([items, noLeidasRes]) => {
+      const lista = items ?? []
+      setNotificaciones(lista)
+      if (noLeidasRes && typeof noLeidasRes.cantidad === 'number') {
+        setConteoNoLeidas(noLeidasRes.cantidad)
+      } else {
+        setConteoNoLeidas(lista.filter((item) => !item.leida).length)
+      }
+    })
   }, [authenticated])
 
   useEffect(() => {
     let activo = true
     if (!authenticated) {
       setNotificaciones([])
-      setSesiones([])
-      setHorario([])
+      setConteoNoLeidas(0)
       return () => {
         activo = false
       }
     }
     Promise.all([
-      Promise.resolve()
-        .then(() => listarNotificaciones())
-        .then((value) => value ?? [])
-        .catch(() => []),
-      asistencia
-        ? Promise.resolve()
-            .then(() => listarSesionesAbiertas())
-            .then((value) => value ?? [])
-            .catch(() => [])
-        : Promise.resolve([]),
-      asistencia
-        ? Promise.resolve()
-            .then(() => obtenerMiHorario())
-            .then((value) => value ?? [])
-            .catch(() => [])
-        : Promise.resolve([]),
-      asistencia
-        ? Promise.resolve()
-            .then(() => obtenerMaterias())
-            .then((value) => value ?? [])
-            .catch(() => [])
-        : Promise.resolve([]),
-      asistencia
-        ? Promise.resolve()
-            .then(() => obtenerLaboratorios())
-            .then((value) => value ?? [])
-            .catch(() => [])
-        : Promise.resolve([]),
-    ])
-      .then(([avisos, items, bloques, materiasData, labsData]) => {
-        if (!activo) return
-        setNotificaciones(avisos)
-        setSesiones(items)
-        setHorario(bloques)
-        setMaterias(new Map(materiasData.map((item) => [item.id, item.nombre])))
-        setLabs(new Map(labsData.map((item) => [item.id, item.codigo])))
-      })
-      .catch(() => undefined)
+      listarNotificaciones().catch(() => []),
+      obtenerNotificacionesNoLeidas().catch(() => null),
+    ]).then(([items, noLeidasRes]) => {
+      if (!activo) return
+      const lista = items ?? []
+      setNotificaciones(lista)
+      if (noLeidasRes && typeof noLeidasRes.cantidad === 'number') {
+        setConteoNoLeidas(noLeidasRes.cantidad)
+      } else {
+        setConteoNoLeidas(lista.filter((item) => !item.leida).length)
+      }
+    })
     return () => {
       activo = false
     }
-  }, [asistencia, authenticated])
+  }, [authenticated])
 
   useEffect(() => {
     if (!authenticated) return undefined
     const alRecuperarFoco = () => refrescarNotificaciones()
     window.addEventListener('focus', alRecuperarFoco)
+    window.addEventListener('notificaciones-actualizadas', alRecuperarFoco)
     const polling = window.setInterval(refrescarNotificaciones, 45_000)
     return () => {
       window.removeEventListener('focus', alRecuperarFoco)
+      window.removeEventListener('notificaciones-actualizadas', alRecuperarFoco)
       window.clearInterval(polling)
     }
   }, [authenticated, refrescarNotificaciones])
 
+  useEffect(() => {
+    if (!abierta) return undefined
+    const alHacerClicFuera = (e: MouseEvent) => {
+      if (bellRef.current && !bellRef.current.contains(e.target as Node)) {
+        setAbierta(false)
+      }
+    }
+    document.addEventListener('mousedown', alHacerClicFuera)
+    return () => document.removeEventListener('mousedown', alHacerClicFuera)
+  }, [abierta])
+
+  const noLeidas = notificaciones
+    .filter((item) => !item.leida)
+    .sort((a, b) => new Date(b.creadaEn).getTime() - new Date(a.creadaEn).getTime())
+  const pendientesCount = conteoNoLeidas
+  const pendientesVisibles = noLeidas.slice(0, 5)
+
+  const handleClickNotificacion = async (item: NotificacionInterna) => {
+    try {
+      await marcarNotificacionLeida(item.id)
+    } catch {
+      // no bloquear el flujo del usuario si la red falla
+    }
+    setNotificaciones((prev) =>
+      prev.map((n) => (n.id === item.id ? { ...n, leida: true } : n)),
+    )
+    setConteoNoLeidas((prev) => Math.max(0, prev - 1))
+    window.dispatchEvent(new Event('notificaciones-actualizadas'))
+    setAbierta(false)
+    const destino = resolverDestinoNotificacion(item, auth?.usuario)
+    navigate(destino)
+  }
+
   return (
-    <div className="student-bell">
+    <div className="student-bell" ref={bellRef}>
       <button
-        aria-label={`Notificaciones: ${notificaciones.filter((item) => !item.leida).length + sesiones.length} pendientes`}
+        type="button"
+        className="student-bell__trigger"
+        aria-label={`Notificaciones: ${pendientesCount} pendientes`}
         onClick={() => setAbierta((value) => !value)}
       >
-        🔔
-        {notificaciones.filter((item) => !item.leida).length + sesiones.length > 0 && (
-          <span>{notificaciones.filter((item) => !item.leida).length + sesiones.length}</span>
+        <span aria-hidden="true">🔔</span>
+        {pendientesCount > 0 && (
+          <span className="student-bell__badge">{pendientesCount}</span>
         )}
       </button>
       {abierta && (
-        <div role="dialog" aria-label="Notificaciones">
-          {notificaciones.length === 0 && sesiones.length === 0 ? (
-            <p>No hay notificaciones.</p>
-          ) : (
-            <>
-              {notificaciones.slice(0, 5).map((item) => (
-                <button
-                  key={item.id}
-                  className={item.leida ? '' : 'is-unread'}
-                  onClick={() =>
-                    void marcarNotificacionLeida(item.id).then((leida) =>
-                      setNotificaciones((actuales) =>
-                        actuales.map((actual) => (actual.id === leida.id ? leida : actual)),
-                      ),
-                    )
-                  }
-                >
-                  <strong>{item.titulo}</strong>
-                  <span>{item.cuerpo}</span>
-                </button>
-              ))}
-              {sesiones.slice(0, 5).map((sesion) => {
-                const bloque = horario.find((item) => item.id === sesion.bloqueId)
-                return (
-                  <Link key={sesion.id} to="/asistencia">
-                    Asistencia disponible · {materias.get(bloque?.materiaId ?? '') ?? 'Actividad de laboratorio'} ·{' '}
-                    {labs.get(bloque?.laboratorioId ?? '') ?? 'Laboratorio'} · hasta{' '}
-                    {new Date(sesion.expiraEn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </Link>
-                )
-              })}
-            </>
-          )}
-          <Link to="/notificaciones">Ver todas las notificaciones</Link>
+        <div className="student-bell__popup" role="dialog" aria-label="Notificaciones">
+          <header className="student-bell__header">
+            <span className="student-bell__header-icon" aria-hidden="true">🔔</span>
+            <strong className="student-bell__header-title">Notificaciones</strong>
+            {pendientesCount > 0 && (
+              <span className="student-bell__header-badge">{pendientesCount}</span>
+            )}
+          </header>
+          <div className="student-bell__body">
+            {pendientesVisibles.length === 0 ? (
+              <div className="student-bell__empty">
+                <span className="student-bell__empty-icon" aria-hidden="true">🔔</span>
+                <p>No hay notificaciones pendientes</p>
+              </div>
+            ) : (
+              <div className="student-bell__list">
+                {pendientesVisibles.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    className="student-bell__item is-unread"
+                    onClick={() => void handleClickNotificacion(item)}
+                  >
+                    <div className="student-bell__item-header">
+                      <span className="student-bell__indicator" aria-label="No leída" />
+                      <strong className="student-bell__item-title">{item.titulo}</strong>
+                    </div>
+                    <p className="student-bell__item-body">{item.cuerpo}</p>
+                    <time className="student-bell__item-time">
+                      {new Date(item.creadaEn).toLocaleString([], {
+                        dateStyle: 'short',
+                        timeStyle: 'short',
+                      })}
+                    </time>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          <footer className="student-bell__footer">
+            <Link
+              to="/notificaciones"
+              onClick={() => setAbierta(false)}
+              className="student-bell__footer-link"
+            >
+              Ver todas las notificaciones
+            </Link>
+          </footer>
         </div>
       )}
     </div>

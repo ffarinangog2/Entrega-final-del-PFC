@@ -339,7 +339,8 @@ class SolicitudCambioPlanificacionServiceTest {
         verify(bloques, never()).saveAndFlush(any());
 
         // Aprobacion final (piso 2 tambien aprueba)
-        rev2.setEstado(EstadoSolicitudCambio.APROBADA);
+        when(ambito.pisoGestionado()).thenReturn(piso2);
+        when(revisiones.findBySolicitudIdAndPisoId(solId, piso2)).thenReturn(Optional.of(rev2));
         var plan = crearPlan(EstadoPlanificacionAgregada.APROBADA);
         var bloque = crearBloque();
         when(planes.findById(planId)).thenReturn(Optional.of(plan));
@@ -349,6 +350,35 @@ class SolicitudCambioPlanificacionServiceTest {
         assertThat(sol.getEstado()).isEqualTo(EstadoSolicitudCambio.APROBADA);
         assertThat(bloque.getEstado()).isEqualTo(EstadoPlanificacion.CANCELADA);
         verify(solicitudes).save(sol);
+    }
+
+    @Test
+    void rechazarOReaprobarSiRevisionPisoYaFueEmitidaLanzaExcepcion() {
+        UUID solId = UUID.randomUUID();
+        UUID piso = UUID.randomUUID();
+        var sol = new SolicitudCambioPlanificacionJpaEntity();
+        sol.setId(solId);
+        sol.setPlanificacionId(planId);
+        sol.setBloqueId(bloqueId);
+        sol.setEstado(EstadoSolicitudCambio.PENDIENTE);
+
+        var rev = new RevisionSolicitudCambioJpaEntity();
+        rev.setSolicitudId(solId);
+        rev.setPisoId(piso);
+        rev.setEstado(EstadoSolicitudCambio.APROBADA);
+
+        when(solicitudes.findById(solId)).thenReturn(Optional.of(sol));
+        when(actores.obtener()).thenReturn(new ActorAutenticado(perfil, Set.of("ROLE_ADMINISTRADOR_PISO")));
+        when(ambito.pisoGestionado()).thenReturn(piso);
+        when(revisiones.findBySolicitudIdAndPisoId(solId, piso)).thenReturn(Optional.of(rev));
+
+        assertThatThrownBy(() -> service.aprobar(solId, "Otra vez"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("ya fue emitida");
+
+        assertThatThrownBy(() -> service.rechazar(solId, "Cambio de opinion"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("ya fue emitida");
     }
 
     @Test
@@ -392,6 +422,8 @@ class SolicitudCambioPlanificacionServiceTest {
         assertThatThrownBy(() -> service.aprobar(solId, "Ok"))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("docente propuesto no pertenece");
+
+        rev.setEstado(EstadoSolicitudCambio.PENDIENTE);
 
         // Docente pertenece a la carrera -> exito y notificaciones enviadas
         when(usuarios.docentePerteneceCarrera(docenteDestino, carrera)).thenReturn(true);

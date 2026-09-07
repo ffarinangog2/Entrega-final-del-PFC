@@ -12,6 +12,7 @@ import './CoordinadorPlanificacion.css'
 import { useAcademicPeriod } from '../../academicPeriodContext'
 import { etiquetaPeriodo } from '../../academicPeriodHelpers'
 import {
+  formatPisoLabel,
   laboratoriosDelPiso,
   pisoDelLaboratorio,
 } from './planificacionLaboratorioFilter'
@@ -77,6 +78,7 @@ export function CoordinadorPlanificacion() {
   const [cambio, setCambio] = useState<api.Planificacion | null>(null)
   const [tipoCambio, setTipoCambio] = useState<api.SolicitudCambio['tipo']>('LABORATORIO')
   const [motivoCambio, setMotivoCambio] = useState('')
+  const [pisoFiltroCambio, setPisoFiltroCambio] = useState('')
   const [propuestaCambio, setPropuestaCambio] = useState({ laboratorioId:'',docenteId:'',diaSemana:'LUNES',horaInicio:'07:30',horaFin:'08:30' })
   const [errorCambio,setErrorCambio]=useState('')
 
@@ -589,7 +591,7 @@ export function CoordinadorPlanificacion() {
                                       </button>
                                     </div>
                                   )}
-                                {plan?.estado === 'APROBADA' && <button onClick={()=>{setCambio(item);setTipoCambio('LABORATORIO');setMotivoCambio('');setErrorCambio('');setPropuestaCambio({laboratorioId:item.laboratorioId,docenteId:item.docenteId??'',diaSemana:item.diaSemana,horaInicio:item.horaInicio,horaFin:item.horaFin})}}>Solicitar cambio</button>}
+                                {plan?.estado === 'APROBADA' && <button onClick={()=>{setCambio(item);setTipoCambio('LABORATORIO');setPisoFiltroCambio('');setMotivoCambio('');setErrorCambio('');setPropuestaCambio({laboratorioId:item.laboratorioId,docenteId:item.docenteId??'',diaSemana:item.diaSemana,horaInicio:item.horaInicio,horaFin:item.horaFin})}}>Solicitar cambio</button>}
                               </article>
                             ))}
                             {iniciado &&
@@ -712,7 +714,7 @@ export function CoordinadorPlanificacion() {
                 }}>
                   <option value="">Todos los pisos</option>
                   {catalogos.pisos.map((item) => (
-                    <option key={item.id} value={item.id}>Piso {item.numero}</option>
+                    <option key={item.id} value={item.id}>{formatPisoLabel(item)}</option>
                   ))}
                 </select>
               </label>
@@ -836,7 +838,37 @@ export function CoordinadorPlanificacion() {
             </section>
           </div>
         )}
-        {cambio && <div className="planning-dialog" role="dialog" aria-modal="true" aria-labelledby="change-title"><form onSubmit={(event)=>{event.preventDefault();if(!plan)return;setErrorCambio('');void api.crearSolicitudCambio(plan.id,{bloqueId:cambio.id,tipo:tipoCambio,motivo:motivoCambio, ...(tipoCambio==='LABORATORIO'?{laboratorioId:propuestaCambio.laboratorioId}:{}),...(tipoCambio==='DOCENTE'?{docenteId:propuestaCambio.docenteId}:{}),...(tipoCambio==='HORARIO'?{diaSemana:propuestaCambio.diaSemana,horaInicio:propuestaCambio.horaInicio,horaFin:propuestaCambio.horaFin}:{})}).then(()=>{setCambio(null);setMensaje('Solicitud de cambio enviada para revisión.')}).catch(e=>setErrorCambio(e instanceof Error?e.message:'No fue posible crear la solicitud'))}}><h2 id="change-title">Solicitar cambio</h2><p>El horario aprobado seguirá vigente hasta que todos los pisos afectados autoricen la solicitud.</p>{errorCambio&&<p role="alert" className="operations__error">{errorCambio}</p>}<label>Tipo<select value={tipoCambio} onChange={e=>setTipoCambio(e.target.value as api.SolicitudCambio['tipo'])}><option value="LABORATORIO">Cambio de laboratorio</option><option value="HORARIO">Cambio de horario</option><option value="DOCENTE">Cambio de docente</option><option value="CANCELACION">Cancelación excepcional</option></select></label>{tipoCambio==='LABORATORIO'&&<label>Laboratorio propuesto<select required value={propuestaCambio.laboratorioId} onChange={e=>setPropuestaCambio({...propuestaCambio,laboratorioId:e.target.value})}>{catalogos.laboratorios.map(l=><option key={l.id} value={l.id} disabled={l.estado!=='DISPONIBLE'}>{l.codigo} — {l.estado}</option>)}</select></label>}{tipoCambio==='DOCENTE'&&<label>Docente propuesto<select required value={propuestaCambio.docenteId} onChange={e=>setPropuestaCambio({...propuestaCambio,docenteId:e.target.value})}>{catalogos.docentes.map(d=><option key={d.id} value={d.id}>{d.codigoDocente??'Docente institucional'}</option>)}</select></label>}{tipoCambio==='HORARIO'&&<><label>Día<select value={propuestaCambio.diaSemana} onChange={e=>setPropuestaCambio({...propuestaCambio,diaSemana:e.target.value})}>{dias.map(d=><option key={d}>{d}</option>)}</select></label><label>Hora inicio<input type="time" required value={propuestaCambio.horaInicio} onChange={e=>setPropuestaCambio({...propuestaCambio,horaInicio:e.target.value})}/></label><label>Hora fin<input type="time" required value={propuestaCambio.horaFin} onChange={e=>setPropuestaCambio({...propuestaCambio,horaFin:e.target.value})}/></label></>}<label className="planning-dialog__wide">Motivo<textarea required value={motivoCambio} onChange={e=>setMotivoCambio(e.target.value)}/></label><div className="planning-dialog__actions"><button type="button" onClick={()=>setCambio(null)}>Cancelar</button><button>Enviar solicitud</button></div></form></div>}
+        {cambio && <div className="planning-dialog" role="dialog" aria-modal="true" aria-labelledby="change-title"><form onSubmit={(event)=>{event.preventDefault();if(!plan)return;setErrorCambio('');void api.crearSolicitudCambio(plan.id,{bloqueId:cambio.id,tipo:tipoCambio,motivo:motivoCambio, ...(tipoCambio==='LABORATORIO'?{laboratorioId:propuestaCambio.laboratorioId}:{}),...(tipoCambio==='DOCENTE'?{docenteId:propuestaCambio.docenteId}:{}),...(tipoCambio==='HORARIO'?{diaSemana:propuestaCambio.diaSemana,horaInicio:propuestaCambio.horaInicio,horaFin:propuestaCambio.horaFin}:{})}).then(()=>{setCambio(null);setMensaje('Solicitud de cambio enviada para revisión.')}).catch(e=>setErrorCambio(e instanceof Error?e.message:'No fue posible crear la solicitud'))}}><h2 id="change-title">Solicitar cambio</h2><p>El horario aprobado seguirá vigente hasta que todos los pisos afectados autoricen la solicitud.</p>{errorCambio&&<p role="alert" className="operations__error">{errorCambio}</p>}<label>Tipo<select value={tipoCambio} onChange={e=>setTipoCambio(e.target.value as api.SolicitudCambio['tipo'])}><option value="LABORATORIO">Cambio de laboratorio</option><option value="HORARIO">Cambio de horario</option><option value="DOCENTE">Cambio de docente</option><option value="CANCELACION">Cancelación excepcional</option></select></label>{tipoCambio==='LABORATORIO'&&(
+          <>
+            <label>Piso
+              <select value={pisoFiltroCambio} onChange={(e)=>{
+                const nuevoPisoId = e.target.value
+                setPisoFiltroCambio(nuevoPisoId)
+                if (nuevoPisoId && pisoDelLaboratorio(catalogos.laboratorios, propuestaCambio.laboratorioId) !== nuevoPisoId) {
+                  setPropuestaCambio((actual) => ({ ...actual, laboratorioId: '' }))
+                }
+              }}>
+                <option value="">Todos</option>
+                {[...catalogos.pisos].sort((a, b) => a.numero - b.numero).map((p) => (
+                  <option key={p.id} value={p.id}>{formatPisoLabel(p)}</option>
+                ))}
+              </select>
+            </label>
+            <label>Laboratorio propuesto
+              <select required value={propuestaCambio.laboratorioId} onChange={e=>setPropuestaCambio({...propuestaCambio,laboratorioId:e.target.value})}>
+                <option value="">Seleccione un laboratorio</option>
+                {laboratoriosDelPiso(catalogos.laboratorios, pisoFiltroCambio).map(l => {
+                  const p = catalogos.pisos.find((piso) => piso.id === l.pisoId)
+                  return (
+                    <option key={l.id} value={l.id} disabled={l.estado!=='DISPONIBLE'}>
+                      {l.codigo} — {formatPisoLabel(p)} — {l.estado}
+                    </option>
+                  )
+                })}
+              </select>
+            </label>
+          </>
+        )}{tipoCambio==='DOCENTE'&&<label>Docente propuesto<select required value={propuestaCambio.docenteId} onChange={e=>setPropuestaCambio({...propuestaCambio,docenteId:e.target.value})}>{catalogos.docentes.map(d=><option key={d.id} value={d.id}>{d.codigoDocente??'Docente institucional'}</option>)}</select></label>}{tipoCambio==='HORARIO'&&<><label>Día<select value={propuestaCambio.diaSemana} onChange={e=>setPropuestaCambio({...propuestaCambio,diaSemana:e.target.value})}>{dias.map(d=><option key={d}>{d}</option>)}</select></label><label>Hora inicio<input type="time" required value={propuestaCambio.horaInicio} onChange={e=>setPropuestaCambio({...propuestaCambio,horaInicio:e.target.value})}/></label><label>Hora fin<input type="time" required value={propuestaCambio.horaFin} onChange={e=>setPropuestaCambio({...propuestaCambio,horaFin:e.target.value})}/></label></>}<label className="planning-dialog__wide">Motivo<textarea required value={motivoCambio} onChange={e=>setMotivoCambio(e.target.value)}/></label><div className="planning-dialog__actions"><button type="button" onClick={()=>setCambio(null)}>Cancelar</button><button>Enviar solicitud</button></div></form></div>}
       </main>
     </DashboardLayout>
   )

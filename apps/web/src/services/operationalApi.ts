@@ -37,7 +37,7 @@ export interface GuardarPlanificacion {
   observacion: string
 }
 export type EstadoPlanificacionAgregada = 'BORRADOR' | 'EN_REVISION' | 'REQUIERE_CAMBIOS' | 'APROBADA' | 'FINALIZADA'
-export interface PlanificacionAgregada { id: string; carreraId: string; periodoId: string; estado: EstadoPlanificacionAgregada; bloques: Planificacion[]; revisiones: { id: string; pisoId: string; estado: string; observacion: string | null; ronda?: number; vigente?: boolean; revisadaPorPerfilId?: string | null; actualizadaEn?: string }[] }
+export interface PlanificacionAgregada { id: string; carreraId: string; periodoId: string; estado: EstadoPlanificacionAgregada; bloques: Planificacion[]; revisiones: { id: string; pisoId: string; estado: string; observacion: string | null; ronda?: number; vigente?: boolean; revisadaPorPerfilId?: string | null; actualizadaEn?: string }[]; pisoGestionadoId?: string | null }
 export const listarPlanificacionesAgregadas = () => apiRequest<PlanificacionAgregada[]>('/api/v1/planificaciones-agregadas')
 export const iniciarPlanificacion = (periodoId: string) => apiRequest<PlanificacionAgregada>('/api/v1/planificaciones-agregadas', { method: 'POST', body: JSON.stringify({ periodoId }) })
 export const enviarPlanificacionCompleta = (id: string) => apiRequest<PlanificacionAgregada>(`/api/v1/planificaciones-agregadas/${encodeURIComponent(id)}/enviar`, { method: 'POST' })
@@ -149,11 +149,40 @@ export const registrarAsistenciaPropia = (id: string) =>
     `/api/v1/asistencias/sesiones/${encodeURIComponent(id)}/registro-propio`,
     { method: 'POST' },
   )
+export interface ConteoNotificacionesNoLeidas { cantidad: number }
 export interface NotificacionInterna { id: string; titulo: string; cuerpo: string; tipo: string | null; referenciaId: string | null; leida: boolean; creadaEn: string }
 export const listarNotificaciones = () => apiRequest<NotificacionInterna[]>('/api/v1/notificaciones')
+export const obtenerNotificacionesNoLeidas = () => apiRequest<ConteoNotificacionesNoLeidas>('/api/v1/notificaciones/no-leidas')
 export const marcarNotificacionLeida = (id: string) => apiRequest<NotificacionInterna>(`/api/v1/notificaciones/${encodeURIComponent(id)}/leer`, { method: 'POST' })
 export const marcarTodasNotificacionesLeidas = () => apiRequest<void>('/api/v1/notificaciones/leer-todas', { method: 'POST' })
-export interface SolicitudCambio { id:string; planificacionId:string; bloqueId:string; tipo:'LABORATORIO'|'HORARIO'|'DOCENTE'|'CANCELACION'; estado:'PENDIENTE'|'APROBADA'|'RECHAZADA'; motivo:string; laboratorioAnteriorId:string; laboratorioPropuestoId:string; docenteAnteriorId:string|null; docentePropuestoId:string|null; diaAnterior:string; diaPropuesto:string; horaInicioAnterior:string; horaInicioPropuesta:string; horaFinAnterior:string; horaFinPropuesta:string; creadaEn:string }
+export interface SolicitudCambio {
+  id: string
+  planificacionId: string
+  bloqueId: string
+  tipo: 'LABORATORIO' | 'HORARIO' | 'DOCENTE' | 'CANCELACION'
+  estado: 'PENDIENTE' | 'APROBADA' | 'RECHAZADA'
+  motivo: string
+  laboratorioAnteriorId: string
+  laboratorioPropuestoId: string
+  docenteAnteriorId: string | null
+  docentePropuestoId: string | null
+  diaAnterior: string
+  diaPropuesto: string
+  horaInicioAnterior: string
+  horaInicioPropuesta: string
+  horaFinAnterior: string
+  horaFinPropuesta: string
+  creadaEn: string
+  resolucion?: string | null
+  resueltaEn?: string | null
+  revisiones?: Array<{
+    pisoId: string
+    estado: string
+    revisorPerfilId?: string | null
+    observacion?: string | null
+    resueltaEn?: string | null
+  }>
+}
 export const listarSolicitudesCambio=(planId:string)=>apiRequest<SolicitudCambio[]>(`/api/v1/planificaciones-agregadas/${encodeURIComponent(planId)}/solicitudes-cambio`)
 export const crearSolicitudCambio=(planId:string,body:{bloqueId:string;tipo:SolicitudCambio['tipo'];motivo:string;laboratorioId?:string;docenteId?:string;diaSemana?:string;horaInicio?:string;horaFin?:string})=>apiRequest<SolicitudCambio>(`/api/v1/planificaciones-agregadas/${encodeURIComponent(planId)}/solicitudes-cambio`,{method:'POST',body:JSON.stringify(body)})
 export const aprobarSolicitudCambio=(planId:string,id:string,observacion='')=>apiRequest<SolicitudCambio>(`/api/v1/planificaciones-agregadas/${encodeURIComponent(planId)}/solicitudes-cambio/${encodeURIComponent(id)}/aprobar`,{method:'POST',body:JSON.stringify({observacion})})
