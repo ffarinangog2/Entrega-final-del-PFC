@@ -384,6 +384,94 @@ describe('CoordinadorPlanificacion', () => {
     await waitFor(() => expect(api.crearSolicitudRetiro)
       .toHaveBeenCalledWith('aggregate-1', 'Corregir asignaciones'))
   })
+
+  describe('Restablecer planificacion (Demostracion)', () => {
+    it('muestra el boton de restablecer en EN_REVISION y en APROBADA, pero no en BORRADOR', async () => {
+      preparar([base], 'BORRADOR')
+      const { unmount } = renderPage()
+      await screen.findByText('Programación')
+      expect(screen.queryByRole('button', { name: 'Restablecer planificación (Demostración)' })).not.toBeInTheDocument()
+      unmount()
+
+      preparar([base], 'EN_REVISION')
+      const { unmount: unmount2 } = renderPage()
+      expect(await screen.findByRole('button', { name: 'Restablecer planificación (Demostración)' })).toBeInTheDocument()
+      unmount2()
+
+      preparar([base], 'APROBADA')
+      renderPage()
+      expect(await screen.findByRole('button', { name: 'Restablecer planificación (Demostración)' })).toBeInTheDocument()
+    })
+
+    it('abre el dialogo de confirmacion y permite cancelar', async () => {
+      preparar([base], 'EN_REVISION')
+      const user = userEvent.setup()
+      renderPage()
+      const boton = await screen.findByRole('button', { name: 'Restablecer planificación (Demostración)' })
+      await user.click(boton)
+
+      expect(screen.getByRole('heading', { name: 'Restablecer planificación' })).toBeInTheDocument()
+      expect(screen.getByText(/Esta acción devolverá la planificación y sus bloques a estado Borrador/i)).toBeInTheDocument()
+
+      await user.click(screen.getByRole('button', { name: 'Cancelar' }))
+      expect(screen.queryByRole('heading', { name: 'Restablecer planificación' })).not.toBeInTheDocument()
+      expect(api.resetPlanificacionDemo).not.toHaveBeenCalled()
+    })
+
+    it('ejecuta restablecimiento exitoso llamando a la API y recargando la vista', async () => {
+      preparar([base], 'APROBADA')
+      vi.mocked(api.resetPlanificacionDemo).mockResolvedValue({
+        id: 'aggregate-1',
+        carreraId: 'carrera-1',
+        periodoId: 'periodo-1',
+        estado: 'BORRADOR',
+        bloques: [{ ...base, estado: 'BORRADOR' }],
+        revisiones: [],
+      })
+      const user = userEvent.setup()
+      renderPage()
+      const boton = await screen.findByRole('button', { name: 'Restablecer planificación (Demostración)' })
+      await user.click(boton)
+
+      await user.click(screen.getByRole('button', { name: 'Confirmar restablecimiento' }))
+      await waitFor(() => {
+        expect(api.resetPlanificacionDemo).toHaveBeenCalledWith('aggregate-1')
+      })
+      expect(await screen.findByRole('status')).toHaveTextContent('Planificación restablecida a borrador para demostración.')
+    })
+
+    it('muestra error amigable cuando falla por sesiones de asistencia vinculadas (409)', async () => {
+      preparar([base], 'APROBADA')
+      vi.mocked(api.resetPlanificacionDemo).mockRejectedValue(
+        new Error('No es posible restablecer la planificacion porque ya registra sesiones de asistencia vinculadas.')
+      )
+      const user = userEvent.setup()
+      renderPage()
+      const boton = await screen.findByRole('button', { name: 'Restablecer planificación (Demostración)' })
+      await user.click(boton)
+
+      await user.click(screen.getByRole('button', { name: 'Confirmar restablecimiento' }))
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        'No es posible restablecer: ya se registraron asistencias vinculadas a esta planificación.'
+      )
+    })
+
+    it('muestra error amigable cuando falla por feature flag demo deshabilitado (403)', async () => {
+      preparar([base], 'APROBADA')
+      vi.mocked(api.resetPlanificacionDemo).mockRejectedValue(
+        new Error('El restablecimiento de demostracion no esta habilitado.')
+      )
+      const user = userEvent.setup()
+      renderPage()
+      const boton = await screen.findByRole('button', { name: 'Restablecer planificación (Demostración)' })
+      await user.click(boton)
+
+      await user.click(screen.getByRole('button', { name: 'Confirmar restablecimiento' }))
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        'La función de restablecimiento para demostración no está habilitada.'
+      )
+    })
+  })
 })
 
 describe('filtro por pisoId real', () => {

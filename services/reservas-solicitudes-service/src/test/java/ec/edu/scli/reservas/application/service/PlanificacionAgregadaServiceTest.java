@@ -30,6 +30,10 @@ import ec.edu.scli.reservas.presentation.exception.ResourceNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.access.AccessDeniedException;
+import ec.edu.scli.reservas.domain.model.EstadoSolicitudRetiro;
+import ec.edu.scli.reservas.infrastructure.persistence.entity.SolicitudRetiroPlanificacionJpaEntity;
+import ec.edu.scli.reservas.infrastructure.persistence.repository.SesionAsistenciaJpaRepository;
+import ec.edu.scli.reservas.infrastructure.persistence.repository.SolicitudRetiroPlanificacionJpaRepository;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -65,6 +69,8 @@ class PlanificacionAgregadaServiceTest {
     private ReservaSpringDataRepository reservasOperativas;
     private SolicitudCambioPlanificacionJpaRepository solicitudesCambio;
     private RevisionSolicitudCambioJpaRepository revisionesSolicitudCambio;
+    private SesionAsistenciaJpaRepository sesiones;
+    private SolicitudRetiroPlanificacionJpaRepository solicitudesRetiro;
     private final UUID perfil = UUID.randomUUID();
     private final UUID carrera = UUID.randomUUID();
 
@@ -82,13 +88,21 @@ class PlanificacionAgregadaServiceTest {
         reservasOperativas = mock(ReservaSpringDataRepository.class);
         solicitudesCambio = mock(SolicitudCambioPlanificacionJpaRepository.class);
         revisionesSolicitudCambio = mock(RevisionSolicitudCambioJpaRepository.class);
+        solicitudesRetiro = mock(SolicitudRetiroPlanificacionJpaRepository.class);
+        sesiones = mock(SesionAsistenciaJpaRepository.class);
         service = new PlanificacionAgregadaService(planes, bloques, revisiones, actores, contextos,
                 academico, ambito, usuarios, mock(NotificacionService.class),
-                observaciones, reservasOperativas, solicitudesCambio, revisionesSolicitudCambio);
+                observaciones, reservasOperativas, solicitudesCambio, revisionesSolicitudCambio,
+                sesiones, solicitudesRetiro, true);
         when(actores.obtener()).thenReturn(new ActorAutenticado(perfil, Set.of("ROLE_COORDINADOR")));
         when(contextos.obtenerPorPerfilId(perfil)).thenReturn(
                 new ContextoInstitucional(true, true, false, false, false, null, List.of(carrera)));
         when(planes.saveAndFlush(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(planes.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(bloques.saveAll(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(revisiones.saveAll(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(solicitudesCambio.saveAll(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(solicitudesRetiro.saveAll(any())).thenAnswer(invocation -> invocation.getArgument(0));
         when(planes.findLockedById(any())).thenAnswer(invocation -> planes.findById(invocation.getArgument(0)));
         when(revisiones.findByPlanificacionId(any())).thenReturn(List.of());
         when(observaciones.findByRevisionId(any())).thenReturn(List.of());
@@ -752,5 +766,292 @@ class PlanificacionAgregadaServiceTest {
         revision.setRonda(ronda);
         revision.setVigente(vigente);
         return revision;
+    }
+
+    // ==========================================
+    // Tests: resetDemo (Demostración Temporal)
+    // ==========================================
+
+    @Test
+    void resetExitosoDePlanificacionEnRevisionABorrador() {
+        UUID planId = UUID.randomUUID();
+        PlanificacionAgregadaJpaEntity plan = plan(planId, EstadoPlanificacionAgregada.EN_REVISION);
+        plan.setEnviadaEn(Instant.now());
+        when(planes.findById(planId)).thenReturn(Optional.of(plan));
+
+        var response = service.resetDemo(planId);
+
+        assertThat(response.estado()).isEqualTo("BORRADOR");
+        assertThat(plan.getEstado()).isEqualTo(EstadoPlanificacionAgregada.BORRADOR);
+        assertThat(plan.getEnviadaEn()).isNull();
+        assertThat(plan.getAprobadaEn()).isNull();
+        verify(planes).save(plan);
+    }
+
+    @Test
+    void resetExitosoDePlanificacionAprobadaABorrador() {
+        UUID planId = UUID.randomUUID();
+        PlanificacionAgregadaJpaEntity plan = plan(planId, EstadoPlanificacionAgregada.APROBADA);
+        plan.setEnviadaEn(Instant.now().minusSeconds(3600));
+        plan.setAprobadaEn(Instant.now());
+        when(planes.findById(planId)).thenReturn(Optional.of(plan));
+
+        var response = service.resetDemo(planId);
+
+        assertThat(response.estado()).isEqualTo("BORRADOR");
+        assertThat(plan.getEstado()).isEqualTo(EstadoPlanificacionAgregada.BORRADOR);
+        assertThat(plan.getEnviadaEn()).isNull();
+        assertThat(plan.getAprobadaEn()).isNull();
+    }
+
+    @Test
+    void bloquesConfirmadosPasanABorrador() {
+        UUID planId = UUID.randomUUID();
+        PlanificacionAgregadaJpaEntity plan = plan(planId, EstadoPlanificacionAgregada.APROBADA);
+        when(planes.findById(planId)).thenReturn(Optional.of(plan));
+        PlanificacionJpaEntity b = bloque(planId, 1, UUID.randomUUID(), UUID.randomUUID());
+        b.setEstado(EstadoPlanificacion.CONFIRMADA);
+        when(bloques.findByPlanificacionId(planId)).thenReturn(List.of(b));
+
+        service.resetDemo(planId);
+
+        assertThat(b.getEstado()).isEqualTo(EstadoPlanificacion.BORRADOR);
+        verify(bloques).saveAll(List.of(b));
+    }
+
+    @Test
+    void bloquesEnRevisionPasanABorrador() {
+        UUID planId = UUID.randomUUID();
+        PlanificacionAgregadaJpaEntity plan = plan(planId, EstadoPlanificacionAgregada.EN_REVISION);
+        when(planes.findById(planId)).thenReturn(Optional.of(plan));
+        PlanificacionJpaEntity b = bloque(planId, 1, UUID.randomUUID(), UUID.randomUUID());
+        b.setEstado(EstadoPlanificacion.ENVIADA);
+        when(bloques.findByPlanificacionId(planId)).thenReturn(List.of(b));
+
+        service.resetDemo(planId);
+
+        assertThat(b.getEstado()).isEqualTo(EstadoPlanificacion.BORRADOR);
+        verify(bloques).saveAll(List.of(b));
+    }
+
+    @Test
+    void bloquesCanceladosNoSeReactivan() {
+        UUID planId = UUID.randomUUID();
+        PlanificacionAgregadaJpaEntity plan = plan(planId, EstadoPlanificacionAgregada.EN_REVISION);
+        when(planes.findById(planId)).thenReturn(Optional.of(plan));
+        PlanificacionJpaEntity bActivo = bloque(planId, 1, UUID.randomUUID(), UUID.randomUUID());
+        bActivo.setEstado(EstadoPlanificacion.ENVIADA);
+        PlanificacionJpaEntity bCancelado = bloque(planId, 2, UUID.randomUUID(), UUID.randomUUID());
+        bCancelado.setEstado(EstadoPlanificacion.CANCELADA);
+        when(bloques.findByPlanificacionId(planId)).thenReturn(List.of(bActivo, bCancelado));
+
+        service.resetDemo(planId);
+
+        assertThat(bActivo.getEstado()).isEqualTo(EstadoPlanificacion.BORRADOR);
+        assertThat(bCancelado.getEstado()).isEqualTo(EstadoPlanificacion.CANCELADA);
+    }
+
+    @Test
+    void revisionesVigentesQuedanEnVigenteFalse() {
+        UUID planId = UUID.randomUUID();
+        PlanificacionAgregadaJpaEntity plan = plan(planId, EstadoPlanificacionAgregada.EN_REVISION);
+        when(planes.findById(planId)).thenReturn(Optional.of(plan));
+        RevisionPlanificacionPisoJpaEntity rev = revision(planId, UUID.randomUUID(), 1, true);
+        when(revisiones.findByPlanificacionIdAndVigenteTrue(planId)).thenReturn(List.of(rev));
+
+        service.resetDemo(planId);
+
+        assertThat(rev.getVigente()).isFalse();
+        verify(revisiones).saveAll(List.of(rev));
+    }
+
+    @Test
+    void solicitudesDeCambioPendientesPasanARechazada() {
+        UUID planId = UUID.randomUUID();
+        PlanificacionAgregadaJpaEntity plan = plan(planId, EstadoPlanificacionAgregada.APROBADA);
+        when(planes.findById(planId)).thenReturn(Optional.of(plan));
+        SolicitudCambioPlanificacionJpaEntity sol = new SolicitudCambioPlanificacionJpaEntity();
+        sol.setId(UUID.randomUUID());
+        sol.setPlanificacionId(planId);
+        sol.setEstado(EstadoSolicitudCambio.PENDIENTE);
+        when(solicitudesCambio.findByPlanificacionIdOrderByCreadaEnDesc(planId)).thenReturn(List.of(sol));
+
+        service.resetDemo(planId);
+
+        assertThat(sol.getEstado()).isEqualTo(EstadoSolicitudCambio.RECHAZADA);
+        assertThat(sol.getResueltaEn()).isNotNull();
+        verify(solicitudesCambio).saveAll(List.of(sol));
+    }
+
+    @Test
+    void solicitudesDeCambioYaAprobadasNoSeTocan() {
+        UUID planId = UUID.randomUUID();
+        PlanificacionAgregadaJpaEntity plan = plan(planId, EstadoPlanificacionAgregada.APROBADA);
+        when(planes.findById(planId)).thenReturn(Optional.of(plan));
+        SolicitudCambioPlanificacionJpaEntity solAprobada = new SolicitudCambioPlanificacionJpaEntity();
+        solAprobada.setId(UUID.randomUUID());
+        solAprobada.setPlanificacionId(planId);
+        solAprobada.setEstado(EstadoSolicitudCambio.APROBADA);
+        Instant resuelta = Instant.now().minusSeconds(600);
+        solAprobada.setResueltaEn(resuelta);
+        when(solicitudesCambio.findByPlanificacionIdOrderByCreadaEnDesc(planId)).thenReturn(List.of(solAprobada));
+
+        service.resetDemo(planId);
+
+        assertThat(solAprobada.getEstado()).isEqualTo(EstadoSolicitudCambio.APROBADA);
+        assertThat(solAprobada.getResueltaEn()).isEqualTo(resuelta);
+    }
+
+    @Test
+    void solicitudesDeRetiroPendientesPasanARechazada() {
+        UUID planId = UUID.randomUUID();
+        PlanificacionAgregadaJpaEntity plan = plan(planId, EstadoPlanificacionAgregada.EN_REVISION);
+        when(planes.findById(planId)).thenReturn(Optional.of(plan));
+        SolicitudRetiroPlanificacionJpaEntity solRetiro = new SolicitudRetiroPlanificacionJpaEntity();
+        solRetiro.setPlanificacionId(planId);
+        solRetiro.setEstado(EstadoSolicitudRetiro.PENDIENTE);
+        when(solicitudesRetiro.findByPlanificacionIdOrderByCreadaEnDesc(planId)).thenReturn(List.of(solRetiro));
+
+        service.resetDemo(planId);
+
+        assertThat(solRetiro.getEstado()).isEqualTo(EstadoSolicitudRetiro.RECHAZADA);
+        assertThat(solRetiro.getResueltaEn()).isNotNull();
+        verify(solicitudesRetiro).saveAll(List.of(solRetiro));
+    }
+
+    @Test
+    void siExisteSesionDeAsistenciaVinculadaFallaCon409() {
+        UUID planId = UUID.randomUUID();
+        PlanificacionAgregadaJpaEntity plan = plan(planId, EstadoPlanificacionAgregada.APROBADA);
+        when(planes.findById(planId)).thenReturn(Optional.of(plan));
+        PlanificacionJpaEntity b = bloque(planId, 1, UUID.randomUUID(), UUID.randomUUID());
+        when(bloques.findByPlanificacionId(planId)).thenReturn(List.of(b));
+        when(sesiones.existsByBloquePlanificacionIdIn(List.of(b.getId()))).thenReturn(true);
+
+        assertThatThrownBy(() -> service.resetDemo(planId))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("No es posible restablecer la planificacion porque ya registra sesiones de asistencia vinculadas.");
+
+        verify(planes, never()).save(any());
+    }
+
+    @Test
+    void siSesionPerteneceAOtraPlanificacionResetTieneExito() {
+        UUID planId = UUID.randomUUID();
+        PlanificacionAgregadaJpaEntity plan = plan(planId, EstadoPlanificacionAgregada.APROBADA);
+        when(planes.findById(planId)).thenReturn(Optional.of(plan));
+        PlanificacionJpaEntity b = bloque(planId, 1, UUID.randomUUID(), UUID.randomUUID());
+        when(bloques.findByPlanificacionId(planId)).thenReturn(List.of(b));
+        when(sesiones.existsByBloquePlanificacionIdIn(List.of(b.getId()))).thenReturn(false);
+
+        var response = service.resetDemo(planId);
+
+        assertThat(response.estado()).isEqualTo("BORRADOR");
+        verify(planes).save(plan);
+    }
+
+    @Test
+    void siFeatureFlagDemoResetEnabledFalseFallaCon403() {
+        UUID planId = UUID.randomUUID();
+        service.setDemoResetEnabled(false);
+
+        assertThatThrownBy(() -> service.resetDemo(planId))
+                .isInstanceOf(AccessDeniedException.class)
+                .hasMessageContaining("El restablecimiento de demostracion no esta habilitado.");
+    }
+
+    @Test
+    void siRolNoEsCoordinadorFallaCon403() {
+        UUID planId = UUID.randomUUID();
+        PlanificacionAgregadaJpaEntity plan = plan(planId, EstadoPlanificacionAgregada.EN_REVISION);
+        when(planes.findById(planId)).thenReturn(Optional.of(plan));
+        when(actores.obtener()).thenReturn(new ActorAutenticado(perfil, Set.of("ROLE_DOCENTE")));
+
+        assertThatThrownBy(() -> service.resetDemo(planId))
+                .isInstanceOf(AccessDeniedException.class);
+    }
+
+    @Test
+    void siCoordinadorEsDeOtraCarreraFallaCon403() {
+        UUID planId = UUID.randomUUID();
+        PlanificacionAgregadaJpaEntity plan = plan(planId, EstadoPlanificacionAgregada.EN_REVISION);
+        plan.setCarreraId(UUID.randomUUID());
+        when(planes.findById(planId)).thenReturn(Optional.of(plan));
+
+        assertThatThrownBy(() -> service.resetDemo(planId))
+                .isInstanceOf(AccessDeniedException.class)
+                .hasMessageContaining("La carrera no pertenece al coordinador");
+    }
+
+    @Test
+    void siPlanificacionYaEstaEnBorradorSinRevisionesIdempotente200() {
+        UUID planId = UUID.randomUUID();
+        PlanificacionAgregadaJpaEntity plan = plan(planId, EstadoPlanificacionAgregada.BORRADOR);
+        when(planes.findById(planId)).thenReturn(Optional.of(plan));
+        when(revisiones.findByPlanificacionIdAndVigenteTrue(planId)).thenReturn(List.of());
+
+        var response = service.resetDemo(planId);
+
+        assertThat(response.estado()).isEqualTo("BORRADOR");
+        verify(planes, never()).save(any());
+        verify(bloques, never()).saveAll(any());
+    }
+
+    @Test
+    void siPeriodoYaFinalizoFallaNoEditable() {
+        UUID planId = UUID.randomUUID();
+        PlanificacionAgregadaJpaEntity plan = plan(planId, EstadoPlanificacionAgregada.APROBADA);
+        when(planes.findById(planId)).thenReturn(Optional.of(plan));
+        LocalDate hoy = LocalDate.now(ZoneId.of("America/Guayaquil"));
+        when(academico.obtenerPeriodo(plan.getPeriodoId())).thenReturn(new PeriodoExternoResponse(
+                plan.getPeriodoId(), "P", "P", hoy.minusMonths(5), hoy.minusDays(1),
+                "FINALIZADO", "P", "PPA", 1));
+
+        assertThatThrownBy(() -> service.resetDemo(planId))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Una planificacion finalizada no puede restablecerse.");
+    }
+
+    @Test
+    void enviadaEnYAprobadaEnQuedanEnNull() {
+        UUID planId = UUID.randomUUID();
+        PlanificacionAgregadaJpaEntity plan = plan(planId, EstadoPlanificacionAgregada.APROBADA);
+        plan.setEnviadaEn(Instant.now().minusSeconds(7200));
+        plan.setAprobadaEn(Instant.now().minusSeconds(3600));
+        when(planes.findById(planId)).thenReturn(Optional.of(plan));
+
+        service.resetDemo(planId);
+
+        assertThat(plan.getEnviadaEn()).isNull();
+        assertThat(plan.getAprobadaEn()).isNull();
+    }
+
+    @Test
+    void camposDeMateriaDocenteLabHorarioDeLosBloquesNoSeAlteran() {
+        UUID planId = UUID.randomUUID();
+        PlanificacionAgregadaJpaEntity plan = plan(planId, EstadoPlanificacionAgregada.APROBADA);
+        when(planes.findById(planId)).thenReturn(Optional.of(plan));
+        UUID docenteId = UUID.randomUUID();
+        UUID labId = UUID.randomUUID();
+        PlanificacionJpaEntity b = bloque(planId, 3, docenteId, labId);
+        UUID materiaId = b.getMateriaId();
+        UUID periodoId = b.getPeriodoId();
+        LocalTime horaInicio = b.getHoraInicio();
+        LocalTime horaFin = b.getHoraFin();
+        String dia = b.getDiaSemana();
+        Integer nivel = b.getNivel();
+        when(bloques.findByPlanificacionId(planId)).thenReturn(List.of(b));
+
+        service.resetDemo(planId);
+
+        assertThat(b.getEstado()).isEqualTo(EstadoPlanificacion.BORRADOR);
+        assertThat(b.getDocenteId()).isEqualTo(docenteId);
+        assertThat(b.getLaboratorioId()).isEqualTo(labId);
+        assertThat(b.getMateriaId()).isEqualTo(materiaId);
+        assertThat(b.getPeriodoId()).isEqualTo(periodoId);
+        assertThat(b.getHoraInicio()).isEqualTo(horaInicio);
+        assertThat(b.getHoraFin()).isEqualTo(horaFin);
+        assertThat(b.getDiaSemana()).isEqualTo(dia);
+        assertThat(b.getNivel()).isEqualTo(nivel);
     }
 }

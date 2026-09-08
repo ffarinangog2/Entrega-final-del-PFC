@@ -59,4 +59,9 @@ public class PlanificacionAgregadaController {
             @Valid @RequestBody ProponerCambioAgregadoRequest request) {
         return service.proponerCambio(id, request);
     }
+
+    @PostMapping("/{id}/reset-demo")
+    public PlanificacionAgregadaResponse resetDemo(@PathVariable UUID id) {
+        return service.resetDemo(id);
+    }
 }

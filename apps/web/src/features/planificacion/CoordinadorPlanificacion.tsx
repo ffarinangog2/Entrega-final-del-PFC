@@ -70,6 +70,8 @@ export function CoordinadorPlanificacion() {
   const [retiros, setRetiros] = useState<api.SolicitudRetiro[]>([])
   const [editorAbierto, setEditorAbierto] = useState(false)
   const [confirmando, setConfirmando] = useState(false)
+  const [confirmandoReset, setConfirmandoReset] = useState(false)
+  const [reseteando, setReseteando] = useState(false)
   const [error, setError] = useState('')
   const [mensaje, setMensaje] = useState('')
   const [iniciado, setIniciado] = useState(false)
@@ -354,6 +356,30 @@ export function CoordinadorPlanificacion() {
     }
   }
 
+  async function ejecutarResetDemo() {
+    if (reseteando || !plan) return
+    setReseteando(true)
+    setError('')
+    try {
+      await api.resetPlanificacionDemo(plan.id)
+      setConfirmandoReset(false)
+      setMensaje('Planificación restablecida a borrador para demostración.')
+      await cargar()
+    } catch (cause) {
+      const msg = cause instanceof Error ? cause.message : 'No fue posible restablecer la planificación.'
+      if (msg.includes('asistencia vinculada') || msg.includes('ya registra sesiones de asistencia')) {
+        setError('No es posible restablecer: ya se registraron asistencias vinculadas a esta planificación.')
+      } else if (msg.includes('no esta habilitado') || msg.includes('no está habilitado')) {
+        setError('La función de restablecimiento para demostración no está habilitada.')
+      } else {
+        setError(msg)
+      }
+      setConfirmandoReset(false)
+    } finally {
+      setReseteando(false)
+    }
+  }
+
   async function retirarCompleta() {
     if (retirando || !plan || plan.estado !== 'EN_REVISION') return
     if (!motivoRetiro.trim()) {
@@ -626,6 +652,18 @@ export function CoordinadorPlanificacion() {
                 </button>
               </div>
             )}
+            {(plan?.estado === 'EN_REVISION' || plan?.estado === 'APROBADA') && (
+              <div className="weekly-planning__send">
+                <button
+                  type="button"
+                  className="weekly-planning__reset-demo"
+                  onClick={() => setConfirmandoReset(true)}
+                  disabled={reseteando}
+                >
+                  Restablecer planificación (Demostración)
+                </button>
+              </div>
+            )}
             {plan?.estado === 'EN_REVISION' && (() => {
               const solicitud = (retiros ?? [])[0]
               const pendienteRetiro = solicitud?.estado === 'PENDIENTE'
@@ -795,6 +833,36 @@ export function CoordinadorPlanificacion() {
                 </button>
               </div>
             </form>
+          </div>
+        )}
+        {confirmandoReset && (
+          <div
+            className="planning-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="reset-demo-title"
+          >
+            <section>
+              <h2 id="reset-demo-title">Restablecer planificación</h2>
+              <p>
+                Esta acción devolverá la planificación y sus bloques a estado Borrador para fines de demostración. Las revisiones vigentes quedarán archivadas como histórico y las solicitudes pendientes serán rechazadas.
+              </p>
+              <p>
+                <strong>Atención:</strong> Si ya existen asistencias vinculadas a esta planificación, la operación no se ejecutará.
+              </p>
+              <div className="planning-dialog__actions">
+                <button type="button" onClick={() => setConfirmandoReset(false)} disabled={reseteando}>
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void ejecutarResetDemo()}
+                  disabled={reseteando}
+                >
+                  {reseteando ? 'Restableciendo...' : 'Confirmar restablecimiento'}
+                </button>
+              </div>
+            </section>
           </div>
         )}
         {confirmando && (

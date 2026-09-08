@@ -42,6 +42,7 @@ export const listarPlanificacionesAgregadas = () => apiRequest<PlanificacionAgre
 export const iniciarPlanificacion = (periodoId: string) => apiRequest<PlanificacionAgregada>('/api/v1/planificaciones-agregadas', { method: 'POST', body: JSON.stringify({ periodoId }) })
 export const enviarPlanificacionCompleta = (id: string) => apiRequest<PlanificacionAgregada>(`/api/v1/planificaciones-agregadas/${encodeURIComponent(id)}/enviar`, { method: 'POST' })
 export const retirarPlanificacionCompleta = (id: string) => apiRequest<PlanificacionAgregada>(`/api/v1/planificaciones-agregadas/${encodeURIComponent(id)}/retirar`, { method: 'POST' })
+export const resetPlanificacionDemo = (id: string) => apiRequest<PlanificacionAgregada>(`/api/v1/planificaciones-agregadas/${encodeURIComponent(id)}/reset-demo`, { method: 'POST' })
 export interface DisponibilidadPlanificacion { docentesOcupados: string[]; laboratoriosOcupados: string[] }
 export const obtenerDisponibilidadPlanificacion = (params: { planificacionId?: string; periodoId: string; dia: string; horaInicio: string; horaFin: string }) => {
   const query = new URLSearchParams(Object.entries(params).filter((entry): entry is [string, string] => Boolean(entry[1])))

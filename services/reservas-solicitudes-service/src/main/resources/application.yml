@@ -89,6 +89,8 @@ security:
     secret: ${JWT_SECRET}
 
 app:
+  features:
+    demo-reset-enabled: ${DEMO_RESET_ENABLED:false}
   internal-api-key: ${INTERNAL_API_KEY}
   reservas:
     expiration-grace-minutes: ${RESERVA_EXPIRATION_GRACE_MINUTES:1440}

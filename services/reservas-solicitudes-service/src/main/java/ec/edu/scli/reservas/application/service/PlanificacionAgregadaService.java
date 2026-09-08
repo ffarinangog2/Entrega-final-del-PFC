@@ -18,12 +18,18 @@ import ec.edu.scli.reservas.infrastructure.persistence.repository.ObservacionRev
 import ec.edu.scli.reservas.infrastructure.persistence.repository.ReservaSpringDataRepository;
 import ec.edu.scli.reservas.infrastructure.persistence.repository.SolicitudCambioPlanificacionJpaRepository;
 import ec.edu.scli.reservas.infrastructure.persistence.repository.RevisionSolicitudCambioJpaRepository;
+import ec.edu.scli.reservas.infrastructure.persistence.repository.SesionAsistenciaJpaRepository;
+import ec.edu.scli.reservas.infrastructure.persistence.repository.SolicitudRetiroPlanificacionJpaRepository;
+import ec.edu.scli.reservas.infrastructure.persistence.entity.SolicitudCambioPlanificacionJpaEntity;
+import ec.edu.scli.reservas.infrastructure.persistence.entity.SolicitudRetiroPlanificacionJpaEntity;
+import ec.edu.scli.reservas.domain.model.EstadoSolicitudRetiro;
 import ec.edu.scli.reservas.presentation.dto.request.ProponerCambioAgregadoRequest;
 import ec.edu.scli.reservas.presentation.dto.response.PlanificacionAgregadaResponse;
 import ec.edu.scli.reservas.presentation.dto.response.PlanificacionResponse;
 import ec.edu.scli.reservas.presentation.dto.response.DisponibilidadPlanificacionResponse;
 import ec.edu.scli.reservas.presentation.exception.ResourceNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -56,6 +62,9 @@ public class PlanificacionAgregadaService {
     private final ReservaSpringDataRepository reservasOperativas;
     private final SolicitudCambioPlanificacionJpaRepository solicitudesCambio;
     private final RevisionSolicitudCambioJpaRepository revisionesSolicitudCambio;
+    private final SesionAsistenciaJpaRepository sesiones;
+    private final SolicitudRetiroPlanificacionJpaRepository solicitudesRetiro;
+    private boolean demoResetEnabled;
 
     @Autowired
     public PlanificacionAgregadaService(PlanificacionAgregadaJpaRepository planes,
@@ -66,7 +75,10 @@ public class PlanificacionAgregadaService {
             ObservacionRevisionPlanificacionJpaRepository observaciones,
             ReservaSpringDataRepository reservasOperativas,
             SolicitudCambioPlanificacionJpaRepository solicitudesCambio,
-            RevisionSolicitudCambioJpaRepository revisionesSolicitudCambio) {
+            RevisionSolicitudCambioJpaRepository revisionesSolicitudCambio,
+            SesionAsistenciaJpaRepository sesiones,
+            SolicitudRetiroPlanificacionJpaRepository solicitudesRetiro,
+            @Value("${app.features.demo-reset-enabled:false}") boolean demoResetEnabled) {
         this.planes = planes;
         this.bloques = bloques;
         this.revisiones = revisiones;
@@ -80,6 +92,23 @@ public class PlanificacionAgregadaService {
         this.reservasOperativas = reservasOperativas;
         this.solicitudesCambio = solicitudesCambio;
         this.revisionesSolicitudCambio = revisionesSolicitudCambio;
+        this.sesiones = sesiones;
+        this.solicitudesRetiro = solicitudesRetiro;
+        this.demoResetEnabled = demoResetEnabled;
+    }
+
+    public PlanificacionAgregadaService(PlanificacionAgregadaJpaRepository planes,
+            PlanificacionJpaRepository bloques, RevisionPlanificacionPisoJpaRepository revisiones,
+            ActorActualPort actores, ContextoInstitucionalPort contextos,
+            AcademicoLaboratoriosClient academico, PoliticaAmbitoLaboratorio ambitoLaboratorio,
+            UsuariosClient usuarios, NotificacionService notificaciones,
+            ObservacionRevisionPlanificacionJpaRepository observaciones,
+            ReservaSpringDataRepository reservasOperativas,
+            SolicitudCambioPlanificacionJpaRepository solicitudesCambio,
+            RevisionSolicitudCambioJpaRepository revisionesSolicitudCambio) {
+        this(planes, bloques, revisiones, actores, contextos, academico, ambitoLaboratorio,
+                usuarios, notificaciones, observaciones, reservasOperativas, solicitudesCambio,
+                revisionesSolicitudCambio, null, null, false);
     }
 
     public PlanificacionAgregadaService(PlanificacionAgregadaJpaRepository planes,
@@ -90,7 +119,11 @@ public class PlanificacionAgregadaService {
             ObservacionRevisionPlanificacionJpaRepository observaciones,
             ReservaSpringDataRepository reservasOperativas) {
         this(planes, bloques, revisiones, actores, contextos, academico, ambitoLaboratorio,
-                usuarios, notificaciones, observaciones, reservasOperativas, null, null);
+                usuarios, notificaciones, observaciones, reservasOperativas, null, null, null, null, false);
+    }
+
+    public void setDemoResetEnabled(boolean demoResetEnabled) {
+        this.demoResetEnabled = demoResetEnabled;
     }
 
     @Transactional
@@ -512,5 +545,94 @@ public class PlanificacionAgregadaService {
                 item.getDiaSemana(), item.getHoraInicio(), item.getHoraFin(), item.getEstado().name(),
                 item.getObservacion(), item.getCreadoPorPerfilId(), item.getCreadaEn(), item.getActualizadaEn(),
                 item.getVersion());
+    }
+
+    @Transactional
+    public PlanificacionAgregadaResponse resetDemo(UUID id) {
+        if (!demoResetEnabled) {
+            throw new AccessDeniedException("El restablecimiento de demostracion no esta habilitado.");
+        }
+        PlanificacionAgregadaJpaEntity plan = propiaParaEnvio(id);
+
+        if (estadoEfectivo(plan) == EstadoPlanificacionAgregada.FINALIZADA) {
+            throw new IllegalStateException("Una planificacion finalizada no puede restablecerse.");
+        }
+
+        if (plan.getEstado() == EstadoPlanificacionAgregada.BORRADOR) {
+            List<RevisionPlanificacionPisoJpaEntity> vigentes =
+                    revisiones.findByPlanificacionIdAndVigenteTrue(id);
+            if (vigentes.isEmpty()) {
+                return map(plan);
+            }
+        }
+
+        if (plan.getEstado() != EstadoPlanificacionAgregada.EN_REVISION
+                && plan.getEstado() != EstadoPlanificacionAgregada.APROBADA
+                && plan.getEstado() != EstadoPlanificacionAgregada.BORRADOR
+                && plan.getEstado() != EstadoPlanificacionAgregada.REQUIERE_CAMBIOS) {
+            throw new IllegalStateException("Solo una planificacion en revision o aprobada puede restablecerse.");
+        }
+
+        List<PlanificacionJpaEntity> items = bloques.findByPlanificacionId(id);
+        List<UUID> bloqueIds = items.stream().map(PlanificacionJpaEntity::getId).toList();
+        if (sesiones != null && !bloqueIds.isEmpty() && sesiones.existsByBloquePlanificacionIdIn(bloqueIds)) {
+            throw new IllegalStateException("No es posible restablecer la planificacion porque ya registra sesiones de asistencia vinculadas.");
+        }
+
+        Instant ahora = Instant.now();
+
+        // 1. Cabecera a BORRADOR
+        plan.setEstado(EstadoPlanificacionAgregada.BORRADOR);
+        plan.setEnviadaEn(null);
+        plan.setAprobadaEn(null);
+        plan.setActualizadaEn(ahora);
+        planes.save(plan);
+
+        // 2. Bloques activos a BORRADOR (sin borrar ni modificar datos de clase)
+        items.stream()
+                .filter(item -> item.getEstado() != EstadoPlanificacion.CANCELADA)
+                .forEach(item -> {
+                    item.setEstado(EstadoPlanificacion.BORRADOR);
+                    item.setActualizadaEn(ahora);
+                });
+        bloques.saveAll(items);
+
+        // 3. Revisiones vigentes pasan a vigente = false (historico conservado)
+        List<RevisionPlanificacionPisoJpaEntity> revisionesVigentes =
+                revisiones.findByPlanificacionIdAndVigenteTrue(id);
+        revisionesVigentes.forEach(item -> {
+            item.setVigente(false);
+            item.setActualizadaEn(ahora);
+        });
+        revisiones.saveAll(revisionesVigentes);
+
+        // 4. Solicitudes de cambio pendientes se rechazan por el reset
+        if (solicitudesCambio != null) {
+            List<SolicitudCambioPlanificacionJpaEntity> cambios =
+                    solicitudesCambio.findByPlanificacionIdOrderByCreadaEnDesc(id);
+            cambios.stream()
+                    .filter(c -> c.getEstado() == EstadoSolicitudCambio.PENDIENTE)
+                    .forEach(c -> {
+                        c.setEstado(EstadoSolicitudCambio.RECHAZADA);
+                        c.setResolucion("Rechazada por restablecimiento de planificacion en modo demostracion");
+                        c.setResueltaEn(ahora);
+                    });
+            solicitudesCambio.saveAll(cambios);
+        }
+
+        // 5. Solicitudes de retiro pendientes se rechazan por el reset
+        if (solicitudesRetiro != null) {
+            List<SolicitudRetiroPlanificacionJpaEntity> retiros =
+                    solicitudesRetiro.findByPlanificacionIdOrderByCreadaEnDesc(id);
+            retiros.stream()
+                    .filter(r -> r.getEstado() == EstadoSolicitudRetiro.PENDIENTE)
+                    .forEach(r -> {
+                        r.setEstado(EstadoSolicitudRetiro.RECHAZADA);
+                        r.setResueltaEn(ahora);
+                    });
+            solicitudesRetiro.saveAll(retiros);
+        }
+
+        return map(plan);
     }
 }
