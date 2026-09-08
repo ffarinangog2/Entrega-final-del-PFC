@@ -246,6 +246,7 @@ interface InstitutionalApi {
 }
 
 class InstitutionalRepository(private val api: InstitutionalApi) {
+    @Suppress("UNUSED_PARAMETER")
     suspend fun docencia(perfilId: String = ""): DocenciaData {
         val periodo = runCatching { api.periodoActual() }.getOrNull()
         val horarios = if (periodo != null && periodo.id.isNotBlank()) {

@@ -92,6 +92,16 @@ internal sealed class AppDestination(val route: String) {
     }
 }
 
+internal val rutasSecundarias: Set<String> = setOf(
+    AppDestination.Notificaciones.route,
+    AppDestination.NuevaReserva.route,
+    AppDestination.SolicitudDetalle.route,
+    AppDestination.ReservaDetalle.route,
+)
+
+internal fun esRutaSecundaria(route: String?): Boolean =
+    route != null && route in rutasSecundarias
+
 internal data class MobileNavigationAccess(
     val coordinador: Boolean = false,
     val reservas: Boolean = false,
@@ -220,7 +230,7 @@ fun AppNavHost(application: ScliMobileApplication) {
                 navigationIcon = {
                     val navBackStackEntry by navController.currentBackStackEntryAsState()
                     val currentRoute = navBackStackEntry?.destination?.route
-                    if (currentRoute == AppDestination.Notificaciones.route) {
+                    if (esRutaSecundaria(currentRoute)) {
                         IconButton(onClick = { navController.popBackStack() }) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,

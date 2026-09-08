@@ -56,6 +56,42 @@ class MobileNavigationAccessTest {
         assertFalse(access.estudiante)
     }
 
+    @Test
+    fun `A - notificaciones es considerada ruta secundaria con back arrow`() {
+        assertTrue(esRutaSecundaria(AppDestination.Notificaciones.route))
+    }
+
+    @Test
+    fun `B - nueva reserva es considerada ruta secundaria`() {
+        assertTrue(esRutaSecundaria(AppDestination.NuevaReserva.route))
+    }
+
+    @Test
+    fun `C - reserva detalle es considerada ruta secundaria`() {
+        assertTrue(esRutaSecundaria(AppDestination.ReservaDetalle.route))
+    }
+
+    @Test
+    fun `D - solicitud detalle es considerada ruta secundaria`() {
+        assertTrue(esRutaSecundaria(AppDestination.SolicitudDetalle.route))
+    }
+
+    @Test
+    fun `E - rutas principales no muestran back arrow`() {
+        assertFalse(esRutaSecundaria(AppDestination.HorarioDocente.route))
+        assertFalse(esRutaSecundaria(AppDestination.HorarioEstudiante.route))
+        assertFalse(esRutaSecundaria(AppDestination.Reservas.route))
+        assertFalse(esRutaSecundaria(AppDestination.Perfil.route))
+        assertFalse(esRutaSecundaria(AppDestination.Incidentes.route))
+        assertFalse(esRutaSecundaria(AppDestination.Calendario.route))
+        assertFalse(esRutaSecundaria(AppDestination.Planificacion.route))
+        assertFalse(esRutaSecundaria(AppDestination.Asistencia.route))
+        assertFalse(esRutaSecundaria(AppDestination.Administracion.route))
+        assertFalse(esRutaSecundaria(AppDestination.EscanearQr.route))
+        assertFalse(esRutaSecundaria(null))
+        assertFalse(esRutaSecundaria(""))
+    }
+
     private fun user(role: String, permissions: List<String>) = AuthUserResponse(
         "usuario", "perfil", "user", "Nombre", "Apellido", "user@uteq.edu.ec",
         roles = listOf(role), permisos = permissions,
