@@ -78,6 +78,104 @@ class InstitutionalRepositoryTest {
         assertEquals("/api/v1/asistencias/historial", server.takeRequest().path)
     }
 
+    @Test
+    fun `docencia consulta periodoActual y luego miHorarioDocente con periodoId sin llamar endpoints redundantes`() = runTest {
+        server.enqueue(MockResponse().setResponseCode(200).setBody(PERIODO_JSON))
+        server.enqueue(MockResponse().setResponseCode(200).setBody(MI_HORARIO_DOCENTE_JSON))
+        server.enqueue(MockResponse().setResponseCode(200).setBody(PAGINA_MATERIAS_JSON))
+        server.enqueue(MockResponse().setResponseCode(200).setBody(PAGINA_LABORATORIOS_JSON))
+
+        val docencia = repository.docencia("perfil-docente-1")
+
+        assertEquals("periodo-1", docencia.periodo?.id)
+        assertEquals(1, docencia.horarios.size)
+        assertEquals("bloque-1", docencia.horarios.single().id)
+        assertEquals("materia-1", docencia.horarios.single().materiaId)
+        assertEquals("laboratorio-1", docencia.horarios.single().laboratorioId)
+        assertEquals("CONFIRMADA", docencia.horarios.single().estado)
+        assertEquals("LUNES", docencia.horarios.single().diaSemana)
+        assertEquals("07:30:00", docencia.horarios.single().horaInicio)
+        assertEquals("09:30:00", docencia.horarios.single().horaFin)
+
+        val rutas = List(4) { server.takeRequest().path }
+        assertEquals("/api/v1/periodos-lectivos/actual", rutas[0])
+        assertEquals("/api/v1/asistencias/mi-horario-docente?periodoId=periodo-1", rutas[1])
+        assertEquals(true, rutas.any { it?.startsWith("/api/v1/materias") == true })
+        assertEquals(true, rutas.any { it?.startsWith("/api/v1/laboratorios") == true })
+        assertEquals(false, rutas.any { it?.startsWith("/api/v1/horarios/docente") == true })
+        assertEquals(false, rutas.any { it?.startsWith("/api/v1/docentes/perfil") == true })
+    }
+
+    @Test
+    fun `docencia sin periodo actual no llama miHorarioDocente y devuelve horario vacio fail closed`() = runTest {
+        server.enqueue(MockResponse().setResponseCode(404).setBody("""{"status":404,"message":"No hay período lectivo activo"}"""))
+        server.enqueue(MockResponse().setResponseCode(200).setBody(PAGINA_MATERIAS_JSON))
+        server.enqueue(MockResponse().setResponseCode(200).setBody(PAGINA_LABORATORIOS_JSON))
+
+        val docencia = repository.docencia("perfil-docente-1")
+
+        assertEquals(null, docencia.periodo)
+        assertEquals(emptyList<PlanificacionBloqueDto>(), docencia.horarios)
+        assertEquals(1, docencia.materias.size)
+        assertEquals(1, docencia.laboratorios.size)
+
+        val rutas = List(3) { server.takeRequest().path }
+        assertEquals("/api/v1/periodos-lectivos/actual", rutas[0])
+        assertEquals(false, rutas.any { it?.contains("mi-horario-docente") == true })
+        assertEquals(false, rutas.any { it?.startsWith("/api/v1/horarios/docente") == true })
+        assertEquals(false, rutas.any { it?.startsWith("/api/v1/docentes/perfil") == true })
+    }
+
+    @Test
+    fun `estudianteHorario consulta periodoActual y luego miHorario con periodoId exacto sin solicitar estudianteId ni endpoints redundantes`() = runTest {
+        server.enqueue(MockResponse().setResponseCode(200).setBody(PERIODO_JSON))
+        server.enqueue(MockResponse().setResponseCode(200).setBody(MI_HORARIO_ESTUDIANTE_JSON))
+        server.enqueue(MockResponse().setResponseCode(200).setBody(PAGINA_MATERIAS_JSON))
+        server.enqueue(MockResponse().setResponseCode(200).setBody(PAGINA_LABORATORIOS_JSON))
+
+        val data = repository.estudianteHorario()
+
+        assertEquals("periodo-1", data.periodo?.id)
+        assertEquals(1, data.horarios.size)
+        assertEquals("bloque-est-1", data.horarios.single().id)
+        assertEquals("materia-1", data.horarios.single().materiaId)
+        assertEquals("laboratorio-1", data.horarios.single().laboratorioId)
+        assertEquals("CONFIRMADA", data.horarios.single().estado)
+        assertEquals("LUNES", data.horarios.single().diaSemana)
+        assertEquals("07:30:00", data.horarios.single().horaInicio)
+        assertEquals("09:30:00", data.horarios.single().horaFin)
+        assertEquals(2, data.horarios.single().nivel)
+
+        val rutas = List(4) { server.takeRequest().path }
+        assertEquals("/api/v1/periodos-lectivos/actual", rutas[0])
+        assertEquals("/api/v1/asistencias/mi-horario?periodoId=periodo-1", rutas[1])
+        assertEquals(true, rutas.any { it?.startsWith("/api/v1/materias") == true })
+        assertEquals(true, rutas.any { it?.startsWith("/api/v1/laboratorios") == true })
+        assertEquals(false, rutas.any { it?.contains("estudiante") == true })
+        assertEquals(false, rutas.any { it?.contains("perfil") == true })
+        assertEquals(4, rutas.size)
+    }
+
+    @Test
+    fun `estudianteHorario sin periodo actual no llama miHorario y devuelve horario vacio fail closed`() = runTest {
+        server.enqueue(MockResponse().setResponseCode(404).setBody("""{"status":404,"message":"No hay período lectivo activo"}"""))
+        server.enqueue(MockResponse().setResponseCode(200).setBody(PAGINA_MATERIAS_JSON))
+        server.enqueue(MockResponse().setResponseCode(200).setBody(PAGINA_LABORATORIOS_JSON))
+
+        val data = repository.estudianteHorario()
+
+        assertEquals(null, data.periodo)
+        assertEquals(emptyList<PlanificacionBloqueDto>(), data.horarios)
+        assertEquals(1, data.materias.size)
+        assertEquals(1, data.laboratorios.size)
+
+        val rutas = List(3) { server.takeRequest().path }
+        assertEquals("/api/v1/periodos-lectivos/actual", rutas[0])
+        assertEquals(false, rutas.any { it?.contains("mi-horario") == true })
+        assertEquals(false, rutas.any { it?.contains("estudiante") == true })
+        assertEquals(false, rutas.any { it?.contains("perfil") == true })
+    }
+
     private companion object {
         const val PLANIFICACIONES_JSON = """[{"id":"plan-1","periodoId":"periodo-1","carreraId":"carrera-1","materiaId":"materia-1","docenteId":"docente-1","laboratorioId":"laboratorio-1","diaSemana":"LUNES","horaInicio":"08:00:00","horaFin":"10:00:00","estado":"PROPUESTA_CAMBIO","observacion":"Revisar horario"}]"""
         const val PLANIFICACIONES_AGREGADAS_JSON = """[{"id":"planificacion-1","periodoId":"periodo-1","carreraId":"carrera-1","estado":"BORRADOR","bloques":$PLANIFICACIONES_JSON,"revisiones":[]}]"""
@@ -87,5 +185,7 @@ class InstitutionalRepositoryTest {
         const val PAGINA_CARRERAS_JSON = """{"content":[{"id":"carrera-1","codigo":"IS","nombre":"Ingeniería de Software"}],"number":0,"size":100,"totalElements":1,"totalPages":1,"numberOfElements":1,"first":true,"last":true,"empty":false}"""
         const val PERIODO_JSON = """{"id":"periodo-1","codigo":"2026-B","nombre":"Periodo 2026-B","estado":"ACTIVO","cicloAcademico":1}"""
         const val PAGINA_PERIODOS_JSON = """{"content":[$PERIODO_JSON],"number":0,"size":100,"totalElements":1,"totalPages":1,"numberOfElements":1,"first":true,"last":true,"empty":false}"""
+        const val MI_HORARIO_DOCENTE_JSON = """[{"id":"bloque-1","planificacionId":"plan-1","nivel":1,"periodoId":"periodo-1","carreraId":"carrera-1","materiaId":"materia-1","docenteId":"docente-1","laboratorioId":"laboratorio-1","diaSemana":"LUNES","horaInicio":"07:30:00","horaFin":"09:30:00","estado":"CONFIRMADA","observacion":null}]"""
+        const val MI_HORARIO_ESTUDIANTE_JSON = """[{"id":"bloque-est-1","planificacionId":"plan-1","nivel":2,"periodoId":"periodo-1","carreraId":"carrera-1","materiaId":"materia-1","docenteId":"docente-1","laboratorioId":"laboratorio-1","diaSemana":"LUNES","horaInicio":"07:30:00","horaFin":"09:30:00","estado":"CONFIRMADA","observacion":null}]"""
     }
 }

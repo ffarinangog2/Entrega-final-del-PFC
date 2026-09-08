@@ -79,6 +79,8 @@ class NuevaReservaViewModel(
     }
 
     private fun mensaje(error: NetworkResult.Failure) = when (error.statusCode) {
+        400 -> error.message.takeIf { it.isNotBlank() && !it.startsWith("gateway_http_") }
+            ?: "Datos de la solicitud inválidos."
         401 -> "Tu sesión expiró."
         403 -> "No tienes permisos para realizar esta acción."
         404 -> "No se encontró el recurso."

@@ -15,6 +15,7 @@ class MobileNavigationAccessTest {
         assertFalse(access.reservas)
         assertFalse(access.calendario)
         assertFalse(access.incidentes)
+        assertFalse(access.estudiante)
     }
 
     @Test
@@ -27,13 +28,17 @@ class MobileNavigationAccessTest {
         assertTrue(access.incidentes)
         assertFalse(access.planificacion)
         assertTrue(access.docente)
+        assertFalse(access.estudiante)
     }
 
     @Test
-    fun `estudiante no recibe calendario reservas incidentes ni planificacion`() {
+    fun `estudiante recibe horario estudiante y no modulos no autorizados`() {
         val access = navigationAccess(user("ESTUDIANTE", listOf("ACADEMICO_LEER")))
 
         assertTrue(access.estudiante)
+        assertFalse(access.docente)
+        assertFalse(access.administrador)
+        assertFalse(access.coordinador)
         assertFalse(access.reservas)
         assertFalse(access.calendario)
         assertFalse(access.incidentes)
@@ -41,13 +46,14 @@ class MobileNavigationAccessTest {
     }
 
     @Test
-    fun `administrador recibe inicio global y modulos segun permisos`() {
+    fun `administrador recibe inicio global y modulos segun permisos pero no horario estudiante`() {
         val access = navigationAccess(user("ADMINISTRADOR", listOf("RESERVA_LEER", "INCIDENTE_LEER", "PLANIFICACION_GESTIONAR")))
 
         assertTrue(access.administrador)
         assertTrue(access.reservas)
         assertTrue(access.incidentes)
         assertTrue(access.planificacion)
+        assertFalse(access.estudiante)
     }
 
     private fun user(role: String, permissions: List<String>) = AuthUserResponse(

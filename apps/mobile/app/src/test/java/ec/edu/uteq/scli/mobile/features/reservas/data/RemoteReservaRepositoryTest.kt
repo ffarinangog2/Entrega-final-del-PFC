@@ -295,6 +295,59 @@ class RemoteReservaRepositoryTest {
         assertEquals(NetworkResult.Failure(null, "respuesta_gateway_invalida"), result)
     }
 
+    @Test
+    fun `HTTP 400 con ApiError extrae el mensaje de negocio del backend`() = runTest {
+        val mensajeEsperado = "La fecha de la reserva debe estar comprendida entre 2026-05-01 y 2026-09-30 para el período académico seleccionado."
+        server.enqueue(
+            MockResponse()
+                .setResponseCode(400)
+                .setBody("""{"status":400,"message":"$mensajeEsperado"}""")
+        )
+
+        val result = repository.crearSolicitud(NUEVA_SOLICITUD, "idem-1")
+
+        assertEquals(NetworkResult.Failure(400, mensajeEsperado), result)
+    }
+
+    @Test
+    fun `HTTP 400 con body vacio usa gateway_http_400`() = runTest {
+        server.enqueue(MockResponse().setResponseCode(400).setBody(""))
+
+        val result = repository.crearSolicitud(NUEVA_SOLICITUD, "idem-1")
+
+        assertEquals(NetworkResult.Failure(400, "gateway_http_400"), result)
+    }
+
+    @Test
+    fun `HTTP 400 con json invalido usa gateway_http_400`() = runTest {
+        server.enqueue(MockResponse().setResponseCode(400).setBody("<html>Error interno</html>"))
+
+        val result = repository.crearSolicitud(NUEVA_SOLICITUD, "idem-1")
+
+        assertEquals(NetworkResult.Failure(400, "gateway_http_400"), result)
+    }
+
+    @Test
+    fun `HTTP 500 no propaga mensaje del cuerpo a Failure`() = runTest {
+        server.enqueue(MockResponse().setResponseCode(500).setBody("""{"message":"Internal error detail"}"""))
+
+        val result = repository.crearSolicitud(NUEVA_SOLICITUD, "idem-1")
+
+        assertEquals(NetworkResult.Failure(500, "gateway_http_500"), result)
+    }
+
+    @Test
+    fun `extraerMensajeApiError descarta textos tecnicos o sospechosos`() {
+        assertEquals(null, extraerMensajeApiError(null))
+        assertEquals(null, extraerMensajeApiError(""))
+        assertEquals(null, extraerMensajeApiError("{}"))
+        assertEquals(null, extraerMensajeApiError("""{"message":null}"""))
+        assertEquals(null, extraerMensajeApiError("""{"message":"<html>Error</html>"}"""))
+        assertEquals(null, extraerMensajeApiError("""{"message":"Exception: at java.lang.Thread.run(Thread.java:833)"}"""))
+        assertEquals(null, extraerMensajeApiError("""{"message":"SELECT * FROM reservas"}"""))
+        assertEquals("Fecha inválida", extraerMensajeApiError("""{"message":"Fecha inválida"}"""))
+    }
+
     private companion object {
         const val PAGINA_JSON = """
             {

@@ -1,6 +1,7 @@
 package ec.edu.uteq.scli.mobile
 
 import android.app.Activity
+import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.compose.setContent
@@ -14,6 +15,7 @@ import androidx.core.os.LocaleListCompat
 import ec.edu.uteq.scli.mobile.common.navigation.AppNavHost
 import ec.edu.uteq.scli.mobile.common.theme.ScliTheme
 import ec.edu.uteq.scli.mobile.features.notifications.RequestNotificationPermissionEffect
+import ec.edu.uteq.scli.mobile.features.notifications.parsePushNavigationPayload
 
 /**
  * Sentinel para distinguir "el Flow de DataStore todavía no emitió" de
@@ -26,9 +28,14 @@ import ec.edu.uteq.scli.mobile.features.notifications.RequestNotificationPermiss
 private const val IDIOMA_SIN_CARGAR = " __sin_cargar__"
 
 class MainActivity : AppCompatActivity() {
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val settingsRepository = (application as ScliMobileApplication).container.settingsRepository
+        val app = application as ScliMobileApplication
+        val settingsRepository = app.container.settingsRepository
+
+        procesarPushIntent(intent)
+
         setContent {
             val temaOscuroPreferencia by settingsRepository.temaOscuro.collectAsState(initial = null)
             val idiomaAppPreferencia by settingsRepository.idiomaApp.collectAsState(initial = IDIOMA_SIN_CARGAR)
@@ -49,8 +56,22 @@ class MainActivity : AppCompatActivity() {
 
             ScliTheme(darkTheme = temaOscuroPreferencia ?: isSystemInDarkTheme()) {
                 RequestNotificationPermissionEffect()
-                AppNavHost(application as ScliMobileApplication)
+                AppNavHost(app)
             }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        procesarPushIntent(intent)
+    }
+
+    private fun procesarPushIntent(intent: Intent?) {
+        val payload = parsePushNavigationPayload(intent)
+        if (payload != null) {
+            val app = application as? ScliMobileApplication ?: return
+            app.container.pushNavigationManager.emitPayload(payload)
         }
     }
 

@@ -20,6 +20,9 @@ import ec.edu.uteq.scli.mobile.features.institutional.data.InstitutionalReposito
 import ec.edu.uteq.scli.mobile.features.notifications.NotificationHelper
 import ec.edu.uteq.scli.mobile.features.notifications.DeviceRegistrationApi
 import ec.edu.uteq.scli.mobile.features.notifications.DeviceTokenRegistrar
+import ec.edu.uteq.scli.mobile.features.notifications.PushNavigationManager
+import ec.edu.uteq.scli.mobile.features.notifications.data.NotificationsApi
+import ec.edu.uteq.scli.mobile.features.notifications.data.NotificationsRepository
 import ec.edu.uteq.scli.mobile.features.profile.data.SettingsRepository
 import ec.edu.uteq.scli.mobile.features.profile.data.ProfileApi
 import ec.edu.uteq.scli.mobile.features.profile.data.ProfileRepository
@@ -80,8 +83,15 @@ class AppContainer(context: Context) {
     val deviceTokenRegistrar = DeviceTokenRegistrar(
         context.applicationContext, authenticatedGatewayRetrofit.create(DeviceRegistrationApi::class.java),
     )
+    private val notificationsApi = authenticatedGatewayRetrofit.create(NotificationsApi::class.java)
+    val notificationsRepository: NotificationsRepository = NotificationsRepository(notificationsApi)
+    val pushNavigationManager: PushNavigationManager = PushNavigationManager()
+
     init {
         authRepository.onAuthenticated { deviceTokenRegistrar.registrarPendiente() }
-        authRepository.onBeforeLogout { deviceTokenRegistrar.desregistrarActual() }
+        authRepository.onBeforeLogout {
+            deviceTokenRegistrar.desregistrarActual()
+            pushNavigationManager.clear()
+        }
     }
 }

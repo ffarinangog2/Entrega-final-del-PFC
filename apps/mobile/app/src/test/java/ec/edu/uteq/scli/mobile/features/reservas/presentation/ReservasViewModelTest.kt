@@ -388,6 +388,33 @@ class ReservasViewModelTest {
         completarFormulario(viewModel)
         viewModel.enviar()
         runCurrent()
+        assertEquals("Datos de la solicitud inválidos.", viewModel.uiState.value.error)
+        assertFalse(viewModel.uiState.value.enviando)
+    }
+
+    @Test
+    fun `crear solicitud con error 400 y mensaje de negocio expone el mensaje exacto`() = runTest {
+        val mensajeEsperado = "La fecha de la reserva debe estar comprendida entre 2026-05-01 y 2026-09-30 para el período académico seleccionado."
+        val repository = FakeReservaRepository().apply {
+            creacionResult = NetworkResult.Failure(400, mensajeEsperado)
+        }
+        val viewModel = NuevaReservaViewModel(repository)
+        completarFormulario(viewModel)
+        viewModel.enviar()
+        runCurrent()
+        assertEquals(mensajeEsperado, viewModel.uiState.value.error)
+        assertFalse(viewModel.uiState.value.enviando)
+    }
+
+    @Test
+    fun `crear solicitud con error 500 y mensaje tecnico no expone detalle interno a la ui`() = runTest {
+        val repository = FakeReservaRepository().apply {
+            creacionResult = NetworkResult.Failure(500, "Exception: NullPointer in DB at SolicitudReservaServiceImpl.java:200")
+        }
+        val viewModel = NuevaReservaViewModel(repository)
+        completarFormulario(viewModel)
+        viewModel.enviar()
+        runCurrent()
         assertEquals("No fue posible procesar la solicitud.", viewModel.uiState.value.error)
         assertFalse(viewModel.uiState.value.enviando)
     }

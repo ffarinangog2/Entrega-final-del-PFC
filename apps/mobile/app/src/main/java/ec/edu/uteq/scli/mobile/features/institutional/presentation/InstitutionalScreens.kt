@@ -464,7 +464,7 @@ fun HorarioDocenteScreen(viewModel: InstitutionalViewModel, perfilId: String) {
             OutlinedButton(onClick = { viewModel.cargarDocencia(perfilId) }) { Text("Reintentar") }
         } }
         state.docencia?.let { data ->
-            item { Text("Periodo ${data.periodo.nombre}") }
+            data.periodo?.let { item { Text("Periodo ${it.nombre}") } }
             item { Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 diasPlanificacion.forEach { value -> FilterChip(selected = dia == value, onClick = { dia = value }, label = { Text(value.take(3)) }) }
             } }
@@ -481,6 +481,59 @@ fun HorarioDocenteScreen(viewModel: InstitutionalViewModel, perfilId: String) {
                 } }
             }
             item { Text("Los cambios de una fecha concreta se gestionan como solicitudes y no modifican este horario base.") }
+        }
+    }
+}
+
+@Composable
+fun HorarioEstudianteScreen(viewModel: InstitutionalViewModel) {
+    val state by viewModel.uiState.collectAsState()
+    var dia by remember { mutableStateOf("LUNES") }
+    LaunchedEffect(Unit) { viewModel.cargarHorarioEstudiante() }
+    LazyColumn(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        item { Text("Mi horario", style = MaterialTheme.typography.headlineMedium) }
+        if (state.cargando && state.estudianteHorario == null) item { CircularProgressIndicator() }
+        state.error?.let { item {
+            Text("No fue posible cargar tu horario.", color = MaterialTheme.colorScheme.error)
+            OutlinedButton(onClick = viewModel::cargarHorarioEstudiante) { Text("Reintentar") }
+        } }
+        state.estudianteHorario?.let { data ->
+            if (data.periodo != null) {
+                data.periodo.let { item { Text("Periodo ${it.nombre}") } }
+                item {
+                    Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        diasPlanificacion.forEach { value ->
+                            FilterChip(selected = dia == value, onClick = { dia = value }, label = { Text(value.take(3)) })
+                        }
+                    }
+                }
+                val materias = data.materias.associateBy { it.id }
+                val laboratorios = data.laboratorios.associateBy { it.id }
+                val clases = data.horarios.filter { it.diaSemana.equals(dia, ignoreCase = true) }
+                if (clases.isEmpty()) item { Text("No tienes clases programadas para este día.") }
+                items(clases, key = { it.id }) { clase ->
+                    Card(Modifier.fillMaxWidth()) {
+                        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                            Text("${clase.horaInicio}–${clase.horaFin}", style = MaterialTheme.typography.titleMedium)
+                            Text(materias[clase.materiaId]?.nombre ?: "Materia asignada")
+                            Text(
+                                clase.laboratorioId?.let { laboratorios[it]?.let { lab -> "${lab.codigo} — ${lab.nombre}" } }
+                                    ?: "Aula por confirmar"
+                            )
+                            clase.nivel?.let { Text("Nivel $it", style = MaterialTheme.typography.bodySmall) }
+                        }
+                    }
+                }
+            } else {
+                item {
+                    Card(Modifier.fillMaxWidth()) {
+                        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text("No hay período lectivo activo", style = MaterialTheme.typography.titleMedium)
+                            Text("Actualmente no existe un período lectivo vigente para consultar el horario.")
+                        }
+                    }
+                }
+            }
         }
     }
 }

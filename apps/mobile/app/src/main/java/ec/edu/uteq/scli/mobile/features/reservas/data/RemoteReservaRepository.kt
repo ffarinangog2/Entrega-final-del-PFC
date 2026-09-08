@@ -1,5 +1,6 @@
 package ec.edu.uteq.scli.mobile.features.reservas.data
 
+import com.google.gson.JsonParser
 import ec.edu.uteq.scli.mobile.common.network.NetworkResult
 import ec.edu.uteq.scli.mobile.common.network.DataSource
 import ec.edu.uteq.scli.mobile.features.reservas.data.remote.CancelarReservaDto
@@ -126,11 +127,46 @@ class RemoteReservaRepository(
         if (response.isSuccessful && body != null) {
             NetworkResult.Success(mapper(body))
         } else {
-            NetworkResult.Failure(response.code(), "gateway_http_${response.code()}")
+            val code = response.code()
+            val message = if (code == 400) {
+                extraerMensajeApiError(runCatching { response.errorBody()?.string() }.getOrNull())
+                    ?: "gateway_http_400"
+            } else {
+                "gateway_http_$code"
+            }
+            NetworkResult.Failure(code, message)
         }
     } catch (_: IOException) {
         NetworkResult.Failure(null, "gateway_no_disponible")
     } catch (_: RuntimeException) {
         NetworkResult.Failure(null, "respuesta_gateway_invalida")
     }
+}
+
+internal fun extraerMensajeApiError(cuerpo: String?): String? {
+    if (cuerpo.isNullOrBlank()) return null
+    return try {
+        val elemento = JsonParser.parseString(cuerpo)
+        if (!elemento.isJsonObject) return null
+        val obj = elemento.asJsonObject
+        if (!obj.has("message") || obj.get("message").isJsonNull) return null
+        val mensaje = obj.get("message").asString.trim()
+        if (mensaje.isEmpty() || esTextoTecnico(mensaje)) null else mensaje
+    } catch (_: Exception) {
+        null
+    }
+}
+
+private fun esTextoTecnico(texto: String): Boolean {
+    val lower = texto.lowercase()
+    return lower.contains("<html") ||
+        lower.contains("<!doctype") ||
+        lower.contains("exception:") ||
+        lower.contains("traceback") ||
+        (lower.contains("select ") && lower.contains(" from ")) ||
+        lower.contains("insert into ") ||
+        (lower.contains("update ") && lower.contains(" set ")) ||
+        lower.contains("delete from ") ||
+        (texto.contains("at ") && texto.contains(".java:")) ||
+        texto.length > 300
 }

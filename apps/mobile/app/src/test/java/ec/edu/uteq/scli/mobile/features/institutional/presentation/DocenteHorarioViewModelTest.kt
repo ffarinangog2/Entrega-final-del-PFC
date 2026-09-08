@@ -1,7 +1,7 @@
 package ec.edu.uteq.scli.mobile.features.institutional.presentation
 
 import ec.edu.uteq.scli.mobile.features.institutional.data.DocenciaData
-import ec.edu.uteq.scli.mobile.features.institutional.data.HorarioDocenteDto
+import ec.edu.uteq.scli.mobile.features.institutional.data.PlanificacionBloqueDto
 import ec.edu.uteq.scli.mobile.features.institutional.data.InstitutionalRepository
 import ec.edu.uteq.scli.mobile.features.institutional.data.LaboratorioPlanificacionDto
 import ec.edu.uteq.scli.mobile.features.institutional.data.MateriaPlanificacionDto
@@ -17,6 +17,8 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
@@ -29,7 +31,7 @@ class DocenteHorarioViewModelTest {
     @Test
     fun `carga horario propio con nombres humanos y sin editar planificacion`() = runTest {
         val data = DocenciaData(
-            horarios = listOf(HorarioDocenteDto("h", "m", "p", "l", "d", "LUNES", "07:30", "09:30", true)),
+            horarios = listOf(PlanificacionBloqueDto(id = "h", materiaId = "m", periodoId = "p", laboratorioId = "l", docenteId = "d", diaSemana = "LUNES", horaInicio = "07:30", horaFin = "09:30", estado = "CONFIRMADA")),
             materias = listOf(MateriaPlanificacionDto("m", "c", "MAT", "Programación")),
             laboratorios = listOf(LaboratorioPlanificacionDto("l", "LAB-02", "Software", "DISPONIBLE")),
             periodo = PeriodoPlanificacionDto("p", "2026-B", "2026-B", "ACTIVO"),
@@ -41,5 +43,25 @@ class DocenteHorarioViewModelTest {
 
         coVerify(exactly = 1) { repository.docencia("perfil-autenticado") }
         assertEquals(data, viewModel.uiState.value.docencia)
+    }
+
+    @Test
+    fun `docencia sin periodo actual mantiene horario vacio y no lanza error a la UI`() = runTest {
+        val data = DocenciaData(
+            horarios = emptyList(),
+            materias = listOf(MateriaPlanificacionDto("m", "c", "MAT", "Programación")),
+            laboratorios = listOf(LaboratorioPlanificacionDto("l", "LAB-02", "Software", "DISPONIBLE")),
+            periodo = null,
+        )
+        coEvery { repository.docencia("perfil-sin-periodo") } returns data
+        val viewModel = InstitutionalViewModel(repository)
+
+        viewModel.cargarDocencia("perfil-sin-periodo")
+
+        coVerify(exactly = 1) { repository.docencia("perfil-sin-periodo") }
+        assertEquals(data, viewModel.uiState.value.docencia)
+        assertTrue(viewModel.uiState.value.docencia?.horarios?.isEmpty() == true)
+        assertNull(viewModel.uiState.value.docencia?.periodo)
+        assertNull(viewModel.uiState.value.error)
     }
 }

@@ -25,6 +25,22 @@ data class PlanificacionDto(
     val nivel: Int? = null,
 )
 
+data class PlanificacionBloqueDto(
+    val id: String = "",
+    val planificacionId: String? = null,
+    val nivel: Int? = null,
+    val periodoId: String? = null,
+    val carreraId: String? = null,
+    val materiaId: String = "",
+    val docenteId: String? = null,
+    val laboratorioId: String? = null,
+    val diaSemana: String = "",
+    val horaInicio: String = "",
+    val horaFin: String = "",
+    val estado: String? = null,
+    val observacion: String? = null,
+)
+
 data class MateriaPlanificacionDto(
     val id: String,
     val carreraId: String,
@@ -60,10 +76,16 @@ data class PlanificacionAgregadaDto(
 data class PerfilAdminDto(val id: String, val nombres: String, val apellidos: String, val emailInstitucional: String, val activo: Boolean)
 data class HorarioDocenteDto(val id: String, val materiaId: String, val periodoLectivoId: String, val laboratorioId: String?, val docenteId: String, val diaSemana: String, val horaInicio: String, val horaFin: String, val activo: Boolean)
 data class DocenciaData(
-    val horarios: List<HorarioDocenteDto>,
+    val horarios: List<PlanificacionBloqueDto>,
     val materias: List<MateriaPlanificacionDto>,
     val laboratorios: List<LaboratorioPlanificacionDto>,
-    val periodo: PeriodoPlanificacionDto,
+    val periodo: PeriodoPlanificacionDto? = null,
+)
+data class EstudianteHorarioData(
+    val horarios: List<PlanificacionBloqueDto>,
+    val materias: List<MateriaPlanificacionDto>,
+    val laboratorios: List<LaboratorioPlanificacionDto>,
+    val periodo: PeriodoPlanificacionDto? = null,
 )
 data class AdministracionData(
     val perfiles: List<PerfilAdminDto>,
@@ -122,6 +144,13 @@ interface InstitutionalApi {
 
     @GET("api/v1/horarios/docente/{docenteId}")
     suspend fun horariosDocente(@Path("docenteId") docenteId: String): List<HorarioDocenteDto>
+
+    @GET("api/v1/asistencias/mi-horario-docente")
+    suspend fun miHorarioDocente(@Query("periodoId") periodoId: String): List<PlanificacionBloqueDto>
+
+    @GET("api/v1/asistencias/mi-horario")
+    suspend fun miHorario(@Query("periodoId") periodoId: String): List<PlanificacionBloqueDto>
+
     @GET("api/v1/planificaciones")
     suspend fun listarPlanificaciones(): List<PlanificacionDto>
 
@@ -217,13 +246,32 @@ interface InstitutionalApi {
 }
 
 class InstitutionalRepository(private val api: InstitutionalApi) {
-    suspend fun docencia(perfilId: String): DocenciaData {
-        val docente = api.docentePorPerfil(perfilId)
+    suspend fun docencia(perfilId: String = ""): DocenciaData {
+        val periodo = runCatching { api.periodoActual() }.getOrNull()
+        val horarios = if (periodo != null && periodo.id.isNotBlank()) {
+            api.miHorarioDocente(periodo.id)
+        } else {
+            emptyList()
+        }
         return DocenciaData(
-            horarios = api.horariosDocente(docente.id).filter { it.activo },
+            horarios = horarios,
             materias = todasLasPaginas(api::listarMaterias),
             laboratorios = todasLasPaginas(api::listarLaboratorios),
-            periodo = api.periodoActual(),
+            periodo = periodo,
+        )
+    }
+    suspend fun estudianteHorario(): EstudianteHorarioData {
+        val periodo = runCatching { api.periodoActual() }.getOrNull()
+        val horarios = if (periodo != null && periodo.id.isNotBlank()) {
+            api.miHorario(periodo.id)
+        } else {
+            emptyList()
+        }
+        return EstudianteHorarioData(
+            horarios = horarios,
+            materias = todasLasPaginas(api::listarMaterias),
+            laboratorios = todasLasPaginas(api::listarLaboratorios),
+            periodo = periodo,
         )
     }
     suspend fun administracion() = AdministracionData(

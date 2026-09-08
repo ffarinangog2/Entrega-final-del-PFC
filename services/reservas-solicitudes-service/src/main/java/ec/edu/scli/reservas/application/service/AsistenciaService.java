@@ -219,6 +219,7 @@ public class AsistenciaService {
         return bloques.findAll().stream()
                 .filter(b -> docente.docenteId().equals(b.getDocenteId()))
                 .filter(b -> periodoId == null || periodoId.equals(b.getPeriodoId()))
+                .filter(b -> b.getEstado() == EstadoPlanificacion.CONFIRMADA)
                 .filter(b -> b.getPlanificacionId() != null && planes.findById(b.getPlanificacionId())
                         .map(p -> p.getEstado() == ec.edu.scli.reservas.domain.model.EstadoPlanificacionAgregada.APROBADA
                                 || p.getEstado() == ec.edu.scli.reservas.domain.model.EstadoPlanificacionAgregada.FINALIZADA)

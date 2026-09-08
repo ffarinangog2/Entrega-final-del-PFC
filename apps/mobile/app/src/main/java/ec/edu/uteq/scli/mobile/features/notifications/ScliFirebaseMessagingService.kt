@@ -30,6 +30,9 @@ class ScliFirebaseMessagingService : FirebaseMessagingService() {
         val titulo = message.notification?.title ?: message.data["titulo"] ?: "SCLI"
         val cuerpo = message.notification?.body ?: message.data["cuerpo"] ?: ""
 
-        notificationHelper.mostrar(titulo, cuerpo)
+        // Disparar trigger liviano para actualizar badge en foreground
+        (application as? ScliMobileApplication)?.container?.notificationsRepository?.notificarPushRecibido()
+
+        notificationHelper.mostrar(titulo, cuerpo, message.data)
     }
 }

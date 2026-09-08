@@ -11,8 +11,8 @@ import android.os.Build
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
-import ec.edu.uteq.scli.mobile.R
 import ec.edu.uteq.scli.mobile.MainActivity
+import ec.edu.uteq.scli.mobile.R
 import timber.log.Timber
 import kotlin.random.Random
 
@@ -44,7 +44,23 @@ class NotificationHelper(private val context: Context) {
         manager?.createNotificationChannel(channel)
     }
 
-    fun mostrar(titulo: String, cuerpo: String) {
+    fun crearIntent(payload: PushNavigationPayload?): Intent {
+        return Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            if (payload != null) {
+                putExtra(EXTRA_PUSH_TIPO, payload.tipo)
+                if (payload.referenciaId != null) {
+                    putExtra(EXTRA_PUSH_REFERENCIA_ID, payload.referenciaId)
+                }
+            }
+        }
+    }
+
+    fun mostrar(
+        titulo: String,
+        cuerpo: String,
+        data: Map<String, String> = emptyMap(),
+    ) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
             ActivityCompat.checkSelfPermission(
                 context,
@@ -55,12 +71,18 @@ class NotificationHelper(private val context: Context) {
             return
         }
 
+        val payload = parsePushNavigationPayload(data)
+        val intent = crearIntent(payload)
+        val requestCode = if (payload != null) {
+            calcularPushRequestCode(payload)
+        } else {
+            Random.nextInt(1, Int.MAX_VALUE)
+        }
+
         val abrirAplicacion = PendingIntent.getActivity(
             context,
-            0,
-            Intent(context, MainActivity::class.java).apply {
-                flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
-            },
+            requestCode,
+            intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
         val notification = NotificationCompat.Builder(context, channelId)
@@ -72,6 +94,6 @@ class NotificationHelper(private val context: Context) {
             .setContentIntent(abrirAplicacion)
             .build()
 
-        NotificationManagerCompat.from(context).notify(Random.nextInt(), notification)
+        NotificationManagerCompat.from(context).notify(requestCode, notification)
     }
 }

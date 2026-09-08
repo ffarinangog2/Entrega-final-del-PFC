@@ -390,10 +390,12 @@ class AsistenciaServiceTest {
         var b1 = bloque(UUID.randomUUID(), plan1, 5);
         b1.setPeriodoId(periodo1);
         b1.setDocenteId(docenteId);
+        b1.setEstado(EstadoPlanificacion.CONFIRMADA);
 
         var b2 = bloque(UUID.randomUUID(), plan2, 6);
         b2.setPeriodoId(periodo2);
         b2.setDocenteId(docenteId);
+        b2.setEstado(EstadoPlanificacion.CONFIRMADA);
 
         when(bloques.findAll()).thenReturn(List.of(b1, b2));
         when(planes.findById(plan1)).thenReturn(Optional.of(plan(plan1, UUID.randomUUID(), periodo1, EstadoPlanificacionAgregada.APROBADA)));
@@ -406,6 +408,113 @@ class AsistenciaServiceTest {
         // Sin filtro de periodo (periodoId null) -> ambos planes aprobados/finalizados
         var resTodos = service.horarioDocente(perfil, null);
         assertThat(resTodos).hasSize(2);
+    }
+
+    @Test
+    void horarioDocenteFiltraBloquesNoConfirmadosYDocenteAjeno() {
+        UUID perfil = UUID.randomUUID(), docenteId = UUID.randomUUID(), periodoId = UUID.randomUUID();
+        UUID planAprobadoId = UUID.randomUUID(), planFinalizadoId = UUID.randomUUID();
+
+        when(usuarios.obtenerDocentePorPerfil(perfil)).thenReturn(new DocenteExternoResponse(docenteId, perfil, true));
+
+        when(planes.findById(planAprobadoId)).thenReturn(Optional.of(plan(planAprobadoId, UUID.randomUUID(), periodoId, EstadoPlanificacionAgregada.APROBADA)));
+        when(planes.findById(planFinalizadoId)).thenReturn(Optional.of(plan(planFinalizadoId, UUID.randomUUID(), periodoId, EstadoPlanificacionAgregada.FINALIZADA)));
+
+        // A. bloque CONFIRMADA + plan APROBADA -> aparece
+        var bConfirmadaAprobada = bloque(UUID.randomUUID(), planAprobadoId, 1);
+        bConfirmadaAprobada.setPeriodoId(periodoId);
+        bConfirmadaAprobada.setDocenteId(docenteId);
+        bConfirmadaAprobada.setEstado(EstadoPlanificacion.CONFIRMADA);
+
+        // B. bloque CONFIRMADA + plan FINALIZADA -> aparece
+        var bConfirmadaFinalizada = bloque(UUID.randomUUID(), planFinalizadoId, 2);
+        bConfirmadaFinalizada.setPeriodoId(periodoId);
+        bConfirmadaFinalizada.setDocenteId(docenteId);
+        bConfirmadaFinalizada.setEstado(EstadoPlanificacion.CONFIRMADA);
+
+        // C. bloque CANCELADA + plan APROBADA -> NO aparece
+        var bCancelada = bloque(UUID.randomUUID(), planAprobadoId, 1);
+        bCancelada.setPeriodoId(periodoId);
+        bCancelada.setDocenteId(docenteId);
+        bCancelada.setEstado(EstadoPlanificacion.CANCELADA);
+
+        // D. bloque BORRADOR / otro estado no confirmado -> NO aparece
+        var bBorrador = bloque(UUID.randomUUID(), planAprobadoId, 1);
+        bBorrador.setPeriodoId(periodoId);
+        bBorrador.setDocenteId(docenteId);
+        bBorrador.setEstado(EstadoPlanificacion.BORRADOR);
+
+        var bEnviada = bloque(UUID.randomUUID(), planAprobadoId, 1);
+        bEnviada.setPeriodoId(periodoId);
+        bEnviada.setDocenteId(docenteId);
+        bEnviada.setEstado(EstadoPlanificacion.ENVIADA);
+
+        // E. bloque CONFIRMADA de otro docente -> NO aparece
+        var bOtroDocente = bloque(UUID.randomUUID(), planAprobadoId, 1);
+        bOtroDocente.setPeriodoId(periodoId);
+        bOtroDocente.setDocenteId(UUID.randomUUID());
+        bOtroDocente.setEstado(EstadoPlanificacion.CONFIRMADA);
+
+        // F. bloque CONFIRMADA de otro periodo cuando periodoId esta especificado -> NO aparece
+        var bOtroPeriodo = bloque(UUID.randomUUID(), planAprobadoId, 1);
+        bOtroPeriodo.setPeriodoId(UUID.randomUUID());
+        bOtroPeriodo.setDocenteId(docenteId);
+        bOtroPeriodo.setEstado(EstadoPlanificacion.CONFIRMADA);
+
+        when(bloques.findAll()).thenReturn(List.of(
+                bConfirmadaAprobada, bConfirmadaFinalizada, bCancelada, bBorrador, bEnviada, bOtroDocente, bOtroPeriodo
+        ));
+
+        var resultado = service.horarioDocente(perfil, periodoId);
+
+        assertThat(resultado).hasSize(2);
+        assertThat(resultado).extracting(PlanificacionResponse::id)
+                .containsExactlyInAnyOrder(bConfirmadaAprobada.getId(), bConfirmadaFinalizada.getId());
+        assertThat(resultado).allMatch(b -> "CONFIRMADA".equals(b.estado()));
+    }
+
+    @Test
+    void horarioDocenteMezclaCuatroConfirmadasYOnceCanceladasDevuelveSoloConfirmadas() {
+        UUID perfil = UUID.randomUUID(), docenteId = UUID.randomUUID(), periodoId = UUID.randomUUID();
+        UUID planId = UUID.randomUUID();
+
+        when(usuarios.obtenerDocentePorPerfil(perfil)).thenReturn(new DocenteExternoResponse(docenteId, perfil, true));
+        when(planes.findById(planId)).thenReturn(Optional.of(plan(planId, UUID.randomUUID(), periodoId, EstadoPlanificacionAgregada.APROBADA)));
+
+        // G. mezcla: 4 CONFIRMADA + 11 CANCELADA -> devuelve unicamente las 4 CONFIRMADA
+        List<PlanificacionJpaEntity> confirmados = new java.util.ArrayList<>();
+        for (int i = 0; i < 4; i++) {
+            var b = bloque(UUID.randomUUID(), planId, 1);
+            b.setPeriodoId(periodoId);
+            b.setDocenteId(docenteId);
+            b.setEstado(EstadoPlanificacion.CONFIRMADA);
+            confirmados.add(b);
+        }
+
+        List<PlanificacionJpaEntity> cancelados = new java.util.ArrayList<>();
+        for (int i = 0; i < 11; i++) {
+            var b = bloque(UUID.randomUUID(), planId, 1);
+            b.setPeriodoId(periodoId);
+            b.setDocenteId(docenteId);
+            b.setEstado(EstadoPlanificacion.CANCELADA);
+            cancelados.add(b);
+        }
+
+        var todos = new java.util.ArrayList<PlanificacionJpaEntity>();
+        todos.addAll(confirmados);
+        todos.addAll(cancelados);
+
+        when(bloques.findAll()).thenReturn(todos);
+
+        var resultado = service.horarioDocente(perfil, periodoId);
+
+        assertThat(resultado).hasSize(4);
+        assertThat(resultado).extracting(PlanificacionResponse::id)
+                .containsExactlyInAnyOrder(
+                        confirmados.get(0).getId(), confirmados.get(1).getId(),
+                        confirmados.get(2).getId(), confirmados.get(3).getId()
+                );
+        assertThat(resultado).allMatch(b -> "CONFIRMADA".equals(b.estado()));
     }
 
     @Test void registrarPropiaRechazaSesionCerradaYDuplicada() throws Exception {
