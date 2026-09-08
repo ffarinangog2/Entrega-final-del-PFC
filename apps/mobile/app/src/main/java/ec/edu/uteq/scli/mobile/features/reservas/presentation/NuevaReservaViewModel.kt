@@ -44,6 +44,7 @@ class NuevaReservaViewModel(
                 docenteId = data.docente.id,
                 docenteCodigo = data.docente.codigoDocente,
                 materias = data.materias.filter { it.activo && (permitidas.isEmpty() || it.id in permitidas) },
+                pisos = data.pisos.filter { it.activo }.sortedBy { it.numero },
                 laboratorios = data.laboratorios.filter { it.activo },
                 periodo = data.periodo,
                 rangoPeriodo = rango,
@@ -56,25 +57,72 @@ class NuevaReservaViewModel(
     fun actualizar(transform: (NuevaReservaUiState) -> NuevaReservaUiState) {
         if (state.value.enviando) return
         val anterior = state.value
-        val nuevoEstado = transform(anterior)
-        val fechaCambio = nuevoEstado.fechaReserva != anterior.fechaReserva
+        val intermedio = transform(anterior)
+
+        val pisoCambio = intermedio.pisoId != anterior.pisoId
+        val labCambio = intermedio.laboratorioId != anterior.laboratorioId
+        val fechaCambio = intermedio.fechaReserva != anterior.fechaReserva
+
+        val labValido = if (pisoCambio) {
+            val lab = intermedio.laboratorios.find { it.id == intermedio.laboratorioId }
+            if (lab != null && lab.pisoId == intermedio.pisoId) intermedio.laboratorioId else ""
+        } else {
+            intermedio.laboratorioId
+        }
+
+        val nuevoEstado = intermedio.copy(laboratorioId = labValido)
         val rango = evaluarRangoPeriodo(nuevoEstado.periodo, hoyProvider())
+
+        val invalidarDisponibilidad = fechaCambio || pisoCambio || labCambio
         state.value = nuevoEstado.copy(
-            error = if (fechaCambio) null else nuevoEstado.error,
-            disponible = if (fechaCambio) null else nuevoEstado.disponible,
-            solicitudCreada = if (fechaCambio) null else nuevoEstado.solicitudCreada,
+            error = if (invalidarDisponibilidad) null else nuevoEstado.error,
+            disponible = if (invalidarDisponibilidad) null else nuevoEstado.disponible,
+            solicitudCreada = if (invalidarDisponibilidad) null else nuevoEstado.solicitudCreada,
             rangoPeriodo = rango,
         )
-        if (fechaCambio) {
+        if (invalidarDisponibilidad) {
             idempotencyKey = null
         }
+    }
+
+    fun seleccionarPiso(nuevoPisoId: String) {
+        if (state.value.pisoId == nuevoPisoId) return
+        actualizar { it.copy(pisoId = nuevoPisoId) }
+    }
+
+    fun seleccionarLaboratorio(nuevoLabId: String) {
+        if (state.value.laboratorioId == nuevoLabId) return
+        actualizar { it.copy(laboratorioId = nuevoLabId) }
     }
 
     fun actualizarFormulario(transform: (NuevaReservaUiState) -> NuevaReservaUiState) = actualizar(transform)
 
     fun comprobarDisponibilidad() {
         val s = state.value
-        if (listOf(s.laboratorioId, s.fechaReserva, s.horaInicio, s.horaFin).any(String::isBlank)) return
+        if (listOf(s.fechaReserva, s.horaInicio, s.horaFin).any(String::isBlank)) return
+
+        if (s.pisos.isNotEmpty() && s.pisoId.isBlank()) {
+            state.value = s.copy(error = "Selecciona un piso primero.")
+            return
+        }
+
+        if (s.laboratorioId.isBlank()) {
+            state.value = s.copy(error = "Selecciona un laboratorio válido.")
+            return
+        }
+
+        if (s.laboratorios.isNotEmpty()) {
+            val lab = s.laboratorios.find { it.id == s.laboratorioId }
+            if (lab == null) {
+                state.value = s.copy(error = "El laboratorio seleccionado no existe en el catálogo.")
+                return
+            }
+            if (s.pisoId.isNotBlank() && lab.pisoId != s.pisoId) {
+                state.value = s.copy(error = "El laboratorio seleccionado no pertenece al piso.")
+                return
+            }
+        }
+
         state.value = s.copy(comprobando = true, error = null)
         viewModelScope.launch {
             state.value = when (val result = repository.consultarDisponibilidad(s.laboratorioId, s.fechaReserva, s.horaInicio, s.horaFin)) {
@@ -122,6 +170,23 @@ class NuevaReservaViewModel(
             listOf(s.docenteId, s.materiaId, s.laboratorioId, s.fechaReserva, s.horaInicio, s.horaFin, s.motivo).any(String::isBlank)) {
             state.value = s.copy(error = "Completa correctamente todos los campos obligatorios")
             return
+        }
+
+        if (s.pisos.isNotEmpty() && s.pisoId.isBlank()) {
+            state.value = s.copy(error = "Selecciona un piso primero.")
+            return
+        }
+
+        if (s.laboratorios.isNotEmpty()) {
+            val lab = s.laboratorios.find { it.id == s.laboratorioId }
+            if (lab == null) {
+                state.value = s.copy(error = "El laboratorio seleccionado no existe en el catálogo.")
+                return
+            }
+            if (s.pisoId.isNotBlank() && lab.pisoId != s.pisoId) {
+                state.value = s.copy(error = "El laboratorio seleccionado no pertenece al piso.")
+                return
+            }
         }
 
         val key = idempotencyKey ?: UUID.randomUUID().toString().also { idempotencyKey = it }

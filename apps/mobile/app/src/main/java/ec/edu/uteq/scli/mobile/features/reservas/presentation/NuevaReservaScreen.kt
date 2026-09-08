@@ -11,6 +11,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import ec.edu.uteq.scli.mobile.features.reservas.presentation.NuevaReservaUiState
+import ec.edu.uteq.scli.mobile.features.reservas.presentation.NuevaReservaViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -29,7 +31,7 @@ fun NuevaReservaScreen(viewModel: NuevaReservaViewModel) {
         !state.cargandoCatalogos &&
         fechaValida &&
         state.periodo != null &&
-        listOf(state.docenteId, state.materiaId, state.laboratorioId, state.horaInicio, state.horaFin, state.motivo).none(String::isBlank) &&
+        listOf(state.docenteId, state.materiaId, state.pisoId, state.laboratorioId, state.horaInicio, state.horaFin, state.motivo).none(String::isBlank) &&
         (state.numeroParticipantes.toIntOrNull() ?: 0) > 0
 
     Column(
@@ -43,7 +45,13 @@ fun NuevaReservaScreen(viewModel: NuevaReservaViewModel) {
         Text("Nueva solicitud", style = MaterialTheme.typography.headlineSmall)
         if (state.cargandoCatalogos) CircularProgressIndicator()
         Text("Docente: ${state.docenteCodigo.ifBlank { "Cargando…" }}")
-        Selector("Materia", state.materias.map { it.id to "${it.codigo} — ${it.nombre}" }, state.materiaId) { id -> viewModel.actualizar { it.copy(materiaId = id) } }
+        Selector(
+            label = "Materia",
+            options = state.materias.map { it.id to "${it.codigo} — ${it.nombre}" },
+            selected = state.materiaId,
+            placeholder = "Seleccionar Materia",
+            onSelect = { id -> viewModel.actualizar { it.copy(materiaId = id) } }
+        )
         Text("Período: ${state.periodo?.let { "${it.codigo} — ${it.nombre}" } ?: "No disponible"}")
 
         if (rango is PeriodoReservaRango.Invalido) {
@@ -55,7 +63,41 @@ fun NuevaReservaScreen(viewModel: NuevaReservaViewModel) {
             )
         }
 
-        Selector("Laboratorio", state.laboratorios.map { it.id to "${it.codigo} — ${it.nombre}" }, state.laboratorioId) { id -> viewModel.actualizar { it.copy(laboratorioId = id) } }
+        Selector(
+            label = "Piso",
+            options = state.pisos.map { it.id to formatPisoLabel(it) },
+            selected = state.pisoId,
+            placeholder = "Seleccionar Piso",
+            onSelect = viewModel::seleccionarPiso
+        )
+
+        val labsFiltrados = state.laboratoriosFiltrados
+        val pisoSeleccionado = state.pisoId.isNotBlank()
+        val hayLabs = labsFiltrados.isNotEmpty()
+
+        val placeholderLab = when {
+            !pisoSeleccionado -> "Selecciona un piso primero."
+            !hayLabs -> "No hay laboratorios disponibles en este piso."
+            else -> "Seleccionar Laboratorio"
+        }
+
+        Selector(
+            label = "Laboratorio",
+            options = labsFiltrados.map { it.id to "${it.codigo} — ${it.nombre}" },
+            selected = state.laboratorioId,
+            habilitado = pisoSeleccionado && hayLabs,
+            placeholder = placeholderLab,
+            onSelect = viewModel::seleccionarLaboratorio
+        )
+
+        if (pisoSeleccionado && !hayLabs) {
+            Text(
+                text = "No hay laboratorios disponibles en este piso.",
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.testTag("mensaje_sin_laboratorios")
+            )
+        }
 
         CampoFecha(
             fecha = state.fechaReserva,
@@ -71,7 +113,7 @@ fun NuevaReservaScreen(viewModel: NuevaReservaViewModel) {
 
         Button(
             onClick = viewModel::comprobarDisponibilidad,
-            enabled = !state.comprobando && listOf(state.laboratorioId, state.fechaReserva, state.horaInicio, state.horaFin).none(String::isBlank),
+            enabled = !state.comprobando && listOf(state.pisoId, state.laboratorioId, state.fechaReserva, state.horaInicio, state.horaFin).none(String::isBlank),
             modifier = Modifier.fillMaxWidth().testTag("comprobar_disponibilidad")
         ) {
             Text("Comprobar disponibilidad")
@@ -172,14 +214,31 @@ private fun CampoFecha(
 }
 
 @Composable
-private fun Selector(label: String, options: List<Pair<String, String>>, selected: String, onSelect: (String) -> Unit) {
+private fun Selector(
+    label: String,
+    options: List<Pair<String, String>>,
+    selected: String,
+    habilitado: Boolean = true,
+    placeholder: String? = null,
+    onSelect: (String) -> Unit
+) {
     var expanded by remember { mutableStateOf(false) }
     Box(Modifier.fillMaxWidth()) {
-        OutlinedButton(onClick = { expanded = true }, modifier = Modifier.fillMaxWidth()) {
-            Text(options.firstOrNull { it.first == selected }?.second ?: "Seleccionar $label")
+        OutlinedButton(
+            onClick = { expanded = true },
+            enabled = habilitado,
+            modifier = Modifier.fillMaxWidth().testTag("selector_${label.lowercase()}")
+        ) {
+            val seleccionadoTexto = options.firstOrNull { it.first == selected }?.second
+            Text(seleccionadoTexto ?: placeholder ?: "Seleccionar $label")
         }
-        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            options.forEach { option -> DropdownMenuItem(text = { Text(option.second) }, onClick = { onSelect(option.first); expanded = false }) }
+        DropdownMenu(expanded = expanded && habilitado, onDismissRequest = { expanded = false }) {
+            options.forEach { option ->
+                DropdownMenuItem(
+                    text = { Text(option.second) },
+                    onClick = { onSelect(option.first); expanded = false }
+                )
+            }
         }
     }
 }

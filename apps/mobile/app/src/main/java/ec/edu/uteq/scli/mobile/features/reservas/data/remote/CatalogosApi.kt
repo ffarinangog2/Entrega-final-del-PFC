@@ -15,6 +15,12 @@ data class PeriodoDto(
     val fechaInicio: String? = null,
     val fechaFin: String? = null,
 )
+data class PisoCatalogoDto(
+    val id: String,
+    val numero: Int,
+    val descripcion: String? = null,
+    val activo: Boolean = true,
+)
 data class LaboratorioCatalogoDto(val id: String, val codigo: String, val nombre: String, val pisoId: String?, val activo: Boolean)
 data class HorarioDto(val id: String, val docenteId: String, val materiaId: String, val periodoLectivoId: String, val laboratorioId: String?)
 
@@ -38,6 +44,11 @@ interface CatalogosApi {
         @Query("size") size: Int,
     ): PageResponse<MateriaDto>
     @GET("api/v1/periodos-lectivos/actual") suspend fun periodoActual(): PeriodoDto
+    @GET("api/v1/pisos") suspend fun pisos(
+        @Query("page") page: Int,
+        @Query("size") size: Int,
+        @Query("activo") activo: Boolean = true,
+    ): PageResponse<PisoCatalogoDto>
     @GET("api/v1/laboratorios") suspend fun laboratorios(
         @Query("page") page: Int,
         @Query("size") size: Int,
@@ -51,10 +62,16 @@ data class CatalogosSolicitud(
     val periodo: PeriodoDto,
     val laboratorios: List<LaboratorioCatalogoDto>,
     val horarios: List<HorarioDto>,
+    val pisos: List<PisoCatalogoDto> = emptyList(),
 )
 
 class CatalogosRepository(private val api: CatalogosApi) {
+    suspend fun pisos() = todasLasPaginas { page, size -> api.pisos(page, size, true) }
+        .filter { it.activo }
+        .sortedBy { it.numero }
+
     suspend fun laboratorios() = todasLasPaginas(api::laboratorios).filter { it.activo }
+
     suspend fun cargar(perfilId: String): CatalogosSolicitud {
         val docente = api.docentePorPerfil(perfilId)
         return CatalogosSolicitud(
@@ -63,6 +80,7 @@ class CatalogosRepository(private val api: CatalogosApi) {
             api.periodoActual(),
             todasLasPaginas(api::laboratorios),
             api.horarios(docente.id),
+            pisos(),
         )
     }
 
