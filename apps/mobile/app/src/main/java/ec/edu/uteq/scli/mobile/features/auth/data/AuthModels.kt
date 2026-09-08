@@ -4,7 +4,6 @@ import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.POST
 
-
 data class LoginRequest(
     val username: String,
     val password: String,
@@ -30,6 +29,9 @@ data class AuthUserResponse(
     val tiposPerfil: List<String> = emptyList(),
 )
 
+data class ForgotPasswordRequest(val identifier: String)
+data class ForgotPasswordResponse(val message: String? = null)
+
 interface AuthApi {
     @POST("api/v1/auth/login")
     suspend fun login(@Body request: LoginRequest): Response<LoginResponse>
@@ -39,6 +41,9 @@ interface AuthApi {
 
     @POST("api/v1/auth/logout")
     suspend fun logout(@Body request: RefreshRequest): Response<Unit>
+
+    @POST("api/v1/auth/forgot-password")
+    suspend fun forgotPassword(@Body request: ForgotPasswordRequest): Response<ForgotPasswordResponse>
 }
 
 data class RefreshRequest(val refreshToken: String)

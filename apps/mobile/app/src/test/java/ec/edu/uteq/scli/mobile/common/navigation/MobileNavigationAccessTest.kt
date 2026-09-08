@@ -32,10 +32,11 @@ class MobileNavigationAccessTest {
     }
 
     @Test
-    fun `estudiante recibe horario estudiante y no modulos no autorizados`() {
+    fun `estudiante recibe horario estudiante, asistencia y no modulos no autorizados`() {
         val access = navigationAccess(user("ESTUDIANTE", listOf("ACADEMICO_LEER")))
 
         assertTrue(access.estudiante)
+        assertTrue(access.asistencia)
         assertFalse(access.docente)
         assertFalse(access.administrador)
         assertFalse(access.coordinador)
@@ -43,6 +44,30 @@ class MobileNavigationAccessTest {
         assertFalse(access.calendario)
         assertFalse(access.incidentes)
         assertFalse(access.planificacion)
+    }
+
+    @Test
+    fun `estudiante con permisos de incidentes recibe estudiante, asistencia e incidentes`() {
+        val access = navigationAccess(user("ESTUDIANTE", listOf("ACADEMICO_LEER", "INCIDENTE_CREAR", "INCIDENTE_LEER")))
+
+        assertTrue(access.estudiante)
+        assertTrue(access.asistencia)
+        assertTrue(access.incidentes)
+        assertFalse(access.reservas)
+        assertFalse(access.docente)
+        assertFalse(access.administrador)
+    }
+
+    @Test
+    fun `administrador de piso recibe planificacion, reservas e incidentes`() {
+        val access = navigationAccess(user("ADMINISTRADOR_PISO", listOf("PLANIFICACION_GESTIONAR", "RESERVA_LEER", "INCIDENTE_LEER", "ASISTENCIA_LEER")))
+
+        assertFalse(access.coordinador)
+        assertFalse(access.estudiante)
+        assertTrue(access.planificacion)
+        assertTrue(access.reservas)
+        assertTrue(access.incidentes)
+        assertTrue(access.asistencia)
     }
 
     @Test

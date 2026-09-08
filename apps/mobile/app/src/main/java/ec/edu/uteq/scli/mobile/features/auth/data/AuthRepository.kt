@@ -8,6 +8,8 @@ interface AuthRepository {
     fun restoreSession(): AuthSession?
     suspend fun refreshSession(): AuthSession? = null
     suspend fun logout()
+    suspend fun forgotPassword(identifier: String): NetworkResult<String> =
+        NetworkResult.Failure(null, "no_implementado")
     fun onSessionExpired(listener: () -> Unit) {}
     fun onAuthenticated(listener: suspend () -> Unit) {}
     fun onBeforeLogout(listener: suspend () -> Unit) {}
@@ -102,6 +104,22 @@ class RemoteAuthRepository(
             storage.clear()
         }
     }
+
+    override suspend fun forgotPassword(identifier: String): NetworkResult<String> = try {
+        val response = api.forgotPassword(ForgotPasswordRequest(identifier.trim()))
+        if (response.isSuccessful) {
+            NetworkResult.Success(
+                "Si el identificador existe en el sistema, recibirás un enlace en tu correo institucional para restablecer tu contraseña desde la plataforma web."
+            )
+        } else {
+            NetworkResult.Failure(response.code(), "servicio_no_disponible")
+        }
+    } catch (_: IOException) {
+        NetworkResult.Failure(null, "error_red")
+    } catch (_: RuntimeException) {
+        NetworkResult.Failure(null, "servicio_no_disponible")
+    }
+
     override fun onSessionExpired(listener: () -> Unit) { sessionExpiredListener = listener }
     override fun onAuthenticated(listener: suspend () -> Unit) { authenticatedListener = listener }
     override fun onBeforeLogout(listener: suspend () -> Unit) { beforeLogoutListener = listener }

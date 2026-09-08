@@ -3,17 +3,18 @@ package ec.edu.uteq.scli.mobile.features.qr.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import ec.edu.uteq.scli.mobile.common.network.NetworkResult
+import ec.edu.uteq.scli.mobile.features.institutional.data.InstitutionalRepository
 import ec.edu.uteq.scli.mobile.features.qr.data.LaboratorioDetalle
 import ec.edu.uteq.scli.mobile.features.qr.data.QrRepository
-import ec.edu.uteq.scli.mobile.features.institutional.data.InstitutionalRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import java.util.UUID
 import retrofit2.HttpException
+import java.io.IOException
+import java.util.UUID
 
- data class QrUiState(
+data class QrUiState(
     val cargando: Boolean = false,
     val detalle: LaboratorioDetalle? = null,
     val asistenciaRegistrada: Boolean = false,
@@ -25,11 +26,16 @@ enum class QrError {
     RED,
     SERVICIO,
     REGISTRO_NO_DISPONIBLE,
+    YA_REGISTRADO,
+    EXPIRADO,
+    NO_AUTORIZADO,
+    SOLO_ESTUDIANTES,
 }
 
 class QrViewModel(
     private val repository: QrRepository,
     private val institutionalRepository: InstitutionalRepository? = null,
+    private val esEstudiante: Boolean = true,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(QrUiState())
     val uiState: StateFlow<QrUiState> = _uiState.asStateFlow()
@@ -40,6 +46,10 @@ class QrViewModel(
         if (normalizado.isBlank() || normalizado == ultimoQrProcesado || _uiState.value.cargando) return
         ultimoQrProcesado = normalizado
         if (normalizado.startsWith("scli-asistencia:")) {
+            if (!esEstudiante) {
+                _uiState.value = QrUiState(error = QrError.SOLO_ESTUDIANTES)
+                return
+            }
             registrarAsistencia(normalizado)
             return
         }
@@ -68,11 +78,16 @@ class QrViewModel(
             _uiState.value = runCatching { institutionalRepository.registrarAsistencia(partes[1], partes[2]) }
                 .fold(
                     onSuccess = { QrUiState(asistenciaRegistrada = true) },
-                    onFailure = {
-                        QrUiState(
-                            error = if ((it as? HttpException)?.code() in listOf(409, 410))
-                                QrError.REGISTRO_NO_DISPONIBLE else QrError.SERVICIO,
-                        )
+                    onFailure = { throwable ->
+                        val code = (throwable as? HttpException)?.code()
+                        val error = when (code) {
+                            403 -> QrError.NO_AUTORIZADO
+                            409 -> QrError.YA_REGISTRADO
+                            410 -> QrError.EXPIRADO
+                            null -> if (throwable is IOException) QrError.RED else QrError.SERVICIO
+                            else -> QrError.REGISTRO_NO_DISPONIBLE
+                        }
+                        QrUiState(error = error)
                     },
                 )
         }

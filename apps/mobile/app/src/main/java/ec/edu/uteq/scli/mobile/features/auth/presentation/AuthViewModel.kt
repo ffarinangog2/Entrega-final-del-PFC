@@ -15,6 +15,9 @@ data class AuthUiState(
     val cargando: Boolean = false,
     val sesion: AuthSession? = null,
     val error: String? = null,
+    val recuperacionCargando: Boolean = false,
+    val recuperacionMensaje: String? = null,
+    val recuperacionError: String? = null,
 )
 
 class AuthViewModel(
@@ -52,6 +55,48 @@ class AuthViewModel(
                 )
             }
         }
+    }
+
+    fun solicitarRecuperacion(identifier: String) {
+        if (identifier.isBlank()) {
+            _uiState.value = _uiState.value.copy(recuperacionError = "Ingresa tu usuario o correo institucional")
+            return
+        }
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(
+                recuperacionCargando = true,
+                recuperacionError = null,
+                recuperacionMensaje = null,
+            )
+            val result = repository.forgotPassword(identifier.trim())
+            when (result) {
+                is NetworkResult.Success -> {
+                    _uiState.value = _uiState.value.copy(
+                        recuperacionCargando = false,
+                        recuperacionMensaje = result.value,
+                    )
+                }
+                is NetworkResult.Failure -> {
+                    val msg = if (result.message == "error_red") {
+                        "No se pudo conectar con el servicio."
+                    } else {
+                        "El servicio no está disponible en este momento."
+                    }
+                    _uiState.value = _uiState.value.copy(
+                        recuperacionCargando = false,
+                        recuperacionError = msg,
+                    )
+                }
+            }
+        }
+    }
+
+    fun limpiarEstadoRecuperacion() {
+        _uiState.value = _uiState.value.copy(
+            recuperacionCargando = false,
+            recuperacionMensaje = null,
+            recuperacionError = null,
+        )
     }
 
     fun logout() {

@@ -13,6 +13,8 @@ import ec.edu.uteq.scli.mobile.features.institutional.data.CoordinacionData
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import retrofit2.HttpException
+import java.io.IOException
 
 data class InstitutionalUiState(
     val cargando: Boolean = false,
@@ -36,6 +38,10 @@ class InstitutionalViewModel(private val repository: InstitutionalRepository) : 
     fun cargarPlanificaciones() = ejecutar { copy(planificaciones = repository.planificaciones()) }
     fun cargarCoordinacion() = ejecutar {
         val data = repository.coordinacion()
+        copy(planificaciones = data.planificaciones, coordinacion = data)
+    }
+    fun cargarRevisionPiso() = ejecutar {
+        val data = repository.revisionPiso()
         copy(planificaciones = data.planificaciones, coordinacion = data)
     }
     fun cargarHistorial() = ejecutar { copy(historial = repository.historial()) }
@@ -122,6 +128,13 @@ class InstitutionalViewModel(private val repository: InstitutionalRepository) : 
         copy(mensaje = "Utilización finalizada")
     }
     fun abrirSesion(reservaId: String) = ejecutar { copy(sesion = repository.abrirSesion(reservaId), mensaje = "Sesión abierta") }
+    fun abrirSesionBloque(bloqueId: String) {
+        val actual = mutableState.value.sesion
+        if (actual != null && (actual.idBloqueEfectivo == bloqueId || actual.bloquePlanificacionId == bloqueId) && !actual.token.isNullOrBlank() && actual.estado == "ABIERTA") {
+            return
+        }
+        ejecutar { copy(sesion = repository.abrirSesionBloque(bloqueId), mensaje = "Sesión abierta") }
+    }
     fun refrescarSesion() {
         val id = mutableState.value.sesion?.id ?: return
         ejecutar { copy(sesion = repository.consultarSesion(id), asistentes = repository.asistentes(id)) }
@@ -146,7 +159,29 @@ class InstitutionalViewModel(private val repository: InstitutionalRepository) : 
                         onSuccess()
                         it.copy(cargando = false)
                     },
-                    onFailure = { mutableState.value.copy(cargando = false, error = "No fue posible completar la operación") },
+                    onFailure = { error ->
+                        val rawMessage = if (error is HttpException) {
+                            runCatching { error.response()?.errorBody()?.string() }.getOrNull() ?: error.message() ?: ""
+                        } else {
+                            error.localizedMessage ?: ""
+                        }
+                        val mensajeError = when {
+                            rawMessage.contains("ya tiene una sesi", ignoreCase = true) || rawMessage.contains("ya tiene una sesion", ignoreCase = true) ->
+                                "La clase ya tiene una sesión de asistencia en curso."
+                            rawMessage.contains("no corresponde al d", ignoreCase = true) || rawMessage.contains("no corresponde al dia", ignoreCase = true) ->
+                                "Esta clase no corresponde al día actual."
+                            rawMessage.contains("no est", ignoreCase = true) && rawMessage.contains("horario", ignoreCase = true) ->
+                                "La clase no está dentro de su horario lectivo."
+                            error is HttpException && error.code() == 403 ->
+                                "No tienes permiso para realizar esta operación."
+                            error is HttpException && error.code() >= 500 ->
+                                "El servicio no está disponible en este momento."
+                            error is IOException ->
+                                "No se pudo conectar con el servicio."
+                            else -> "No fue posible completar la operación"
+                        }
+                        mutableState.value.copy(cargando = false, error = mensajeError)
+                    },
                 )
         }
     }

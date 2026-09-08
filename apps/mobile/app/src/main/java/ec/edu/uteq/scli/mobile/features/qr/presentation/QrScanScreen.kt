@@ -1,7 +1,10 @@
 package ec.edu.uteq.scli.mobile.features.qr.presentation
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
+import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.OptIn
@@ -14,11 +17,15 @@ import androidx.camera.view.PreviewView
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -32,11 +39,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.common.InputImage
+import ec.edu.uteq.scli.mobile.features.qr.data.LaboratorioDetalle
 import java.util.concurrent.Executors
 
 @Composable
@@ -62,8 +71,24 @@ fun QrScanScreen(viewModel: QrViewModel) {
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Text("Se necesita permiso de cámara para escanear un laboratorio.")
-            Button(onClick = { solicitarPermiso.launch(Manifest.permission.CAMERA) }) { Text("Conceder permiso") }
+            Text(
+                text = "Se necesita permiso de cámara para escanear el código QR de asistencia o del laboratorio.",
+                textAlign = TextAlign.Center,
+                style = MaterialTheme.typography.bodyLarge,
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(onClick = { solicitarPermiso.launch(Manifest.permission.CAMERA) }) {
+                Text("Conceder permiso")
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedButton(onClick = {
+                val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                    data = Uri.fromParts("package", context.packageName, null)
+                }
+                context.startActivity(intent)
+            }) {
+                Text("Abrir configuración de la app")
+            }
         }
         state.cargando -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
         state.error != null -> Column(
@@ -71,15 +96,24 @@ fun QrScanScreen(viewModel: QrViewModel) {
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
+            val mensajeError = when (state.error) {
+                QrError.INVALIDO -> "El código QR no es válido para asistencia ni corresponde a un laboratorio conocido."
+                QrError.RED -> "No se pudo conectar con el servicio. Comprueba tu conexión a Internet."
+                QrError.SERVICIO -> "El servicio no está disponible en este momento. Inténtalo de nuevo."
+                QrError.REGISTRO_NO_DISPONIBLE -> "La sesión de asistencia ya no está disponible."
+                QrError.YA_REGISTRADO -> "Tu asistencia ya fue registrada previamente en esta sesión."
+                QrError.EXPIRADO -> "El código QR o la sesión de asistencia ha expirado."
+                QrError.NO_AUTORIZADO -> "No tienes permiso para registrar asistencia en esta sesión."
+                QrError.SOLO_ESTUDIANTES -> "Este código es para registro de asistencia de estudiantes."
+                null -> "No se pudo procesar el código QR."
+            }
             Text(
-                when (state.error) {
-                    QrError.INVALIDO -> "El QR no contiene un UUID de laboratorio válido."
-                    QrError.RED -> "No se pudo conectar con el Gateway."
-                    QrError.SERVICIO -> "No se encontró el laboratorio o el servicio no está disponible."
-                    QrError.REGISTRO_NO_DISPONIBLE -> "Tu presencia ya fue registrada o la sesión ya no está disponible."
-                    null -> "No se pudo procesar el QR."
-                },
+                text = mensajeError,
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodyLarge,
             )
+            Spacer(modifier = Modifier.height(16.dp))
             Button(onClick = viewModel::reintentar) { Text("Reintentar escaneo") }
         }
         state.asistenciaRegistrada -> Column(
@@ -87,8 +121,20 @@ fun QrScanScreen(viewModel: QrViewModel) {
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Text("Asistencia registrada correctamente.")
-            Button(onClick = viewModel::reintentar) { Text("Escanear otro QR") }
+            Text(
+                text = "¡Asistencia registrada exitosamente!",
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.primary,
+                textAlign = TextAlign.Center,
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Tu presencia ha sido confirmada en el sistema.",
+                style = MaterialTheme.typography.bodyMedium,
+                textAlign = TextAlign.Center,
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(onClick = viewModel::reintentar) { Text("Aceptar") }
         }
         detalle != null -> QrDetailContent(detalle, onScanAgain = viewModel::reintentar)
         else -> CameraPreview(viewModel::procesarQr)
@@ -126,33 +172,36 @@ private fun CameraPreview(onQrDetected: (String) -> Unit) {
         }
         cameraProvider.addListener(futureListener, ContextCompat.getMainExecutor(context))
         onDispose {
-            cameraProvider.get().unbindAll()
-            scanner.close()
             executor.shutdown()
+            runCatching { cameraProvider.get().unbindAll() }
         }
     }
     AndroidView(factory = { previewView }, modifier = Modifier.fillMaxSize())
 }
 
 @Composable
-private fun QrDetailContent(
-    detalle: ec.edu.uteq.scli.mobile.features.qr.data.LaboratorioDetalle,
-    onScanAgain: () -> Unit,
-) {
-    Column(Modifier.fillMaxSize().padding(24.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text("Detalle del laboratorio")
-        Text(detalle.laboratorio.nombre.ifBlank { detalle.laboratorio.codigo })
-        Text("Código: ${detalle.laboratorio.codigo}")
-        detalle.laboratorio.capacidad?.let { Text("Capacidad: $it") }
-        detalle.laboratorio.estado?.let { Text("Estado: $it") }
-        detalle.laboratorio.descripcion?.takeIf { it.isNotBlank() }?.let { Text(it) }
-        detalle.campus?.nombre?.let { Text("Campus: $it") }
-        detalle.bloque?.nombre?.let { Text("Bloque: $it") }
-        detalle.piso?.nombre?.let { Text("Piso: $it") }
-        Text("Equipos: ${detalle.equipos.size}")
-        detalle.equipos.forEach { equipo ->
-            Text("${equipo.codigoInventario ?: equipo.marca.orEmpty()} ${equipo.modelo.orEmpty()} - ${equipo.estado.orEmpty()}")
+private fun QrDetailContent(detalle: LaboratorioDetalle, onScanAgain: () -> Unit) {
+    val lab = detalle.laboratorio
+    Column(
+        modifier = Modifier.fillMaxSize().padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Text(text = lab.nombre, style = MaterialTheme.typography.headlineSmall)
+        Text(text = "Código: ${lab.codigo}")
+        Text(text = "Capacidad: ${lab.capacidad} personas")
+        Text(text = "Estado: ${lab.estado}")
+        if (detalle.equipos.isNotEmpty()) {
+            Text(text = "Equipos (${detalle.equipos.size}):", style = MaterialTheme.typography.titleMedium)
+            for (equipo in detalle.equipos) {
+                val nombreEquipo = listOfNotNull(equipo.marca, equipo.modelo).filter { it.isNotBlank() }.joinToString(" ").ifBlank { equipo.codigoInventario ?: equipo.id }
+                Text(text = "• $nombreEquipo — ${equipo.estado ?: ""}")
+            }
+        } else {
+            Text(text = "Sin equipos registrados")
         }
-        Button(onClick = onScanAgain, modifier = Modifier.fillMaxWidth()) { Text("Escanear otro QR") }
+        Spacer(modifier = Modifier.height(8.dp))
+        Button(onClick = onScanAgain, modifier = Modifier.fillMaxWidth()) {
+            Text("Escanear otro código")
+        }
     }
 }

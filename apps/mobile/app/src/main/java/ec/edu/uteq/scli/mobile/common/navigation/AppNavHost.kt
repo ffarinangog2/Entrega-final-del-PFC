@@ -1,15 +1,15 @@
 package ec.edu.uteq.scli.mobile.common.navigation
 
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Event
-import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material.icons.filled.QrCodeScanner
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Event
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.QrCodeScanner
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.CircularProgressIndicator
@@ -36,24 +36,28 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.currentBackStackEntryAsState
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
 import androidx.navigation.NavType
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import ec.edu.uteq.scli.mobile.R
 import ec.edu.uteq.scli.mobile.ScliMobileApplication
-import ec.edu.uteq.scli.mobile.features.incidentes.presentation.IncidentesScreen
-import ec.edu.uteq.scli.mobile.features.incidentes.presentation.IncidentesViewModel
-import ec.edu.uteq.scli.mobile.features.institutional.presentation.HistorialAsistenciaScreen
-import ec.edu.uteq.scli.mobile.features.institutional.presentation.InstitutionalViewModel
-import ec.edu.uteq.scli.mobile.features.institutional.presentation.PlanificacionesScreen
-import ec.edu.uteq.scli.mobile.features.institutional.presentation.AdministracionGlobalScreen
-import ec.edu.uteq.scli.mobile.features.institutional.presentation.HorarioDocenteScreen
-import ec.edu.uteq.scli.mobile.features.institutional.presentation.HorarioEstudianteScreen
+import ec.edu.uteq.scli.mobile.features.auth.data.AuthUserResponse
+import ec.edu.uteq.scli.mobile.features.auth.data.hasAnyPermission
+import ec.edu.uteq.scli.mobile.features.auth.data.hasPermission
+import ec.edu.uteq.scli.mobile.features.auth.data.hasRole
 import ec.edu.uteq.scli.mobile.features.auth.presentation.AuthViewModel
 import ec.edu.uteq.scli.mobile.features.auth.presentation.LoginScreen
+import ec.edu.uteq.scli.mobile.features.incidentes.presentation.IncidentesScreen
+import ec.edu.uteq.scli.mobile.features.incidentes.presentation.IncidentesViewModel
+import ec.edu.uteq.scli.mobile.features.institutional.presentation.AdministracionGlobalScreen
+import ec.edu.uteq.scli.mobile.features.institutional.presentation.HistorialAsistenciaScreen
+import ec.edu.uteq.scli.mobile.features.institutional.presentation.HorarioDocenteScreen
+import ec.edu.uteq.scli.mobile.features.institutional.presentation.HorarioEstudianteScreen
+import ec.edu.uteq.scli.mobile.features.institutional.presentation.InstitutionalViewModel
+import ec.edu.uteq.scli.mobile.features.institutional.presentation.PlanificacionesScreen
 import ec.edu.uteq.scli.mobile.features.notifications.presentation.NotificationsScreen
 import ec.edu.uteq.scli.mobile.features.notifications.presentation.NotificationsViewModel
 import ec.edu.uteq.scli.mobile.features.notifications.presentation.resolveNotificationDestination
@@ -61,17 +65,13 @@ import ec.edu.uteq.scli.mobile.features.profile.presentation.ProfileScreen
 import ec.edu.uteq.scli.mobile.features.profile.presentation.ProfileViewModel
 import ec.edu.uteq.scli.mobile.features.qr.presentation.QrScanScreen
 import ec.edu.uteq.scli.mobile.features.qr.presentation.QrViewModel
+import ec.edu.uteq.scli.mobile.features.reservas.presentation.CalendarioScreen
 import ec.edu.uteq.scli.mobile.features.reservas.presentation.NuevaReservaScreen
 import ec.edu.uteq.scli.mobile.features.reservas.presentation.NuevaReservaViewModel
 import ec.edu.uteq.scli.mobile.features.reservas.presentation.ReservaDetalleScreen
 import ec.edu.uteq.scli.mobile.features.reservas.presentation.ReservasScreen
 import ec.edu.uteq.scli.mobile.features.reservas.presentation.ReservasViewModel
 import ec.edu.uteq.scli.mobile.features.reservas.presentation.SolicitudDetalleScreen
-import ec.edu.uteq.scli.mobile.features.reservas.presentation.CalendarioScreen
-import ec.edu.uteq.scli.mobile.features.auth.data.hasAnyPermission
-import ec.edu.uteq.scli.mobile.features.auth.data.hasPermission
-import ec.edu.uteq.scli.mobile.features.auth.data.hasRole
-import ec.edu.uteq.scli.mobile.features.auth.data.AuthUserResponse
 
 internal sealed class AppDestination(val route: String) {
     data object Incidentes : AppDestination("incidentes")
@@ -230,7 +230,10 @@ fun AppNavHost(application: ScliMobileApplication) {
                 navigationIcon = {
                     val navBackStackEntry by navController.currentBackStackEntryAsState()
                     val currentRoute = navBackStackEntry?.destination?.route
-                    if (esRutaSecundaria(currentRoute)) {
+                    val puedeVolverAtras = esRutaSecundaria(currentRoute) ||
+                        ((currentRoute == AppDestination.EscanearQr.route || currentRoute == AppDestination.Asistencia.route) &&
+                            !access.estudiante && navController.previousBackStackEntry != null)
+                    if (puedeVolverAtras) {
                         IconButton(onClick = { navController.popBackStack() }) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
@@ -294,17 +297,17 @@ fun AppNavHost(application: ScliMobileApplication) {
                     icon = { Icon(Icons.Filled.Event, contentDescription = null) },
                     label = { Text("Mi Horario") },
                 )
-                if (puedeVerIncidentes) NavigationBarItem(
-                    selected = currentDestination.isRoute(AppDestination.Incidentes),
-                    onClick = { navController.navigateToTab(AppDestination.Incidentes.route) },
-                    icon = { Icon(Icons.Filled.Warning, contentDescription = null) },
-                    label = { Text(stringResource(R.string.nav_incidentes)) },
+                if (access.estudiante) NavigationBarItem(
+                    selected = currentDestination.isRoute(AppDestination.Asistencia),
+                    onClick = { navController.navigateToTab(AppDestination.Asistencia.route) },
+                    icon = { Icon(Icons.Filled.Event, contentDescription = "Asistencia") },
+                    label = { Text("Asistencia") },
                 )
-                if (puedeVerCalendario) NavigationBarItem(
-                    selected = currentDestination.isRoute(AppDestination.Calendario),
-                    onClick = { navController.navigateToTab(AppDestination.Calendario.route) },
-                    icon = { Icon(Icons.Filled.Event, contentDescription = null) },
-                    label = { Text("Calendario") },
+                if (access.estudiante) NavigationBarItem(
+                    selected = currentDestination.isRoute(AppDestination.EscanearQr),
+                    onClick = { navController.navigateToTab(AppDestination.EscanearQr.route) },
+                    icon = { Icon(Icons.Filled.QrCodeScanner, contentDescription = null) },
+                    label = { Text("Escanear QR") },
                 )
                 if (puedeVerPlanificacion) NavigationBarItem(
                     selected = currentDestination.isRoute(AppDestination.Planificacion),
@@ -312,17 +315,17 @@ fun AppNavHost(application: ScliMobileApplication) {
                     icon = { Icon(Icons.Filled.Event, contentDescription = "Planificación") },
                     label = { Text("Planificación") },
                 )
-                if (puedeVerAsistencia) NavigationBarItem(
-                    selected = currentDestination.isRoute(AppDestination.Asistencia),
-                    onClick = { navController.navigateToTab(AppDestination.Asistencia.route) },
-                    icon = { Icon(Icons.Filled.Event, contentDescription = "Asistencia") },
-                    label = { Text("Asistencia") },
-                )
                 if (puedeVerReservas) NavigationBarItem(
                     selected = currentDestination.isRoute(AppDestination.Reservas),
                     onClick = { navController.navigateToTab(AppDestination.Reservas.route) },
                     icon = { Icon(Icons.Filled.Event, contentDescription = null) },
                     label = { Text(stringResource(R.string.nav_reservas)) },
+                )
+                if (puedeVerIncidentes) NavigationBarItem(
+                    selected = currentDestination.isRoute(AppDestination.Incidentes),
+                    onClick = { navController.navigateToTab(AppDestination.Incidentes.route) },
+                    icon = { Icon(Icons.Filled.Warning, contentDescription = null) },
+                    label = { Text(stringResource(R.string.nav_incidentes)) },
                 )
                 NavigationBarItem(
                     selected = currentDestination.isRoute(AppDestination.Perfil),
@@ -330,14 +333,6 @@ fun AppNavHost(application: ScliMobileApplication) {
                     icon = { Icon(Icons.Filled.Person, contentDescription = null) },
                     label = { Text(stringResource(R.string.nav_perfil)) },
                 )
-                if (!coordinador) {
-                    NavigationBarItem(
-                        selected = currentDestination.isRoute(AppDestination.EscanearQr),
-                        onClick = { navController.navigateToTab(AppDestination.EscanearQr.route) },
-                        icon = { Icon(Icons.Filled.QrCodeScanner, contentDescription = null) },
-                        label = { Text("Escanear QR") },
-                    )
-                }
             }
         },
     ) { padding ->
@@ -345,8 +340,9 @@ fun AppNavHost(application: ScliMobileApplication) {
             navController = navController,
             startDestination = when {
                 access.administrador -> AppDestination.Administracion.route
-                access.estudiante -> AppDestination.HorarioEstudiante.route
                 access.docente -> AppDestination.HorarioDocente.route
+                access.estudiante -> AppDestination.HorarioEstudiante.route
+                coordinador || user.hasRole("ADMINISTRADOR_PISO") -> AppDestination.Planificacion.route
                 puedeVerReservas -> AppDestination.Reservas.route
                 puedeVerPlanificacion -> AppDestination.Planificacion.route
                 puedeVerAsistencia -> AppDestination.Asistencia.route
@@ -371,7 +367,15 @@ fun AppNavHost(application: ScliMobileApplication) {
                 val viewModel: InstitutionalViewModel = viewModel(
                     factory = viewModelFactory { initializer { InstitutionalViewModel(container.institutionalRepository) } },
                 )
-                AdministracionGlobalScreen(viewModel)
+                AdministracionGlobalScreen(
+                    viewModel = viewModel,
+                    onEscanearLaboratorio = {
+                        navController.navigate(AppDestination.EscanearQr.route) { launchSingleTop = true }
+                    },
+                    onVerAsistencia = {
+                        navController.navigate(AppDestination.Asistencia.route) { launchSingleTop = true }
+                    },
+                )
             }
             composable(AppDestination.HorarioDocente.route) {
                 if (!access.docente) { Text("No tienes permisos para realizar esta acción."); return@composable }
@@ -429,7 +433,13 @@ fun AppNavHost(application: ScliMobileApplication) {
             composable(AppDestination.EscanearQr.route) {
                 val viewModel: QrViewModel = viewModel(
                     factory = viewModelFactory {
-                        initializer { QrViewModel(container.qrRepository, container.institutionalRepository) }
+                        initializer {
+                            QrViewModel(
+                                repository = container.qrRepository,
+                                institutionalRepository = container.institutionalRepository,
+                                esEstudiante = access.estudiante,
+                            )
+                        }
                     },
                 )
                 QrScanScreen(viewModel)
@@ -444,6 +454,12 @@ fun AppNavHost(application: ScliMobileApplication) {
                     puedeRevisar = user.hasPermission("SOLICITUD_APROBAR"),
                     coordinador = coordinador,
                     administradorPiso = user.hasRole("ADMINISTRADOR_PISO"),
+                    onEscanearLaboratorio = {
+                        navController.navigate(AppDestination.EscanearQr.route) { launchSingleTop = true }
+                    },
+                    onVerAsistencia = {
+                        navController.navigate(AppDestination.Asistencia.route) { launchSingleTop = true }
+                    },
                 )
             }
             composable(AppDestination.Asistencia.route) {

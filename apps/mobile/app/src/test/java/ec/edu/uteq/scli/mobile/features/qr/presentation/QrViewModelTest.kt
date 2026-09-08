@@ -106,6 +106,39 @@ class QrViewModelTest {
         assertTrue(viewModel.uiState.value.detalle != null)
     }
 
+    @Test
+    fun `rol no estudiante escaneando QR de asistencia recibe SOLO_ESTUDIANTES sin llamar backend`() = runTest {
+        val repository = FakeQrRepository()
+        val viewModel = QrViewModel(
+            repository = repository,
+            institutionalRepository = null,
+            esEstudiante = false,
+        )
+
+        viewModel.procesarQr("scli-asistencia:sesion-123:token-abc")
+        runCurrent()
+
+        assertEquals(QrError.SOLO_ESTUDIANTES, viewModel.uiState.value.error)
+        assertEquals(0, repository.consultas)
+    }
+
+    @Test
+    fun `rol no estudiante puede seguir escaneando QR de laboratorio fisico`() = runTest {
+        val repository = FakeQrRepository()
+        val viewModel = QrViewModel(
+            repository = repository,
+            institutionalRepository = null,
+            esEstudiante = false,
+        )
+
+        viewModel.procesarQr(LABORATORIO_ID)
+        runCurrent()
+
+        assertEquals(LABORATORIO_ID, repository.ultimoId)
+        assertEquals(DETALLE, viewModel.uiState.value.detalle)
+        assertEquals(null, viewModel.uiState.value.error)
+    }
+
     private class FakeQrRepository : QrRepository {
         var ultimoId: String? = null
         var consultas = 0

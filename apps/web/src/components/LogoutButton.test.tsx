@@ -28,11 +28,27 @@ function renderButton(logout: AuthContextValue['logout']) {
 }
 
 describe('LogoutButton', () => {
-  it('redirige al login después de cerrar la sesión', async () => {
+  it('muestra diálogo de confirmación y permite cancelar', () => {
     const logout = vi.fn().mockResolvedValue(undefined)
     renderButton(logout)
 
     fireEvent.click(screen.getByRole('button', { name: /cerrar sesión/i }))
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: /cancelar/i }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(logout).not.toHaveBeenCalled()
+  })
+
+  it('redirige al login después de confirmar el cierre de sesión', async () => {
+    const logout = vi.fn().mockResolvedValue(undefined)
+    renderButton(logout)
+
+    fireEvent.click(screen.getByRole('button', { name: /cerrar sesión/i }))
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+
+    const confirmBtn = screen.getAllByRole('button', { name: /cerrar sesión/i })[1]
+    fireEvent.click(confirmBtn)
 
     await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('/login'))
     expect(logout).toHaveBeenCalledOnce()
@@ -42,6 +58,8 @@ describe('LogoutButton', () => {
     renderButton(vi.fn().mockRejectedValue(new Error('offline')))
 
     fireEvent.click(screen.getByRole('button', { name: /cerrar sesión/i }))
+    const confirmBtn = screen.getAllByRole('button', { name: /cerrar sesión/i })[1]
+    fireEvent.click(confirmBtn)
 
     await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('/login'))
   })

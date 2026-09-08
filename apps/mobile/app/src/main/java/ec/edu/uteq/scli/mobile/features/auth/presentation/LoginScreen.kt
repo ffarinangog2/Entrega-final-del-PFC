@@ -19,14 +19,21 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -54,6 +61,9 @@ import ec.edu.uteq.scli.mobile.common.theme.ScliAccentText
 fun LoginScreen(viewModel: AuthViewModel) {
     var username by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
+    var passwordVisible by rememberSaveable { mutableStateOf(false) }
+    var mostrarRecuperacion by rememberSaveable { mutableStateOf(false) }
+    var identifierRecuperacion by rememberSaveable { mutableStateOf("") }
     val state by viewModel.uiState.collectAsState()
 
     Box(
@@ -68,9 +78,79 @@ fun LoginScreen(viewModel: AuthViewModel) {
             onUsernameChange = { username = it },
             password = password,
             onPasswordChange = { password = it },
+            passwordVisible = passwordVisible,
+            onTogglePasswordVisibility = { passwordVisible = !passwordVisible },
             error = state.error,
             loading = state.cargando,
             onSubmit = { viewModel.login(username, password) },
+            onForgotPasswordClick = { mostrarRecuperacion = true },
+        )
+    }
+
+    if (mostrarRecuperacion) {
+        AlertDialog(
+            onDismissRequest = {
+                mostrarRecuperacion = false
+                viewModel.limpiarEstadoRecuperacion()
+            },
+            title = { Text("Recuperación de contraseña") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        "Ingresa tu usuario o correo institucional para recibir las instrucciones de restablecimiento.",
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    OutlinedTextField(
+                        value = identifierRecuperacion,
+                        onValueChange = { identifierRecuperacion = it },
+                        label = { Text("Usuario o correo institucional") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !state.recuperacionCargando,
+                    )
+                    if (state.recuperacionCargando) {
+                        CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+                    }
+                    state.recuperacionError?.let {
+                        Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                    }
+                    state.recuperacionMensaje?.let {
+                        Text(it, color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.bodySmall)
+                        Text(
+                            "Por seguridad institucional, el enlace recibido en tu correo debe abrirse desde el navegador web para establecer tu nueva contraseña.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                if (state.recuperacionMensaje == null) {
+                    Button(
+                        onClick = { viewModel.solicitarRecuperacion(identifierRecuperacion) },
+                        enabled = identifierRecuperacion.isNotBlank() && !state.recuperacionCargando,
+                    ) {
+                        Text("Enviar solicitud")
+                    }
+                } else {
+                    Button(onClick = {
+                        mostrarRecuperacion = false
+                        viewModel.limpiarEstadoRecuperacion()
+                    }) {
+                        Text("Entendido")
+                    }
+                }
+            },
+            dismissButton = {
+                if (state.recuperacionMensaje == null) {
+                    TextButton(onClick = {
+                        mostrarRecuperacion = false
+                        viewModel.limpiarEstadoRecuperacion()
+                    }) {
+                        Text("Cancelar")
+                    }
+                }
+            },
         )
     }
 }
@@ -81,9 +161,12 @@ private fun LoginCard(
     onUsernameChange: (String) -> Unit,
     password: String,
     onPasswordChange: (String) -> Unit,
+    passwordVisible: Boolean,
+    onTogglePasswordVisibility: () -> Unit,
     error: String?,
     loading: Boolean,
     onSubmit: () -> Unit,
+    onForgotPasswordClick: () -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -134,14 +217,29 @@ private fun LoginCard(
             value = password,
             onValueChange = onPasswordChange,
             isPassword = true,
+            passwordVisible = passwordVisible,
+            onTogglePasswordVisibility = onTogglePasswordVisibility,
         )
 
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.End,
+        ) {
+            TextButton(onClick = onForgotPasswordClick) {
+                Text(
+                    text = "¿Olvidaste tu contraseña?",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
+        }
+
         if (error != null) {
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(8.dp))
             LoginErrorBanner(mapLoginError(error))
         }
 
-        Spacer(Modifier.height(20.dp))
+        Spacer(Modifier.height(16.dp))
 
         LoginSubmitButton(loading = loading, onClick = onSubmit)
 
@@ -211,6 +309,8 @@ private fun LoginLabeledField(
     value: String,
     onValueChange: (String) -> Unit,
     isPassword: Boolean = false,
+    passwordVisible: Boolean = false,
+    onTogglePasswordVisibility: (() -> Unit)? = null,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
@@ -224,12 +324,22 @@ private fun LoginLabeledField(
             onValueChange = onValueChange,
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
-            visualTransformation = if (isPassword) PasswordVisualTransformation() else VisualTransformation.None,
+            visualTransformation = if (isPassword && !passwordVisible) PasswordVisualTransformation() else VisualTransformation.None,
             keyboardOptions = if (isPassword) {
                 KeyboardOptions(keyboardType = KeyboardType.Password)
             } else {
                 KeyboardOptions.Default
             },
+            trailingIcon = if (isPassword && onTogglePasswordVisibility != null) {
+                {
+                    IconButton(onClick = onTogglePasswordVisibility) {
+                        Icon(
+                            imageVector = if (passwordVisible) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
+                            contentDescription = if (passwordVisible) "Ocultar contraseña" else "Mostrar contraseña",
+                        )
+                    }
+                }
+            } else null,
             colors = OutlinedTextFieldDefaults.colors(
                 focusedTextColor = MaterialTheme.colorScheme.onSurface,
                 unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
@@ -281,26 +391,24 @@ private fun LoginSubmitButton(loading: Boolean, onClick: () -> Unit) {
         ),
     ) {
         if (loading) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(9.dp),
-            ) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(18.dp),
-                    strokeWidth = 2.dp,
-                    color = MaterialTheme.colorScheme.onPrimary,
-                )
-                Text("Iniciando sesión...")
-            }
+            CircularProgressIndicator(
+                color = MaterialTheme.colorScheme.onPrimary,
+                modifier = Modifier.size(20.dp),
+                strokeWidth = 2.dp,
+            )
         } else {
-            Text("Iniciar sesión", fontWeight = FontWeight.Bold)
+            Text(
+                text = "Iniciar sesión",
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 15.sp,
+            )
         }
     }
 }
 
-private fun mapLoginError(error: String): String = when (error) {
-    "credenciales_invalidas" -> "Credenciales inválidas"
-    "cuenta_bloqueada" -> "Cuenta temporalmente bloqueada. Intente nuevamente más tarde"
+private fun mapLoginError(code: String): String = when (code) {
+    "credenciales_invalidas" -> "Usuario o contraseña incorrectos"
+    "cuenta_bloqueada" -> "Cuenta bloqueada temporalmente por intentos fallidos. Intenta más tarde."
     "error_red" -> "No se pudo conectar con el servicio"
-    else -> "El servicio no está disponible"
+    else -> "Error al iniciar sesión ($code)"
 }

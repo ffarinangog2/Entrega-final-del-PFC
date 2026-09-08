@@ -1,40 +1,52 @@
-package ec.edu.uteq.scli.mobile.features.institutional.presentation
+﻿package ec.edu.uteq.scli.mobile.features.institutional.presentation
 
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Button
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Event
+import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import ec.edu.uteq.scli.mobile.features.institutional.data.CoordinacionData
-import ec.edu.uteq.scli.mobile.features.institutional.data.PlanificacionDto
 import ec.edu.uteq.scli.mobile.features.institutional.data.PeriodoPlanificacionDto
+import ec.edu.uteq.scli.mobile.features.institutional.data.PlanificacionDto
+import ec.edu.uteq.scli.mobile.features.institutional.util.ClaseElegibilidadHelper
+import ec.edu.uteq.scli.mobile.features.qr.util.QrCodeGenerator
 
 @Composable
 fun PlanificacionesScreen(
@@ -42,26 +54,32 @@ fun PlanificacionesScreen(
     puedeRevisar: Boolean,
     coordinador: Boolean,
     administradorPiso: Boolean = false,
+    onEscanearLaboratorio: () -> Unit = {},
+    onVerAsistencia: () -> Unit = {},
 ) {
     if (coordinador) {
         CoordinacionScreen(viewModel)
         return
     }
     if (administradorPiso) {
-        AdministradorPisoPlanificacionScreen(viewModel)
+        AdministradorPisoPlanificacionScreen(
+            viewModel = viewModel,
+            onEscanearLaboratorio = onEscanearLaboratorio,
+            onVerAsistencia = onVerAsistencia,
+        )
         return
     }
     val state by viewModel.uiState.collectAsState()
     LaunchedEffect(Unit) { viewModel.cargarPlanificaciones() }
     LazyColumn(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        item { Text("Planificación semestral") }
+        item { Text("PlanificaciÃ³n semestral") }
         if (state.cargando) item { CircularProgressIndicator() }
         state.error?.let { item { Text(it) } }
         state.mensaje?.let { item { Text(it) } }
-        if (!state.cargando && state.planificaciones.isEmpty()) item { Text("No hay planificaciones para tu ámbito") }
+        if (!state.cargando && state.planificaciones.isEmpty()) item { Text("No hay planificaciones para tu Ã¡mbito") }
         items(state.planificaciones, key = { it.id }) { plan ->
             Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text("${plan.diaSemana} ${plan.horaInicio}–${plan.horaFin}")
+                Text("${plan.diaSemana} ${plan.horaInicio}â€“${plan.horaFin}")
                 Text("Estado: ${plan.estado.replace('_', ' ')}")
                 plan.observacion?.let { Text(it) }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -79,21 +97,48 @@ fun PlanificacionesScreen(
 }
 
 @Composable
-fun AdministradorPisoPlanificacionScreen(viewModel: InstitutionalViewModel) {
+fun AdministradorPisoPlanificacionScreen(
+    viewModel: InstitutionalViewModel,
+    onEscanearLaboratorio: () -> Unit = {},
+    onVerAsistencia: () -> Unit = {},
+) {
     val state by viewModel.uiState.collectAsState()
     var dia by remember { mutableStateOf("LUNES") }
     var motivoRechazo by remember { mutableStateOf("") }
     var planObservado by remember { mutableStateOf<PlanificacionDto?>(null) }
     var observacion by remember { mutableStateOf("") }
     var confirmarAprobacion by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) { viewModel.cargarCoordinacion() }
+    LaunchedEffect(Unit) { viewModel.cargarRevisionPiso() }
     val data = state.coordinacion
     val pendiente = data?.planificacion?.estado == "EN_REVISION"
 
     LazyColumn(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item {
-            Text("Administración de piso", style = MaterialTheme.typography.headlineMedium)
-            Text("Planificación recibida como conjunto")
+            Text("AdministraciÃ³n de piso", style = MaterialTheme.typography.headlineMedium)
+            Text("PlanificaciÃ³n recibida como conjunto")
+        }
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                OutlinedButton(
+                    onClick = onEscanearLaboratorio,
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Icon(Icons.Filled.QrCodeScanner, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text("Escanear laboratorio")
+                }
+                OutlinedButton(
+                    onClick = onVerAsistencia,
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Icon(Icons.Filled.Event, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text("Asistencia")
+                }
+            }
         }
         if (state.cargando && data == null) item { CircularProgressIndicator() }
         state.error?.let { item { Text(it, color = MaterialTheme.colorScheme.error) } }
@@ -124,20 +169,20 @@ fun AdministradorPisoPlanificacionScreen(viewModel: InstitutionalViewModel) {
                         Text(paquete.laboratorios.find { it.id == plan.laboratorioId }?.codigo ?: "Laboratorio")
                         Text("Docente asignado")
                         Text("Estado: ${etiquetaEstado(plan.estado)}")
-                        plan.observacion?.let { Text("Observación: $it") }
-                        if (pendiente) OutlinedButton(onClick = { planObservado = plan }) { Text("Marcar bloque problemático") }
+                        plan.observacion?.let { Text("ObservaciÃ³n: $it") }
+                        if (pendiente) OutlinedButton(onClick = { planObservado = plan }) { Text("Marcar bloque problemÃ¡tico") }
                     }
                 }
             }
             if (pendiente) item {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(onClick = { confirmarAprobacion = true }, enabled = !state.cargando, modifier = Modifier.fillMaxWidth()) { Text("Aprobar planificación") }
+                    Button(onClick = { confirmarAprobacion = true }, enabled = !state.cargando, modifier = Modifier.fillMaxWidth()) { Text("Aprobar planificaciÃ³n") }
                     OutlinedTextField(motivoRechazo, { motivoRechazo = it }, label = { Text("Motivo del rechazo") }, modifier = Modifier.fillMaxWidth())
-                    OutlinedButton(onClick = { viewModel.rechazarPaquete(motivoRechazo) }, enabled = motivoRechazo.isNotBlank() && !state.cargando, modifier = Modifier.fillMaxWidth()) { Text("Rechazar planificación") }
+                    OutlinedButton(onClick = { viewModel.rechazarPaquete(motivoRechazo) }, enabled = motivoRechazo.isNotBlank() && !state.cargando, modifier = Modifier.fillMaxWidth()) { Text("Rechazar planificaciÃ³n") }
                 }
             }
             item { Text("Laboratorios de mi piso", style = MaterialTheme.typography.titleLarge) }
-            if (paquete.laboratorios.isEmpty()) item { Text("No hay laboratorios disponibles en su ámbito.") }
+            if (paquete.laboratorios.isEmpty()) item { Text("No hay laboratorios disponibles en su Ã¡mbito.") }
             items(paquete.laboratorios, key = { "lab-${it.id}" }) { laboratorio ->
                 Card(Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(12.dp)) {
@@ -151,14 +196,14 @@ fun AdministradorPisoPlanificacionScreen(viewModel: InstitutionalViewModel) {
     }
     if (confirmarAprobacion) AlertDialog(
         onDismissRequest = { confirmarAprobacion = false },
-        title = { Text("Aprobar planificación") },
-        text = { Text("¿Desea aprobar todos los bloques pendientes de esta planificación?") },
+        title = { Text("Aprobar planificaciÃ³n") },
+        text = { Text("Â¿Desea aprobar todos los bloques pendientes de esta planificaciÃ³n?") },
         confirmButton = { TextButton(onClick = { confirmarAprobacion = false; viewModel.aprobarPaquete() }) { Text("Aprobar") } },
         dismissButton = { TextButton(onClick = { confirmarAprobacion = false }) { Text("Cancelar") } },
     )
     planObservado?.let { plan -> AlertDialog(
         onDismissRequest = { planObservado = null },
-        title = { Text("Observación del bloque") },
+        title = { Text("ObservaciÃ³n del bloque") },
         text = { OutlinedTextField(observacion, { observacion = it }, label = { Text("Problema o propuesta") }) },
         confirmButton = { TextButton(enabled = observacion.isNotBlank(), onClick = { viewModel.proponerCambio(plan.id, observacion); observacion = ""; planObservado = null }) { Text("Enviar") } },
         dismissButton = { TextButton(onClick = { planObservado = null }) { Text("Cancelar") } },
@@ -187,8 +232,8 @@ internal fun CoordinacionContent(state: InstitutionalUiState) {
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         item {
-            Text("Coordinación", style = MaterialTheme.typography.headlineMedium)
-            Text("Consulta y seguimiento de la planificación semestral")
+            Text("CoordinaciÃ³n", style = MaterialTheme.typography.headlineMedium)
+            Text("Consulta y seguimiento de la planificaciÃ³n semestral")
         }
         if (state.cargando && data == null) item { CircularProgressIndicator() }
         state.error?.let { item { Text(it, color = MaterialTheme.colorScheme.error) } }
@@ -199,25 +244,25 @@ internal fun CoordinacionContent(state: InstitutionalUiState) {
             val planes = planAgregado?.bloques ?: coordinacion.planificaciones
             item { ResumenCoordinacion(coordinacion, periodo, planAgregado?.estado, planes.size) }
             item {
-                Text("Ciclo académico")
+                Text("Ciclo acadÃ©mico")
                 Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())) {
                     coordinacion.periodos.filter { it.cicloAcademico != null }.forEach { ciclo ->
                         FilterChip(
                             selected = periodoId == ciclo.id,
                             onClick = { periodoSeleccionado = ciclo.id },
-                            label = { Text(if (ciclo.cicloAcademico == 1) "Mayo–Septiembre" else "Noviembre–Abril") },
+                            label = { Text(if (ciclo.cicloAcademico == 1) "Mayoâ€“Septiembre" else "Noviembreâ€“Abril") },
                         )
                     }
                 }
             }
             item {
-                Text("Nivel académico")
+                Text("Nivel acadÃ©mico")
                 Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())) {
                     (1..10).forEach { value ->
                         FilterChip(
                             selected = nivelSeleccionado == value,
                             onClick = { nivelSeleccionado = value },
-                            label = { Text("$value°") },
+                            label = { Text("$valueÂ°") },
                         )
                     }
                 }
@@ -263,9 +308,9 @@ internal fun CoordinacionContent(state: InstitutionalUiState) {
                 }
             }
             item {
-                Text("Las notificaciones de revisión, propuestas y aprobación se reciben mediante las notificaciones de la aplicación.")
+                Text("Las notificaciones de revisiÃ³n, propuestas y aprobaciÃ³n se reciben mediante las notificaciones de la aplicaciÃ³n.")
                 Spacer(Modifier.height(4.dp))
-                Text("La creación, edición y el envío completo se realizan principalmente desde la Web.")
+                Text("La creaciÃ³n, ediciÃ³n y el envÃ­o completo se realizan principalmente desde la Web.")
             }
         }
     }
@@ -280,8 +325,8 @@ private fun ResumenCoordinacion(data: CoordinacionData, periodo: PeriodoPlanific
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text("Carrera: ${carrera?.nombre ?: "Mi carrera institucional"}")
             Text("Periodo: ${periodo.ppaNombre ?: periodo.codigo}")
-            Text("Ciclo académico: ${if (periodo.cicloAcademico == 1) "Mayo–Septiembre" else "Noviembre–Abril"}")
-            Text("Estado de planificación: ${estado ?: estadoGeneral(data.planificaciones)}")
+            Text("Ciclo acadÃ©mico: ${if (periodo.cicloAcademico == 1) "Mayoâ€“Septiembre" else "Noviembreâ€“Abril"}")
+            Text("Estado de planificaciÃ³n: ${estado ?: estadoGeneral(data.planificaciones)}")
             Text("$totalBloques asignaciones")
         }
     }
@@ -300,7 +345,7 @@ private fun AsignacionCard(plan: PlanificacionDto, data: CoordinacionData) {
             Text(laboratorio?.codigo ?: "Laboratorio no disponible")
             Text("Estado: ${etiquetaEstado(plan.estado)}")
             plan.observacion?.takeIf { it.isNotBlank() }?.let {
-                Text("Observación: $it", color = MaterialTheme.colorScheme.error)
+                Text("ObservaciÃ³n: $it", color = MaterialTheme.colorScheme.error)
             }
         }
     }
@@ -312,14 +357,14 @@ internal fun estadoGeneral(planes: List<PlanificacionDto>): String {
         vigentes.any { it.estado == "PROPUESTA_CAMBIO" } -> "DEVUELTA CON OBSERVACIONES"
         vigentes.any { it.estado == "BORRADOR" } -> "BORRADOR"
         vigentes.isNotEmpty() && vigentes.all { it.estado == "CONFIRMADA" } -> "APROBADA"
-        vigentes.any { it.estado == "ENVIADA" } -> "EN REVISIÓN"
+        vigentes.any { it.estado == "ENVIADA" } -> "EN REVISIÃ“N"
         vigentes.any { it.estado == "RECHAZADA" } -> "RECHAZADA"
         else -> "SIN INICIAR"
     }
 }
 
 internal fun etiquetaEstado(estado: String): String = when (estado) {
-    "ENVIADA" -> "En revisión"
+    "ENVIADA" -> "En revisiÃ³n"
     "PROPUESTA_CAMBIO" -> "Devuelta con observaciones"
     "CONFIRMADA" -> "Aprobada"
     "BORRADOR" -> "Borrador"
@@ -329,7 +374,7 @@ internal fun etiquetaEstado(estado: String): String = when (estado) {
 }
 
 private fun etiquetaDia(dia: String): String =
-    if (dia == "MIERCOLES") "Miércoles" else dia.lowercase().replaceFirstChar(Char::uppercase)
+    if (dia == "MIERCOLES") "MiÃ©rcoles" else dia.lowercase().replaceFirstChar(Char::uppercase)
 
 private fun estadoLaboratorio(estado: String): String = when (estado) {
     "DISPONIBLE" -> "Disponible"
@@ -351,7 +396,7 @@ fun HistorialAsistenciaScreen(viewModel: InstitutionalViewModel, estudiante: Boo
         if (state.cargando) item { CircularProgressIndicator() }
         state.error?.let { item { Text(it) } }
         state.mensaje?.let { item { Text(it) } }
-        if (!state.cargando && state.historial.isEmpty()) item { Text("Todavía no hay registros") }
+        if (!state.cargando && state.historial.isEmpty()) item { Text("TodavÃ­a no hay registros") }
         items(state.historial, key = { it.id }) { registro ->
             Column { Text(registro.registradaEn); Text(registro.estado) }
         }
@@ -378,30 +423,31 @@ internal fun RegistroLaboratorioEstudianteContent(
     LazyColumn(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item {
             Text("Registro de laboratorio", style = MaterialTheme.typography.headlineMedium)
-            Text("Tu identidad se obtiene de la sesión autenticada.")
+            Text("Tu identidad se obtiene de la sesiÃ³n autenticada.")
         }
         if (state.cargando && state.sesionesAbiertas.isEmpty()) item { CircularProgressIndicator() }
-        state.error?.let { item {
-            Text("No fue posible consultar los registros. Intenta nuevamente.", color = MaterialTheme.colorScheme.error)
-            OutlinedButton(onClick = onActualizar) { Text("Reintentar") }
-        } }
+        state.error?.let { item { Text(it, color = MaterialTheme.colorScheme.error) } }
         state.mensaje?.let { item { Text(it, color = MaterialTheme.colorScheme.primary) } }
-        if (!state.cargando && state.error == null && state.sesionesAbiertas.isEmpty()) item {
-            Text("No hay registros de laboratorio habilitados en este momento.")
+        item {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                Text("Sesiones abiertas", style = MaterialTheme.typography.titleLarge)
+                OutlinedButton(onClick = onActualizar, enabled = !state.cargando) { Text("Actualizar") }
+            }
         }
+        if (!state.cargando && state.sesionesAbiertas.isEmpty()) item { Text("No hay sesiones de asistencia abiertas en este momento.") }
         items(state.sesionesAbiertas, key = { it.id }) { sesion ->
             val registrado = state.historial.any { it.sesionId == sesion.id }
             Card(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text("Registro habilitado", style = MaterialTheme.typography.titleMedium)
                     Text("Disponible hasta ${sesion.expiraEn}")
-                    if (registrado) Text("Tu presencia ya fue registrada en esta sesión.")
+                    if (registrado) Text("Tu presencia ya fue registrada en esta sesiÃ³n.")
                     else Button(onClick = { onRegistrar(sesion.id) }, enabled = !state.cargando) { Text("Registrar mi presencia") }
                 }
             }
         }
         item { Text("Mi historial de presencia", style = MaterialTheme.typography.titleLarge) }
-        if (!state.cargando && state.historial.isEmpty()) item { Text("Aún no tienes registros de uso.") }
+        if (!state.cargando && state.historial.isEmpty()) item { Text("AÃºn no tienes registros de uso.") }
         items(state.historial, key = { it.id }) { registro ->
             Card(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(12.dp)) {
@@ -410,19 +456,46 @@ internal fun RegistroLaboratorioEstudianteContent(
                 }
             }
         }
-        item { Text("También puedes usar Escanear QR cuando el responsable muestre un código de registro.") }
+        item { Text("TambiÃ©n puedes usar Escanear QR cuando el responsable muestre un cÃ³digo de registro.") }
     }
 }
 
 @Composable
-fun AdministracionGlobalScreen(viewModel: InstitutionalViewModel) {
+fun AdministracionGlobalScreen(
+    viewModel: InstitutionalViewModel,
+    onEscanearLaboratorio: () -> Unit = {},
+    onVerAsistencia: () -> Unit = {},
+) {
     val state by viewModel.uiState.collectAsState()
     LaunchedEffect(Unit) { viewModel.cargarAdministracion() }
     LazyColumn(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        item { Text("Supervisión global", style = MaterialTheme.typography.headlineMedium) }
+        item { Text("SupervisiÃ³n global", style = MaterialTheme.typography.headlineMedium) }
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                OutlinedButton(
+                    onClick = onEscanearLaboratorio,
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Icon(Icons.Filled.QrCodeScanner, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text("Escanear laboratorio")
+                }
+                OutlinedButton(
+                    onClick = onVerAsistencia,
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Icon(Icons.Filled.Event, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text("Asistencia")
+                }
+            }
+        }
         if (state.cargando && state.administracion == null) item { CircularProgressIndicator() }
         state.error?.let { item {
-            Text("No fue posible cargar la información global.", color = MaterialTheme.colorScheme.error)
+            Text("No fue posible cargar la informaciÃ³n global.", color = MaterialTheme.colorScheme.error)
             OutlinedButton(onClick = viewModel::cargarAdministracion) { Text("Reintentar") }
         } }
         state.administracion?.let { data ->
@@ -433,10 +506,10 @@ fun AdministracionGlobalScreen(viewModel: InstitutionalViewModel) {
             }
             item {
                 Text("Laboratorios", style = MaterialTheme.typography.titleLarge)
-                Text("${data.laboratorios.size} registrados · ${data.laboratorios.count { it.estado == "DISPONIBLE" }} disponibles")
+                Text("${data.laboratorios.size} registrados Â· ${data.laboratorios.count { it.estado == "DISPONIBLE" }} disponibles")
             }
             item {
-                Text("Planificación", style = MaterialTheme.typography.titleLarge)
+                Text("PlanificaciÃ³n", style = MaterialTheme.typography.titleLarge)
                 Text("${data.planificaciones.size} asignaciones globales")
             }
             item { Text("Usuarios recientes", style = MaterialTheme.typography.titleLarge) }
@@ -455,12 +528,15 @@ fun AdministracionGlobalScreen(viewModel: InstitutionalViewModel) {
 fun HorarioDocenteScreen(viewModel: InstitutionalViewModel, perfilId: String) {
     val state by viewModel.uiState.collectAsState()
     var dia by remember { mutableStateOf("LUNES") }
+    var mostrarQrDialog by remember { mutableStateOf(false) }
+
     LaunchedEffect(perfilId) { viewModel.cargarDocencia(perfilId) }
+
     LazyColumn(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item { Text("Mi semana", style = MaterialTheme.typography.headlineMedium) }
         if (state.cargando && state.docencia == null) item { CircularProgressIndicator() }
         state.error?.let { item {
-            Text("No fue posible cargar tu horario.", color = MaterialTheme.colorScheme.error)
+            Text("No fue posible cargar el horario docente.", color = MaterialTheme.colorScheme.error)
             OutlinedButton(onClick = { viewModel.cargarDocencia(perfilId) }) { Text("Reintentar") }
         } }
         state.docencia?.let { data ->
@@ -471,17 +547,97 @@ fun HorarioDocenteScreen(viewModel: InstitutionalViewModel, perfilId: String) {
             val materias = data.materias.associateBy { it.id }
             val laboratorios = data.laboratorios.associateBy { it.id }
             val clases = data.horarios.filter { it.diaSemana == dia }
-            if (clases.isEmpty()) item { Text("No tienes clases programadas para este día.") }
+            if (clases.isEmpty()) item { Text("No tienes clases programadas para este dÃ­a.") }
             items(clases, key = { it.id }) { clase ->
                 Card(Modifier.fillMaxWidth()) { Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                    Text("${clase.horaInicio}–${clase.horaFin}", style = MaterialTheme.typography.titleMedium)
+                    Text("${clase.horaInicio}â€“${clase.horaFin}", style = MaterialTheme.typography.titleMedium)
                     Text(materias[clase.materiaId]?.nombre ?: "Materia asignada")
-                    Text(clase.laboratorioId?.let { laboratorios[it]?.let { lab -> "${lab.codigo} — ${lab.nombre}" } } ?: "Aula por confirmar")
-                    Text("Planificación base · Solo lectura")
+                    Text(clase.laboratorioId?.let { laboratorios[it]?.let { lab -> "${lab.codigo} â€” ${lab.nombre}" } } ?: "Aula por confirmar")
+                    Text("PlanificaciÃ³n base Â· Solo lectura")
+                    val elegible = ClaseElegibilidadHelper.esClaseElegible(clase.diaSemana, clase.horaInicio, clase.horaFin)
+                    Spacer(Modifier.height(4.dp))
+                    if (elegible) {
+                        Button(onClick = {
+                            viewModel.abrirSesionBloque(clase.id)
+                            mostrarQrDialog = true
+                        }) {
+                            Text("Generar QR Asistencia")
+                        }
+                    } else {
+                        OutlinedButton(
+                            onClick = {},
+                            enabled = false,
+                        ) {
+                            Text("Disponible durante el horario de clase")
+                        }
+                    }
                 } }
             }
             item { Text("Los cambios de una fecha concreta se gestionan como solicitudes y no modifican este horario base.") }
         }
+    }
+
+    if (mostrarQrDialog) {
+        val token = state.sesion?.token
+        val sesionId = state.sesion?.id
+        val payload = if (!token.isNullOrBlank() && !sesionId.isNullOrBlank()) {
+            QrCodeGenerator.construirPayloadAsistencia(sesionId, token)
+        } else null
+        val qrBitmap = remember(payload) {
+            payload?.let { QrCodeGenerator.generarBitmap(it, 240, 240) }
+        }
+
+        AlertDialog(
+            onDismissRequest = { mostrarQrDialog = false },
+            title = { Text("Asistencia de clase") },
+            text = {
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    if (state.cargando && state.sesion == null) {
+                        CircularProgressIndicator()
+                        Text("Habilitando sesiÃ³n de asistencia...")
+                    } else if (qrBitmap != null) {
+                        Image(
+                            bitmap = qrBitmap.asImageBitmap(),
+                            contentDescription = "CÃ³digo QR de asistencia",
+                            modifier = Modifier.size(200.dp),
+                        )
+                        Text(
+                            text = "Los estudiantes deben escanear este cÃ³digo QR desde su aplicaciÃ³n mÃ³vil para registrar su asistencia.",
+                            style = MaterialTheme.typography.bodySmall,
+                            textAlign = TextAlign.Center,
+                        )
+                        Text(
+                            text = "Asistentes registrados: ${state.asistentes.size}",
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                        OutlinedButton(onClick = viewModel::refrescarSesion) {
+                            Text("Actualizar lista")
+                        }
+                    } else {
+                        state.error?.let {
+                            Text(it, color = MaterialTheme.colorScheme.error)
+                        } ?: Text("Esperando respuesta del servidor...")
+                    }
+                }
+            },
+            confirmButton = {
+                Button(onClick = {
+                    mostrarQrDialog = false
+                    viewModel.cerrarSesion()
+                }) {
+                    Text("Cerrar asistencia")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { mostrarQrDialog = false }) {
+                    Text("Minimizar")
+                }
+            },
+        )
     }
 }
 
@@ -510,14 +666,14 @@ fun HorarioEstudianteScreen(viewModel: InstitutionalViewModel) {
                 val materias = data.materias.associateBy { it.id }
                 val laboratorios = data.laboratorios.associateBy { it.id }
                 val clases = data.horarios.filter { it.diaSemana.equals(dia, ignoreCase = true) }
-                if (clases.isEmpty()) item { Text("No tienes clases programadas para este día.") }
+                if (clases.isEmpty()) item { Text("No tienes clases programadas para este dÃ­a.") }
                 items(clases, key = { it.id }) { clase ->
                     Card(Modifier.fillMaxWidth()) {
                         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                            Text("${clase.horaInicio}–${clase.horaFin}", style = MaterialTheme.typography.titleMedium)
+                            Text("${clase.horaInicio}â€“${clase.horaFin}", style = MaterialTheme.typography.titleMedium)
                             Text(materias[clase.materiaId]?.nombre ?: "Materia asignada")
                             Text(
-                                clase.laboratorioId?.let { laboratorios[it]?.let { lab -> "${lab.codigo} — ${lab.nombre}" } }
+                                clase.laboratorioId?.let { laboratorios[it]?.let { lab -> "${lab.codigo} â€” ${lab.nombre}" } }
                                     ?: "Aula por confirmar"
                             )
                             clase.nivel?.let { Text("Nivel $it", style = MaterialTheme.typography.bodySmall) }
@@ -528,8 +684,8 @@ fun HorarioEstudianteScreen(viewModel: InstitutionalViewModel) {
                 item {
                     Card(Modifier.fillMaxWidth()) {
                         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text("No hay período lectivo activo", style = MaterialTheme.typography.titleMedium)
-                            Text("Actualmente no existe un período lectivo vigente para consultar el horario.")
+                            Text("No hay perÃ­odo lectivo activo", style = MaterialTheme.typography.titleMedium)
+                            Text("Actualmente no existe un perÃ­odo lectivo vigente para consultar el horario.")
                         }
                     }
                 }

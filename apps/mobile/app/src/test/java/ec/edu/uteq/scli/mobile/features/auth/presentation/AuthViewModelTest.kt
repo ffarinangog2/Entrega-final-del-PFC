@@ -121,13 +121,43 @@ class AuthViewModelTest {
         assertTrue(repository.loggedOut)
     }
 
+    @Test
+    fun `solicitarRecuperacion exitosa expone mensaje neutro`() = runTest {
+        val repository = FakeAuthRepository().apply {
+            forgotPasswordResult = NetworkResult.Success("Si el identificador existe en el sistema, recibirás un enlace...")
+        }
+        val viewModel = AuthViewModel(repository)
+        runCurrent()
+
+        viewModel.solicitarRecuperacion("docente@uteq.edu.ec")
+        runCurrent()
+
+        assertEquals("Si el identificador existe en el sistema, recibirás un enlace...", viewModel.uiState.value.recuperacionMensaje)
+        assertFalse(viewModel.uiState.value.recuperacionCargando)
+        assertEquals(1, repository.forgotPasswordCalls)
+    }
+
+    @Test
+    fun `solicitarRecuperacion vacia muestra error sin llamar al repositorio`() = runTest {
+        val repository = FakeAuthRepository()
+        val viewModel = AuthViewModel(repository)
+        runCurrent()
+
+        viewModel.solicitarRecuperacion("   ")
+
+        assertEquals("Ingresa tu usuario o correo institucional", viewModel.uiState.value.recuperacionError)
+        assertEquals(0, repository.forgotPasswordCalls)
+    }
+
     private class FakeAuthRepository : AuthRepository {
         var loginResult: NetworkResult<AuthSession> = NetworkResult.Success(SESSION)
+        var forgotPasswordResult: NetworkResult<String> = NetworkResult.Success("ok")
         var restored: AuthSession? = null
         var refreshed: AuthSession? = null
         var loggedOut = false
         var loginCalls = 0
         var refreshCalls = 0
+        var forgotPasswordCalls = 0
         private var expirationHandler: (() -> Unit)? = null
 
         override suspend fun login(username: String, password: String): NetworkResult<AuthSession> {
@@ -140,6 +170,10 @@ class AuthViewModelTest {
             return refreshed
         }
         override suspend fun logout() { loggedOut = true }
+        override suspend fun forgotPassword(identifier: String): NetworkResult<String> {
+            forgotPasswordCalls++
+            return forgotPasswordResult
+        }
         override fun onSessionExpired(listener: () -> Unit) { expirationHandler = listener }
         fun expireSession() = expirationHandler?.invoke()
     }

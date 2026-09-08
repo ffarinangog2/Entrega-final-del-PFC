@@ -59,6 +59,31 @@ class InstitutionalRepositoryTest {
     }
 
     @Test
+    fun `revisionPiso consulta unicamente planificaciones agregadas y laboratorios autorizados`() = runTest {
+        server.enqueue(MockResponse().setResponseCode(200).setBody(PLANIFICACIONES_AGREGADAS_JSON))
+        server.enqueue(MockResponse().setResponseCode(200).setBody(PAGINA_LABORATORIOS_JSON))
+
+        val revision = repository.revisionPiso()
+
+        assertEquals(1, revision.planificaciones.size)
+        assertEquals("plan-1", revision.planificaciones.single().id)
+        assertEquals(1, revision.laboratorios.size)
+        assertEquals("LAB-01", revision.laboratorios.single().codigo)
+        assertEquals("planificacion-1", revision.planificacion?.id)
+        assertEquals(emptyList<MateriaPlanificacionDto>(), revision.materias)
+        assertEquals(emptyList<DocentePlanificacionDto>(), revision.docentes)
+        assertEquals(emptyList<CarreraPlanificacionDto>(), revision.carreras)
+
+        val rutas = List(2) { server.takeRequest().path }
+        assertEquals("/api/v1/planificaciones-agregadas", rutas[0])
+        assertEquals(true, rutas[1]?.startsWith("/api/v1/laboratorios") == true)
+        assertEquals(false, rutas.any { it?.contains("materias") == true })
+        assertEquals(false, rutas.any { it?.contains("carreras") == true })
+        assertEquals(false, rutas.any { it?.contains("periodos-lectivos") == true })
+        assertEquals(false, rutas.any { it?.contains("docentes") == true })
+    }
+
+    @Test
     fun `cerrar asistencia acepta respuesta 204 sin cuerpo`() = runTest {
         server.enqueue(MockResponse().setResponseCode(204))
 

@@ -97,6 +97,27 @@ class RemoteAuthRepositoryTest {
         assertEquals(NetworkResult.Failure(null, "servicio_no_disponible"), result)
     }
 
+    @Test fun `forgotPassword exitoso devuelve mensaje neutro anti-enumeracion`() = runTest {
+        coEvery { api.forgotPassword(ForgotPasswordRequest("docente@uteq.edu.ec")) } returns Response.success(ForgotPasswordResponse("ok"))
+        val result = RemoteAuthRepository(api, storage).forgotPassword("docente@uteq.edu.ec")
+        assertTrue(result is NetworkResult.Success)
+        val msg = (result as NetworkResult.Success).value
+        assertTrue(msg.contains("correo institucional"))
+        assertTrue(msg.contains("plataforma web"))
+    }
+
+    @Test fun `forgotPassword con fallo de red devuelve error_red`() = runTest {
+        coEvery { api.forgotPassword(any()) } throws IOException("sin conexion")
+        val result = RemoteAuthRepository(api, storage).forgotPassword("docente")
+        assertEquals(NetworkResult.Failure(null, "error_red"), result)
+    }
+
+    @Test fun `forgotPassword con error HTTP devuelve servicio_no_disponible`() = runTest {
+        coEvery { api.forgotPassword(any()) } returns Response.error(500, "{}".toResponseBody())
+        val result = RemoteAuthRepository(api, storage).forgotPassword("docente")
+        assertEquals(NetworkResult.Failure(500, "servicio_no_disponible"), result)
+    }
+
     @Test fun `restoreSession devuelve la sesion si no ha expirado`() = runTest {
         every { storage.read() } returns SESSION
         val session = RemoteAuthRepository(api, storage, clock = { 0L }).restoreSession()

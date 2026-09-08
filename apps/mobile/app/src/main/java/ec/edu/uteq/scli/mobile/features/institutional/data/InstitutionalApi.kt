@@ -1,4 +1,4 @@
-package ec.edu.uteq.scli.mobile.features.institutional.data
+﻿package ec.edu.uteq.scli.mobile.features.institutional.data
 
 import retrofit2.http.Body
 import retrofit2.http.GET
@@ -125,15 +125,19 @@ data class RegistroAsistenciaDto(
     val estado: String,
 )
 data class RegistrarAsistenciaRequest(val token: String)
-data class AbrirSesionAsistenciaRequest(val reservaId: String)
+data class AbrirSesionAsistenciaRequest(val reservaId: String? = null, val bloqueId: String? = null)
 data class SesionAsistenciaDto(
     val id: String,
-    val reservaId: String,
+    val reservaId: String?,
     val abiertaEn: String,
     val expiraEn: String,
     val estado: String,
     val token: String?,
-)
+    val bloquePlanificacionId: String? = null,
+    val bloqueId: String? = null,
+) {
+    val idBloqueEfectivo: String? get() = bloqueId ?: bloquePlanificacionId
+}
 
 interface InstitutionalApi {
     @GET("api/v1/perfiles")
@@ -298,6 +302,27 @@ class InstitutionalRepository(private val api: InstitutionalApi) {
             planificacionesAgregadas = agregadas,
         )
     }
+    suspend fun revisionPiso(): CoordinacionData {
+        val agregadas = api.listarPlanificacionesAgregadas()
+        val laboratorios = todasLasPaginas(api::listarLaboratorios)
+        val primera = agregadas.firstOrNull()
+        return CoordinacionData(
+            planificaciones = primera?.bloques.orEmpty(),
+            materias = emptyList(),
+            docentes = emptyList(),
+            laboratorios = laboratorios,
+            carreras = emptyList(),
+            periodo = PeriodoPlanificacionDto(
+                id = primera?.periodoId.orEmpty(),
+                codigo = "Periodo asignado",
+                nombre = "Periodo lectivo",
+                estado = "ACTIVO",
+            ),
+            periodos = emptyList(),
+            planificacion = primera,
+            planificacionesAgregadas = agregadas,
+        )
+    }
     suspend fun aceptar(id: String) = api.aceptarPlanificacion(id)
     suspend fun aprobarPlanificacionPiso(id: String) = api.aprobarPlanificacionPiso(id)
     suspend fun rechazarPlanificacionPiso(id: String, motivo: String) =
@@ -318,12 +343,13 @@ class InstitutionalRepository(private val api: InstitutionalApi) {
     suspend fun registrarPresenciaPropia(id: String) = api.registrarPresenciaPropia(id)
     suspend fun iniciarReserva(id: String) = api.iniciarReserva(id)
     suspend fun finalizarReserva(id: String) = api.finalizarReserva(id)
-    suspend fun abrirSesion(reservaId: String) = api.abrirSesion(AbrirSesionAsistenciaRequest(reservaId))
+    suspend fun abrirSesion(reservaId: String) = api.abrirSesion(AbrirSesionAsistenciaRequest(reservaId = reservaId))
+    suspend fun abrirSesionBloque(bloqueId: String) = api.abrirSesion(AbrirSesionAsistenciaRequest(bloqueId = bloqueId))
     suspend fun consultarSesion(id: String) = api.consultarSesion(id)
     suspend fun asistentes(id: String) = api.listarAsistentes(id)
     suspend fun cerrarSesion(id: String) {
         val response = api.cerrarSesion(id)
-        if (!response.isSuccessful) error("No fue posible cerrar la sesión")
+        if (!response.isSuccessful) error("No fue posible cerrar la sesiÃ³n")
     }
 
     private suspend fun <T> todasLasPaginas(
@@ -333,9 +359,9 @@ class InstitutionalRepository(private val api: InstitutionalApi) {
         var pagina = 0
         do {
             val respuesta = cargar(pagina, 100)
-            resultado += respuesta.content
+            resultado.addAll(respuesta.content)
             pagina++
-        } while (!respuesta.last && pagina < respuesta.totalPages)
+        } while (pagina < respuesta.totalPages)
         return resultado
     }
 }
