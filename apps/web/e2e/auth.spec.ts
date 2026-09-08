@@ -44,6 +44,16 @@ test.describe('Autenticación web', () => {
     await expect(page).toHaveURL(/\/main$/)
 
     await page.getByRole('button', { name: 'Cerrar sesión' }).click()
+    const dialog = page.getByRole('dialog')
+    await expect(dialog).toBeVisible()
+    await dialog.getByRole('button', { name: 'Cancelar' }).click()
+
+    await expect(dialog).toBeHidden()
+    await expect(page).toHaveURL(/\/main$/)
+
+    await page.getByRole('button', { name: 'Cerrar sesión' }).click()
+    await expect(dialog).toBeVisible()
+    await dialog.getByRole('button', { name: 'Cerrar sesión' }).click()
 
     await expect(page).toHaveURL(/\/login$/)
     await expect
