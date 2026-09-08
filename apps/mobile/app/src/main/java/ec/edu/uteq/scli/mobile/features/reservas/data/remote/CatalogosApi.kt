@@ -7,7 +7,14 @@ import retrofit2.http.Query
 data class DocenteDto(val id: String, val perfilId: String, val codigoDocente: String, val activo: Boolean)
 data class MateriaDto(val id: String, val codigo: String, val nombre: String, val activo: Boolean)
 enum class EstadoPeriodoDto { PLANIFICADO, ACTIVO, FINALIZADO }
-data class PeriodoDto(val id: String, val codigo: String, val nombre: String, val estado: EstadoPeriodoDto)
+data class PeriodoDto(
+    val id: String,
+    val codigo: String,
+    val nombre: String,
+    val estado: EstadoPeriodoDto,
+    val fechaInicio: String? = null,
+    val fechaFin: String? = null,
+)
 data class LaboratorioCatalogoDto(val id: String, val codigo: String, val nombre: String, val pisoId: String?, val activo: Boolean)
 data class HorarioDto(val id: String, val docenteId: String, val materiaId: String, val periodoLectivoId: String, val laboratorioId: String?)
 

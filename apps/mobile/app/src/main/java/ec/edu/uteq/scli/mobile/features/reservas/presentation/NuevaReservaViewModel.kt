@@ -9,27 +9,45 @@ import ec.edu.uteq.scli.mobile.features.reservas.domain.ReservaRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.time.LocalDate
+import java.time.ZoneId
 import java.util.UUID
 
 class NuevaReservaViewModel(
     private val repository: ReservaRepository,
     private val catalogos: CatalogosRepository? = null,
     private val perfilId: String = "",
+    private val hoyProvider: () -> LocalDate = { LocalDate.now(ZoneId.systemDefault()) },
 ) : ViewModel() {
     private val state = MutableStateFlow(NuevaReservaUiState())
     val uiState = state.asStateFlow()
     private var idempotencyKey: String? = null
 
-    init { if (catalogos != null) cargarCatalogos() else state.value = state.value.copy(cargandoCatalogos = false) }
+    init {
+        if (catalogos != null) {
+            cargarCatalogos()
+        } else {
+            state.value = state.value.copy(
+                cargandoCatalogos = false,
+                rangoPeriodo = evaluarRangoPeriodo(state.value.periodo, hoyProvider()),
+            )
+        }
+    }
 
     private fun cargarCatalogos() = viewModelScope.launch {
         state.value = try {
             val data = requireNotNull(catalogos).cargar(perfilId)
             val permitidas = data.horarios.map { it.materiaId }.toSet()
-            state.value.copy(cargandoCatalogos = false, docenteId = data.docente.id,
+            val rango = evaluarRangoPeriodo(data.periodo, hoyProvider())
+            state.value.copy(
+                cargandoCatalogos = false,
+                docenteId = data.docente.id,
                 docenteCodigo = data.docente.codigoDocente,
                 materias = data.materias.filter { it.activo && (permitidas.isEmpty() || it.id in permitidas) },
-                laboratorios = data.laboratorios.filter { it.activo }, periodo = data.periodo)
+                laboratorios = data.laboratorios.filter { it.activo },
+                periodo = data.periodo,
+                rangoPeriodo = rango,
+            )
         } catch (_: Exception) {
             state.value.copy(cargandoCatalogos = false, error = "No fue posible cargar los catálogos")
         }
@@ -37,8 +55,19 @@ class NuevaReservaViewModel(
 
     fun actualizar(transform: (NuevaReservaUiState) -> NuevaReservaUiState) {
         if (state.value.enviando) return
-        state.value = transform(state.value).copy(error = null, disponible = null, solicitudCreada = null)
-        idempotencyKey = null
+        val anterior = state.value
+        val nuevoEstado = transform(anterior)
+        val fechaCambio = nuevoEstado.fechaReserva != anterior.fechaReserva
+        val rango = evaluarRangoPeriodo(nuevoEstado.periodo, hoyProvider())
+        state.value = nuevoEstado.copy(
+            error = if (fechaCambio) null else nuevoEstado.error,
+            disponible = if (fechaCambio) null else nuevoEstado.disponible,
+            solicitudCreada = if (fechaCambio) null else nuevoEstado.solicitudCreada,
+            rangoPeriodo = rango,
+        )
+        if (fechaCambio) {
+            idempotencyKey = null
+        }
     }
 
     fun actualizarFormulario(transform: (NuevaReservaUiState) -> NuevaReservaUiState) = actualizar(transform)
@@ -58,6 +87,35 @@ class NuevaReservaViewModel(
     fun enviar() {
         val s = state.value
         if (s.enviando) return
+
+        if (s.periodo == null && s.periodoLectivoId.isBlank()) {
+            val camposIncompletos = listOf(s.docenteId, s.materiaId, s.laboratorioId, s.fechaReserva, s.horaInicio, s.horaFin, s.motivo).any(String::isBlank) ||
+                s.numeroParticipantes.toIntOrNull() == null || (s.numeroParticipantes.toIntOrNull() ?: 0) <= 0
+            if (camposIncompletos && s.docenteId.isBlank() && s.materiaId.isBlank()) {
+                state.value = s.copy(error = "Completa correctamente todos los campos obligatorios")
+                return
+            }
+            state.value = s.copy(error = PeriodoReservaRango.SinPeriodo.mensaje)
+            return
+        }
+
+        val rango = evaluarRangoPeriodo(s.periodo, hoyProvider())
+        when (rango) {
+            is PeriodoReservaRango.Invalido -> {
+                state.value = s.copy(error = rango.mensaje)
+                return
+            }
+            is PeriodoReservaRango.Valido -> {
+                val fecha = parsearFechaSegura(s.fechaReserva)
+                if (fecha == null || fecha.isBefore(rango.fechaMinima) || fecha.isAfter(rango.fechaMaxima)) {
+                    state.value = s.copy(
+                        error = "La fecha de la reserva debe estar comprendida entre ${rango.fechaMinima} y ${rango.fechaMaxima} para el período académico seleccionado."
+                    )
+                    return
+                }
+            }
+        }
+
         val participantes = s.numeroParticipantes.toIntOrNull()
         val periodoId = s.periodo?.id ?: s.periodoLectivoId
         if (periodoId.isBlank() || participantes == null || participantes <= 0 ||
@@ -65,10 +123,21 @@ class NuevaReservaViewModel(
             state.value = s.copy(error = "Completa correctamente todos los campos obligatorios")
             return
         }
+
         val key = idempotencyKey ?: UUID.randomUUID().toString().also { idempotencyKey = it }
-        val request = NuevaSolicitudReserva(perfilId.ifBlank { s.solicitanteId }, s.docenteId, s.laboratorioId, s.materiaId,
-            periodoId, s.fechaReserva, s.horaInicio, s.horaFin, participantes, s.motivo,
-            s.observacion.ifBlank { null })
+        val request = NuevaSolicitudReserva(
+            perfilId.ifBlank { s.solicitanteId },
+            s.docenteId,
+            s.laboratorioId,
+            s.materiaId,
+            periodoId,
+            s.fechaReserva,
+            s.horaInicio,
+            s.horaFin,
+            participantes,
+            s.motivo,
+            s.observacion.ifBlank { null }
+        )
         state.value = s.copy(enviando = true, error = null)
         viewModelScope.launch {
             state.value = when (val result = repository.crearSolicitud(request, key)) {

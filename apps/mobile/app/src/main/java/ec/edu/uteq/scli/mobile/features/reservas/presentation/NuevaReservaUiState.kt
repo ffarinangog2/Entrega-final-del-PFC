@@ -27,4 +27,5 @@ data class NuevaReservaUiState(
     val enviando: Boolean = false,
     val error: String? = null,
     val solicitudCreada: SolicitudReserva? = null,
+    val rangoPeriodo: PeriodoReservaRango = PeriodoReservaRango.SinPeriodo,
 )

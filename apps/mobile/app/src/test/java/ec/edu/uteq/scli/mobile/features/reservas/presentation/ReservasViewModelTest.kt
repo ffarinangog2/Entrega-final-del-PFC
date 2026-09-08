@@ -480,12 +480,27 @@ class ReservasViewModelTest {
     }
 
     private fun completarFormulario(viewModel: NuevaReservaViewModel) {
+        val hoy = java.time.LocalDate.now()
+        val fechaValida = hoy.plusDays(7).toString()
+        val finPeriodo = hoy.plusMonths(3).toString()
         viewModel.actualizarFormulario { it.copy(solicitanteId = "solicitante-1") }
         viewModel.actualizarFormulario { it.copy(docenteId = "docente-1") }
         viewModel.actualizarFormulario { it.copy(laboratorioId = "laboratorio-1") }
         viewModel.actualizarFormulario { it.copy(materiaId = "materia-1") }
         viewModel.actualizarFormulario { it.copy(periodoLectivoId = "periodo-1") }
-        viewModel.actualizarFormulario { it.copy(fechaReserva = "2026-08-20") }
+        viewModel.actualizarFormulario {
+            it.copy(
+                periodo = ec.edu.uteq.scli.mobile.features.reservas.data.remote.PeriodoDto(
+                    id = "periodo-1",
+                    codigo = "2026-A",
+                    nombre = "Periodo 2026-A",
+                    estado = ec.edu.uteq.scli.mobile.features.reservas.data.remote.EstadoPeriodoDto.ACTIVO,
+                    fechaInicio = hoy.minusMonths(1).toString(),
+                    fechaFin = finPeriodo,
+                ),
+            )
+        }
+        viewModel.actualizarFormulario { it.copy(fechaReserva = fechaValida) }
         viewModel.actualizarFormulario { it.copy(horaInicio = "08:00") }
         viewModel.actualizarFormulario { it.copy(horaFin = "10:00") }
         viewModel.actualizarFormulario { it.copy(numeroParticipantes = "20") }
