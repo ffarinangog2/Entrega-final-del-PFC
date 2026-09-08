@@ -3,6 +3,7 @@ package ec.edu.uteq.scli.mobile.features.incidentes
 import android.content.Context
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
@@ -97,8 +98,19 @@ class IncidentesFlowTest {
             .onNodeWithText(context.getString(R.string.incidentes_form_guardar))
             .performClick()
 
+        composeTestRule.waitUntil(timeoutMillis = 5_000) {
+            composeTestRule
+                .onAllNodesWithText("Estado: REPORTADO")
+                .fetchSemanticsNodes()
+                .isNotEmpty()
+        }
+
         composeTestRule
             .onNodeWithText("LAB-03 — Laboratorio de Redes")
+            .assertExists()
+
+        composeTestRule
+            .onNodeWithText("No enciende")
             .assertExists()
     }
 }
