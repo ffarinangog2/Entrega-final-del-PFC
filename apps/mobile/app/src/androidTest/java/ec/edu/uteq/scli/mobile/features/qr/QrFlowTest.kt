@@ -49,9 +49,10 @@ class QrFlowTest {
             }
         }
 
-        composeTestRule.onNodeWithText("Detalle del laboratorio").assertExists()
         composeTestRule.onNodeWithText(DETALLE.laboratorio.nombre).assertExists()
         composeTestRule.onNodeWithText("Código: ${DETALLE.laboratorio.codigo}").assertExists()
+        composeTestRule.onNodeWithText("Capacidad: ${DETALLE.laboratorio.capacidad} personas").assertExists()
+        composeTestRule.onNodeWithText("Estado: ${DETALLE.laboratorio.estado}").assertExists()
     }
 
     @Test
@@ -68,7 +69,7 @@ class QrFlowTest {
         }
 
         composeTestRule
-            .onNodeWithText("El QR no contiene un UUID de laboratorio válido.")
+            .onNodeWithText("El código QR no es válido para asistencia ni corresponde a un laboratorio conocido.")
             .assertExists()
 
         composeTestRule.onNodeWithText("Reintentar escaneo").performClick()
@@ -91,7 +92,7 @@ class QrFlowTest {
         }
 
         composeTestRule
-            .onNodeWithText("No se pudo conectar con el Gateway.")
+            .onNodeWithText("No se pudo conectar con el servicio. Comprueba tu conexión a Internet.")
             .assertExists()
     }
 
