@@ -258,30 +258,29 @@ El rollback usa un SHA anterior y preserva volúmenes CockroachDB.
 
 ## Documentación académica
 
-El documento oficial de la Entrega 4 es
-[`docs/entrega-4/main.tex`](docs/entrega-4/main.tex). El árbol formado por
-`docs/main.tex`, `docs/Referencias.bib`, `docs/secciones/` y
-`docs/Informe_E3_SCLI_LATEX.pdf` se conserva como documentación histórica y
-trazabilidad de la Entrega 3; no es el entregable principal de E4.
+El documento acumulativo oficial de la Entrega 4 es
+[`docs/main.tex`](docs/main.tex). Los documentos de `docs/entrega-3/` y
+`docs/entrega-4/` se conservan como trazabilidad histórica y fuentes de sus
+respectivas entregas.
 
 ### Compilación reproducible del informe oficial
 
 El informe utiliza `pdflatex` y BibTeX. Se requiere una distribución LaTeX que
-incluya ambos comandos y los paquetes declarados por
-`docs/entrega-4/main.tex` (`babel` con español, `geometry` e `hyperref`). Desde
-la raíz del repositorio:
+incluya ambos comandos y los paquetes declarados por `docs/main.tex`. Desde la
+raíz del repositorio:
 
 ```bash
-cd docs/entrega-4
-pdflatex main.tex
+cd docs
+pdflatex -interaction=nonstopmode -halt-on-error main.tex
 bibtex main
-pdflatex main.tex
-pdflatex main.tex
+pdflatex -interaction=nonstopmode -halt-on-error main.tex
+pdflatex -interaction=nonstopmode -halt-on-error main.tex
 ```
 
 La primera pasada genera los auxiliares, BibTeX procesa `referencias.bib`, y
 las dos pasadas finales resuelven citas y referencias cruzadas. El resultado
-esperado es `docs/entrega-4/main.pdf`.
+esperado es `docs/main.pdf`. GitHub Actions ejecuta automáticamente esta
+validación mediante [`docs.yml`](.github/workflows/docs.yml).
 
 ### Declaración de uso de IA generativa
 
