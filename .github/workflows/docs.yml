@@ -1,0 +1,44 @@
+name: Documentation
+
+on:
+  push:
+    branches:
+      - feature/entrega-4
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-documentation:
+    name: Compile cumulative LaTeX report
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install LaTeX
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y \
+            texlive-latex-base \
+            texlive-latex-recommended \
+            texlive-latex-extra \
+            texlive-fonts-recommended \
+            texlive-lang-spanish \
+            texlive-bibtex-extra
+
+      - name: Compile report
+        working-directory: docs
+        run: |
+          pdflatex -interaction=nonstopmode -halt-on-error main.tex
+          bibtex main
+          pdflatex -interaction=nonstopmode -halt-on-error main.tex
+          pdflatex -interaction=nonstopmode -halt-on-error main.tex
+
+      - name: Upload report PDF
+        uses: actions/upload-artifact@v4
+        with:
+          name: informe-e4-scli
+          path: docs/main.pdf
+          if-no-files-found: error
