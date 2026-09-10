@@ -2,15 +2,15 @@ param(
     [Parameter(Mandatory = $true)]
     [ValidateSet('eficiencia_nominal_50u_5m', 'fiabilidad_nominal_50u_1h')]
     [string]$Escenario,
-    [Parameter(Mandatory = $true)]
-    [ValidateRange(1, 10)]
-    [int]$Repeticion,
+    [ValidateRange(0, 10)]
+    [int]$Repeticion = 0,
     [Parameter(Mandatory = $true)]
     [ValidatePattern('^https?://')]
     [string]$HostObjetivo,
     [ValidatePattern('^https?://')]
     [string]$PrometheusUrl = 'http://localhost:9090',
     [string]$ComposeFile = 'docker-compose.yml',
+    [switch]$Precheck,
     [switch]$DryRun
 )
 
@@ -29,13 +29,33 @@ $scenarioConfig = @{
     eficiencia_nominal_50u_5m = @{ Duration = '5m'; Range = '5m'; Seconds = 300 }
     fiabilidad_nominal_50u_1h = @{ Duration = '1h'; Range = '1h'; Seconds = 3600 }
 }
-$config = $scenarioConfig[$Escenario]
+if ($Precheck -and $Escenario -ne 'fiabilidad_nominal_50u_1h') {
+    throw '-Precheck sólo es válido con fiabilidad_nominal_50u_1h.'
+}
+if ($Precheck -and $Repeticion -ne 0) {
+    throw '-Precheck no acepta -Repeticion porque no cuenta como repetición oficial.'
+}
+if ($Precheck -and $DryRun) {
+    throw '-Precheck y -DryRun son modos excluyentes.'
+}
+if (-not $Precheck -and $Repeticion -notin 1..10) {
+    throw 'Las ejecuciones oficiales requieren -Repeticion entre 1 y 10.'
+}
+$config = if ($Precheck) {
+    @{ Duration = '30s'; Range = '30s'; Seconds = 30 }
+} else {
+    $scenarioConfig[$Escenario]
+}
+$users = if ($Precheck) { 2 } else { 50 }
+$spawnRate = if ($Precheck) { 1 } else { 10 }
 $repositoryRoot = Split-Path -Parent $PSScriptRoot
 $composePath = Join-Path $repositoryRoot $ComposeFile
 $locustFile = Join-Path $repositoryRoot 'tests/load/locustfile.py'
 $rawRoot = Join-Path $PSScriptRoot 'resultados/raw'
-$repetitionName = 'rep-{0:D2}' -f $Repeticion
-$evidenceDirectory = if ($DryRun) {
+$repetitionName = if ($Precheck) { $null } else { 'rep-{0:D2}' -f $Repeticion }
+$evidenceDirectory = if ($Precheck) {
+    Join-Path $rawRoot '_precheck/fiabilidad_nominal_50u_1h'
+} elseif ($DryRun) {
     Join-Path $rawRoot "_dry-run/$Escenario/$repetitionName"
 } else {
     Join-Path $rawRoot "$Escenario/$repetitionName"
@@ -74,7 +94,7 @@ function Get-DeploymentFingerprint {
     return ($values | Sort-Object) -join "`n"
 }
 function Get-ExperimentGitStatus {
-    $scenarioEvidence = Join-Path $rawRoot $Escenario
+    $scenarioEvidence = if ($Precheck) { $evidenceDirectory } else { Join-Path $rawRoot $Escenario }
     $relativeEvidence = $scenarioEvidence.Substring($repositoryRoot.Length).TrimStart('\', '/').Replace('\', '/')
     $lines = & git -C $repositoryRoot status --porcelain --untracked-files=all 2>&1
     if ($LASTEXITCODE -ne 0) { throw 'No se pudo consultar el estado Git.' }
@@ -88,7 +108,7 @@ $csvPrefix = Join-Path $evidenceDirectory 'locust'
 $locustLog = Join-Path $evidenceDirectory 'locust.log'
 $locustArguments = @(
     '-m', 'locust', '-f', $locustFile, '--headless', '--host', $HostObjetivo,
-    '--users', '50', '--spawn-rate', '10', '--run-time', $config.Duration,
+    '--users', "$users", '--spawn-rate', "$spawnRate", '--run-time', $config.Duration,
     '--csv', $csvPrefix, '--csv-full-history',
     '--html', (Join-Path $evidenceDirectory 'locust-report.html')
 )
@@ -108,10 +128,12 @@ $gitBranch = (& git -C $repositoryRoot branch --show-current 2>&1 | Out-String).
 $gitSha = (& git -C $repositoryRoot rev-parse HEAD 2>&1 | Out-String).Trim()
 $gitStatusBefore = Get-ExperimentGitStatus
 $pythonVersion = (& $pythonCommand --version 2>&1 | Out-String).Trim()
+$metadataRepetition = if ($Precheck) { $null } else { $Repeticion }
 $metadata = [ordered]@{
     status = if ($DryRun) { 'dry-run' } else { 'planned' }
-    scenario = $Escenario; repetition = $Repeticion; host = $HostObjetivo
-    prometheus_url = $PrometheusUrl; users = 50; spawn_rate = 10
+    precheck = [bool]$Precheck; official = -not [bool]$Precheck
+    scenario = $Escenario; repetition = $metadataRepetition; host = $HostObjetivo
+    prometheus_url = $PrometheusUrl; users = $users; spawn_rate = $spawnRate
     planned_duration = $config.Duration; planned_duration_seconds = $config.Seconds
     command = $displayCommand; created_at_utc = (Get-Date).ToUniversalTime().ToString('o')
     git_branch = $gitBranch; git_sha = $gitSha
