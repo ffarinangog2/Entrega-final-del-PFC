@@ -14,6 +14,8 @@
 !eficiencia_nominal_50u_5m/rep-*/gateway-health-*.json
 !eficiencia_nominal_50u_5m/rep-*/reservas-health-*.json
 !eficiencia_nominal_50u_5m/rep-*/docker-stats-*.txt
+!fiabilidad_nominal_50u_1h/
+!fiabilidad_nominal_50u_1h/**
 !ramp_0_200_10m/
 !ramp_0_200_10m/run-*/
 !ramp_0_200_10m/run-*/metadata.json

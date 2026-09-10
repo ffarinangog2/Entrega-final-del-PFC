@@ -26,10 +26,11 @@ Cada repetición real usa:
 experimentos/resultados/raw/<escenario>/rep-NN/
 ```
 
-Locust genera `locust_stats.csv`, historial, fallos, excepciones, HTML y log. El archivo
-`metadata.json` registra escenario, repetición, host, usuarios, duración, versión Locust,
-comando y tiempos UTC. También se guardan las consultas Prometheus de p95, conteo 5xx
-y porcentaje 5xx.
+Locust genera `locust_stats.csv`, historial, fallos, excepciones, HTML y log. El launcher
+también conserva las consultas y respuestas Prometheus, salud antes/después, estadísticas
+Docker, estado de CockroachDB, logs de Reservas, huella del despliegue y manifiesto del
+entorno. `metadata.json` registra rama, SHA, estado Git, versiones, ventana UTC, duración
+real y planificada, código real de Locust y señales separadas de ejecución y evidencia.
 
 `raw/.gitignore` permite exclusivamente los artefactos canónicos seleccionados de
 Entrega 4. Los HTML y los historiales completos de Locust permanecen en la VM porque
@@ -47,7 +48,7 @@ Los fallos de Locust no se copian automáticamente a `failures`: pueden incluir 
 de contenido o conectividad. Para Freddy, `failures` significa exclusivamente respuestas
 HTTP 5xx. Al finalizar la repetición se ejecuta en Prometheus la consulta guardada en
 `prometheus-5xx-count.promql`, usando como instante de evaluación el fin UTC registrado.
-Su respuesta se conserva como `prometheus-5xx-result.txt`.
+Su respuesta se conserva automáticamente como `prometheus-5xx-result.txt`.
 
 El porcentaje 5xx se obtiene con la consulta exacta guardada por la herramienta:
 
@@ -63,10 +64,11 @@ el failure rate general de Locust.
 Después de conservar las evidencias reales:
 
 ```powershell
-python experimentos/registrar_iso25010.py --scenario eficiencia_nominal_50u_5m --repetition 2 --total-requests <TOTAL_REAL> --http-5xx <CONTEO_5XX_REAL> --p95-ms <P95_REAL> --evidence-dir experimentos/resultados/raw/eficiencia_nominal_50u_5m/rep-02
+python experimentos/registrar_iso25010.py --scenario fiabilidad_nominal_50u_1h --repetition 2 --total-requests <TOTAL_REAL> --http-5xx <CONTEO_5XX_REAL> --p95-ms <P95_REAL> --p99-ms <P99_REAL> --evidence-dir experimentos/resultados/raw/fiabilidad_nominal_50u_1h/rep-02
 ```
 
-El importador calcula `failure_rate_percent`, exige ejecución Locust completada, CSV de
-estadísticas y resultado Prometheus, y rechaza sobrescribir filas. Solo entonces marca
-`valida=si`. Las repeticiones 1 y 10 pueden registrarse y conservarse, pero
-`analizar_iso25010.py` siempre las excluye del análisis estadístico.
+El importador calcula `failure_rate_percent`, exige la hora completa, entorno estable,
+árbol Git inicialmente limpio y evidencia completa, y rechaza sobrescribir filas. El
+código real de Locust no decide por sí solo la validez: una hora completa con HTTP 500
+reales es válida y conserva esos errores; una ejecución abortada o incompleta se rechaza.
+Las repeticiones 1 y 10 se conservan, pero el analizador las excluye.

@@ -12,6 +12,35 @@ from pathlib import Path
 
 
 SCENARIOS = {"eficiencia_nominal_50u_5m", "fiabilidad_nominal_50u_1h"}
+RELIABILITY_EVIDENCE = {
+    "metadata.json",
+    "environment.txt",
+    "locust_stats.csv",
+    "locust_stats_history.csv",
+    "locust_failures.csv",
+    "locust_exceptions.csv",
+    "locust-report.html",
+    "locust.log",
+    "prometheus-5xx-count.promql",
+    "prometheus-5xx-percent.promql",
+    "prometheus-p95.promql",
+    "prometheus-5xx-result.txt",
+    "prometheus-5xx-percent-result.txt",
+    "prometheus-p95-result.txt",
+    "prometheus-health-before.txt",
+    "prometheus-health-after.txt",
+    "gateway-health-before.json",
+    "gateway-health-after.json",
+    "reservas-health-before.json",
+    "reservas-health-after.json",
+    "docker-stats-before.txt",
+    "docker-stats-after.txt",
+    "cockroach-containers-before.txt",
+    "cockroach-containers-after.txt",
+    "deployment-state-before.txt",
+    "deployment-state-after.txt",
+    "reservas-service.log",
+}
 
 
 def parse_args() -> argparse.Namespace:
@@ -36,17 +65,42 @@ def validate_evidence(args: argparse.Namespace) -> None:
     expected_suffix = Path(args.scenario) / f"rep-{args.repetition:02d}"
     if not args.evidence_dir.resolve().as_posix().endswith(expected_suffix.as_posix()):
         raise ValueError("La ruta de evidencia no coincide con escenario/repetición")
-    metadata_path = args.evidence_dir / "metadata.json"
-    stats_path = args.evidence_dir / "locust_stats.csv"
-    prometheus_path = args.evidence_dir / "prometheus-5xx-result.txt"
-    for path in (metadata_path, stats_path, prometheus_path):
+    required_names = {"metadata.json", "locust_stats.csv", "prometheus-5xx-result.txt"}
+    if args.scenario == "fiabilidad_nominal_50u_1h":
+        required_names = RELIABILITY_EVIDENCE
+    for path in (args.evidence_dir / name for name in sorted(required_names)):
         if not path.is_file() or path.stat().st_size == 0:
             raise ValueError(f"Falta evidencia real: {path}")
+    metadata_path = args.evidence_dir / "metadata.json"
     metadata = json.loads(metadata_path.read_text(encoding="utf-8-sig"))
-    if metadata.get("status") != "completed" or metadata.get("exit_code") != 0:
-        raise ValueError("La ejecución Locust no consta como completada correctamente")
     if metadata.get("scenario") != args.scenario or metadata.get("repetition") != args.repetition:
         raise ValueError("Los metadatos no coinciden con escenario/repetición")
+    if args.scenario == "fiabilidad_nominal_50u_1h":
+        if metadata.get("status") != "completed" or metadata.get("execution_completed") is not True:
+            raise ValueError("La ejecución experimental no consta como completada")
+        if metadata.get("duration_completed") is not True:
+            raise ValueError("La ejecución no completó la duración planificada")
+        if metadata.get("evidence_complete") is not True:
+            raise ValueError("La recolección de evidencia no consta como completa")
+        if metadata.get("environment_consistent") is not True:
+            raise ValueError("El entorno o despliegue cambió durante la repetición")
+        if metadata.get("git_worktree_clean_before") is not True:
+            raise ValueError("El árbol Git no estaba limpio al iniciar la repetición")
+        if metadata.get("users") != 50 or metadata.get("spawn_rate") != 10:
+            raise ValueError("Los metadatos no corresponden a 50 usuarios y spawn-rate 10")
+        if metadata.get("planned_duration") != "1h" or metadata.get("planned_duration_seconds") != 3600:
+            raise ValueError("Los metadatos no corresponden a la duración oficial de una hora")
+        if not isinstance(metadata.get("locust_exit_code"), int):
+            raise ValueError("Falta el código de salida real de Locust")
+        for field in (
+            "started_at_utc", "finished_at_utc", "git_branch", "git_sha",
+            "python_version", "locust_version", "deployment_fingerprint_before",
+            "deployment_fingerprint_after",
+        ):
+            if not metadata.get(field):
+                raise ValueError(f"Falta metadata obligatoria: {field}")
+    elif metadata.get("status") != "completed" or metadata.get("exit_code") != 0:
+        raise ValueError("La ejecución Locust no consta como completada correctamente")
 
 
 def update_csv(args: argparse.Namespace) -> float:

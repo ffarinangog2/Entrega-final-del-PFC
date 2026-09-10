@@ -78,6 +78,10 @@ repetición en `resultados/iso25010.csv`.
   dispone de métricas reales y evidencia trazable.
 - Las ejecuciones interrumpidas o alteradas no se eliminan: se marcan como no válidas y
   se explica la causa.
+- El código de salida real de Locust se conserva separadamente. Un código distinto de
+  cero causado por respuestas HTTP fallidas no invalida una ventana que completó la hora,
+  mantuvo el entorno y preservó toda la evidencia; los HTTP 500 siguen siendo resultados.
+- Una ventana abortada, con cambio de Git/despliegue o evidencia incompleta se rechaza.
 - No se reemplazan datos ausentes por cero ni se estiman mediciones.
 
 El análisis solo produce estadísticas cuando existen exactamente ocho muestras válidas
