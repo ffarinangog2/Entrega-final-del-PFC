@@ -49,6 +49,8 @@ class RegistrarFiabilidadTest(unittest.TestCase):
             "duration_completed": completed,
             "execution_completed": completed,
             "evidence_complete": completed,
+            "reservas_log_capture_succeeded": completed,
+            "reservas_log_content_length": 0,
             "locust_exit_code": exit_code,
         }
         (self.evidence / "metadata.json").write_text(json.dumps(data), encoding="utf-8")
@@ -72,6 +74,7 @@ class RegistrarFiabilidadTest(unittest.TestCase):
 
     def test_completed_without_errors_is_valid(self):
         self.metadata(exit_code=0)
+        (self.evidence / "reservas-service.log").write_text("", encoding="utf-8")
         registrar_iso25010.update_csv(self.args())
         self.assertEqual("si", self.read_row()["valida"])
 
@@ -92,6 +95,15 @@ class RegistrarFiabilidadTest(unittest.TestCase):
         self.metadata()
         (self.evidence / "prometheus-p95-result.txt").unlink()
         with self.assertRaisesRegex(ValueError, "Falta evidencia real"):
+            registrar_iso25010.update_csv(self.args())
+
+    def test_failed_log_capture_is_rejected(self):
+        self.metadata()
+        metadata_path = self.evidence / "metadata.json"
+        metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+        metadata["reservas_log_capture_succeeded"] = False
+        metadata_path.write_text(json.dumps(metadata), encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "captura de logs"):
             registrar_iso25010.update_csv(self.args())
 
 

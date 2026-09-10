@@ -93,6 +93,21 @@ function Get-DeploymentFingerprint {
     }
     return ($values | Sort-Object) -join "`n"
 }
+function Get-GitBranchName {
+    $symbolicBranch = (& git -C $repositoryRoot symbolic-ref --quiet --short HEAD 2>$null | Out-String).Trim()
+    if ($LASTEXITCODE -eq 0 -and $symbolicBranch) { return $symbolicBranch }
+
+    $pointingRefs = @(& git -C $repositoryRoot for-each-ref --points-at HEAD '--format=%(refname:short)' refs/heads refs/remotes 2>$null)
+    if ($LASTEXITCODE -ne 0) { throw 'No se pudo determinar la rama Git.' }
+    $localBranch = $pointingRefs | Where-Object { $_ -and -not $_.StartsWith('origin/') } | Select-Object -First 1
+    if ($localBranch) { return $localBranch.Trim() }
+    $remoteBranch = $pointingRefs | Where-Object { $_ -and $_ -ne 'origin/HEAD' } | Select-Object -First 1
+    if ($remoteBranch) { return $remoteBranch.Trim().Replace('origin/', '') }
+
+    $detachedSha = (& git -C $repositoryRoot rev-parse --short HEAD 2>&1 | Out-String).Trim()
+    if ($LASTEXITCODE -ne 0 -or -not $detachedSha) { throw 'No se pudo determinar la referencia Git.' }
+    return "detached@$detachedSha"
+}
 function Get-ExperimentGitStatus {
     $scenarioEvidence = if ($Precheck) { $evidenceDirectory } else { Join-Path $rawRoot $Escenario }
     $relativeEvidence = $scenarioEvidence.Substring($repositoryRoot.Length).TrimStart('\', '/').Replace('\', '/')
@@ -124,7 +139,7 @@ Write-Evidence 'prometheus-5xx-percent.promql' $fiveXxPercent
 Write-Evidence 'prometheus-5xx-count.promql' $fiveXxCount
 Write-Evidence 'prometheus-p95.promql' $p95
 
-$gitBranch = (& git -C $repositoryRoot branch --show-current 2>&1 | Out-String).Trim()
+$gitBranch = Get-GitBranchName
 $gitSha = (& git -C $repositoryRoot rev-parse HEAD 2>&1 | Out-String).Trim()
 $gitStatusBefore = Get-ExperimentGitStatus
 $pythonVersion = (& $pythonCommand --version 2>&1 | Out-String).Trim()
@@ -143,6 +158,7 @@ $metadata = [ordered]@{
     deployment_fingerprint_after = $null; environment_consistent = $false
     started_at_utc = $null; finished_at_utc = $null; elapsed_seconds = $null
     locust_exit_code = $null; duration_completed = $false
+    reservas_log_capture_succeeded = $false; reservas_log_content_length = $null
     execution_completed = $false; evidence_complete = $false; launcher_error = $null
 }
 $metadataPath = Join-Path $evidenceDirectory 'metadata.json'
@@ -211,11 +227,17 @@ try {
             Invoke-Captured 'reservas-health-after.json' docker @('compose','-f',$composePath,'ps','--format','json','reservas-solicitudes-service')
             Invoke-Captured 'docker-stats-after.txt' docker @('stats','--no-stream')
             Invoke-Captured 'cockroach-containers-after.txt' docker @('compose','-f',$composePath,'ps','--format','json','crdb-e3-1','crdb-e3-2','crdb-e3-3')
-            Invoke-Captured 'reservas-service.log' docker @('compose','-f',$composePath,'logs','--no-color','--since',$startTime.ToString('o'),'reservas-solicitudes-service')
+            $reservasLog = & docker compose -f $composePath logs --no-color --since ($startTime.ToString('o')) reservas-solicitudes-service 2>&1 | Out-String
+            $reservasLogExitCode = $LASTEXITCODE
+            $reservasLogContent = $reservasLog.TrimEnd()
+            Write-Evidence 'reservas-service.log' $reservasLogContent
+            $metadata.reservas_log_capture_succeeded = $reservasLogExitCode -eq 0
+            $metadata.reservas_log_content_length = $reservasLogContent.Length
+            if ($reservasLogExitCode -ne 0) { throw "La captura de logs de Reservas falló con código $reservasLogExitCode." }
         }
         $metadata.deployment_fingerprint_after = Get-DeploymentFingerprint
         Write-Evidence 'deployment-state-after.txt' $metadata.deployment_fingerprint_after
-        $branchAfter = (& git -C $repositoryRoot branch --show-current | Out-String).Trim()
+        $branchAfter = Get-GitBranchName
         $shaAfter = (& git -C $repositoryRoot rev-parse HEAD | Out-String).Trim()
         $statusAfter = Get-ExperimentGitStatus
         $metadata.environment_consistent = [bool](
@@ -233,9 +255,10 @@ try {
             'deployment-state-before.txt','deployment-state-after.txt','reservas-service.log','environment.txt')
         $missing = @($required | Where-Object {
             $path = Join-Path $evidenceDirectory $_
-            -not (Test-Path $path -PathType Leaf) -or (Get-Item $path).Length -eq 0
+            -not (Test-Path $path -PathType Leaf) -or
+                ($_ -ne 'reservas-service.log' -and (Get-Item $path).Length -eq 0)
         })
-        $metadata.evidence_complete = $missing.Count -eq 0
+        $metadata.evidence_complete = ($missing.Count -eq 0 -and $metadata.reservas_log_capture_succeeded)
         if ($missing) { $metadata.launcher_error = "Evidencia ausente o vacía: $($missing -join ', ')" }
     } catch {
         $metadata.launcher_error = $_.Exception.Message; $metadata.evidence_complete = $false

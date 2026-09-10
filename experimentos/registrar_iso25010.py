@@ -69,7 +69,8 @@ def validate_evidence(args: argparse.Namespace) -> None:
     if args.scenario == "fiabilidad_nominal_50u_1h":
         required_names = RELIABILITY_EVIDENCE
     for path in (args.evidence_dir / name for name in sorted(required_names)):
-        if not path.is_file() or path.stat().st_size == 0:
+        allow_empty = path.name == "reservas-service.log"
+        if not path.is_file() or (path.stat().st_size == 0 and not allow_empty):
             raise ValueError(f"Falta evidencia real: {path}")
     metadata_path = args.evidence_dir / "metadata.json"
     metadata = json.loads(metadata_path.read_text(encoding="utf-8-sig"))
@@ -82,6 +83,10 @@ def validate_evidence(args: argparse.Namespace) -> None:
             raise ValueError("La ejecución no completó la duración planificada")
         if metadata.get("evidence_complete") is not True:
             raise ValueError("La recolección de evidencia no consta como completa")
+        if metadata.get("reservas_log_capture_succeeded") is not True:
+            raise ValueError("La captura de logs de Reservas no consta como exitosa")
+        if not isinstance(metadata.get("reservas_log_content_length"), int):
+            raise ValueError("Falta la longitud del contenido capturado en logs de Reservas")
         if metadata.get("environment_consistent") is not True:
             raise ValueError("El entorno o despliegue cambió durante la repetición")
         if metadata.get("git_worktree_clean_before") is not True:
