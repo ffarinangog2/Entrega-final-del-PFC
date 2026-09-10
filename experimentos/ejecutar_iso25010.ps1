@@ -18,6 +18,13 @@ $ErrorActionPreference = 'Stop'
 if (Test-Path variable:PSNativeCommandUseErrorActionPreference) {
     $PSNativeCommandUseErrorActionPreference = $false
 }
+$pythonCommand = if (Get-Command python -ErrorAction SilentlyContinue) {
+    'python'
+} elseif (Get-Command python3 -ErrorAction SilentlyContinue) {
+    'python3'
+} else {
+    throw 'No se encontró un intérprete Python. Instale python o python3 y asegúrese de que esté disponible en PATH.'
+}
 $scenarioConfig = @{
     eficiencia_nominal_50u_5m = @{ Duration = '5m'; Range = '5m'; Seconds = 300 }
     fiabilidad_nominal_50u_1h = @{ Duration = '1h'; Range = '1h'; Seconds = 3600 }
@@ -85,7 +92,7 @@ $locustArguments = @(
     '--csv', $csvPrefix, '--csv-full-history',
     '--html', (Join-Path $evidenceDirectory 'locust-report.html')
 )
-$displayCommand = 'python ' + (($locustArguments | ForEach-Object {
+$displayCommand = $pythonCommand + ' ' + (($locustArguments | ForEach-Object {
     if ($_ -match '\s') { '"' + $_ + '"' } else { $_ }
 }) -join ' ')
 $job = 'reservas-solicitudes-service'
@@ -100,7 +107,7 @@ Write-Evidence 'prometheus-p95.promql' $p95
 $gitBranch = (& git -C $repositoryRoot branch --show-current 2>&1 | Out-String).Trim()
 $gitSha = (& git -C $repositoryRoot rev-parse HEAD 2>&1 | Out-String).Trim()
 $gitStatusBefore = Get-ExperimentGitStatus
-$pythonVersion = (& python --version 2>&1 | Out-String).Trim()
+$pythonVersion = (& $pythonCommand --version 2>&1 | Out-String).Trim()
 $metadata = [ordered]@{
     status = if ($DryRun) { 'dry-run' } else { 'planned' }
     scenario = $Escenario; repetition = $Repeticion; host = $HostObjetivo
@@ -126,14 +133,14 @@ $locustExitCode = $null
 $startTime = $null
 $stopwatch = $null
 try {
-    foreach ($command in @('python', 'git', 'docker')) {
+    foreach ($command in @('git', 'docker')) {
         if (-not (Get-Command $command -ErrorAction SilentlyContinue)) { throw "Falta $command." }
     }
     if (-not $env:LOCUST_USERNAME -or -not $env:LOCUST_PASSWORD) {
         throw 'LOCUST_USERNAME y LOCUST_PASSWORD son obligatorios.'
     }
     if (-not (Test-Path $composePath -PathType Leaf)) { throw "No existe $composePath." }
-    $metadata.locust_version = (& python -m locust --version 2>&1 | Out-String).Trim()
+    $metadata.locust_version = (& $pythonCommand -m locust --version 2>&1 | Out-String).Trim()
     if ($LASTEXITCODE -ne 0) { throw 'No se pudo consultar la versión de Locust.' }
     $metadata.deployment_fingerprint_before = Get-DeploymentFingerprint
     Write-Evidence 'deployment-state-before.txt' $metadata.deployment_fingerprint_before
@@ -156,7 +163,7 @@ try {
     $metadata.started_at_utc = $startTime.ToString('o'); $metadata.status = 'running'
     $metadata | ConvertTo-Json -Depth 5 | Set-Content $metadataPath -Encoding utf8
     $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
-    & python @locustArguments *> $locustLog
+    & $pythonCommand @locustArguments *> $locustLog
     $locustExitCode = $LASTEXITCODE
     $stopwatch.Stop()
 } catch {
