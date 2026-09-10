@@ -110,9 +110,26 @@ El sexto panel constituye la brecha principal: su nombre reconoce que es un
 proxy y su punto de medición sigue siendo el Gateway. Además, algunas URI del
 filtro no tienen backend remoto actual, como incidentes. Por tanto, el dashboard
 cubre seis finalidades solicitadas, pero la latencia Mobile no es E2E real y el
-criterio D6.2 permanece parcial. No se incorporaron capturas, porque no existe
-una imagen versionada actual del dashboard que aporte evidencia adicional al
-JSON reproducible.
+criterio D6.2 permanece parcial.
+
+La Figura~\ref{fig:panel-monitoreo-carga-real} muestra el dashboard consolidado
+durante una prueba real de carga de 50 usuarios durante cinco minutos. La
+ejecución produjo 6782 solicitudes, 15 fallos (0,22\,\%) y una tasa media
+aproximada de 22,64 solicitudes por segundo. Las series visibles permiten
+relacionar la tasa de peticiones con la latencia y los errores HTTP 5xx. Estos
+fallos estuvieron asociados al límite de transacciones concurrentes de la
+instancia de CockroachDB sin licencia, según los registros conservados junto con
+la salida de Locust. Esta ejecución adicional no sustituye ni modifica las diez
+repeticiones nominales analizadas en la
+Sección~\ref{subsec:eficiencia-nominal}.
+
+\begin{figure*}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{panel-monitoreo.png}
+  \caption{Dashboard de observabilidad de SCLI durante una prueba real de carga
+  de 50 usuarios durante cinco minutos.}
+  \label{fig:panel-monitoreo-carga-real}
+\end{figure*}
 
 \subsection{Marco y protocolo ISO/IEC 25010}
 \label{subsec:marco-iso25010}
@@ -151,12 +168,13 @@ consultas y respuestas Prometheus, salud y estadísticas de contenedores. Los
 historiales completos y HTML voluminosos permanecen en la VM, circunstancia
 registrada en el resumen de evidencia.
 
-El manifiesto \path{../../experimentos/resultados/SHA256SUMS} enumera 195
-archivos. La verificación durante
-esta redacción confirmó 195 coincidencias, sin archivos ausentes ni hashes
-distintos. SHA-256 permite detectar alteraciones respecto del manifiesto, pero
-no constituye una firma ni prueba autenticidad por sí solo. La procedencia se
-apoya adicionalmente en metadata, timestamps, SHA probado y el documento
+El manifiesto \path{../../experimentos/resultados/SHA256SUMS} enumera 198
+archivos. La verificación previa confirmó 195 coincidencias, sin archivos
+ausentes ni hashes distintos, y esta incorporación verificó los hashes de la
+captura y de los dos registros nuevos. SHA-256 permite detectar alteraciones
+respecto del manifiesto, pero no constituye una firma ni prueba autenticidad por
+sí solo. La procedencia se apoya adicionalmente en metadata, timestamps, SHA
+probado y el documento
 \path{../../experimentos/resultados/RESUMEN-ISO25010-E4.md}.
 
 \subsection{Eficiencia nominal: 50 usuarios durante cinco minutos}
