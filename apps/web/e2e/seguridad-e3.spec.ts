@@ -129,18 +129,19 @@ test.describe('Seguridad E3', () => {
       const proposalHeading = page.getByRole('heading', { name: 'Proponer alternativa' })
       await expect(proposalHeading).toBeVisible()
       const form = proposalHeading.locator('..')
-      const deniedStatus = await page.evaluate(async ({ endpoint, laboratorioId }) => {
+      const proposalDate = await form.locator('input[type="date"]').inputValue()
+      const deniedStatus = await page.evaluate(async ({ endpoint, laboratorioId, fecha }) => {
         const response = await fetch(endpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${sessionStorage.getItem('accessToken')}` },
           body: JSON.stringify({
             laboratorioId,
-            fecha: (document.querySelector('.proposal-form input[type="date"]') as HTMLInputElement).value,
+            fecha,
             horaInicio: '18:00', horaFin: '19:00', observacion: 'Fuera de scope E3',
           }),
         })
         return response.status
-      }, { endpoint: `${gateway}/api/v1/solicitudes/${requestUrl.split('/').pop()}/propuesta`, laboratorioId: outsideLabId })
+      }, { endpoint: `${gateway}/api/v1/solicitudes/${requestUrl.split('/').pop()}/propuesta`, laboratorioId: outsideLabId, fecha: proposalDate })
       add(rows, testInfo, { decision_id: 'admin_piso_fuera_scope_403', request: 'propuesta fuera de piso', endpoint: '/api/v1/solicitudes/{id}/propuesta', method: 'POST', identity: adminPiso!, role: 'ADMINISTRADOR_PISO', expected_http: '403', observed_http: String(deniedStatus) })
 
       await selectContaining(form.getByLabel('Laboratorio'), 'DEMO-LAB-A')
