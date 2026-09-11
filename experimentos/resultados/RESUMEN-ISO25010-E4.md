@@ -55,10 +55,46 @@ Como contraste, los resultados Prometheus p95 de r2–r9 producen:
 Locust y Prometheus miden en puntos distintos del sistema y no deben presentarse
 como métricas intercambiables.
 
-## Fiabilidad
+## Fiabilidad nominal, 50 usuarios, 1 hora
 
-**NO EJECUTADA — 0/10.**
+Las diez repeticiones oficiales finalizaron y son válidas. Se ejecutaron sobre
+`feature/entrega-4`, Git SHA
+`061a1050a94e1bd30d81b30c47c7e818005a33bb`, con Locust 2.31.6 y Python 3.12.3.
+Todas conservaron `status=completed`, `duration_completed=true`,
+`environment_consistent=true`, `evidence_complete=true` y
+`execution_completed=true`. Cada ventana duró aproximadamente 3.600 segundos.
 
-No existen repeticiones de una hora. El protocolo se detuvo antes de fiabilidad por
-el HTTP 500 de la rampa y la elevada variabilidad de p99, cuyo límite superior del
-IC95 supera 750 ms. No se afirma disponibilidad de 99,5 %.
+El código real de salida de Locust fue 1 en las diez repeticiones y se conserva en
+`metadata.json`. Esto no invalida las ventanas: completaron la hora y los fallos HTTP
+son resultados reales. El análisis estadístico usa exclusivamente r2–r9; r1 y r10
+se conservan, pero se excluyen según el protocolo.
+
+Resultados reproducibles de `python3 experimentos/analizar_iso25010.py
+experimentos/resultados/iso25010.csv`:
+
+| Métrica | n | Media | s muestral | IC95 | Decisión |
+| --- | ---: | ---: | ---: | --- | --- |
+| Tasa HTTP 5xx | 8 | 0,061315 % | 0,035011 % | [0,032045; 0,090585] % | CUMPLE `<1 %` |
+| p95 Locust | 8 | 28,750000 ms | 3,150964 ms | [26,115729; 31,384271] ms | CUMPLE `<500 ms` |
+| p99 Locust | 8 | 115,625000 ms | 26,521891 ms | [93,452144; 137,797856] ms | CUMPLE `<750 ms` |
+
+El cálculo usa `df=7` y `t(0,975;7)=2,364624251`. La tasa del CSV es
+`100 × HTTP 5xx / total_requests`; el conteo 5xx es la suma exacta de
+`Occurrences` con estado 5xx en `locust_failures.csv`. Los percentiles y el total
+proceden de la fila `Aggregated` de `locust_stats.csv`.
+
+Locust también registró entre 66.476 y 67.008 respuestas HTTP 401 por repetición.
+Estos fallos masivos no se ocultan: están conservados en `locust_failures.csv` y su
+conteo consta en `observacion` de cada fila. El criterio preregistrado de fiabilidad
+mide exclusivamente HTTP 5xx, por lo que los 401 no se suman a `failures`.
+
+En r1, Locust observó 49 respuestas HTTP 500, mientras que la consulta
+`increase()` de Prometheus produjo aproximadamente 4,0093 y un porcentaje de
+0,016860 %. La discrepancia se conserva explícitamente en el CSV y en los
+artefactos raw; no se corrigió ni sustituyó ninguna medición. En r2–r10, el conteo
+entero de Locust coincide estrechamente con el resultado fraccional de Prometheus.
+Los porcentajes de Prometheus usan el denominador observado por el servicio y no
+son intercambiables con la tasa calculada sobre las solicitudes de Locust.
+
+Este resultado permite decidir el criterio acotado de tasa HTTP 5xx. No demuestra
+por sí solo una disponibilidad temporal mayor o igual que 99,5 %.
