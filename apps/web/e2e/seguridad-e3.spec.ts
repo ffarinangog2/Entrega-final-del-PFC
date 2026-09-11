@@ -49,7 +49,7 @@ async function login(page: Page, username: string, password: string) {
 }
 
 async function openForm(page: Page) {
-  await page.getByRole('link', { name: /Nueva solicitud/ }).click()
+  await page.getByRole('link', { name: 'Nueva solicitud', exact: true }).click()
   await expect(page.getByLabel('Docente')).toBeDisabled()
 }
 
