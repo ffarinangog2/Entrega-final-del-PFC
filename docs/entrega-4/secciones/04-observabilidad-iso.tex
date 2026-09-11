@@ -155,11 +155,74 @@ es conservadora: el límite superior del IC95 debe ser menor que el umbral. Esta
 estructura y la conservación de resultados fallidos son coherentes con un
 proceso de prueba documentado y repetible \cite{iso29119_2_2021}.
 
+\subsection{Preguntas de investigación y respuestas}
+\label{subsec:preguntas-investigacion}
+
+Las preguntas siguientes se formularon a partir de criterios anteriores a las
+mediciones, no como hipótesis retrospectivas. El historial de Git sitúa el
+protocolo inicial y los umbrales de p95 y HTTP 5xx en el commit
+\texttt{5b1c498} del 18 de agosto de 2026. El umbral secundario de p99 fue
+incorporado al analizador en \texttt{e1c82c7} el 24 de agosto, antes de que la
+campaña de eficiencia se ejecutara el 30 de agosto. En ambos casos la regla
+permite una respuesta negativa: se exige que el límite superior del IC95 sea
+estrictamente menor que el umbral.
+
+\textbf{PI1.} ¿Al fijar como variable manipulada una carga nominal de 50
+usuarios concurrentes durante cinco minutos sobre las consultas autenticadas
+de solo lectura de Reservas/Solicitudes, los límites superiores de los IC95 de
+la latencia p95 y p99 observada por Locust permanecen por debajo de los
+umbrales previamente declarados de 500 ms y 750 ms, respectivamente, en las
+ocho repeticiones centrales r2--r9 del despliegue SCLI evaluado?
+
+\textbf{Respuesta a PI1.} Solo parcialmente. El archivo
+\path{../../experimentos/resultados/iso25010.csv} registra para p95 una media
+de 57,500000 ms y un IC95 [26,456064; 88,543936] ms: su límite superior cumple
+el umbral de 500 ms. Para p99 registra una media de 624,000000 ms y un IC95
+[116,881810; 1131,118190] ms: el límite superior excede 750 ms y, por tanto,
+\textbf{no cumple la expectativa previa}. La dispersión observada permite
+describir una cola de latencia variable, pero no atribuirle una causa. Los
+valores agregados y la decisión están en
+\path{../../experimentos/resultados/RESUMEN-ISO25010-E4.md}; el diseño y la
+regla de ocho muestras están en
+\path{../../experimentos/protocolo-e4.md}; y las filas \texttt{Aggregated} que
+sustentan cada percentil se conservan en
+\path{../../experimentos/resultados/raw/eficiencia_nominal_50u_5m/rep-02/locust_stats.csv}
+hasta \path{../rep-09/locust_stats.csv}. Esta respuesta desfavorable para p99
+no modifica el criterio p95 ni se oculta bajo su resultado favorable.
+
+\textbf{PI2.} ¿Al fijar como variable manipulada una carga nominal de 50
+usuarios concurrentes durante una hora sobre las consultas autenticadas de
+solo lectura de Reservas/Solicitudes, el límite superior del IC95 de la tasa
+observada de respuestas HTTP 5xx permanece por debajo del umbral previamente
+declarado de 1\,\% en las ocho repeticiones centrales r2--r9 del despliegue
+SCLI evaluado, y qué comportamiento operacional adicional registra Locust?
+
+\textbf{Respuesta a PI2.} Sí para el indicador formal acotado: la tasa 5xx
+media fue 0,061315\,\%, con IC95 [0,032045; 0,090585]\,\%; el límite superior
+permanece por debajo de 1\,\%. En la misma campaña, p95 tuvo media 28,750000 ms
+e IC95 [26,115729; 31,384271] ms, y p99 media 115,625000 ms e IC95
+[93,452144; 137,797856] ms. Sin embargo, Locust registró entre 66\,476 y
+67\,008 respuestas HTTP 401 por repetición, un hallazgo operacional
+desfavorable que impide describir la carga como funcionalmente sana. Los 401
+no se suman al indicador 5xx porque el protocolo define \texttt{failures} como
+respuestas 5xx; tampoco permiten inferir disponibilidad temporal ni explicar
+causalmente el comportamiento. El CSV y
+\path{../../experimentos/resultados/RESUMEN-ISO25010-E4.md} contienen los
+conteos y estadísticos; el criterio está en
+\path{../../experimentos/protocolo-e4.md}; y los conteos por estado se
+preservan en
+\path{../../experimentos/resultados/raw/fiabilidad_nominal_50u_1h/rep-01/locust_failures.csv}
+hasta \path{../rep-10/locust_failures.csv}, junto con
+\texttt{locust\_stats.csv} y \texttt{metadata.json} de cada repetición.
+
 \subsubsection{Proveniencia e integridad}
 
-La evidencia se ejecutó en \texttt{servidor-proyectos} sobre el SHA
+La evidencia se ejecutó en \texttt{servidor-proyectos}. La campaña de
+eficiencia corresponde al SHA
 \texttt{a47f0441f644bea5f52944b7a11216f37b2242de}, con Locust 2.31.6 y Python
-3.11.10. El protocolo está en
+3.11.10; la campaña final de fiabilidad corresponde al SHA
+\texttt{061a1050a94e1bd30d81b30c47c7e818005a33bb}, con Locust 2.31.6 y Python
+3.12.3. El protocolo está en
 \path{../../experimentos/protocolo-e4.md};
 \path{../../experimentos/resultados/iso25010.csv} contiene resultados
 procesados y \path{../../experimentos/resultados/raw} conserva CSV canónicos,
@@ -251,23 +314,29 @@ crecía, pero p99 y el máximo confirman una cola larga y picos aislados. Esta
 prueba complementa el estudio de capacidad progresiva; no pertenece al CSV
 central ni sustituye el escenario nominal ISO.
 
-\subsection{Fiabilidad y disponibilidad: alcance no concluido}
+\subsection{Fiabilidad nominal y alcance de la disponibilidad}
 \label{subsec:fiabilidad-disponibilidad}
 
-El protocolo de fiabilidad preveía diez repeticiones independientes de una hora
-con 50 usuarios. No se ejecutó ninguna: \textbf{NO EJECUTADA --- 0/10}. La
-campaña requiere al menos diez horas efectivas de observación continua, además
-de preparación, monitoreo, recolección y validación de evidencia; ese trabajo no
-se completó dentro de la ventana disponible de la entrega. Por integridad
-experimental no se reportan ejecuciones parciales, la prueba de cinco minutos ni
-la rampa como sustitutos. No se simularon horas, no se sustituyeron datos ausentes
-por cero y el analizador informa 0/8 muestras centrales completas.
+Se completaron las diez repeticiones independientes de una hora con 50 usuarios;
+el análisis central usa r2--r9 conforme al protocolo. La tasa HTTP 5xx media fue
+0,061315\,\%, con desviación muestral 0,035011\,\% e IC95
+[0,032045; 0,090585]\,\%, por lo que cumple el criterio acotado menor que
+1\,\%. P95 presentó media 28,750000 ms e IC95 [26,115729; 31,384271] ms;
+p99, media 115,625000 ms e IC95 [93,452144; 137,797856] ms.
+
+Las diez ventanas terminaron la hora y conservaron evidencia completa, aunque
+Locust devolvió código 1 por los fallos HTTP observados. Entre ellos hubo de
+66\,476 a 67\,008 respuestas 401 por repetición. Este hallazgo se conserva y
+se considera operacionalmente desfavorable, pero no se incorpora a
+\texttt{failures}: esa columna y el criterio preregistrado cuentan
+exclusivamente respuestas HTTP 5xx.
 
 La tasa HTTP 5xx y la disponibilidad no son equivalentes. Para concluir que la
 disponibilidad es al menos 99,5\% se requiere una observación temporal válida y el
-protocolo completo. En consecuencia, fiabilidad temporal y disponibilidad son
-\textbf{no concluyentes}; el informe no afirma 99,5\%, 100\% ni aprobación de
-fiabilidad.
+indicador explícito de tiempo apto frente a tiempo total definido por el
+protocolo. En consecuencia, la tasa 5xx sí es concluyente para su criterio
+acotado, mientras la disponibilidad temporal permanece \textbf{no concluyente};
+el informe no afirma 99,5\% ni la deduce de la tasa de errores.
 
 \subsection{Experimento de arbitraje concurrente S0--S4}
 \label{subsec:arbiter-resultados}
@@ -402,9 +471,9 @@ solo características con evidencia disponible.
     \hline
     Eficiencia secundaria & p99 nominal & IC95 superior $<750$ ms & Media 624,00 ms; SD 606,59 ms; IC95 [116,88; 1131,12] ms & NO CUMPLE \\
     \hline
-    Fiabilidad acotada & HTTP 5xx nominal & $<1\%$ & 0/57\,641, 0\% en r2--r9 & CUMPLE en escenario \\
+    Fiabilidad acotada & HTTP 5xx nominal, 50 usuarios/1 h & IC95 superior $<1\%$ & Media 0,061315\%; IC95 [0,032045; 0,090585]\% en r2--r9 & CUMPLE en escenario \\
     \hline
-    Disponibilidad & Observación temporal & $\geq99,5\%$ & Fiabilidad 0/10; sin horas válidas & NO CONCLUYENTE \\
+    Disponibilidad & Tiempo apto/tiempo total & $\geq99,5\%$ & Diez horas ejecutadas, sin indicador temporal operacionalizado & NO CONCLUYENTE \\
     \hline
     Seguridad & JWT, RBAC y matriz de endpoints & Acceso autenticado y autorizado & 198 operaciones: 160 JWT, 145 con RBAC, 18 internas con API key y 63 con scope explícito & PARCIAL \\
     \hline
@@ -471,10 +540,11 @@ evidencia raw trazable, pruebas multicapa y gates CI/CD ligados al SHA. La
 arquitectura permite relacionar un cambio con pruebas, imagen y despliegue, y el
 manifiesto hace detectables alteraciones en el conjunto experimental.
 
-Las limitaciones impiden una conclusión total. El p99 presenta gran dispersión y
-la rampa contiene un máximo superior a 14 segundos; Mobile permanece bajo 70\%
-de cobertura; fiabilidad 10 por 1 hora no se inició y la disponibilidad no fue
-demostrada. A ello se suman el panel Mobile proxy, falta de rollback automático,
+Las limitaciones impiden una conclusión total. El p99 de eficiencia presenta
+gran dispersión y no cumple su umbral previo; la rampa contiene un máximo
+superior a 14 segundos; Mobile permanece bajo 70\% de cobertura; la campaña de
+fiabilidad registró decenas de miles de 401 por repetición y la disponibilidad
+no fue demostrada. A ello se suman el panel Mobile proxy, falta de rollback automático,
 ausencia de Pact Broker, Testcontainers no uniforme y artefactos de calidad no
 persistidos para todos los componentes. Estas restricciones se documentan como
 amenazas a la generalización, no se ocultan mediante promedios o extrapolaciones.
@@ -517,8 +587,8 @@ Código de Ética y Práctica Profesional de Ingeniería de Software, aprobado
 conjuntamente por ACM e IEEE Computer Society \cite{acmieee1999secode}, el equipo
 debe comunicar tanto los resultados favorables como los fallos y límites. Por
 ello se mantienen las siete corridas fallidas de ARBITER, los invariantes no
-observados y la fiabilidad 0/10, en lugar de convertir ausencia de evidencia en
-cumplimiento.
+observados, el incumplimiento p99 y los 401 de la campaña de fiabilidad, en
+lugar de convertir evidencia desfavorable en cumplimiento.
 
 \subsection{Declaración de uso de inteligencia artificial generativa}
 \label{subsec:declaracion-ia}
@@ -545,11 +615,12 @@ protocolo previo, diez repeticiones nominales, conservación de r1 y r10 y uso
 uniforme de r2--r9 para el análisis central. \textbf{Riesgo residual:} no se
 aislaron por completo CPU, red, cachés ni pausas del runtime en el host.
 
-\textbf{Amenaza:} la fiabilidad temporal quedó sin ejecutar.
-\textbf{Efecto:} una tasa puntual de 5xx podría interpretarse erróneamente como
-disponibilidad. \textbf{Mitigación aplicada:} se conserva explícitamente el
-resultado 0/10 y no se calcula disponibilidad. \textbf{Riesgo residual:} la
-fiabilidad de diez ejecuciones de una hora sigue siendo desconocida.
+\textbf{Amenaza:} la tasa 5xx no operacionaliza tiempo disponible.
+\textbf{Efecto:} el cumplimiento del umbral de errores podría interpretarse
+erróneamente como disponibilidad. \textbf{Mitigación aplicada:} se completaron
+diez ventanas de una hora, pero se reporta la tasa 5xx separada de los 401 y no
+se calcula disponibilidad. \textbf{Riesgo residual:} el tiempo apto frente al
+tiempo total sigue siendo desconocido.
 
 \subsubsection{Validez externa}
 
@@ -624,7 +695,7 @@ integral actual.
     \hline
     D6.2 & Dashboard de seis paneles & JSON canónico; latencia Mobile solo proxy de Gateway & Dashboard & PARCIAL \\
     \hline
-    D7.1 & Experimento ISO 25010 & Eficiencia completa; hashes 195/195; fiabilidad 0/10 & ISO/experimentos & PARCIAL \\
+    D7.1 & Experimento ISO 25010 & Eficiencia y fiabilidad 10/10; p99 de eficiencia no cumple; disponibilidad no operacionalizada & ISO/experimentos & PARCIAL \\
     \hline
     D7.2 & Experimento ARBITER & 130 planificadas; 123 completadas; 99 muestras analíticas válidas & ARBITER/oráculo & PARCIAL \\
     \hline
@@ -647,11 +718,12 @@ cobertura configurados; la evidencia Mobile del HEAD permanece bajo 70\%, por
 lo que no se afirma cumplimiento global ni se atribuyen al HEAD cifras de un
 reporte anterior.
 
-La eficiencia nominal cumple el criterio p95, y las muestras centrales no
-registraron HTTP 5xx. Sin embargo, p99 y la rampa muestran colas largas. La fase
-de fiabilidad no se ejecutó, por lo que no existe base para afirmar
-disponibilidad de 99,5\%. La conclusión profesional es, por tanto, favorable para
-el escenario de eficiencia medido y parcial para la evaluación ISO completa.
+La eficiencia nominal cumple el criterio p95 y no registró HTTP 5xx en las
+muestras centrales. Sin embargo, su p99 no cumple el umbral previo y la rampa
+muestra picos de cola. La campaña de fiabilidad cumple el criterio acotado de
+5xx, aunque registró entre 66\,476 y 67\,008 respuestas 401 por repetición. Ese
+resultado no prueba disponibilidad de 99,5\%. La conclusión profesional es
+parcial para la evaluación ISO completa.
 
 El experimento ARBITER confirmó la utilidad del control negativo: S0 presentó
 dobles adjudicaciones en las 16 muestras analíticas de contención. No se
@@ -671,8 +743,9 @@ las limitaciones experimentales y técnicas permanezcan explícitas.
 \label{subsec:trabajo-futuro}
 
 Las prioridades son elevar la cobertura Mobile con casos de ramas y UI de valor,
-completar las diez horas de fiabilidad bajo un protocolo autorizado y validar
-disponibilidad, investigar y reducir la variabilidad p99, y medir latencia E2E
+diagnosticar mediante una campaña independiente el patrón de respuestas 401,
+operacionalizar y validar disponibilidad, investigar y reducir la variabilidad
+p99, y medir latencia E2E
 desde el dispositivo. También conviene automatizar rollback, incorporar Pact
 Broker con \emph{can-i-deploy}, extender Testcontainers a Académico, persistir
 reportes Backend/Web/Playwright y fijar versiones inmutables y uniformes de las
