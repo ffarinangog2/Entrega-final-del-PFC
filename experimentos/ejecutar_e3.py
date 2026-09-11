@@ -186,7 +186,7 @@ def run_maintenance(rep: Path, identity: dict[str, Any], repetition: int) -> Non
         if name == "web": selected.extend(("branches", "functions", "statements"))
         aliases = {"branch": "branch", "branches": "branches"}
         for metric in selected:
-            source = aliases.get(metric, metric)
+            source = "line" if name != "web" and metric == "lines" else aliases.get(metric, metric)
             if source in metrics:
                 metric_threshold = 48.0 if name == "reservas" and metric == "branch" else (70.0 if metric != "lines" or name != "reservas" else threshold)
                 rows.append({"component": name, "metric": metric,

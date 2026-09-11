@@ -14,6 +14,7 @@ sys.path.insert(0, str(EXPERIMENTS))
 
 from analizar_e3 import analyze_all  # noqa: E402
 from e3_instrumental import normalize_command, parse_playwright, prepare_repetition, student_n3, wilson  # noqa: E402
+from ejecutar_e3 import jacoco_metrics  # noqa: E402
 
 
 class WindowsCommandNormalizationTest(unittest.TestCase):
@@ -61,6 +62,16 @@ class WindowsCommandNormalizationTest(unittest.TestCase):
 
 
 class StatisticsTest(unittest.TestCase):
+    def test_jacoco_line_counter_is_extracted(self):
+        with tempfile.TemporaryDirectory() as directory:
+            report = Path(directory) / "jacoco.xml"
+            report.write_text(
+                '<report><counter type="LINE" missed="20" covered="80"/></report>',
+                encoding="utf-8",
+            )
+            metrics = jacoco_metrics(report)
+            self.assertEqual(metrics["line"], 80.0)
+
     def test_wilson_is_non_degenerate_for_finite_perfect_sample(self):
         low, high = wilson(21, 21)
         self.assertLess(low, 1.0)
