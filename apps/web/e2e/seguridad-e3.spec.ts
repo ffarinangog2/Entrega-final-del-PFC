@@ -58,16 +58,22 @@ async function selectContaining(select: ReturnType<Page['getByLabel']>, fragment
     options.find((option) => option.textContent?.includes(text as string))?.getAttribute('value'), fragment)
   expect(value, `Debe existir una opción que contenga ${fragment}`).toBeTruthy()
   await select.selectOption(value!)
+  return value!
 }
 
-function dateFor(offset: number) {
-  return new Date(Date.now() + (180 + repetition * 10 + offset) * 86_400_000).toISOString().slice(0, 10)
+function dateFor(maximum: string, offset: number) {
+  const date = new Date(`${maximum}T00:00:00Z`)
+  date.setUTCDate(date.getUTCDate() - ((3 - repetition) * 2 + 1 - offset))
+  return date.toISOString().slice(0, 10)
 }
 
 async function createRequest(page: Page, offset: number) {
   await page.getByLabel('Materia').selectOption({ index: 1 })
   await selectContaining(page.getByLabel('Laboratorio'), 'DEMO-LAB-A')
-  await page.getByLabel('Fecha').fill(dateFor(offset))
+  const date = page.getByLabel('Fecha')
+  const maximum = await date.getAttribute('max')
+  expect(maximum, 'Debe existir una fecha máxima para el período activo').toBeTruthy()
+  await date.fill(dateFor(maximum!, offset))
   await page.getByLabel('Hora inicio').fill('18:00')
   await page.getByLabel('Hora fin').fill('19:00')
   await page.getByLabel('Motivo').fill(`E3 seguridad r${repetition} ${crypto.randomUUID()}`)
@@ -112,6 +118,7 @@ test.describe('Seguridad E3', () => {
 
       await login(page, docente!, docentePassword!)
       await openForm(page)
+      const outsideLabId = await selectContaining(page.getByLabel('Laboratorio'), 'DEMO-LAB-B')
       await createRequest(page, 1)
       const requestUrl = page.url()
       await login(page, adminPiso!, adminPisoPassword!)
@@ -119,12 +126,21 @@ test.describe('Seguridad E3', () => {
       const reviewResponse = page.waitForResponse((item) => item.request().method() === 'POST' && item.url().endsWith('/revision'))
       await page.getByRole('button', { name: /Poner en revisi/ }).click()
       const reviewStatus = (await reviewResponse).status()
-      const form = page.getByRole('heading', { name: 'Proponer alternativa' }).locator('..')
-      await selectContaining(form.getByLabel('Laboratorio'), 'DEMO-LAB-B')
-      await form.getByLabel(/Observaci/).fill('Fuera de scope E3')
-      const deniedResponse = page.waitForResponse((item) => item.request().method() === 'POST' && item.url().endsWith('/propuesta'))
-      await page.getByRole('button', { name: 'Enviar propuesta' }).click()
-      const deniedStatus = (await deniedResponse).status()
+      const proposalHeading = page.getByRole('heading', { name: 'Proponer alternativa' })
+      await expect(proposalHeading).toBeVisible()
+      const form = proposalHeading.locator('..')
+      const deniedStatus = await page.evaluate(async ({ endpoint, laboratorioId }) => {
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${sessionStorage.getItem('accessToken')}` },
+          body: JSON.stringify({
+            laboratorioId,
+            fecha: (document.querySelector('.proposal-form input[type="date"]') as HTMLInputElement).value,
+            horaInicio: '18:00', horaFin: '19:00', observacion: 'Fuera de scope E3',
+          }),
+        })
+        return response.status
+      }, { endpoint: `${gateway}/api/v1/solicitudes/${requestUrl.split('/').pop()}/propuesta`, laboratorioId: outsideLabId })
       add(rows, testInfo, { decision_id: 'admin_piso_fuera_scope_403', request: 'propuesta fuera de piso', endpoint: '/api/v1/solicitudes/{id}/propuesta', method: 'POST', identity: adminPiso!, role: 'ADMINISTRADOR_PISO', expected_http: '403', observed_http: String(deniedStatus) })
 
       await selectContaining(form.getByLabel('Laboratorio'), 'DEMO-LAB-A')
