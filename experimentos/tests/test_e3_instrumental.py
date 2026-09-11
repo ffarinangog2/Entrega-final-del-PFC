@@ -6,13 +6,58 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 
 EXPERIMENTS = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(EXPERIMENTS))
 
 from analizar_e3 import analyze_all  # noqa: E402
-from e3_instrumental import parse_playwright, prepare_repetition, student_n3, wilson  # noqa: E402
+from e3_instrumental import normalize_command, parse_playwright, prepare_repetition, student_n3, wilson  # noqa: E402
+
+
+class WindowsCommandNormalizationTest(unittest.TestCase):
+    @staticmethod
+    def resolve(mapping):
+        return lambda candidate: mapping.get(candidate)
+
+    @patch("e3_instrumental.os.name", "nt")
+    def test_wraps_mvn_cmd_on_windows(self):
+        with patch("e3_instrumental.shutil.which", side_effect=self.resolve({"mvn.cmd": r"C:\\tools\\mvn.cmd"})):
+            self.assertEqual(
+                normalize_command(["mvn", "--version"]),
+                ["cmd", "/c", r"C:\\tools\\mvn.cmd", "--version"],
+            )
+
+    @patch("e3_instrumental.os.name", "nt")
+    def test_wraps_npm_cmd_on_windows(self):
+        with patch("e3_instrumental.shutil.which", side_effect=self.resolve({"npm.cmd": r"C:\\node\\npm.cmd"})):
+            self.assertEqual(
+                normalize_command(["npm", "run", "lint"]),
+                ["cmd", "/c", r"C:\\node\\npm.cmd", "run", "lint"],
+            )
+
+    @patch("e3_instrumental.os.name", "nt")
+    def test_keeps_resolved_exe_direct_on_windows(self):
+        with patch("e3_instrumental.shutil.which", side_effect=self.resolve({"python": r"C:\\Python\\python.exe"})):
+            self.assertEqual(
+                normalize_command(["python", "-V"]),
+                [r"C:\\Python\\python.exe", "-V"],
+            )
+
+    @patch("e3_instrumental.os.name", "nt")
+    def test_keeps_existing_cmd_wrapper(self):
+        with patch("e3_instrumental.shutil.which") as which:
+            command = ["cmd", "/c", "gradlew.bat", "--version"]
+            self.assertEqual(normalize_command(command), command)
+            which.assert_not_called()
+
+    @patch("e3_instrumental.os.name", "posix")
+    def test_non_windows_command_is_unchanged(self):
+        with patch("e3_instrumental.shutil.which") as which:
+            command = ["npm", "run", "lint"]
+            self.assertEqual(normalize_command(command), command)
+            which.assert_not_called()
 
 
 class StatisticsTest(unittest.TestCase):

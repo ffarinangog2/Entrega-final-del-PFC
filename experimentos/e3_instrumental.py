@@ -92,20 +92,41 @@ def atomic_json(path: Path, value: Any) -> None:
     temporary.replace(path)
 
 
+def normalize_command(command: list[str]) -> list[str]:
+    """Resuelve wrappers CMD/BAT en Windows sin alterar otros sistemas."""
+    if not command:
+        raise ValueError("El comando no puede estar vacío")
+    if os.name != "nt" or Path(command[0]).name.lower() in {"cmd", "cmd.exe"}:
+        return list(command)
+    resolved = next(
+        (path for candidate in (f"{command[0]}.cmd", f"{command[0]}.bat", command[0])
+         if (path := shutil.which(candidate)) is not None),
+        None,
+    )
+    if resolved is None:
+        return list(command)
+    if Path(resolved).suffix.lower() in {".cmd", ".bat"}:
+        return ["cmd", "/c", resolved, *command[1:]]
+    return [resolved, *command[1:]]
+
+
 def run_capture(
     command: list[str], cwd: Path, stdout: Path, stderr: Path,
     env: dict[str, str] | None = None,
 ) -> int:
     stdout.parent.mkdir(parents=True, exist_ok=True)
     with stdout.open("wb") as out, stderr.open("wb") as err:
-        completed = subprocess.run(command, cwd=cwd, env=env, stdout=out, stderr=err)
+        completed = subprocess.run(
+            normalize_command(command), cwd=cwd, env=env, stdout=out, stderr=err
+        )
     return completed.returncode
 
 
 def command_version(command: list[str], cwd: Path) -> str:
     try:
         result = subprocess.run(
-            command, cwd=cwd, text=True, capture_output=True, timeout=30, check=False
+            normalize_command(command), cwd=cwd, text=True, capture_output=True,
+            timeout=30, check=False
         )
         return (result.stdout or result.stderr).strip()
     except (OSError, subprocess.TimeoutExpired) as error:
