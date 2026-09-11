@@ -1,5 +1,5 @@
 import { expect, test } from './fixtures'
-import type { APIRequestContext, Page, TestInfo } from '@playwright/test'
+import type { Page, TestInfo } from '@playwright/test'
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
