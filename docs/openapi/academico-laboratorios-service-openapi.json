@@ -1,0 +1,3801 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "SCLI - Académico y Laboratorios API",
+    "version": "1.0.0",
+    "description": "Snapshot determinista derivado de controladores y DTO del código fuente vigente."
+  },
+  "paths": {
+    "/api/v1/bloques": {
+      "get": {
+        "operationId": "BloqueController_listar",
+        "tags": [
+          "BloqueController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BloqueResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "campusId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "nombre",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "activo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "BloqueController_crear",
+        "tags": [
+          "BloqueController"
+        ],
+        "responses": {
+          "201": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BloqueResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BloqueRequest"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/bloques/{bloqueId}/pisos": {
+      "get": {
+        "operationId": "PisoController_listarPorBloque",
+        "tags": [
+          "PisoController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PisoResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bloqueId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/bloques/{id}": {
+      "delete": {
+        "operationId": "BloqueController_eliminar",
+        "tags": [
+          "BloqueController"
+        ],
+        "responses": {
+          "204": {
+            "description": "Respuesta satisfactoria"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "get": {
+        "operationId": "BloqueController_obtenerPorId",
+        "tags": [
+          "BloqueController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BloqueResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "put": {
+        "operationId": "BloqueController_actualizar",
+        "tags": [
+          "BloqueController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BloqueResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BloqueRequest"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/campus": {
+      "get": {
+        "operationId": "CampusController_listar",
+        "tags": [
+          "CampusController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CampusResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "codigo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "nombre",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "activo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "CampusController_crear",
+        "tags": [
+          "CampusController"
+        ],
+        "responses": {
+          "201": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CampusResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CampusRequest"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/campus/{campusId}/bloques": {
+      "get": {
+        "operationId": "BloqueController_listarPorCampus",
+        "tags": [
+          "BloqueController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BloqueResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "campusId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/campus/{id}": {
+      "delete": {
+        "operationId": "CampusController_eliminar",
+        "tags": [
+          "CampusController"
+        ],
+        "responses": {
+          "204": {
+            "description": "Respuesta satisfactoria"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "get": {
+        "operationId": "CampusController_obtenerPorId",
+        "tags": [
+          "CampusController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CampusResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "put": {
+        "operationId": "CampusController_actualizar",
+        "tags": [
+          "CampusController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CampusResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CampusRequest"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/carreras": {
+      "get": {
+        "operationId": "CarreraController_listar",
+        "tags": [
+          "CarreraController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CarreraResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "facultadId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "codigo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "nombre",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "activo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "CarreraController_crear",
+        "tags": [
+          "CarreraController"
+        ],
+        "responses": {
+          "201": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CarreraResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CarreraRequest"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/carreras/{carreraId}/materias": {
+      "get": {
+        "operationId": "MateriaController_listarPorCarrera",
+        "tags": [
+          "MateriaController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MateriaResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "carreraId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/carreras/{id}": {
+      "delete": {
+        "operationId": "CarreraController_eliminar",
+        "tags": [
+          "CarreraController"
+        ],
+        "responses": {
+          "204": {
+            "description": "Respuesta satisfactoria"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "get": {
+        "operationId": "CarreraController_obtenerPorId",
+        "tags": [
+          "CarreraController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CarreraResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "put": {
+        "operationId": "CarreraController_actualizar",
+        "tags": [
+          "CarreraController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CarreraResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CarreraRequest"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/equipos": {
+      "get": {
+        "operationId": "EquipoController_listar",
+        "tags": [
+          "EquipoController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/EquipoResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "laboratorioId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "estado",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/EstadoEquipo"
+            }
+          },
+          {
+            "name": "activo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "EquipoController_crear",
+        "tags": [
+          "EquipoController"
+        ],
+        "responses": {
+          "201": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EquipoResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EquipoRequest"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/equipos/{id}": {
+      "get": {
+        "operationId": "EquipoController_obtenerPorId",
+        "tags": [
+          "EquipoController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EquipoResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "put": {
+        "operationId": "EquipoController_actualizar",
+        "tags": [
+          "EquipoController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EquipoResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EquipoRequest"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/equipos/{id}/estado": {
+      "patch": {
+        "operationId": "EquipoController_cambiarEstado",
+        "tags": [
+          "EquipoController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EquipoResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EquipoEstadoRequest"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/facultades": {
+      "get": {
+        "operationId": "FacultadController_listar",
+        "tags": [
+          "FacultadController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FacultadResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "codigo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "nombre",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "activo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "FacultadController_crear",
+        "tags": [
+          "FacultadController"
+        ],
+        "responses": {
+          "201": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FacultadResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FacultadRequest"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/facultades/{facultadId}/carreras": {
+      "get": {
+        "operationId": "CarreraController_listarPorFacultad",
+        "tags": [
+          "CarreraController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CarreraResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "facultadId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/facultades/{id}": {
+      "get": {
+        "operationId": "FacultadController_obtenerPorId",
+        "tags": [
+          "FacultadController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FacultadResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "put": {
+        "operationId": "FacultadController_actualizar",
+        "tags": [
+          "FacultadController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FacultadResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FacultadRequest"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/facultades/{id}/estado": {
+      "patch": {
+        "operationId": "FacultadController_cambiarEstado",
+        "tags": [
+          "FacultadController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FacultadResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FacultadEstadoRequest"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/horarios": {
+      "get": {
+        "operationId": "HorarioAcademicoController_listar",
+        "tags": [
+          "HorarioAcademicoController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/HorarioAcademicoResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "HorarioAcademicoController_crear",
+        "tags": [
+          "HorarioAcademicoController"
+        ],
+        "responses": {
+          "201": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HorarioAcademicoResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HorarioAcademicoRequest"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/horarios/docente/{docenteId}": {
+      "get": {
+        "operationId": "HorarioAcademicoController_listarPorDocente",
+        "tags": [
+          "HorarioAcademicoController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/HorarioAcademicoResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "docenteId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/horarios/laboratorio/{laboratorioId}": {
+      "get": {
+        "operationId": "HorarioAcademicoController_listarPorLaboratorio",
+        "tags": [
+          "HorarioAcademicoController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/HorarioAcademicoResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "laboratorioId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/horarios/{id}": {
+      "get": {
+        "operationId": "HorarioAcademicoController_obtenerPorId",
+        "tags": [
+          "HorarioAcademicoController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HorarioAcademicoResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/internal/carreras/{id}/estado": {
+      "get": {
+        "operationId": "InternalController_estadoCarrera",
+        "tags": [
+          "InternalController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CarreraEstadoResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "internalApiKey": []
+          }
+        ]
+      }
+    },
+    "/api/v1/internal/laboratorios/{id}/disponibilidad-base": {
+      "get": {
+        "operationId": "InternalController_disponibilidadBaseLaboratorio",
+        "tags": [
+          "InternalController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LaboratorioDisponibilidadBaseResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "internalApiKey": []
+          }
+        ]
+      }
+    },
+    "/api/v1/internal/laboratorios/{id}/exists": {
+      "get": {
+        "operationId": "InternalController_existeLaboratorio",
+        "tags": [
+          "InternalController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExisteResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "internalApiKey": []
+          }
+        ]
+      }
+    },
+    "/api/v1/internal/materias/{id}/contexto": {
+      "get": {
+        "operationId": "InternalController_contextoMateria",
+        "tags": [
+          "InternalController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MateriaContextoResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "internalApiKey": []
+          }
+        ]
+      }
+    },
+    "/api/v1/internal/materias/{id}/exists": {
+      "get": {
+        "operationId": "InternalController_existeMateria",
+        "tags": [
+          "InternalController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExisteResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "internalApiKey": []
+          }
+        ]
+      }
+    },
+    "/api/v1/internal/periodos-lectivos/actual/contexto": {
+      "get": {
+        "operationId": "InternalController_periodoActual",
+        "tags": [
+          "InternalController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PeriodoLectivoResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "internalApiKey": []
+          }
+        ]
+      }
+    },
+    "/api/v1/internal/periodos-lectivos/{id}": {
+      "get": {
+        "operationId": "InternalController_periodoLectivo",
+        "tags": [
+          "InternalController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PeriodoLectivoResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "internalApiKey": []
+          }
+        ]
+      }
+    },
+    "/api/v1/internal/periodos-lectivos/{id}/exists": {
+      "get": {
+        "operationId": "InternalController_existePeriodoLectivo",
+        "tags": [
+          "InternalController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExisteResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "internalApiKey": []
+          }
+        ]
+      }
+    },
+    "/api/v1/laboratorios": {
+      "get": {
+        "operationId": "LaboratorioController_listar",
+        "tags": [
+          "LaboratorioController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LaboratorioResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "texto",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "estado",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/EstadoLaboratorio"
+            }
+          },
+          {
+            "name": "activo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "LaboratorioController_crear",
+        "tags": [
+          "LaboratorioController"
+        ],
+        "responses": {
+          "201": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LaboratorioResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LaboratorioRequest"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/laboratorios/disponibles": {
+      "get": {
+        "operationId": "LaboratorioController_listarDisponibles",
+        "tags": [
+          "LaboratorioController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LaboratorioResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/laboratorios/metricas/ocupacion": {
+      "get": {
+        "operationId": "LaboratorioController_obtenerOcupacionHistorica",
+        "tags": [
+          "LaboratorioController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SerieEstadoResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "60",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/laboratorios/{id}": {
+      "get": {
+        "operationId": "LaboratorioController_obtenerPorId",
+        "tags": [
+          "LaboratorioController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LaboratorioResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "put": {
+        "operationId": "LaboratorioController_actualizar",
+        "tags": [
+          "LaboratorioController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LaboratorioResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LaboratorioRequest"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/laboratorios/{id}/detalle-completo": {
+      "get": {
+        "operationId": "LaboratorioController_obtenerDetalleCompleto",
+        "tags": [
+          "LaboratorioController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LaboratorioDetalleCompletoResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/laboratorios/{id}/estado": {
+      "patch": {
+        "operationId": "LaboratorioController_cambiarEstado",
+        "tags": [
+          "LaboratorioController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LaboratorioResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LaboratorioEstadoRequest"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/laboratorios/{laboratorioId}/equipos": {
+      "get": {
+        "operationId": "EquipoController_listarPorLaboratorio",
+        "tags": [
+          "EquipoController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/EquipoResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "laboratorioId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/materias": {
+      "get": {
+        "operationId": "MateriaController_listar",
+        "tags": [
+          "MateriaController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MateriaResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "carreraId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "codigo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "nombre",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "activo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "MateriaController_crear",
+        "tags": [
+          "MateriaController"
+        ],
+        "responses": {
+          "201": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MateriaResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MateriaRequest"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/materias/{id}": {
+      "delete": {
+        "operationId": "MateriaController_eliminar",
+        "tags": [
+          "MateriaController"
+        ],
+        "responses": {
+          "204": {
+            "description": "Respuesta satisfactoria"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "get": {
+        "operationId": "MateriaController_obtenerPorId",
+        "tags": [
+          "MateriaController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MateriaResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "put": {
+        "operationId": "MateriaController_actualizar",
+        "tags": [
+          "MateriaController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MateriaResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MateriaRequest"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/periodos-lectivos": {
+      "get": {
+        "operationId": "PeriodoLectivoController_listar",
+        "tags": [
+          "PeriodoLectivoController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PeriodoLectivoResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "codigo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "PeriodoLectivoController_crear",
+        "tags": [
+          "PeriodoLectivoController"
+        ],
+        "responses": {
+          "201": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PeriodoLectivoResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PeriodoLectivoRequest"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/periodos-lectivos/actual": {
+      "get": {
+        "operationId": "PeriodoLectivoController_obtenerActual",
+        "tags": [
+          "PeriodoLectivoController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PeriodoLectivoResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/periodos-lectivos/{id}": {
+      "get": {
+        "operationId": "PeriodoLectivoController_obtenerPorId",
+        "tags": [
+          "PeriodoLectivoController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PeriodoLectivoResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "put": {
+        "operationId": "PeriodoLectivoController_actualizar",
+        "tags": [
+          "PeriodoLectivoController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PeriodoLectivoResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PeriodoLectivoRequest"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/pisos": {
+      "get": {
+        "operationId": "PisoController_listar",
+        "tags": [
+          "PisoController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PisoResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "bloqueId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "activo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "PisoController_crear",
+        "tags": [
+          "PisoController"
+        ],
+        "responses": {
+          "201": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PisoResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PisoRequest"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/pisos/{id}": {
+      "delete": {
+        "operationId": "PisoController_eliminar",
+        "tags": [
+          "PisoController"
+        ],
+        "responses": {
+          "204": {
+            "description": "Respuesta satisfactoria"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "get": {
+        "operationId": "PisoController_obtenerPorId",
+        "tags": [
+          "PisoController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PisoResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "put": {
+        "operationId": "PisoController_actualizar",
+        "tags": [
+          "PisoController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PisoResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PisoRequest"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/tipos-equipo": {
+      "get": {
+        "operationId": "TipoEquipoController_listar",
+        "tags": [
+          "TipoEquipoController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TipoEquipoResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "codigo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "nombre",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "activo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "TipoEquipoController_crear",
+        "tags": [
+          "TipoEquipoController"
+        ],
+        "responses": {
+          "201": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TipoEquipoResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TipoEquipoRequest"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/tipos-equipo/{id}": {
+      "delete": {
+        "operationId": "TipoEquipoController_eliminar",
+        "tags": [
+          "TipoEquipoController"
+        ],
+        "responses": {
+          "204": {
+            "description": "Respuesta satisfactoria"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "get": {
+        "operationId": "TipoEquipoController_obtenerPorId",
+        "tags": [
+          "TipoEquipoController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TipoEquipoResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "put": {
+        "operationId": "TipoEquipoController_actualizar",
+        "tags": [
+          "TipoEquipoController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TipoEquipoResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TipoEquipoRequest"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      },
+      "internalApiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-Internal-Api-Key"
+      }
+    },
+    "schemas": {
+      "DiaSemana": {
+        "type": "string",
+        "enum": [
+          "LUNES",
+          "MARTES",
+          "MIERCOLES",
+          "JUEVES",
+          "VIERNES",
+          "SABADO",
+          "DOMINGO"
+        ]
+      },
+      "EstadoEquipo": {
+        "type": "string",
+        "enum": [
+          "OPERATIVO",
+          "CON_FALLAS",
+          "MANTENIMIENTO",
+          "FUERA_DE_SERVICIO"
+        ]
+      },
+      "EstadoLaboratorio": {
+        "type": "string",
+        "enum": [
+          "DISPONIBLE",
+          "OCUPADO",
+          "MANTENIMIENTO",
+          "INACTIVO"
+        ]
+      },
+      "EstadoPeriodo": {
+        "type": "string",
+        "enum": [
+          "PLANIFICADO",
+          "ACTIVO",
+          "FINALIZADO"
+        ]
+      },
+      "ApiError": {
+        "type": "object",
+        "properties": {
+          "timestamp": {
+            "type": "string",
+            "description": "Valor Java OffsetDateTime"
+          },
+          "status": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "error": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "validationErrors": {
+            "type": "string",
+            "description": "Valor Java Map<String, String>"
+          }
+        }
+      },
+      "BloqueRequest": {
+        "type": "object",
+        "properties": {
+          "campusId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "codigo": {
+            "type": "string"
+          },
+          "nombre": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "campusId",
+          "codigo",
+          "nombre"
+        ]
+      },
+      "BloqueResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "campusId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "codigo": {
+            "type": "string"
+          },
+          "nombre": {
+            "type": "string"
+          },
+          "activo": {
+            "type": "boolean"
+          },
+          "creadoEn": {
+            "type": "string",
+            "description": "Valor Java OffsetDateTime"
+          },
+          "actualizadoEn": {
+            "type": "string",
+            "description": "Valor Java OffsetDateTime"
+          }
+        }
+      },
+      "CampusRequest": {
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "type": "string"
+          },
+          "nombre": {
+            "type": "string"
+          },
+          "direccion": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "codigo",
+          "nombre"
+        ]
+      },
+      "CampusResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "codigo": {
+            "type": "string"
+          },
+          "nombre": {
+            "type": "string"
+          },
+          "direccion": {
+            "type": "string"
+          },
+          "activo": {
+            "type": "boolean"
+          },
+          "creadoEn": {
+            "type": "string",
+            "description": "Valor Java OffsetDateTime"
+          },
+          "actualizadoEn": {
+            "type": "string",
+            "description": "Valor Java OffsetDateTime"
+          }
+        }
+      },
+      "CarreraEstadoResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "existe": {
+            "type": "boolean"
+          },
+          "activa": {
+            "type": "boolean"
+          }
+        }
+      },
+      "CarreraRequest": {
+        "type": "object",
+        "properties": {
+          "facultadId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "codigo": {
+            "type": "string"
+          },
+          "nombre": {
+            "type": "string"
+          },
+          "descripcion": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "facultadId",
+          "codigo",
+          "nombre"
+        ]
+      },
+      "CarreraResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "facultadId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "codigo": {
+            "type": "string"
+          },
+          "nombre": {
+            "type": "string"
+          },
+          "descripcion": {
+            "type": "string"
+          },
+          "activo": {
+            "type": "boolean"
+          },
+          "creadoEn": {
+            "type": "string",
+            "description": "Valor Java OffsetDateTime"
+          },
+          "actualizadoEn": {
+            "type": "string",
+            "description": "Valor Java OffsetDateTime"
+          }
+        }
+      },
+      "ContextoInstitucionalResponse": {
+        "type": "object",
+        "properties": {
+          "perfilId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "existe": {
+            "type": "boolean"
+          },
+          "activo": {
+            "type": "boolean"
+          },
+          "tiposPerfil": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "administrador": {
+            "type": "string",
+            "description": "Valor Java Administrador"
+          },
+          "adscripciones": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "description": "Valor Java Adscripcion"
+            }
+          }
+        }
+      },
+      "EquipoEstadoRequest": {
+        "type": "object",
+        "properties": {
+          "estado": {
+            "$ref": "#/components/schemas/EstadoEquipo"
+          }
+        },
+        "required": [
+          "estado"
+        ]
+      },
+      "EquipoRequest": {
+        "type": "object",
+        "properties": {
+          "laboratorioId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "tipoEquipoId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "codigoInventario": {
+            "type": "string"
+          },
+          "numeroSerie": {
+            "type": "string"
+          },
+          "marca": {
+            "type": "string"
+          },
+          "modelo": {
+            "type": "string"
+          },
+          "procesador": {
+            "type": "string"
+          },
+          "memoriaRam": {
+            "type": "string"
+          },
+          "almacenamiento": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "laboratorioId",
+          "tipoEquipoId",
+          "codigoInventario"
+        ]
+      },
+      "EquipoResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "laboratorioId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "tipoEquipoId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "codigoInventario": {
+            "type": "string"
+          },
+          "numeroSerie": {
+            "type": "string"
+          },
+          "marca": {
+            "type": "string"
+          },
+          "modelo": {
+            "type": "string"
+          },
+          "procesador": {
+            "type": "string"
+          },
+          "memoriaRam": {
+            "type": "string"
+          },
+          "almacenamiento": {
+            "type": "string"
+          },
+          "direccionIp": {
+            "type": "string"
+          },
+          "direccionMac": {
+            "type": "string"
+          },
+          "estado": {
+            "$ref": "#/components/schemas/EstadoEquipo"
+          },
+          "observacion": {
+            "type": "string"
+          },
+          "activo": {
+            "type": "boolean"
+          },
+          "creadoEn": {
+            "type": "string",
+            "description": "Valor Java OffsetDateTime"
+          },
+          "actualizadoEn": {
+            "type": "string",
+            "description": "Valor Java OffsetDateTime"
+          }
+        }
+      },
+      "ExisteResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "existe": {
+            "type": "boolean"
+          }
+        }
+      },
+      "FacultadEstadoRequest": {
+        "type": "object",
+        "properties": {
+          "activo": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "activo"
+        ]
+      },
+      "FacultadRequest": {
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "type": "string"
+          },
+          "nombre": {
+            "type": "string"
+          },
+          "descripcion": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "codigo",
+          "nombre"
+        ]
+      },
+      "FacultadResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "codigo": {
+            "type": "string"
+          },
+          "nombre": {
+            "type": "string"
+          },
+          "descripcion": {
+            "type": "string"
+          },
+          "activo": {
+            "type": "boolean"
+          },
+          "creadoEn": {
+            "type": "string",
+            "description": "Valor Java OffsetDateTime"
+          },
+          "actualizadoEn": {
+            "type": "string",
+            "description": "Valor Java OffsetDateTime"
+          }
+        }
+      },
+      "HorarioAcademicoRequest": {
+        "type": "object",
+        "properties": {
+          "materiaId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "periodoLectivoId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "laboratorioId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "docenteId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "diaSemana": {
+            "$ref": "#/components/schemas/DiaSemana"
+          },
+          "horaInicio": {
+            "type": "string",
+            "format": "time"
+          },
+          "horaFin": {
+            "type": "string",
+            "format": "time"
+          },
+          "paralelo": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "materiaId",
+          "periodoLectivoId",
+          "docenteId",
+          "diaSemana",
+          "horaInicio",
+          "horaFin",
+          "paralelo"
+        ]
+      },
+      "HorarioAcademicoResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "materiaId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "periodoLectivoId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "laboratorioId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "docenteId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "diaSemana": {
+            "$ref": "#/components/schemas/DiaSemana"
+          },
+          "horaInicio": {
+            "type": "string",
+            "format": "time"
+          },
+          "horaFin": {
+            "type": "string",
+            "format": "time"
+          },
+          "paralelo": {
+            "type": "string"
+          },
+          "activo": {
+            "type": "boolean"
+          },
+          "creadoEn": {
+            "type": "string",
+            "description": "Valor Java OffsetDateTime"
+          },
+          "actualizadoEn": {
+            "type": "string",
+            "description": "Valor Java OffsetDateTime"
+          }
+        }
+      },
+      "JwtAuthenticationData": {
+        "type": "object",
+        "properties": {
+          "principal": {
+            "$ref": "#/components/schemas/JwtPrincipal"
+          },
+          "authorities": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "description": "Valor Java GrantedAuthority"
+            }
+          }
+        }
+      },
+      "JwtPrincipal": {
+        "type": "object",
+        "properties": {
+          "usuarioAuthId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "perfilId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "username": {
+            "type": "string"
+          }
+        }
+      },
+      "LaboratorioDetalleCompletoResponse": {
+        "type": "object",
+        "properties": {
+          "laboratorio": {
+            "$ref": "#/components/schemas/LaboratorioResponse"
+          },
+          "piso": {
+            "$ref": "#/components/schemas/PisoResponse"
+          },
+          "bloque": {
+            "$ref": "#/components/schemas/BloqueResponse"
+          },
+          "campus": {
+            "$ref": "#/components/schemas/CampusResponse"
+          },
+          "equipos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EquipoResponse"
+            }
+          }
+        }
+      },
+      "LaboratorioDisponibilidadBaseResponse": {
+        "type": "object",
+        "properties": {
+          "laboratorioId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "pisoId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "existe": {
+            "type": "boolean"
+          },
+          "activo": {
+            "type": "boolean"
+          },
+          "estado": {
+            "$ref": "#/components/schemas/EstadoLaboratorio"
+          },
+          "capacidad": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "LaboratorioEstadoRequest": {
+        "type": "object",
+        "properties": {
+          "estado": {
+            "$ref": "#/components/schemas/EstadoLaboratorio"
+          }
+        },
+        "required": [
+          "estado"
+        ]
+      },
+      "LaboratorioRequest": {
+        "type": "object",
+        "properties": {
+          "pisoId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "codigo": {
+            "type": "string"
+          },
+          "nombre": {
+            "type": "string"
+          },
+          "capacidad": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "descripcion": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "pisoId",
+          "codigo",
+          "nombre",
+          "capacidad"
+        ]
+      },
+      "LaboratorioResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "pisoId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "codigo": {
+            "type": "string"
+          },
+          "nombre": {
+            "type": "string"
+          },
+          "capacidad": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "descripcion": {
+            "type": "string"
+          },
+          "estado": {
+            "$ref": "#/components/schemas/EstadoLaboratorio"
+          },
+          "activo": {
+            "type": "boolean"
+          },
+          "creadoEn": {
+            "type": "string",
+            "description": "Valor Java OffsetDateTime"
+          },
+          "actualizadoEn": {
+            "type": "string",
+            "description": "Valor Java OffsetDateTime"
+          }
+        }
+      },
+      "MateriaContextoResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "carreraId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nivel": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "existe": {
+            "type": "boolean"
+          },
+          "activo": {
+            "type": "boolean"
+          }
+        }
+      },
+      "MateriaRequest": {
+        "type": "object",
+        "properties": {
+          "carreraId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "codigo": {
+            "type": "string"
+          },
+          "nombre": {
+            "type": "string"
+          },
+          "numeroHoras": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "nivel": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "required": [
+          "carreraId",
+          "codigo",
+          "nombre",
+          "numeroHoras"
+        ]
+      },
+      "MateriaResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "carreraId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "codigo": {
+            "type": "string"
+          },
+          "nombre": {
+            "type": "string"
+          },
+          "numeroHoras": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "nivel": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "activo": {
+            "type": "boolean"
+          },
+          "creadoEn": {
+            "type": "string",
+            "description": "Valor Java OffsetDateTime"
+          },
+          "actualizadoEn": {
+            "type": "string",
+            "description": "Valor Java OffsetDateTime"
+          }
+        }
+      },
+      "PeriodoLectivoRequest": {
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "type": "string"
+          },
+          "nombre": {
+            "type": "string"
+          },
+          "fechaInicio": {
+            "type": "string",
+            "format": "date"
+          },
+          "fechaFin": {
+            "type": "string",
+            "format": "date"
+          },
+          "estado": {
+            "$ref": "#/components/schemas/EstadoPeriodo"
+          },
+          "ppaCodigo": {
+            "type": "string"
+          },
+          "ppaNombre": {
+            "type": "string"
+          },
+          "cicloAcademico": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "required": [
+          "codigo",
+          "nombre",
+          "fechaInicio",
+          "fechaFin"
+        ]
+      },
+      "PeriodoLectivoResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "codigo": {
+            "type": "string"
+          },
+          "nombre": {
+            "type": "string"
+          },
+          "fechaInicio": {
+            "type": "string",
+            "format": "date"
+          },
+          "fechaFin": {
+            "type": "string",
+            "format": "date"
+          },
+          "estado": {
+            "$ref": "#/components/schemas/EstadoPeriodo"
+          },
+          "ppaCodigo": {
+            "type": "string"
+          },
+          "ppaNombre": {
+            "type": "string"
+          },
+          "cicloAcademico": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "creadoEn": {
+            "type": "string",
+            "description": "Valor Java OffsetDateTime"
+          },
+          "actualizadoEn": {
+            "type": "string",
+            "description": "Valor Java OffsetDateTime"
+          }
+        }
+      },
+      "PisoRequest": {
+        "type": "object",
+        "properties": {
+          "bloqueId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "numero": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "descripcion": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "bloqueId",
+          "numero"
+        ]
+      },
+      "PisoResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "bloqueId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "numero": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "descripcion": {
+            "type": "string"
+          },
+          "activo": {
+            "type": "boolean"
+          },
+          "creadoEn": {
+            "type": "string",
+            "description": "Valor Java OffsetDateTime"
+          },
+          "actualizadoEn": {
+            "type": "string",
+            "description": "Valor Java OffsetDateTime"
+          }
+        }
+      },
+      "PrometheusRangeData": {
+        "type": "object",
+        "properties": {
+          "resultType": {
+            "type": "string"
+          },
+          "result": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PrometheusSerieCruda"
+            }
+          }
+        }
+      },
+      "PrometheusRangeResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/PrometheusRangeData"
+          }
+        }
+      },
+      "PrometheusSerieCruda": {
+        "type": "object",
+        "properties": {
+          "metric": {
+            "type": "string",
+            "description": "Valor Java Map<String, String>"
+          },
+          "values": {
+            "type": "array",
+            "items": {}
+          }
+        }
+      },
+      "PuntoSerieResponse": {
+        "type": "object",
+        "properties": {
+          "instante": {
+            "type": "string",
+            "description": "Valor Java OffsetDateTime"
+          },
+          "valor": {
+            "type": "string",
+            "description": "Valor Java double"
+          }
+        }
+      },
+      "SerieEstadoResponse": {
+        "type": "object",
+        "properties": {
+          "estado": {
+            "type": "string"
+          },
+          "puntos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PuntoSerieResponse"
+            }
+          }
+        }
+      },
+      "TipoEquipoRequest": {
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "type": "string"
+          },
+          "nombre": {
+            "type": "string"
+          },
+          "descripcion": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "codigo",
+          "nombre"
+        ]
+      },
+      "TipoEquipoResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "codigo": {
+            "type": "string"
+          },
+          "nombre": {
+            "type": "string"
+          },
+          "descripcion": {
+            "type": "string"
+          },
+          "activo": {
+            "type": "boolean"
+          },
+          "creadoEn": {
+            "type": "string",
+            "description": "Valor Java OffsetDateTime"
+          },
+          "actualizadoEn": {
+            "type": "string",
+            "description": "Valor Java OffsetDateTime"
+          }
+        }
+      }
+    }
+  }
+}

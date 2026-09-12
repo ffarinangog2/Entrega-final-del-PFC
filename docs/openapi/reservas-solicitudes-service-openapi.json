@@ -1,1 +1,5353 @@
-{"openapi":"3.1.0","info":{"title":"OpenAPI definition","version":"v0"},"servers":[{"url":"/","description":"Servidor actual"}],"paths":{"/api/v1/solicitudes/{id}":{"get":{"tags":["solicitud-reserva-controller"],"operationId":"buscarPorId","parameters":[{"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}],"responses":{"200":{"description":"OK","content":{"*/*":{"schema":{"$ref":"#/components/schemas/SolicitudReservaResponse"}}}}}},"put":{"tags":["solicitud-reserva-controller"],"operationId":"actualizar","parameters":[{"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}],"requestBody":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/ActualizarSolicitudReservaRequest"}}},"required":true},"responses":{"200":{"description":"OK","content":{"*/*":{"schema":{"$ref":"#/components/schemas/SolicitudReservaResponse"}}}}},"security":[{"bearerAuth":[]}]}},"/api/v1/solicitudes":{"get":{"tags":["solicitud-reserva-controller"],"operationId":"listar","parameters":[{"name":"estado","in":"query","required":false,"schema":{"type":"string","enum":["PENDIENTE","EN_REVISION","APROBADA","RECHAZADA","CANCELADA","EXPIRADA"]}},{"name":"solicitanteId","in":"query","required":false,"schema":{"type":"string","format":"uuid"}},{"name":"laboratorioId","in":"query","required":false,"schema":{"type":"string","format":"uuid"}},{"name":"fecha","in":"query","required":false,"schema":{"type":"string","format":"date"}},{"name":"pagina","in":"query","required":false,"schema":{"type":"integer","format":"int32","default":0,"minimum":0}},{"name":"tamanio","in":"query","required":false,"schema":{"type":"integer","format":"int32","default":20,"maximum":100,"minimum":1}}],"responses":{"200":{"description":"OK","content":{"*/*":{"schema":{"$ref":"#/components/schemas/PaginaResponseSolicitudReservaResponse"}}}}}},"post":{"tags":["solicitud-reserva-controller"],"operationId":"crear","parameters":[{"name":"Idempotency-Key","in":"header","required":true,"schema":{"type":"string","minLength":1}}],"requestBody":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/CrearSolicitudReservaRequest"}}},"required":true},"responses":{"201":{"description":"Creado","content":{"*/*":{"schema":{"$ref":"#/components/schemas/SolicitudReservaResponse"}}}}},"security":[{"bearerAuth":[]}]}},"/api/v1/solicitudes/{id}/revision":{"post":{"tags":["solicitud-reserva-controller"],"operationId":"ponerEnRevision","parameters":[{"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}],"responses":{"200":{"description":"OK","content":{"*/*":{"schema":{"$ref":"#/components/schemas/SolicitudReservaResponse"}}}}},"security":[{"bearerAuth":[]}]}},"/api/v1/solicitudes/{id}/rechazar":{"post":{"tags":["solicitud-reserva-controller"],"operationId":"rechazar","parameters":[{"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}],"requestBody":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/RechazarSolicitudRequest"}}},"required":true},"responses":{"200":{"description":"OK","content":{"*/*":{"schema":{"$ref":"#/components/schemas/SolicitudReservaResponse"}}}}},"security":[{"bearerAuth":[]}]}},"/api/v1/solicitudes/{id}/cancelar":{"post":{"tags":["solicitud-reserva-controller"],"operationId":"cancelar","parameters":[{"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}],"requestBody":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/CancelarSolicitudRequest"}}},"required":true},"responses":{"200":{"description":"OK","content":{"*/*":{"schema":{"$ref":"#/components/schemas/SolicitudReservaResponse"}}}}},"security":[{"bearerAuth":[]}]}},"/api/v1/solicitudes/{id}/aprobar":{"post":{"tags":["solicitud-reserva-controller"],"operationId":"aprobar","parameters":[{"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}},{"name":"Idempotency-Key","in":"header","required":true,"schema":{"type":"string","minLength":1}}],"requestBody":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/AprobarSolicitudRequest"}}},"required":true},"responses":{"200":{"description":"OK","content":{"*/*":{"schema":{"$ref":"#/components/schemas/ReservaResponse"}}}}},"security":[{"bearerAuth":[]}]}},"/api/v1/reservas/{id}/no-asistida":{"post":{"tags":["reserva-controller"],"operationId":"marcarNoAsistida","parameters":[{"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}],"responses":{"200":{"description":"OK","content":{"*/*":{"schema":{"$ref":"#/components/schemas/ReservaResponse"}}}}},"security":[{"bearerAuth":[]}]}},"/api/v1/reservas/{id}/iniciar":{"post":{"tags":["reserva-controller"],"operationId":"iniciar","parameters":[{"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}],"responses":{"200":{"description":"OK","content":{"*/*":{"schema":{"$ref":"#/components/schemas/ReservaResponse"}}}}},"security":[{"bearerAuth":[]}]}},"/api/v1/reservas/{id}/finalizar":{"post":{"tags":["reserva-controller"],"operationId":"finalizar","parameters":[{"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}],"responses":{"200":{"description":"OK","content":{"*/*":{"schema":{"$ref":"#/components/schemas/ReservaResponse"}}}}},"security":[{"bearerAuth":[]}]}},"/api/v1/reservas/{id}/cancelar":{"post":{"tags":["reserva-controller"],"operationId":"cancelar_1","parameters":[{"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}],"requestBody":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/CancelarReservaRequest"}}},"required":true},"responses":{"200":{"description":"OK","content":{"*/*":{"schema":{"$ref":"#/components/schemas/ReservaResponse"}}}}},"security":[{"bearerAuth":[]}]}},"/api/v1/agenda/bloqueos":{"post":{"tags":["agenda-controller"],"operationId":"crearBloqueo","requestBody":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/CrearBloqueoAgendaRequest"}}},"required":true},"responses":{"201":{"description":"Creado","content":{"*/*":{"schema":{"$ref":"#/components/schemas/BloqueoAgendaResponse"}}}}},"security":[{"bearerAuth":[]}]}},"/api/v1/solicitudes/{id}/historial":{"get":{"tags":["solicitud-reserva-controller"],"operationId":"obtenerHistorial","parameters":[{"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}},{"name":"pagina","in":"query","required":false,"schema":{"type":"integer","format":"int32","default":0,"minimum":0}},{"name":"tamanio","in":"query","required":false,"schema":{"type":"integer","format":"int32","default":20,"maximum":100,"minimum":1}}],"responses":{"200":{"description":"OK","content":{"*/*":{"schema":{"$ref":"#/components/schemas/PaginaResponseHistorialSolicitudResponse"}}}}}}},"/api/v1/solicitudes/solicitante/{solicitanteId}":{"get":{"tags":["solicitud-reserva-controller"],"operationId":"listarPorSolicitante","parameters":[{"name":"solicitanteId","in":"path","required":true,"schema":{"type":"string","format":"uuid"}},{"name":"pagina","in":"query","required":false,"schema":{"type":"integer","format":"int32","default":0,"minimum":0}},{"name":"tamanio","in":"query","required":false,"schema":{"type":"integer","format":"int32","default":20,"maximum":100,"minimum":1}}],"responses":{"200":{"description":"OK","content":{"*/*":{"schema":{"$ref":"#/components/schemas/PaginaResponseSolicitudReservaResponse"}}}}}}},"/api/v1/solicitudes/estado/{estado}":{"get":{"tags":["solicitud-reserva-controller"],"operationId":"listarPorEstado","parameters":[{"name":"estado","in":"path","required":true,"schema":{"type":"string","enum":["PENDIENTE","EN_REVISION","APROBADA","RECHAZADA","CANCELADA","EXPIRADA"]}},{"name":"pagina","in":"query","required":false,"schema":{"type":"integer","format":"int32","default":0,"minimum":0}},{"name":"tamanio","in":"query","required":false,"schema":{"type":"integer","format":"int32","default":20,"maximum":100,"minimum":1}}],"responses":{"200":{"description":"OK","content":{"*/*":{"schema":{"$ref":"#/components/schemas/PaginaResponseSolicitudReservaResponse"}}}}}}},"/api/v1/reservas":{"get":{"tags":["reserva-controller"],"operationId":"listar_1","parameters":[{"name":"estado","in":"query","required":false,"schema":{"type":"string","enum":["PROGRAMADA","EN_CURSO","FINALIZADA","CANCELADA","NO_ASISTIDA"]}},{"name":"laboratorioId","in":"query","required":false,"schema":{"type":"string","format":"uuid"}},{"name":"responsableId","in":"query","required":false,"schema":{"type":"string","format":"uuid"}},{"name":"fechaDesde","in":"query","required":false,"schema":{"type":"string","format":"date"}},{"name":"fechaHasta","in":"query","required":false,"schema":{"type":"string","format":"date"}},{"name":"pagina","in":"query","required":false,"schema":{"type":"integer","format":"int32","default":0,"minimum":0}},{"name":"tamanio","in":"query","required":false,"schema":{"type":"integer","format":"int32","default":20,"maximum":100,"minimum":1}}],"responses":{"200":{"description":"OK","content":{"*/*":{"schema":{"$ref":"#/components/schemas/PaginaResponseReservaResponse"}}}}}}},"/api/v1/reservas/{id}":{"get":{"tags":["reserva-controller"],"operationId":"buscarPorId_1","parameters":[{"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}],"responses":{"200":{"description":"OK","content":{"*/*":{"schema":{"$ref":"#/components/schemas/ReservaResponse"}}}}}}},"/api/v1/reservas/responsable/{responsableId}":{"get":{"tags":["reserva-controller"],"operationId":"listarPorResponsable","parameters":[{"name":"responsableId","in":"path","required":true,"schema":{"type":"string","format":"uuid"}},{"name":"pagina","in":"query","required":false,"schema":{"type":"integer","format":"int32","default":0,"minimum":0}},{"name":"tamanio","in":"query","required":false,"schema":{"type":"integer","format":"int32","default":20,"maximum":100,"minimum":1}}],"responses":{"200":{"description":"OK","content":{"*/*":{"schema":{"$ref":"#/components/schemas/PaginaResponseReservaResponse"}}}}}}},"/api/v1/reservas/laboratorio/{laboratorioId}":{"get":{"tags":["reserva-controller"],"operationId":"listarPorLaboratorio","parameters":[{"name":"laboratorioId","in":"path","required":true,"schema":{"type":"string","format":"uuid"}},{"name":"pagina","in":"query","required":false,"schema":{"type":"integer","format":"int32","default":0,"minimum":0}},{"name":"tamanio","in":"query","required":false,"schema":{"type":"integer","format":"int32","default":20,"maximum":100,"minimum":1}}],"responses":{"200":{"description":"OK","content":{"*/*":{"schema":{"$ref":"#/components/schemas/PaginaResponseReservaResponse"}}}}}}},"/api/v1/reservas/calendario":{"get":{"tags":["reserva-controller"],"operationId":"obtenerCalendario","parameters":[{"name":"laboratorioId","in":"query","required":false,"schema":{"type":"string","format":"uuid"}},{"name":"fechaDesde","in":"query","required":true,"schema":{"type":"string","format":"date"}},{"name":"fechaHasta","in":"query","required":true,"schema":{"type":"string","format":"date"}},{"name":"pagina","in":"query","required":false,"schema":{"type":"integer","format":"int32","default":0,"minimum":0}},{"name":"tamanio","in":"query","required":false,"schema":{"type":"integer","format":"int32","default":20,"maximum":100,"minimum":1}}],"responses":{"200":{"description":"OK","content":{"*/*":{"schema":{"$ref":"#/components/schemas/PaginaResponseReservaResponse"}}}}}}},"/api/v1/disponibilidad/laboratorios/{laboratorioId}":{"get":{"tags":["disponibilidad-controller"],"operationId":"consultar","parameters":[{"name":"laboratorioId","in":"path","required":true,"schema":{"type":"string","format":"uuid"}},{"name":"fecha","in":"query","required":true,"schema":{"type":"string","format":"date"}},{"name":"horaInicio","in":"query","required":true,"schema":{"type":"string"}},{"name":"horaFin","in":"query","required":true,"schema":{"type":"string"}}],"responses":{"200":{"description":"OK","content":{"*/*":{"schema":{"$ref":"#/components/schemas/DisponibilidadResponse"}}}}}}},"/api/v1/agenda":{"get":{"tags":["agenda-controller"],"operationId":"listar_2","parameters":[{"name":"laboratorioId","in":"query","required":false,"schema":{"type":"string","format":"uuid"}},{"name":"fechaDesde","in":"query","required":false,"schema":{"type":"string","format":"date"}},{"name":"fechaHasta","in":"query","required":false,"schema":{"type":"string","format":"date"}},{"name":"pagina","in":"query","required":false,"schema":{"type":"integer","format":"int32","default":0,"minimum":0}},{"name":"tamanio","in":"query","required":false,"schema":{"type":"integer","format":"int32","default":20,"maximum":100,"minimum":1}}],"responses":{"200":{"description":"OK","content":{"*/*":{"schema":{"$ref":"#/components/schemas/PaginaResponseAgendaItemResponse"}}}}}}},"/api/v1/agenda/laboratorios/{laboratorioId}":{"get":{"tags":["agenda-controller"],"operationId":"listarPorLaboratorio_1","parameters":[{"name":"laboratorioId","in":"path","required":true,"schema":{"type":"string","format":"uuid"}},{"name":"fechaDesde","in":"query","required":false,"schema":{"type":"string","format":"date"}},{"name":"fechaHasta","in":"query","required":false,"schema":{"type":"string","format":"date"}},{"name":"pagina","in":"query","required":false,"schema":{"type":"integer","format":"int32","default":0,"minimum":0}},{"name":"tamanio","in":"query","required":false,"schema":{"type":"integer","format":"int32","default":20,"maximum":100,"minimum":1}}],"responses":{"200":{"description":"OK","content":{"*/*":{"schema":{"$ref":"#/components/schemas/PaginaResponseAgendaItemResponse"}}}}}}},"/api/v1/agenda/bloqueos/{id}":{"delete":{"tags":["agenda-controller"],"operationId":"eliminarBloqueo","parameters":[{"name":"id","in":"path","required":true,"schema":{"type":"string","format":"uuid"}}],"responses":{"204":{"description":"Eliminado sin contenido"}},"security":[{"bearerAuth":[]}]}}},"components":{"schemas":{"ActualizarSolicitudReservaRequest":{"type":"object","properties":{"docenteId":{"type":"string","format":"uuid"},"laboratorioId":{"type":"string","format":"uuid"},"materiaId":{"type":"string","format":"uuid"},"periodoLectivoId":{"type":"string","format":"uuid"},"fechaReserva":{"type":"string","format":"date"},"horaInicio":{"type":"string"},"horaFin":{"type":"string"},"numeroParticipantes":{"type":"integer","format":"int32"},"motivo":{"type":"string","maxLength":500,"minLength":0},"observacion":{"type":"string","maxLength":2000,"minLength":0},"horarioValido":{"type":"boolean"}},"required":["docenteId","fechaReserva","horaFin","horaInicio","laboratorioId","materiaId","motivo","numeroParticipantes","periodoLectivoId"]},"SolicitudReservaResponse":{"type":"object","properties":{"id":{"type":"string","format":"uuid"},"solicitanteId":{"type":"string","format":"uuid"},"docenteId":{"type":"string","format":"uuid"},"laboratorioId":{"type":"string","format":"uuid"},"materiaId":{"type":"string","format":"uuid"},"periodoLectivoId":{"type":"string","format":"uuid"},"fechaReserva":{"type":"string","format":"date"},"horaInicio":{"type":"string"},"horaFin":{"type":"string"},"numeroParticipantes":{"type":"integer","format":"int32"},"motivo":{"type":"string"},"observacion":{"type":"string"},"estado":{"type":"string","enum":["PENDIENTE","EN_REVISION","APROBADA","RECHAZADA","CANCELADA","EXPIRADA"]},"reservaId":{"type":"string","format":"uuid"},"creadaEn":{"type":"string","format":"date-time"},"actualizadaEn":{"type":"string","format":"date-time"},"version":{"type":"integer","format":"int64"}}},"CrearSolicitudReservaRequest":{"type":"object","properties":{"solicitanteId":{"type":"string","format":"uuid"},"docenteId":{"type":"string","format":"uuid"},"laboratorioId":{"type":"string","format":"uuid"},"materiaId":{"type":"string","format":"uuid"},"periodoLectivoId":{"type":"string","format":"uuid"},"fechaReserva":{"type":"string","format":"date"},"horaInicio":{"type":"string"},"horaFin":{"type":"string"},"numeroParticipantes":{"type":"integer","format":"int32"},"motivo":{"type":"string","maxLength":500,"minLength":0},"observacion":{"type":"string","maxLength":2000,"minLength":0},"horarioValido":{"type":"boolean"}},"required":["docenteId","fechaReserva","horaFin","horaInicio","laboratorioId","materiaId","motivo","numeroParticipantes","periodoLectivoId","solicitanteId"]},"RechazarSolicitudRequest":{"type":"object","properties":{"comentario":{"type":"string","maxLength":2000,"minLength":0}},"required":["comentario"]},"CancelarSolicitudRequest":{"type":"object","properties":{"comentario":{"type":"string","maxLength":2000,"minLength":0}},"required":["comentario"]},"AprobarSolicitudRequest":{"type":"object","properties":{"responsableId":{"type":"string","format":"uuid"},"comentario":{"type":"string","maxLength":2000,"minLength":0}},"required":["responsableId"]},"ReservaResponse":{"type":"object","properties":{"id":{"type":"string","format":"uuid"},"solicitudId":{"type":"string","format":"uuid"},"laboratorioId":{"type":"string","format":"uuid"},"responsableId":{"type":"string","format":"uuid"},"fechaReserva":{"type":"string","format":"date"},"horaInicio":{"type":"string"},"horaFin":{"type":"string"},"estado":{"type":"string","enum":["PROGRAMADA","EN_CURSO","FINALIZADA","CANCELADA","NO_ASISTIDA"]},"codigoReserva":{"type":"string"},"creadaEn":{"type":"string","format":"date-time"},"actualizadaEn":{"type":"string","format":"date-time"},"version":{"type":"integer","format":"int64"}}},"CancelarReservaRequest":{"type":"object","properties":{"motivo":{"type":"string","maxLength":2000,"minLength":0}},"required":["motivo"]},"CrearBloqueoAgendaRequest":{"type":"object","properties":{"laboratorioId":{"type":"string","format":"uuid"},"fecha":{"type":"string","format":"date"},"horaInicio":{"type":"string"},"horaFin":{"type":"string"},"motivo":{"type":"string","maxLength":500,"minLength":0},"horarioValido":{"type":"boolean"}},"required":["fecha","horaFin","horaInicio","laboratorioId","motivo"]},"BloqueoAgendaResponse":{"type":"object","properties":{"id":{"type":"string","format":"uuid"},"laboratorioId":{"type":"string","format":"uuid"},"fecha":{"type":"string","format":"date"},"horaInicio":{"type":"string"},"horaFin":{"type":"string"},"motivo":{"type":"string"},"creadoPor":{"type":"string","format":"uuid"},"activo":{"type":"boolean"},"creadoEn":{"type":"string","format":"date-time"},"version":{"type":"integer","format":"int64"}}},"PaginaResponseSolicitudReservaResponse":{"type":"object","properties":{"contenido":{"type":"array","items":{"$ref":"#/components/schemas/SolicitudReservaResponse"}},"pagina":{"type":"integer","format":"int32"},"tamanio":{"type":"integer","format":"int32"},"totalElementos":{"type":"integer","format":"int64"},"totalPaginas":{"type":"integer","format":"int32"},"primera":{"type":"boolean"},"ultima":{"type":"boolean"}}},"HistorialSolicitudResponse":{"type":"object","properties":{"id":{"type":"string","format":"uuid"},"solicitudId":{"type":"string","format":"uuid"},"estadoAnterior":{"type":"string","enum":["PENDIENTE","EN_REVISION","APROBADA","RECHAZADA","CANCELADA","EXPIRADA"]},"estadoNuevo":{"type":"string","enum":["PENDIENTE","EN_REVISION","APROBADA","RECHAZADA","CANCELADA","EXPIRADA"]},"usuarioAccionId":{"type":"string","format":"uuid"},"comentario":{"type":"string"},"fechaHora":{"type":"string","format":"date-time"}}},"PaginaResponseHistorialSolicitudResponse":{"type":"object","properties":{"contenido":{"type":"array","items":{"$ref":"#/components/schemas/HistorialSolicitudResponse"}},"pagina":{"type":"integer","format":"int32"},"tamanio":{"type":"integer","format":"int32"},"totalElementos":{"type":"integer","format":"int64"},"totalPaginas":{"type":"integer","format":"int32"},"primera":{"type":"boolean"},"ultima":{"type":"boolean"}}},"PaginaResponseReservaResponse":{"type":"object","properties":{"contenido":{"type":"array","items":{"$ref":"#/components/schemas/ReservaResponse"}},"pagina":{"type":"integer","format":"int32"},"tamanio":{"type":"integer","format":"int32"},"totalElementos":{"type":"integer","format":"int64"},"totalPaginas":{"type":"integer","format":"int32"},"primera":{"type":"boolean"},"ultima":{"type":"boolean"}}},"DisponibilidadResponse":{"type":"object","properties":{"laboratorioId":{"type":"string","format":"uuid"},"fecha":{"type":"string","format":"date"},"horaInicio":{"type":"string"},"horaFin":{"type":"string"},"disponible":{"type":"boolean"},"motivo":{"type":"string"}}},"AgendaItemResponse":{"type":"object","properties":{"id":{"type":"string","format":"uuid"},"tipo":{"type":"string"},"laboratorioId":{"type":"string","format":"uuid"},"fecha":{"type":"string","format":"date"},"horaInicio":{"type":"string"},"horaFin":{"type":"string"},"estado":{"type":"string"},"descripcion":{"type":"string"}}},"PaginaResponseAgendaItemResponse":{"type":"object","properties":{"contenido":{"type":"array","items":{"$ref":"#/components/schemas/AgendaItemResponse"}},"pagina":{"type":"integer","format":"int32"},"tamanio":{"type":"integer","format":"int32"},"totalElementos":{"type":"integer","format":"int64"},"totalPaginas":{"type":"integer","format":"int32"},"primera":{"type":"boolean"},"ultima":{"type":"boolean"}}}},"securitySchemes":{"bearerAuth":{"type":"http","scheme":"bearer","bearerFormat":"JWT"}}}}
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "SCLI - Reservas y Solicitudes API",
+    "version": "1.1.0",
+    "description": "Snapshot determinista derivado de controladores y DTO del código fuente vigente."
+  },
+  "paths": {
+    "/api/v1/agenda": {
+      "get": {
+        "operationId": "AgendaController_listar",
+        "tags": [
+          "AgendaController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AgendaItemResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "laboratorioId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "fechaDesde",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "fechaHasta",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "0",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "20",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/agenda/bloqueos": {
+      "post": {
+        "operationId": "AgendaController_crearBloqueo",
+        "tags": [
+          "AgendaController"
+        ],
+        "responses": {
+          "201": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BloqueoAgendaResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CrearBloqueoAgendaRequest"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/agenda/bloqueos/{id}": {
+      "delete": {
+        "operationId": "AgendaController_eliminarBloqueo",
+        "tags": [
+          "AgendaController"
+        ],
+        "responses": {
+          "204": {
+            "description": "Respuesta satisfactoria"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/agenda/laboratorios/{laboratorioId}": {
+      "get": {
+        "operationId": "AgendaController_listarPorLaboratorio",
+        "tags": [
+          "AgendaController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AgendaItemResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "laboratorioId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "fechaDesde",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "fechaHasta",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "0",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "20",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/asistencias/historial": {
+      "get": {
+        "operationId": "AsistenciaController_historial",
+        "tags": [
+          "AsistenciaController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RegistroAsistenciaResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "periodoId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/asistencias/mi-horario": {
+      "get": {
+        "operationId": "AsistenciaController_horario",
+        "tags": [
+          "AsistenciaController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PlanificacionResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "periodoId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/asistencias/mi-horario-docente": {
+      "get": {
+        "operationId": "AsistenciaController_horarioDocente",
+        "tags": [
+          "AsistenciaController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PlanificacionResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "periodoId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/asistencias/mis-clases-hoy": {
+      "get": {
+        "operationId": "AsistenciaController_clasesHoy",
+        "tags": [
+          "AsistenciaController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PlanificacionResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/asistencias/sesiones": {
+      "post": {
+        "operationId": "AsistenciaController_abrir",
+        "tags": [
+          "AsistenciaController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SesionAsistenciaResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AbrirSesionAsistenciaRequest"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/asistencias/sesiones/abiertas": {
+      "get": {
+        "operationId": "AsistenciaController_abiertas",
+        "tags": [
+          "AsistenciaController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SesionAsistenciaResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/asistencias/sesiones/{id}": {
+      "get": {
+        "operationId": "AsistenciaController_consultar",
+        "tags": [
+          "AsistenciaController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SesionAsistenciaResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/asistencias/sesiones/{id}/cerrar": {
+      "post": {
+        "operationId": "AsistenciaController_cerrar",
+        "tags": [
+          "AsistenciaController"
+        ],
+        "responses": {
+          "204": {
+            "description": "Respuesta satisfactoria"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/asistencias/sesiones/{id}/registro-propio": {
+      "post": {
+        "operationId": "AsistenciaController_registrarPropia",
+        "tags": [
+          "AsistenciaController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegistroAsistenciaResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/asistencias/sesiones/{id}/registros": {
+      "get": {
+        "operationId": "AsistenciaController_listar",
+        "tags": [
+          "AsistenciaController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RegistroAsistenciaResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "AsistenciaController_registrar",
+        "tags": [
+          "AsistenciaController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegistroAsistenciaResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegistrarAsistenciaRequest"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/disponibilidad/laboratorios/{laboratorioId}": {
+      "get": {
+        "operationId": "DisponibilidadController_consultar",
+        "tags": [
+          "DisponibilidadController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DisponibilidadResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "laboratorioId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "fecha",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "horaInicio",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "time"
+            }
+          },
+          {
+            "name": "horaFin",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "time"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/incidentes": {
+      "get": {
+        "operationId": "IncidenteController_listar",
+        "tags": [
+          "IncidenteController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/IncidenteResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "0",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "20",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "IncidenteController_crear",
+        "tags": [
+          "IncidenteController"
+        ],
+        "responses": {
+          "201": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncidenteResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CrearIncidenteRequest"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/incidentes/{id}": {
+      "get": {
+        "operationId": "IncidenteController_obtener",
+        "tags": [
+          "IncidenteController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncidenteResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/incidentes/{id}/estado": {
+      "patch": {
+        "operationId": "IncidenteController_cambiarEstado",
+        "tags": [
+          "IncidenteController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncidenteResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CambiarEstadoIncidenteRequest"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/internal/experimentos/arbiter/adjudicar": {
+      "post": {
+        "operationId": "ExperimentalArbiterController_adjudicar",
+        "tags": [
+          "ExperimentalArbiterController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultadoArbitraje"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdjudicacionExperimentalRequest"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "internalApiKey": []
+          }
+        ]
+      }
+    },
+    "/api/v1/internal/experimentos/arbiter/lider/fallo": {
+      "post": {
+        "operationId": "ExperimentalArbiterController_fallarLider",
+        "tags": [
+          "ExperimentalArbiterController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string",
+                  "description": "Valor Java Map<String, Object>"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "internalApiKey": []
+          }
+        ]
+      }
+    },
+    "/api/v1/notificaciones": {
+      "get": {
+        "operationId": "NotificacionController_listar",
+        "tags": [
+          "NotificacionController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/NotificacionInternaResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/notificaciones/dispositivos": {
+      "delete": {
+        "operationId": "NotificacionController_desregistrar",
+        "tags": [
+          "NotificacionController"
+        ],
+        "responses": {
+          "204": {
+            "description": "Respuesta satisfactoria"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DesregistrarDispositivoRequest"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "NotificacionController_registrar",
+        "tags": [
+          "NotificacionController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DispositivoNotificacionResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegistrarDispositivoRequest"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/notificaciones/leer-todas": {
+      "post": {
+        "operationId": "NotificacionController_leerTodas",
+        "tags": [
+          "NotificacionController"
+        ],
+        "responses": {
+          "204": {
+            "description": "Respuesta satisfactoria"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/notificaciones/no-leidas": {
+      "get": {
+        "operationId": "NotificacionController_noLeidas",
+        "tags": [
+          "NotificacionController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string",
+                  "description": "Valor Java Map<String, Long>"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/notificaciones/{id}/leer": {
+      "post": {
+        "operationId": "NotificacionController_leer",
+        "tags": [
+          "NotificacionController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificacionInternaResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/planificaciones": {
+      "get": {
+        "operationId": "PlanificacionController_listar",
+        "tags": [
+          "PlanificacionController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PlanificacionResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "PlanificacionController_crear",
+        "tags": [
+          "PlanificacionController"
+        ],
+        "responses": {
+          "201": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanificacionResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GuardarPlanificacionRequest"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/planificaciones-agregadas": {
+      "get": {
+        "operationId": "PlanificacionAgregadaController_listar",
+        "tags": [
+          "PlanificacionAgregadaController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PlanificacionAgregadaResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "PlanificacionAgregadaController_iniciar",
+        "tags": [
+          "PlanificacionAgregadaController"
+        ],
+        "responses": {
+          "201": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanificacionAgregadaResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IniciarPlanificacionRequest"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/planificaciones-agregadas/disponibilidad": {
+      "get": {
+        "operationId": "PlanificacionAgregadaController_disponibilidad",
+        "tags": [
+          "PlanificacionAgregadaController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DisponibilidadPlanificacionResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "planificacionId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "periodoId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "dia",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "horaInicio",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "time"
+            }
+          },
+          {
+            "name": "horaFin",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "time"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/planificaciones-agregadas/{id}/enviar": {
+      "post": {
+        "operationId": "PlanificacionAgregadaController_enviar",
+        "tags": [
+          "PlanificacionAgregadaController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanificacionAgregadaResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/planificaciones-agregadas/{id}/reset-demo": {
+      "post": {
+        "operationId": "PlanificacionAgregadaController_resetDemo",
+        "tags": [
+          "PlanificacionAgregadaController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanificacionAgregadaResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/planificaciones-agregadas/{id}/retirar": {
+      "post": {
+        "operationId": "PlanificacionAgregadaController_retirar",
+        "tags": [
+          "PlanificacionAgregadaController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanificacionAgregadaResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/planificaciones-agregadas/{id}/revisiones/mi-piso/aprobar": {
+      "post": {
+        "operationId": "PlanificacionAgregadaController_aprobarPiso",
+        "tags": [
+          "PlanificacionAgregadaController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanificacionAgregadaResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/planificaciones-agregadas/{id}/revisiones/mi-piso/proponer-cambio": {
+      "post": {
+        "operationId": "PlanificacionAgregadaController_proponerCambio",
+        "tags": [
+          "PlanificacionAgregadaController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanificacionAgregadaResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProponerCambioAgregadoRequest"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/planificaciones-agregadas/{id}/revisiones/mi-piso/rechazar": {
+      "post": {
+        "operationId": "PlanificacionAgregadaController_rechazarPiso",
+        "tags": [
+          "PlanificacionAgregadaController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanificacionAgregadaResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ObservacionPlanificacionRequest"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/planificaciones-agregadas/{planId}/solicitudes-cambio": {
+      "get": {
+        "operationId": "SolicitudCambioPlanificacionController_listar",
+        "tags": [
+          "SolicitudCambioPlanificacionController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SolicitudCambioResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "planId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "SolicitudCambioPlanificacionController_crear",
+        "tags": [
+          "SolicitudCambioPlanificacionController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SolicitudCambioResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "planId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CrearSolicitudCambioRequest"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/planificaciones-agregadas/{planId}/solicitudes-cambio/{id}/aprobar": {
+      "post": {
+        "operationId": "SolicitudCambioPlanificacionController_aprobar",
+        "tags": [
+          "SolicitudCambioPlanificacionController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SolicitudCambioResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "planId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResolverSolicitudCambioRequest"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/planificaciones-agregadas/{planId}/solicitudes-cambio/{id}/rechazar": {
+      "post": {
+        "operationId": "SolicitudCambioPlanificacionController_rechazar",
+        "tags": [
+          "SolicitudCambioPlanificacionController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SolicitudCambioResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "planId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResolverSolicitudCambioRequest"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/planificaciones-agregadas/{planificacionId}/solicitudes-retiro": {
+      "get": {
+        "operationId": "SolicitudRetiroPlanificacionController_listar",
+        "tags": [
+          "SolicitudRetiroPlanificacionController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SolicitudRetiroResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "planificacionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "SolicitudRetiroPlanificacionController_crear",
+        "tags": [
+          "SolicitudRetiroPlanificacionController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SolicitudRetiroResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "planificacionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CrearSolicitudRetiroRequest"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/planificaciones-agregadas/{planificacionId}/solicitudes-retiro/{solicitudId}/aprobar": {
+      "post": {
+        "operationId": "SolicitudRetiroPlanificacionController_aprobar",
+        "tags": [
+          "SolicitudRetiroPlanificacionController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SolicitudRetiroResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "planificacionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "solicitudId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResolverSolicitudRetiroRequest"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/planificaciones-agregadas/{planificacionId}/solicitudes-retiro/{solicitudId}/rechazar": {
+      "post": {
+        "operationId": "SolicitudRetiroPlanificacionController_rechazar",
+        "tags": [
+          "SolicitudRetiroPlanificacionController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SolicitudRetiroResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "planificacionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "solicitudId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResolverSolicitudRetiroRequest"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/planificaciones/{id}": {
+      "get": {
+        "operationId": "PlanificacionController_buscar",
+        "tags": [
+          "PlanificacionController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanificacionResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "patch": {
+        "operationId": "PlanificacionController_editar",
+        "tags": [
+          "PlanificacionController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanificacionResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GuardarPlanificacionRequest"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/planificaciones/{id}/aceptar": {
+      "post": {
+        "operationId": "PlanificacionController_aceptar",
+        "tags": [
+          "PlanificacionController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanificacionResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/planificaciones/{id}/aceptar-propuesta": {
+      "post": {
+        "operationId": "PlanificacionController_aceptarPropuesta",
+        "tags": [
+          "PlanificacionController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanificacionResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/planificaciones/{id}/cancelar": {
+      "post": {
+        "operationId": "PlanificacionController_cancelar",
+        "tags": [
+          "PlanificacionController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanificacionResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/planificaciones/{id}/enviar": {
+      "post": {
+        "operationId": "PlanificacionController_enviar",
+        "tags": [
+          "PlanificacionController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanificacionResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/planificaciones/{id}/proponer-alternativa": {
+      "post": {
+        "operationId": "PlanificacionController_proponer",
+        "tags": [
+          "PlanificacionController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanificacionResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProponerPlanificacionRequest"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/planificaciones/{id}/rechazar": {
+      "post": {
+        "operationId": "PlanificacionController_rechazar",
+        "tags": [
+          "PlanificacionController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanificacionResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ObservacionPlanificacionRequest"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/planificaciones/{id}/reenviar": {
+      "post": {
+        "operationId": "PlanificacionController_reenviar",
+        "tags": [
+          "PlanificacionController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanificacionResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/reservas": {
+      "get": {
+        "operationId": "ReservaController_listar",
+        "tags": [
+          "ReservaController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ReservaResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "estado",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/EstadoReserva"
+            }
+          },
+          {
+            "name": "laboratorioId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "responsableId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "fechaDesde",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "fechaHasta",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "0",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "20",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/reservas/calendario": {
+      "get": {
+        "operationId": "ReservaController_obtenerCalendario",
+        "tags": [
+          "ReservaController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ReservaResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "laboratorioId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "fechaDesde",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "fechaHasta",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "0",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "20",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/reservas/laboratorio/{laboratorioId}": {
+      "get": {
+        "operationId": "ReservaController_listarPorLaboratorio",
+        "tags": [
+          "ReservaController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ReservaResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "laboratorioId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "0",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "20",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/reservas/responsable/{responsableId}": {
+      "get": {
+        "operationId": "ReservaController_listarPorResponsable",
+        "tags": [
+          "ReservaController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ReservaResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "responsableId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "0",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "20",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/reservas/{id}": {
+      "get": {
+        "operationId": "ReservaController_buscarPorId",
+        "tags": [
+          "ReservaController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReservaResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/reservas/{id}/cancelar": {
+      "post": {
+        "operationId": "ReservaController_cancelar",
+        "tags": [
+          "ReservaController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReservaResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelarReservaRequest"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/reservas/{id}/finalizar": {
+      "post": {
+        "operationId": "ReservaController_finalizar",
+        "tags": [
+          "ReservaController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReservaResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/reservas/{id}/iniciar": {
+      "post": {
+        "operationId": "ReservaController_iniciar",
+        "tags": [
+          "ReservaController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReservaResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/reservas/{id}/no-asistida": {
+      "post": {
+        "operationId": "ReservaController_marcarNoAsistida",
+        "tags": [
+          "ReservaController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReservaResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/solicitudes": {
+      "get": {
+        "operationId": "SolicitudReservaController_listar",
+        "tags": [
+          "SolicitudReservaController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SolicitudReservaResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "estado",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/EstadoSolicitud"
+            }
+          },
+          {
+            "name": "solicitanteId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "laboratorioId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "fecha",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "0",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "20",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "SolicitudReservaController_crear",
+        "tags": [
+          "SolicitudReservaController"
+        ],
+        "responses": {
+          "201": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SolicitudReservaResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CrearSolicitudReservaRequest"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/solicitudes/estado/{estado}": {
+      "get": {
+        "operationId": "SolicitudReservaController_listarPorEstado",
+        "tags": [
+          "SolicitudReservaController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SolicitudReservaResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "estado",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/EstadoSolicitud"
+            }
+          },
+          {
+            "name": "0",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "20",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/solicitudes/solicitante/{solicitanteId}": {
+      "get": {
+        "operationId": "SolicitudReservaController_listarPorSolicitante",
+        "tags": [
+          "SolicitudReservaController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SolicitudReservaResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "solicitanteId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "0",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "20",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/solicitudes/{id}": {
+      "get": {
+        "operationId": "SolicitudReservaController_buscarPorId",
+        "tags": [
+          "SolicitudReservaController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SolicitudReservaResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "put": {
+        "operationId": "SolicitudReservaController_actualizar",
+        "tags": [
+          "SolicitudReservaController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SolicitudReservaResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ActualizarSolicitudReservaRequest"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/solicitudes/{id}/aprobar": {
+      "post": {
+        "operationId": "SolicitudReservaController_aprobar",
+        "tags": [
+          "SolicitudReservaController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReservaResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AprobarSolicitudRequest"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/solicitudes/{id}/cancelar": {
+      "post": {
+        "operationId": "SolicitudReservaController_cancelar",
+        "tags": [
+          "SolicitudReservaController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SolicitudReservaResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelarSolicitudRequest"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/solicitudes/{id}/historial": {
+      "get": {
+        "operationId": "SolicitudReservaController_obtenerHistorial",
+        "tags": [
+          "SolicitudReservaController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/HistorialSolicitudResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "0",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "20",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/solicitudes/{id}/propuesta": {
+      "post": {
+        "operationId": "SolicitudReservaController_proponerAlternativa",
+        "tags": [
+          "SolicitudReservaController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SolicitudReservaResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProponerAlternativaRequest"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/solicitudes/{id}/propuesta/aceptar": {
+      "post": {
+        "operationId": "SolicitudReservaController_aceptarPropuesta",
+        "tags": [
+          "SolicitudReservaController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SolicitudReservaResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResponderPropuestaRequest"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/solicitudes/{id}/propuesta/rechazar": {
+      "post": {
+        "operationId": "SolicitudReservaController_rechazarPropuesta",
+        "tags": [
+          "SolicitudReservaController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SolicitudReservaResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResponderPropuestaRequest"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/solicitudes/{id}/rechazar": {
+      "post": {
+        "operationId": "SolicitudReservaController_rechazar",
+        "tags": [
+          "SolicitudReservaController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SolicitudReservaResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RechazarSolicitudRequest"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/solicitudes/{id}/revision": {
+      "post": {
+        "operationId": "SolicitudReservaController_ponerEnRevision",
+        "tags": [
+          "SolicitudReservaController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SolicitudReservaResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      },
+      "internalApiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-Internal-Api-Key"
+      }
+    },
+    "schemas": {
+      "AccionReserva": {
+        "type": "string",
+        "enum": [
+          "INICIAR",
+          "FINALIZAR",
+          "CANCELAR",
+          "MARCAR_NO_ASISTIDA"
+        ]
+      },
+      "AccionSolicitud": {
+        "type": "string",
+        "enum": [
+          "ACTUALIZAR",
+          "PONER_EN_REVISION",
+          "APROBAR",
+          "RECHAZAR",
+          "CANCELAR",
+          "PROPONER_ALTERNATIVA",
+          "ACEPTAR_PROPUESTA",
+          "RECHAZAR_PROPUESTA"
+        ]
+      },
+      "EstadoIncidente": {
+        "type": "string",
+        "enum": [
+          "REPORTADO",
+          "EN_REVISION",
+          "RESUELTO"
+        ]
+      },
+      "EstadoPlanificacion": {
+        "type": "string",
+        "enum": [
+          "BORRADOR",
+          "ENVIADA",
+          "PROPUESTA_CAMBIO",
+          "CONFIRMADA",
+          "RECHAZADA",
+          "CANCELADA"
+        ]
+      },
+      "EstadoPlanificacionAgregada": {
+        "type": "string",
+        "enum": [
+          "BORRADOR",
+          "EN_REVISION",
+          "REQUIERE_CAMBIOS",
+          "APROBADA",
+          "FINALIZADA"
+        ]
+      },
+      "EstadoReserva": {
+        "type": "string",
+        "enum": [
+          "PROGRAMADA",
+          "EN_CURSO",
+          "FINALIZADA",
+          "CANCELADA",
+          "NO_ASISTIDA"
+        ]
+      },
+      "EstadoRevisionPlanificacion": {
+        "type": "string",
+        "enum": [
+          "PENDIENTE",
+          "APROBADA",
+          "RECHAZADA",
+          "PROPUESTA_CAMBIO"
+        ]
+      },
+      "EstadoSesionAsistencia": {
+        "type": "string",
+        "enum": [
+          "ABIERTA",
+          "CERRADA",
+          "VENCIDA"
+        ]
+      },
+      "EstadoSolicitud": {
+        "type": "string",
+        "enum": [
+          "PENDIENTE",
+          "EN_REVISION",
+          "PROPUESTA",
+          "APROBADA",
+          "RECHAZADA",
+          "CANCELADA",
+          "EXPIRADA"
+        ]
+      },
+      "EstadoSolicitudCambio": {
+        "type": "string",
+        "enum": [
+          "PENDIENTE",
+          "APROBADA",
+          "RECHAZADA"
+        ]
+      },
+      "EstadoSolicitudRetiro": {
+        "type": "string",
+        "enum": [
+          "PENDIENTE",
+          "APROBADA",
+          "RECHAZADA"
+        ]
+      },
+      "PrioridadIncidente": {
+        "type": "string",
+        "enum": [
+          "BAJA",
+          "MEDIA",
+          "ALTA"
+        ]
+      },
+      "TipoSolicitudCambio": {
+        "type": "string",
+        "enum": [
+          "LABORATORIO",
+          "HORARIO",
+          "DOCENTE",
+          "CANCELACION"
+        ]
+      },
+      "AbrirSesionAsistenciaRequest": {
+        "type": "object",
+        "properties": {
+          "reservaId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "bloqueId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "ActorAutenticado": {
+        "type": "object",
+        "properties": {
+          "perfilId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "authorities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "ActualizarSolicitudReservaRequest": {
+        "type": "object",
+        "properties": {
+          "docenteId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "laboratorioId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "materiaId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "periodoLectivoId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "fechaReserva": {
+            "type": "string",
+            "format": "date"
+          },
+          "horaInicio": {
+            "type": "string",
+            "format": "time"
+          },
+          "horaFin": {
+            "type": "string",
+            "format": "time"
+          },
+          "numeroParticipantes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "motivo": {
+            "type": "string"
+          },
+          "observacion": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "docenteId",
+          "laboratorioId",
+          "materiaId",
+          "periodoLectivoId",
+          "fechaReserva",
+          "horaInicio",
+          "horaFin",
+          "numeroParticipantes",
+          "motivo"
+        ]
+      },
+      "AdjudicacionExperimentalRequest": {
+        "type": "object",
+        "properties": {
+          "runId": {
+            "type": "string"
+          },
+          "requestId": {
+            "type": "string"
+          },
+          "equipmentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "laboratorioId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "agenteId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "inicio": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "fin": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "equipmentStatus": {
+            "type": "string"
+          },
+          "equipmentActive": {
+            "type": "boolean"
+          },
+          "equipmentSource": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "runId",
+          "requestId",
+          "equipmentId",
+          "laboratorioId",
+          "agenteId",
+          "inicio",
+          "fin",
+          "equipmentStatus",
+          "equipmentSource"
+        ]
+      },
+      "AgendaItemResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "tipo": {
+            "type": "string"
+          },
+          "laboratorioId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "fecha": {
+            "type": "string",
+            "format": "date"
+          },
+          "horaInicio": {
+            "type": "string",
+            "format": "time"
+          },
+          "horaFin": {
+            "type": "string",
+            "format": "time"
+          },
+          "estado": {
+            "type": "string"
+          },
+          "descripcion": {
+            "type": "string"
+          }
+        }
+      },
+      "ApiError": {
+        "type": "object",
+        "properties": {
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "error": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          }
+        }
+      },
+      "AprobarSolicitudRequest": {
+        "type": "object",
+        "properties": {
+          "responsableId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "comentario": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "responsableId"
+        ]
+      },
+      "BloqueoAgendaResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "laboratorioId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "fecha": {
+            "type": "string",
+            "format": "date"
+          },
+          "horaInicio": {
+            "type": "string",
+            "format": "time"
+          },
+          "horaFin": {
+            "type": "string",
+            "format": "time"
+          },
+          "motivo": {
+            "type": "string"
+          },
+          "creadoPor": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "activo": {
+            "type": "boolean"
+          },
+          "creadoEn": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "CambiarEstadoIncidenteRequest": {
+        "type": "object",
+        "properties": {
+          "estado": {
+            "$ref": "#/components/schemas/EstadoIncidente"
+          }
+        },
+        "required": [
+          "estado"
+        ]
+      },
+      "CancelarReservaRequest": {
+        "type": "object",
+        "properties": {
+          "motivo": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "motivo"
+        ]
+      },
+      "CancelarSolicitudRequest": {
+        "type": "object",
+        "properties": {
+          "comentario": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "comentario"
+        ]
+      },
+      "ConsultaDisponibilidad": {
+        "type": "object",
+        "properties": {
+          "laboratorioId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "fecha": {
+            "type": "string",
+            "format": "date"
+          },
+          "horaInicio": {
+            "type": "string",
+            "format": "time"
+          },
+          "horaFin": {
+            "type": "string",
+            "format": "time"
+          }
+        }
+      },
+      "Contexto": {
+        "type": "object",
+        "properties": {
+          "estudianteId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "perfilId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "carreraId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "periodoId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nivel": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "ContextoInstitucional": {
+        "type": "object",
+        "properties": {
+          "perfilExiste": {
+            "type": "boolean"
+          },
+          "perfilActivo": {
+            "type": "boolean"
+          },
+          "administradorExiste": {
+            "type": "boolean"
+          },
+          "administradorActivo": {
+            "type": "boolean"
+          },
+          "administradorPisoOperativo": {
+            "type": "boolean"
+          },
+          "pisoId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "carreraIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        }
+      },
+      "ContextoInstitucionalExternoResponse": {
+        "type": "object",
+        "properties": {
+          "perfilId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "existe": {
+            "type": "boolean"
+          },
+          "activo": {
+            "type": "boolean"
+          },
+          "tiposPerfil": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "administrador": {
+            "type": "string",
+            "description": "Valor Java Administrador"
+          },
+          "adscripciones": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "description": "Valor Java Adscripcion"
+            }
+          }
+        }
+      },
+      "CrearBloqueoAgendaRequest": {
+        "type": "object",
+        "properties": {
+          "laboratorioId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "fecha": {
+            "type": "string",
+            "format": "date"
+          },
+          "horaInicio": {
+            "type": "string",
+            "format": "time"
+          },
+          "horaFin": {
+            "type": "string",
+            "format": "time"
+          },
+          "motivo": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "laboratorioId",
+          "fecha",
+          "horaInicio",
+          "horaFin",
+          "motivo"
+        ]
+      },
+      "CrearIncidenteRequest": {
+        "type": "object",
+        "properties": {
+          "laboratorioEquipo": {
+            "type": "string"
+          },
+          "descripcion": {
+            "type": "string"
+          },
+          "prioridad": {
+            "$ref": "#/components/schemas/PrioridadIncidente"
+          },
+          "fecha": {
+            "type": "string",
+            "format": "date"
+          }
+        },
+        "required": [
+          "laboratorioEquipo",
+          "descripcion",
+          "prioridad",
+          "fecha"
+        ]
+      },
+      "CrearSolicitudCambioRequest": {
+        "type": "object",
+        "properties": {
+          "bloqueId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "tipo": {
+            "$ref": "#/components/schemas/TipoSolicitudCambio"
+          },
+          "motivo": {
+            "type": "string"
+          },
+          "laboratorioId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "docenteId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "diaSemana": {
+            "type": "string"
+          },
+          "horaInicio": {
+            "type": "string",
+            "format": "time"
+          },
+          "horaFin": {
+            "type": "string",
+            "format": "time"
+          }
+        },
+        "required": [
+          "bloqueId",
+          "tipo",
+          "motivo"
+        ]
+      },
+      "CrearSolicitudReservaRequest": {
+        "type": "object",
+        "properties": {
+          "solicitanteId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "docenteId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "laboratorioId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "materiaId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "periodoLectivoId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "fechaReserva": {
+            "type": "string",
+            "format": "date"
+          },
+          "horaInicio": {
+            "type": "string",
+            "format": "time"
+          },
+          "horaFin": {
+            "type": "string",
+            "format": "time"
+          },
+          "numeroParticipantes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "motivo": {
+            "type": "string"
+          },
+          "observacion": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "solicitanteId",
+          "docenteId",
+          "laboratorioId",
+          "materiaId",
+          "periodoLectivoId",
+          "fechaReserva",
+          "horaInicio",
+          "horaFin",
+          "numeroParticipantes",
+          "motivo"
+        ]
+      },
+      "CrearSolicitudRetiroRequest": {
+        "type": "object",
+        "properties": {
+          "motivo": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "motivo"
+        ]
+      },
+      "DesregistrarDispositivoRequest": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "token"
+        ]
+      },
+      "DisponibilidadPlanificacionResponse": {
+        "type": "object",
+        "properties": {
+          "docentesOcupados": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "laboratoriosOcupados": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        }
+      },
+      "DisponibilidadResponse": {
+        "type": "object",
+        "properties": {
+          "laboratorioId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "fecha": {
+            "type": "string",
+            "format": "date"
+          },
+          "horaInicio": {
+            "type": "string",
+            "format": "time"
+          },
+          "horaFin": {
+            "type": "string",
+            "format": "time"
+          },
+          "disponible": {
+            "type": "boolean"
+          },
+          "motivo": {
+            "type": "string"
+          }
+        }
+      },
+      "DispositivoNotificacionResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "plataforma": {
+            "type": "string"
+          },
+          "activo": {
+            "type": "boolean"
+          },
+          "creadoEn": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "actualizadoEn": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "DocenteExternoResponse": {
+        "type": "object",
+        "properties": {
+          "docenteId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "perfilId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "activo": {
+            "type": "boolean"
+          }
+        }
+      },
+      "DocenteInstitucional": {
+        "type": "object",
+        "properties": {
+          "docenteId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "perfilId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "activo": {
+            "type": "boolean"
+          }
+        }
+      },
+      "EstadoLaboratorio": {
+        "type": "object",
+        "properties": {
+          "existe": {
+            "type": "boolean"
+          },
+          "activo": {
+            "type": "boolean"
+          },
+          "estado": {
+            "type": "string"
+          }
+        }
+      },
+      "EstudianteExternoResponse": {
+        "type": "object",
+        "properties": {
+          "estudianteId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "perfilId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "carreraId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "periodoId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nivel": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "activo": {
+            "type": "boolean"
+          }
+        }
+      },
+      "Event": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "nodeId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "leaderId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "lamport": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ExisteExternoResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "existe": {
+            "type": "boolean"
+          }
+        }
+      },
+      "FiltroReserva": {
+        "type": "object",
+        "properties": {
+          "estado": {
+            "$ref": "#/components/schemas/EstadoReserva"
+          },
+          "laboratorioId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "responsableId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "pisoId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "solicitanteId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "fechaDesde": {
+            "type": "string",
+            "format": "date"
+          },
+          "fechaHasta": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      },
+      "FiltroSolicitudReserva": {
+        "type": "object",
+        "properties": {
+          "estado": {
+            "$ref": "#/components/schemas/EstadoSolicitud"
+          },
+          "solicitanteId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "laboratorioId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "pisoId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "fecha": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      },
+      "GuardarPlanificacionRequest": {
+        "type": "object",
+        "properties": {
+          "planificacionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nivel": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "periodoId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "carreraId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "materiaId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "docenteId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "laboratorioId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "diaSemana": {
+            "type": "string"
+          },
+          "horaInicio": {
+            "type": "string",
+            "format": "time"
+          },
+          "horaFin": {
+            "type": "string",
+            "format": "time"
+          },
+          "observacion": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "nivel",
+          "periodoId",
+          "carreraId",
+          "materiaId",
+          "laboratorioId",
+          "diaSemana",
+          "horaInicio",
+          "horaFin"
+        ]
+      },
+      "HistorialSolicitudResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "solicitudId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "estadoAnterior": {
+            "$ref": "#/components/schemas/EstadoSolicitud"
+          },
+          "estadoNuevo": {
+            "$ref": "#/components/schemas/EstadoSolicitud"
+          },
+          "usuarioAccionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "comentario": {
+            "type": "string"
+          },
+          "fechaHora": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "IdempotenciaAprobacion": {
+        "type": "object",
+        "properties": {
+          "clave": {
+            "type": "string"
+          },
+          "operacion": {
+            "type": "string"
+          },
+          "solicitudId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reservaId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "IdempotenciaCreacionSolicitud": {
+        "type": "object",
+        "properties": {
+          "clave": {
+            "type": "string"
+          },
+          "operacion": {
+            "type": "string"
+          },
+          "actorId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "payloadHash": {
+            "type": "string"
+          },
+          "solicitudId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "IncidenteResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reportanteId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "laboratorioEquipo": {
+            "type": "string"
+          },
+          "descripcion": {
+            "type": "string"
+          },
+          "prioridad": {
+            "$ref": "#/components/schemas/PrioridadIncidente"
+          },
+          "fecha": {
+            "type": "string",
+            "format": "date"
+          },
+          "estado": {
+            "$ref": "#/components/schemas/EstadoIncidente"
+          },
+          "creadoEn": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "actualizadoEn": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "IniciarPlanificacionRequest": {
+        "type": "object",
+        "properties": {
+          "periodoId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "periodoId"
+        ]
+      },
+      "JwtAuthenticationData": {
+        "type": "object",
+        "properties": {
+          "principal": {
+            "$ref": "#/components/schemas/JwtPrincipal"
+          },
+          "authorities": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "description": "Valor Java GrantedAuthority"
+            }
+          }
+        }
+      },
+      "JwtPrincipal": {
+        "type": "object",
+        "properties": {
+          "usuarioAuthId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "perfilId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "LaboratorioExternoResponse": {
+        "type": "object",
+        "properties": {
+          "laboratorioId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "pisoId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "existe": {
+            "type": "boolean"
+          },
+          "activo": {
+            "type": "boolean"
+          },
+          "estado": {
+            "type": "string"
+          },
+          "capacidad": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "MateriaContextoExternoResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "carreraId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nivel": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "existe": {
+            "type": "boolean"
+          },
+          "activo": {
+            "type": "boolean"
+          }
+        }
+      },
+      "NotificacionInternaResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "cuerpo": {
+            "type": "string"
+          },
+          "tipo": {
+            "type": "string"
+          },
+          "referenciaId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "leida": {
+            "type": "boolean"
+          },
+          "creadaEn": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ObservacionPlanificacionRequest": {
+        "type": "object",
+        "properties": {
+          "observacion": {
+            "type": "string"
+          }
+        }
+      },
+      "PerfilExternoResponse": {
+        "type": "object",
+        "properties": {
+          "perfilId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "existe": {
+            "type": "boolean"
+          },
+          "activo": {
+            "type": "boolean"
+          },
+          "tiposPerfil": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "PeriodoExternoResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "codigo": {
+            "type": "string"
+          },
+          "nombre": {
+            "type": "string"
+          },
+          "fechaInicio": {
+            "type": "string",
+            "format": "date"
+          },
+          "fechaFin": {
+            "type": "string",
+            "format": "date"
+          },
+          "estado": {
+            "type": "string"
+          },
+          "ppaCodigo": {
+            "type": "string"
+          },
+          "ppaNombre": {
+            "type": "string"
+          },
+          "cicloAcademico": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "PlanificacionAgregadaResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "carreraId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "periodoId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "estado": {
+            "type": "string"
+          },
+          "coordinadorPerfilId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "creadaEn": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "enviadaEn": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "aprobadaEn": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "bloques": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlanificacionResponse"
+            }
+          },
+          "revisiones": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "description": "Valor Java RevisionResponse"
+            }
+          },
+          "pisoGestionadoId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "PlanificacionResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "planificacionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nivel": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "periodoId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "carreraId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "materiaId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "docenteId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "laboratorioId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "diaSemana": {
+            "type": "string"
+          },
+          "horaInicio": {
+            "type": "string",
+            "format": "time"
+          },
+          "horaFin": {
+            "type": "string",
+            "format": "time"
+          },
+          "estado": {
+            "type": "string"
+          },
+          "observacion": {
+            "type": "string"
+          },
+          "creadoPorPerfilId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "creadaEn": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "actualizadaEn": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "ProponerAlternativaRequest": {
+        "type": "object",
+        "properties": {
+          "fecha": {
+            "type": "string",
+            "format": "date"
+          },
+          "horaInicio": {
+            "type": "string",
+            "format": "time"
+          },
+          "horaFin": {
+            "type": "string",
+            "format": "time"
+          },
+          "laboratorioId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "observacion": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "fecha",
+          "horaInicio",
+          "horaFin",
+          "laboratorioId"
+        ]
+      },
+      "ProponerCambioAgregadoRequest": {
+        "type": "object",
+        "properties": {
+          "bloqueId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "laboratorioPropuestoId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "observacion": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "bloqueId",
+          "observacion"
+        ]
+      },
+      "ProponerPlanificacionRequest": {
+        "type": "object",
+        "properties": {
+          "laboratorioId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "horaInicio": {
+            "type": "string",
+            "format": "time"
+          },
+          "horaFin": {
+            "type": "string",
+            "format": "time"
+          },
+          "observacion": {
+            "type": "string"
+          }
+        }
+      },
+      "RechazarSolicitudRequest": {
+        "type": "object",
+        "properties": {
+          "comentario": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "comentario"
+        ]
+      },
+      "RegistrarAsistenciaRequest": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "token"
+        ]
+      },
+      "RegistrarDispositivoRequest": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string"
+          },
+          "plataforma": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "token",
+          "plataforma"
+        ]
+      },
+      "RegistroAsistenciaResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sesionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "estudianteId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "bloqueId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "registradaEn": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "estado": {
+            "type": "string"
+          }
+        }
+      },
+      "ReservaResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "solicitudId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "laboratorioId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "responsableId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "fechaReserva": {
+            "type": "string",
+            "format": "date"
+          },
+          "horaInicio": {
+            "type": "string",
+            "format": "time"
+          },
+          "horaFin": {
+            "type": "string",
+            "format": "time"
+          },
+          "estado": {
+            "$ref": "#/components/schemas/EstadoReserva"
+          },
+          "codigoReserva": {
+            "type": "string"
+          },
+          "creadaEn": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "actualizadaEn": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "ResolverSolicitudCambioRequest": {
+        "type": "object",
+        "properties": {
+          "observacion": {
+            "type": "string"
+          }
+        }
+      },
+      "ResolverSolicitudRetiroRequest": {
+        "type": "object",
+        "properties": {
+          "observacion": {
+            "type": "string"
+          }
+        }
+      },
+      "ResponderPropuestaRequest": {
+        "type": "object",
+        "properties": {
+          "comentario": {
+            "type": "string"
+          }
+        }
+      },
+      "ResultadoArbitraje": {
+        "type": "object",
+        "properties": {
+          "runId": {
+            "type": "string"
+          },
+          "requestId": {
+            "type": "string"
+          },
+          "estrategia": {
+            "type": "string"
+          },
+          "estado": {
+            "type": "string"
+          },
+          "motivo": {
+            "type": "string"
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "nodeId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "leaderId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "lamport": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "decididoEn": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ResultadoDisponibilidad": {
+        "type": "object",
+        "properties": {
+          "disponible": {
+            "type": "boolean"
+          },
+          "motivo": {
+            "type": "string"
+          }
+        }
+      },
+      "SesionAsistenciaResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reservaId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "bloqueId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "fechaClase": {
+            "type": "string",
+            "format": "date"
+          },
+          "abiertaEn": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expiraEn": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "estado": {
+            "type": "string"
+          },
+          "token": {
+            "type": "string"
+          }
+        }
+      },
+      "SolicitudArbitraje": {
+        "type": "object",
+        "properties": {
+          "runId": {
+            "type": "string"
+          },
+          "requestId": {
+            "type": "string"
+          },
+          "equipmentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "laboratorioId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "agenteId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "inicio": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "fin": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "SolicitudCambioResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "planificacionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "bloqueId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "tipo": {
+            "type": "string"
+          },
+          "estado": {
+            "type": "string"
+          },
+          "motivo": {
+            "type": "string"
+          },
+          "solicitantePerfilId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "laboratorioAnteriorId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "laboratorioPropuestoId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "docenteAnteriorId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "docentePropuestoId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "diaAnterior": {
+            "type": "string"
+          },
+          "diaPropuesto": {
+            "type": "string"
+          },
+          "horaInicioAnterior": {
+            "type": "string",
+            "format": "time"
+          },
+          "horaInicioPropuesta": {
+            "type": "string",
+            "format": "time"
+          },
+          "horaFinAnterior": {
+            "type": "string",
+            "format": "time"
+          },
+          "horaFinPropuesta": {
+            "type": "string",
+            "format": "time"
+          },
+          "resolucion": {
+            "type": "string"
+          },
+          "creadaEn": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "resueltaEn": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "revisiones": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "description": "Valor Java Revision"
+            }
+          },
+          "materiaId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "SolicitudReservaResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "solicitanteId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "docenteId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "laboratorioId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "materiaId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "periodoLectivoId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "fechaReserva": {
+            "type": "string",
+            "format": "date"
+          },
+          "horaInicio": {
+            "type": "string",
+            "format": "time"
+          },
+          "horaFin": {
+            "type": "string",
+            "format": "time"
+          },
+          "numeroParticipantes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "motivo": {
+            "type": "string"
+          },
+          "observacion": {
+            "type": "string"
+          },
+          "estado": {
+            "$ref": "#/components/schemas/EstadoSolicitud"
+          },
+          "propuestaFecha": {
+            "type": "string",
+            "format": "date"
+          },
+          "propuestaHoraInicio": {
+            "type": "string",
+            "format": "time"
+          },
+          "propuestaHoraFin": {
+            "type": "string",
+            "format": "time"
+          },
+          "propuestaLaboratorioId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "propuestaObservacion": {
+            "type": "string"
+          },
+          "reservaId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "creadaEn": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "actualizadaEn": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "SolicitudRetiroResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "planificacionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "solicitantePerfilId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "motivo": {
+            "type": "string"
+          },
+          "estado": {
+            "type": "string"
+          },
+          "creadaEn": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "resueltaEn": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "pisosAprobados": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalPisos": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "decisiones": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "description": "Valor Java Decision"
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -57,6 +57,21 @@ jobs:
       - name: Run experimental unit tests
         run: python -m unittest discover -s experimentos/tests -p "test_*.py" -v
 
+  validate-openapi-contracts:
+    name: Validate - OpenAPI contracts
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Validate service and gateway contracts
+        run: python scripts/validar-contratos-openapi.py
+
   test-backend:
     name: Build and test - ${{ matrix.service }}
     runs-on: ubuntu-latest
