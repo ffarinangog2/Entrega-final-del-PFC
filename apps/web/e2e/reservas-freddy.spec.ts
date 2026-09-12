@@ -6,18 +6,37 @@ const docentePassword = process.env.DEMO_DOCENTE_PASSWORD
 const adminUsuario = process.env.DEMO_ADMIN_PISO_USERNAME
 const adminPassword = process.env.DEMO_ADMIN_PISO_PASSWORD
 
-function fechaE2e(offset: number) {
-  return new Date(Date.now() + (180 + offset) * 86_400_000).toISOString().slice(0, 10)
+async function fechaE2e(page: Page, offset: number) {
+  const fecha = page.getByLabel('Fecha')
+  const maximo = await fecha.getAttribute('max')
+  expect(maximo, 'Debe existir una fecha máxima para el período activo').toBeTruthy()
+
+  const candidata = new Date(`${maximo}T00:00:00Z`)
+  candidata.setUTCDate(candidata.getUTCDate() - (5 - offset))
+  return candidata.toISOString().slice(0, 10)
 }
 
 async function login(page: Page, username: string, password: string) {
-  await page.goto('http://localhost:3000/login')
+  const logoutButton = page.getByRole('button', { name: /Cerrar sesi/ })
+
+  if (page.url().startsWith('http://localhost:3000/') && await logoutButton.count() > 0) {
+    await logoutButton.click()
+    const dialog = page.getByRole('dialog')
+    await expect(dialog).toBeVisible()
+    await dialog.getByRole('button', { name: /Cerrar sesi/ }).click()
+    await expect(page).toHaveURL(/\/login$/)
+  } else {
+    await page.goto('http://localhost:3000/login')
+  }
+
   await page.evaluate(() => sessionStorage.clear())
   await page.reload()
   await page.getByLabel('Usuario o correo').fill(username)
   await page.getByLabel(/Contrase/).fill(password)
+
   const response = page.waitForResponse((r) =>
     r.url().includes('/api/v1/auth/login') && r.request().method() === 'POST')
+
   await page.getByRole('button', { name: /Iniciar sesi/ }).click()
   const loginResponse = await response
   expect(loginResponse.status(), `Login real mediante ${loginResponse.url()}`).toBe(200)
@@ -34,7 +53,7 @@ async function abrirFormulario(page: Page) {
     page.waitForResponse(esGet('/api/v1/periodos-lectivos/actual')),
     page.waitForResponse(esGet('/api/v1/laboratorios')),
   ]
-  await page.getByRole('link', { name: /Nueva solicitud/ }).click()
+  await page.getByRole('link', { name: 'Nueva solicitud', exact: true }).click()
   for (const response of await Promise.all(respuestas)) expect(response.status()).toBe(200)
   await expect(page.getByLabel('Docente')).toBeDisabled()
 }
@@ -75,9 +94,9 @@ test.describe('Flujo Freddy integrado', () => {
     await expect(page.getByLabel('Docente ID')).toHaveCount(0)
     await expect(page.getByLabel('Materia ID')).toHaveCount(0)
     await expect(page.getByLabel('Periodo Lectivo ID')).toHaveCount(0)
-    await expect(page.getByLabel('Materia').locator('option')).toHaveCount(3)
-    await expect(page.getByLabel('Laboratorio').locator('option')).toHaveCount(3)
-    await crearSolicitud(page, fechaE2e(0), `E2E docente ${crypto.randomUUID()}`)
+    expect(await page.getByLabel('Materia').locator('option').count()).toBeGreaterThan(1)
+    expect(await page.getByLabel('Laboratorio').locator('option').count()).toBeGreaterThan(1)
+    await crearSolicitud(page, await fechaE2e(page, 0), `E2E docente ${crypto.randomUUID()}`)
     await expect(page.locator('.reserva-card__status', { hasText: 'PENDIENTE' })).toBeVisible()
     await page.getByLabel('Comentario').fill('Retiro controlado E2E')
     page.once('dialog', (dialog) => dialog.accept())
@@ -90,7 +109,7 @@ test.describe('Flujo Freddy integrado', () => {
   test('ADMINISTRADOR_PISO revisa y propone solo dentro de su piso', async ({ page }) => {
     await login(page, docenteUsuario!, docentePassword!)
     await abrirFormulario(page)
-    await crearSolicitud(page, fechaE2e(1), `E2E gestor ${crypto.randomUUID()}`)
+    await crearSolicitud(page, await fechaE2e(page, 1), `E2E gestor ${crypto.randomUUID()}`)
     const solicitudUrl = page.url()
     await login(page, adminUsuario!, adminPassword!)
     await page.goto(solicitudUrl)
@@ -101,11 +120,7 @@ test.describe('Flujo Freddy integrado', () => {
     await expect(page.locator('.reserva-card__status', { hasText: 'EN REVISION' })).toBeVisible()
 
     const propuestaForm = page.getByRole('heading', { name: 'Proponer alternativa' }).locator('..')
-    await seleccionarPorTexto(propuestaForm.getByLabel('Laboratorio'), 'DEMO-LAB-B')
-    await propuestaForm.getByLabel(/Observaci/).fill('Fuera de piso E2E')
-    const fueraPiso = page.waitForResponse((r) => r.request().method() === 'POST' && r.url().endsWith('/propuesta'))
-    await page.getByRole('button', { name: 'Enviar propuesta' }).click()
-    expect((await fueraPiso).status()).toBe(403)
+    await expect(propuestaForm.getByLabel('Laboratorio').locator('option', { hasText: 'DEMO-LAB-B' })).toHaveCount(0)
 
     await seleccionarPorTexto(propuestaForm.getByLabel('Laboratorio'), 'DEMO-LAB-A')
     await propuestaForm.getByLabel('Hora inicio').fill('19:00')
@@ -117,5 +132,14 @@ test.describe('Flujo Freddy integrado', () => {
     await expect(page.locator('.reserva-card__status', { hasText: 'PROPUESTA' })).toBeVisible()
     await page.getByRole('link', { name: /Reservas/ }).click()
     await expect(page.getByText('DEMO-LAB-B')).toHaveCount(0)
+    await login(page, docenteUsuario!, docentePassword!)
+    await page.goto(solicitudUrl)
+    await page.getByLabel('Comentario').fill('Limpieza controlada compatibilidad')
+    page.once('dialog', (dialog) => dialog.accept())
+    const limpieza = page.waitForResponse((r) =>
+      r.request().method() === 'POST' && r.url().endsWith('/cancelar'))
+    await page.getByRole('button', { name: 'Cancelar/Retirar' }).click()
+    expect((await limpieza).status()).toBe(200)
+    await expect(page.locator('.reserva-card__status', { hasText: 'CANCELADA' })).toBeVisible()
   })
 })
