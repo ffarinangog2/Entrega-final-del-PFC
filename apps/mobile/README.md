@@ -112,12 +112,14 @@ scli-mobile-0.1.0-release.apk
 SHA256SUMS.txt
 ```
 
-Para el HEAD `07d845849dc51ff215fb82c83663e316c783a85e`, el job
+Para el SHA fuente `0b755310a0acf34da2456290a4f978475a8e17f9`, el job
 `Build - Android release signed` terminó con estado `completed/success`. El
-artifact `scli-mobile-release-07d845849dc51ff215fb82c83663e316c783a85e` está
-disponible en GitHub Actions, dentro del run de CI `34687754162`, con el
-APK release firmado y el checksum verificado. El identificador del paquete es
-`ec.edu.uteq.scli.mobile`.
+artifact `scli-mobile-release-0b755310a0acf34da2456290a4f978475a8e17f9` fue
+generado, firmado y verificado correctamente en GitHub Actions, dentro del run
+de CI `34688947156`. Se preserva una copia verificada en
+`release/apk/scli-mobile-0.1.0-release.apk`, con su checksum en
+`release/apk/SHA256SUMS.txt`; Actions continúa siendo la fuente reproducible del
+proceso. El identificador del paquete es `ec.edu.uteq.scli.mobile`.
 
 Para instalar el APK descargado y comprobar su `applicationId`:
 
@@ -126,6 +128,7 @@ adb install -r scli-mobile-0.1.0-release.apk
 adb shell pm list packages ec.edu.uteq.scli.mobile
 ```
 
-El keystore privado nunca se sube a Git. Debe conservarse cifrado y respaldado
+El keystore privado y las contraseñas de firma nunca se suben a Git. Debe
+conservarse cifrado y respaldado
 en una ubicación externa controlada por el equipo: perderlo impediría firmar
 futuras actualizaciones con la misma identidad.

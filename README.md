@@ -174,6 +174,14 @@ documenta en [`apps/mobile/README.md`](apps/mobile/README.md). Firebase
 permanece pendiente de `google-services.json`,
 configuración FCM y emisor backend; no está completamente operativo.
 
+El APK release firmado procedente del run `34688947156`, correspondiente al SHA
+`0b755310a0acf34da2456290a4f978475a8e17f9`, está incorporado en
+[`release/apk/scli-mobile-0.1.0-release.apk`](release/apk/scli-mobile-0.1.0-release.apk),
+junto con [`release/apk/SHA256SUMS.txt`](release/apk/SHA256SUMS.txt). CI lo firmó
+y verificó; Git no contiene las claves privadas ni las contraseñas de firma.
+GitHub Actions continúa siendo la fuente reproducible de generación y
+verificación.
+
 ## Pruebas
 
 Cada servicio backend se compila y prueba desde su directorio. Auth, Usuarios,
@@ -262,6 +270,20 @@ como **CUMPLE** dentro de los escenarios ensayados, y mantenibilidad como
 **NO CUMPLE** únicamente por Android (38,3407 % de líneas frente al 70 %).
 La [matriz de trazabilidad](experimentos/resultados/TRAZABILIDAD-E3-E4.md)
 relaciona requisitos, protocolos, productores, raw, análisis y documentos.
+
+## Estado final ARBITER
+
+La campaña ARBITER del SHA experimental
+`e43967eda31410b7fef060cfc7903cea94efbe96` planificó **130 corridas**: **123
+COMPLETED** y **7 FAILED**. De las completadas, **99** constituyen las muestras
+analíticas y **24** fueron excluidas del análisis. El manifiesto de integridad
+contiene **315 entradas SHA-256 verificadas** y **0 hashes incorrectos**.
+
+La descripción y la evidencia versionada están en el
+[README de ARBITER](experimentos/resultados/arbiter/README.md) y en la
+[campaña completa](experimentos/resultados/arbiter/campaign/). El valor 0/130
+que aparece en el prerregistro corresponde únicamente al estado histórico
+previo a la ejecución y **NO representa el resultado actual**.
 
 ## Semillas reproducibles
 

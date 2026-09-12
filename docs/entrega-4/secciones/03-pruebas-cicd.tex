@@ -178,13 +178,25 @@ Pixel 2, Android API 29, imagen \texttt{google\_apis} x86\_64, desactiva
 animaciones y ejecuta \texttt{connectedDebugAndroidTest}. Sus resultados se
 publican incluso ante fallo.
 
-Este job depende de las pruebas locales y es gate del APK. A su vez,
-\emph{Build mobile APK} genera \texttt{app-debug.apk} solo después de unitarias e
-instrumentadas. El proyecto no configura \texttt{signingConfig}, keystore ni
-\texttt{assembleRelease} en CI; por tanto, el artifact actual es exclusivamente
-de depuración y no se presenta como release firmado. No se encontró en el
-repositorio una rúbrica versionada que obligue a distribuir un release firmado,
-por lo que no se añadieron secretos ni complejidad de firma sin ese requisito.
+\textbf{Estado previo / antecedente.} En la medición anterior, este job dependía
+de las pruebas locales y actuaba como gate del APK. \emph{Build mobile APK}
+generaba \texttt{app-debug.apk} solo después de unitarias e instrumentadas. En
+ese estado previo, el proyecto no configuraba \texttt{signingConfig}, keystore
+ni \texttt{assembleRelease} en CI; por tanto, el artifact disponible era
+exclusivamente de depuración y no se presentaba como release firmado. Tampoco se
+había encontrado una rúbrica versionada que obligara a distribuirlo, por lo que
+en ese momento no se añadieron secretos ni complejidad de firma.
+
+\textbf{Estado actual E7.} El workflow incorpora el job \emph{Build - Android
+release signed}: ejecuta \texttt{assembleRelease}, alinea el binario mediante
+\texttt{zipalign}, lo firma con \texttt{apksigner}, valida la firma con
+\texttt{apksigner verify}, genera y comprueba \texttt{SHA256SUMS.txt}, y publica
+el APK release firmado como artifact de GitHub Actions. El binario está
+incorporado en \path{release/apk/scli-mobile-0.1.0-release.apk} y su checksum en
+\path{release/apk/SHA256SUMS.txt}; procede del run \texttt{34688947156}, para el
+SHA \texttt{0b755310a0acf34da2456290a4f978475a8e17f9}, generado y verificado por
+CI. GitHub Actions continúa siendo la fuente reproducible; las claves privadas
+y contraseñas de firma permanecen fuera de Git.
 No se ejecutó un emulador manualmente durante la redacción; se usa la ejecución
 automatizada de CI como evidencia.
 

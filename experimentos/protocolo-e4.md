@@ -301,6 +301,12 @@ componentes, versiones y entorno efectivamente ensayados.
 
 ### Estado y aislamiento
 
+> ⚠️ **ESTADO HISTÓRICO DEL PRERREGISTRO.**
+> Este valor no representa el resultado final. La campaña posteriormente
+> ejecutada terminó con 123 `COMPLETED`, 7 `FAILED` y 99 muestras analíticas.
+> Véanse el cierre posterior y
+> [`experimentos/resultados/arbiter/campaign/`](resultados/arbiter/campaign/).
+
 Este apartado pre-registra el experimento exigido por la guía FUVV, secciones
 5.1--5.6. A la fecha existen **0 de 130 corridas ejecutadas**. No contiene
 resultados. El producto reserva laboratorios; como el experimento requiere un
@@ -400,6 +406,10 @@ recuperación; mayor es favorable para Jain. Se usarán diagramas de caja.
 La evidencia real irá a `resultados/arbiter/raw`, `oracle`, `summary` y
 `analysis`. Solo después de ejecutar se generará un `SHA256SUMS` separado, sin
 alterar el manifiesto histórico ISO 25010.
+
+> **Nota posterior de materialización.** La ubicación finalmente materializada
+> de la evidencia es
+> [`experimentos/resultados/arbiter/campaign/`](resultados/arbiter/campaign/).
 
 ### Preparación reproducible (no ejecutar en PC)
 
