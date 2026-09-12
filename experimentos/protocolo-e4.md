@@ -69,6 +69,26 @@ ventanas completas. Hasta contar con esa evidencia, tanto la fiabilidad temporal
 como la disponibilidad permanecen **NO CONCLUYENTES**; un valor 5xx menor que
 1 % por sí solo no demuestra disponibilidad mayor o igual que 99,5 %.
 
+### Cierre posterior de ejecución — Fiabilidad
+
+Las líneas anteriores conservan el estado existente cuando se realizó el
+prerregistro. Posteriormente se ejecutaron diez repeticiones independientes de
+aproximadamente una hora sobre el SHA experimental
+`061a1050a94e1bd30d81b30c47c7e818005a33bb`; el análisis estadístico utiliza
+las repeticiones r2--r9.
+
+La tasa HTTP 5xx obtuvo una media de 0,061315 % y un IC95
+[0,032045; 0,090585] %, por lo que **CUMPLE** el criterio prerregistrado menor
+que 1 %. La disponibilidad temporal permanece **NO CONCLUYENTE** porque no se
+operacionalizó el indicador de tiempo apto respecto del tiempo total. En este
+cierre, **NO CONCLUYENTE no significa NO EJECUTADA**.
+
+La evidencia y el análisis están disponibles en:
+
+- [`experimentos/resultados/raw/fiabilidad_nominal_50u_1h/`](resultados/raw/fiabilidad_nominal_50u_1h/);
+- [`experimentos/resultados/iso25010.csv`](resultados/iso25010.csv);
+- [`experimentos/resultados/RESUMEN-ISO25010-E4.md`](resultados/RESUMEN-ISO25010-E4.md).
+
 ## Repetibilidad y validez
 
 Cada escenario se ejecuta diez veces (`r = 10`) y se registra con una fila por
@@ -403,6 +423,29 @@ reversible y el health interno; exige el literal de confirmación
 `CONFIRM_EXPERIMENTAL_NODE_FAILURE`. El oráculo se ejecuta sobre cada manifiesto
 y la fixture/catálogo declarado. Ningún comando contiene credenciales en sus
 argumentos ni ejecuta las 130 corridas automáticamente.
+
+### Cierre posterior de ejecución — ARBITER
+
+La afirmación anterior de 0/130 corresponde únicamente al momento del
+prerregistro. La campaña fue ejecutada posteriormente sobre el SHA experimental
+`e43967eda31410b7fef060cfc7903cea94efbe96`: se planificaron 130 corridas, de
+las cuales 123 quedaron `COMPLETED` y 7 `FAILED`. El conjunto analítico contiene
+99 muestras; otras 24 corridas completadas fueron excluidas conforme a la regla
+prerregistrada.
+
+La evidencia versionada está disponible en
+[`experimentos/resultados/arbiter/campaign/`](resultados/arbiter/campaign/) e
+incluye:
+
+- [`campaign/manifest/checkpoint.json`](resultados/arbiter/campaign/manifest/checkpoint.json);
+- [`campaign/summary/runs.json`](resultados/arbiter/campaign/summary/runs.json);
+- [`campaign/summary/runs.csv`](resultados/arbiter/campaign/summary/runs.csv);
+- [`campaign/analysis/comparisons.json`](resultados/arbiter/campaign/analysis/comparisons.json);
+- [`campaign/analysis/oracle/`](resultados/arbiter/campaign/analysis/oracle/);
+- [`campaign/raw/`](resultados/arbiter/campaign/raw/);
+- [`campaign/SHA256SUMS`](resultados/arbiter/campaign/SHA256SUMS).
+
+`SHA256SUMS` contiene 315 entradas verificadas y 0 hashes incorrectos.
 
 ## Cierre de ejecución E3
 
