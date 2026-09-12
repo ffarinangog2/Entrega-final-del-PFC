@@ -33,3 +33,11 @@ docs/*.out
 docs/*.toc
 docs/*.bbl
 docs/*.blg
+
+# Material privado de firma Android y configuración local
+*.jks
+*.keystore
+*.p12
+*.pem
+*.key
+apps/mobile/app/google-services.json

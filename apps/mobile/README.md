@@ -78,3 +78,49 @@ nombre del técnico y el toggle de notificaciones habilitadas.
 CI ejecuta `testDebugUnitTest`, el reporte JaCoCo, Android lint y
 `connectedDebugAndroidTest` en un emulador API 29. El APK debug se publica como
 artefacto únicamente después de superar esos gates.
+
+## APK release firmado
+
+La compilación release local sin credenciales se ejecuta en Windows con:
+
+```powershell
+.\gradlew.bat clean assembleRelease
+```
+
+El resultado sin firma queda en:
+
+```text
+app/build/outputs/apk/release/app-release-unsigned.apk
+```
+
+La firma de publicación se realiza en GitHub Actions únicamente para pushes a
+`feature/entrega-4` y cuando estén configurados estos secrets del repositorio:
+
+- `ANDROID_SIGNING_KEYSTORE_BASE64`
+- `ANDROID_SIGNING_STORE_PASSWORD`
+- `ANDROID_SIGNING_KEY_ALIAS`
+- `ANDROID_SIGNING_KEY_PASSWORD`
+
+CI reconstruye temporalmente el keystore dentro de `$RUNNER_TEMP`, alinea el APK
+con `zipalign`, firma con `apksigner` y verifica la firma y el certificado con
+`apksigner verify --verbose --print-certs`. Después genera y comprueba
+`SHA256SUMS.txt` y publica ambos archivos en el artifact
+`scli-mobile-release-<SHA>`:
+
+```text
+scli-mobile-0.1.0-release.apk
+SHA256SUMS.txt
+```
+
+Para instalar el APK descargado y comprobar su `applicationId`:
+
+```bash
+adb install -r scli-mobile-0.1.0-release.apk
+adb shell pm list packages ec.edu.uteq.scli.mobile
+```
+
+El keystore privado nunca se sube a Git. Debe conservarse cifrado y respaldado
+en una ubicación externa controlada por el equipo: perderlo impediría firmar
+futuras actualizaciones con la misma identidad. Esta preparación no demuestra
+todavía una publicación release; E7 se completa cuando exista una ejecución CI
+firmada, verificada y descargable.

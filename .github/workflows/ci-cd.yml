@@ -411,6 +411,114 @@ jobs:
           name: pfc-debug-apk-${{ github.sha }}
           path: apps/mobile/app/build/outputs/apk/debug/app-debug.apk
 
+  build-mobile-release-signed:
+    name: Build - Android release signed
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/feature/entrega-4' }}
+
+    steps:
+      - name: Check signing configuration
+        id: signing
+        env:
+          ANDROID_SIGNING_KEYSTORE_BASE64: ${{ secrets.ANDROID_SIGNING_KEYSTORE_BASE64 }}
+          ANDROID_SIGNING_STORE_PASSWORD: ${{ secrets.ANDROID_SIGNING_STORE_PASSWORD }}
+          ANDROID_SIGNING_KEY_ALIAS: ${{ secrets.ANDROID_SIGNING_KEY_ALIAS }}
+          ANDROID_SIGNING_KEY_PASSWORD: ${{ secrets.ANDROID_SIGNING_KEY_PASSWORD }}
+        shell: bash
+        run: |
+          if [ -z "$ANDROID_SIGNING_KEYSTORE_BASE64" ] || \
+             [ -z "$ANDROID_SIGNING_STORE_PASSWORD" ] || \
+             [ -z "$ANDROID_SIGNING_KEY_ALIAS" ] || \
+             [ -z "$ANDROID_SIGNING_KEY_PASSWORD" ]; then
+            echo "::notice::Android release signing is pending: configure all required repository secrets."
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout
+        if: ${{ steps.signing.outputs.configured == 'true' }}
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        if: ${{ steps.signing.outputs.configured == 'true' }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Android SDK
+        if: ${{ steps.signing.outputs.configured == 'true' }}
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK packages
+        if: ${{ steps.signing.outputs.configured == 'true' }}
+        run: sdkmanager "platforms;android-34" "build-tools;34.0.0"
+
+      - name: Build unsigned release APK
+        if: ${{ steps.signing.outputs.configured == 'true' }}
+        working-directory: apps/mobile
+        run: |
+          chmod +x gradlew
+          ./gradlew clean testDebugUnitTest lint assembleRelease
+
+      - name: Prepare release output and keystore
+        if: ${{ steps.signing.outputs.configured == 'true' }}
+        env:
+          ANDROID_SIGNING_KEYSTORE_BASE64: ${{ secrets.ANDROID_SIGNING_KEYSTORE_BASE64 }}
+        shell: bash
+        run: |
+          mkdir -p apps/mobile/app/build/outputs/release
+          printf '%s' "$ANDROID_SIGNING_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/scli-release.jks"
+
+      - name: Align and sign release APK
+        if: ${{ steps.signing.outputs.configured == 'true' }}
+        env:
+          ANDROID_SIGNING_STORE_PASSWORD: ${{ secrets.ANDROID_SIGNING_STORE_PASSWORD }}
+          ANDROID_SIGNING_KEY_ALIAS: ${{ secrets.ANDROID_SIGNING_KEY_ALIAS }}
+          ANDROID_SIGNING_KEY_PASSWORD: ${{ secrets.ANDROID_SIGNING_KEY_PASSWORD }}
+        shell: bash
+        run: |
+          build_tools="$ANDROID_HOME/build-tools/34.0.0"
+          output_dir="apps/mobile/app/build/outputs/release"
+          "$build_tools/zipalign" -p -f 4 \
+            apps/mobile/app/build/outputs/apk/release/app-release-unsigned.apk \
+            "$output_dir/scli-mobile-0.1.0-release-aligned.apk"
+          "$build_tools/apksigner" sign \
+            --ks "$RUNNER_TEMP/scli-release.jks" \
+            --ks-key-alias "$ANDROID_SIGNING_KEY_ALIAS" \
+            --ks-pass env:ANDROID_SIGNING_STORE_PASSWORD \
+            --key-pass env:ANDROID_SIGNING_KEY_PASSWORD \
+            --out "$output_dir/scli-mobile-0.1.0-release.apk" \
+            "$output_dir/scli-mobile-0.1.0-release-aligned.apk"
+
+      - name: Verify signature and checksum
+        if: ${{ steps.signing.outputs.configured == 'true' }}
+        shell: bash
+        run: |
+          build_tools="$ANDROID_HOME/build-tools/34.0.0"
+          output_dir="apps/mobile/app/build/outputs/release"
+          "$build_tools/apksigner" verify --verbose --print-certs \
+            "$output_dir/scli-mobile-0.1.0-release.apk"
+          cd "$output_dir"
+          sha256sum scli-mobile-0.1.0-release.apk > SHA256SUMS.txt
+          sha256sum --check SHA256SUMS.txt
+
+      - name: Upload signed release APK
+        if: ${{ steps.signing.outputs.configured == 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: scli-mobile-release-${{ github.sha }}
+          path: |
+            apps/mobile/app/build/outputs/release/scli-mobile-0.1.0-release.apk
+            apps/mobile/app/build/outputs/release/SHA256SUMS.txt
+          if-no-files-found: error
+
+      - name: Remove temporary signing material
+        if: ${{ always() && steps.signing.outputs.configured == 'true' }}
+        shell: bash
+        run: rm -f "$RUNNER_TEMP/scli-release.jks"
+
   integration:
     name: Compose integration tests
     runs-on: ubuntu-latest

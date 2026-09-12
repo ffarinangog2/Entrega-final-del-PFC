@@ -167,7 +167,10 @@ cd apps/mobile
 
 En Windows use `gradlew.bat`. CI ejecuta unitarias, lint y las pruebas
 `src/androidTest` en un emulador API 29; estas pruebas instrumentadas forman parte
-del gate previo al APK. El APK debug se publica como artifact por SHA. Firebase
+del gate previo al APK. El APK debug se publica como artifact por SHA. El
+workflow también prepara un APK release firmado como artifact cuando los cuatro
+secrets de firma están configurados en un push autorizado; el procedimiento se
+documenta en [`apps/mobile/README.md`](apps/mobile/README.md). Firebase
 permanece pendiente de `google-services.json`,
 configuración FCM y emisor backend; no está completamente operativo.
 
