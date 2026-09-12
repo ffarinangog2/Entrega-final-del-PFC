@@ -323,6 +323,7 @@ se acepta automáticamente como resultado experimental: solo se reportan datos
 producidos por ejecuciones trazables y artefactos verificables.
 
 - [ADR](docs/adr/)
+- [Actas de trabajo colaborativo](docs/actas/README.md)
 - [Diagramas C4](docs/diagrams/)
 - [Deployment VM](docs/deployment-vm.md)
 - [Experimentos](experimentos/)

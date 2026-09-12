@@ -171,6 +171,17 @@ Fielding~\cite{li2021microservices} en su caracterización del estilo REST, y lo
 límites de servicio se trazaron siguiendo las heurísticas de descomposición
 por dominio de Newman~\cite{li2021microservices}.
 
+\subsection{Organización y trazabilidad del trabajo colaborativo}
+
+El equipo estuvo integrado por Freddy Farinango, responsable general de
+Arquitectura; Isaías Urbina, Líder Dev; Iván Villamarín, responsable de
+Calidad; y Harold Vinueza, responsable de Documentación. Las jornadas de
+coordinación confirmadas se realizaron mediante Google Meet desde las 19:00.
+Sus objetivos, acuerdos, tareas y seguimiento se registran en
+\texttt{docs/actas/README.md} y en las cinco actas enlazadas desde ese índice.
+Los commits, ADR y workflows citados acreditan los resultados posteriores de
+cada jornada; no sustituyen el registro de la reunión.
+
 Como antecedente directo, la Entrega 3 (E3) añadió las dos capas que hacían
 falta para que el sistema
 sea distribuido en sentido pleno: una capa de persistencia distribuida real,
@@ -863,9 +874,12 @@ Todo el trabajo de esta entrega se desarrolló en la rama
 de extracción (\emph{pull requests}) individuales por integrante --con
 ramas propias \texttt{feature/entrega-3-farinango},
 \texttt{feature/entrega-3-villamarin}, \texttt{feature/entrega-3-urbina} y
-\texttt{feature/entrega-3-vinueza}-- y revisión cruzada antes de cada
-fusión, siguiendo el mismo flujo de trabajo establecido en la entrega
-anterior. El archivo \texttt{.env.example} del repositorio documenta las
+\texttt{feature/entrega-3-vinueza}--. Se promovió la revisión cruzada durante
+el proceso de integración; la evidencia disponible muestra que no todas las
+fusiones contaron con una revisión formal registrada en GitHub. El archivo
+\texttt{docs/evidencias/revision-cruzada-e4.md} conserva explícitamente un
+caso pendiente, sin convertir la existencia de un PR en una aprobación. El
+archivo \texttt{.env.example} del repositorio documenta las
 variables de entorno necesarias para levantar el sistema completo,
 incluidas las credenciales del clúster E3, y el comando
 \texttt{docker compose up -d} desde la raíz del repositorio construye y

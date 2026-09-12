@@ -20,6 +20,14 @@ Las fuentes modulares vigentes que consume el informe están en
 `entrega-4/secciones/`. Los ADR, diagramas, evidencias técnicas, contratos
 OpenAPI e informes ISO son documentación complementaria trazable.
 
+## Trabajo colaborativo
+
+Las [actas del equipo](actas/README.md) registran las cinco jornadas confirmadas,
+los roles generales, los acuerdos respaldados por el proyecto y su seguimiento
+mediante commits, ADR, workflows y documentos versionados. Los commits acreditan
+los resultados del trabajo; cada acta conserva por separado el registro de la
+reunión realizada mediante Google Meet.
+
 ## Documentación histórica
 
 `entrega-3/` y `entrega-4/` conservan fuentes y PDFs de entregas anteriores. Son
