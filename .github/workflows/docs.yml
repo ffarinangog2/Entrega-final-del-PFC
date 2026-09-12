@@ -39,6 +39,6 @@ jobs:
       - name: Upload report PDF
         uses: actions/upload-artifact@v4
         with:
-          name: informe-e4-scli
+          name: informe-final-scli
           path: docs/main.pdf
           if-no-files-found: error

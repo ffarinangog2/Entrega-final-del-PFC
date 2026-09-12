@@ -1,5 +1,5 @@
 % ============================================================================
-% Informe acumulativo Entrega 4 (E4) - SCLI - Aplicaciones Distribuidas
+% Informe final acumulativo - SCLI - Aplicaciones Distribuidas
 % UTEQ - Facultad de Ciencias de la Computación - Ingeniería de Software
 % Equipo PFC: ForáCode
 % Compilar con: pdflatex (dos pasadas). Ver README.md.
@@ -35,7 +35,7 @@
 \usepackage{listings}
 \usepackage{xcolor}
 \usepackage{hyperref}
-\hypersetup{colorlinks=true,linkcolor=blue!50!black,citecolor=blue!50!black,urlcolor=blue!50!black,pdftitle={SCLI - Entrega 4},pdfauthor={Equipo ForáCode}}
+\hypersetup{colorlinks=true,linkcolor=blue!50!black,citecolor=blue!50!black,urlcolor=blue!50!black,pdftitle={SCLI - Informe Final Acumulativo},pdfauthor={Equipo ForáCode}}
 \usepackage{titlesec}
 \usepackage{enumitem}
 \usepackage{abstract}
@@ -92,11 +92,10 @@
 % ---------------------------------------------------------------------------
 \twocolumn[
 \begin{center}
-{\LARGE\bfseries Sistema de Control de Laboratorios e Informática (SCLI):
-integración distribuida, aplicaciones cliente y evaluación de calidad}
+{\LARGE\bfseries Informe Final Acumulativo --- Sistema Distribuido de Laboratorios (SCLI)}
 
 \vspace{6pt}
-{\large Entrega 4 del Proyecto Fin de Curso}
+{\large Proyecto Fin de Curso}
 
 \vspace{10pt}
 {\normalsize
@@ -116,8 +115,8 @@ Universidad Técnica Estatal de Quevedo (UTEQ), Ecuador
 ]
 
 \begin{abstract}
-Este informe acumulativo documenta la Entrega 4 (E4) del Proyecto Fin de
-Curso del sistema SCLI (Sistema de Control de Laboratorios e Informática).
+Este informe final acumulativo documenta el Proyecto Fin de Curso del sistema
+SCLI (Sistema de Control de Laboratorios e Informática) e integra sus entregas.
 Se conserva como antecedente verificable el diseño distribuido desarrollado
 en la E3: el clúster CockroachDB de tres nodos, la replicación, la
 tolerancia a fallos y el pipeline analítico. Sobre esa base, la E4 integra
@@ -128,12 +127,15 @@ idempotencia, control de concurrencia, ownership del docente, ámbito del
 administrador de piso, propuestas alternativas y cancelación transaccional.
 El documento distingue los resultados efectivamente verificados de los
 protocolos y evidencias experimentales que aún deban ejecutarse, evitando
-presentar configuraciones o estimaciones como mediciones finales.
+presentar configuraciones o estimaciones como mediciones finales. Los SHA
+experimentales identifican el software efectivamente medido y pueden diferir
+del HEAD documental posterior, que incorpora análisis, contratos y redacción
+sin cambiar retrospectivamente las ejecuciones.
 \end{abstract}
 
 \begin{abstract}
-\textbf{Abstract.} This cumulative report documents the fourth deliverable
-(E4) of the SCLI capstone project. It preserves the distributed-data work
+\textbf{Abstract.} This final cumulative report documents the SCLI capstone
+project and its successive deliverables. It preserves the distributed-data work
 from E3 as a technical baseline, including the three-node CockroachDB
 cluster, replication, fault-tolerance verification, and the analytical
 pipeline. E4 extends that baseline with web and mobile clients,
@@ -1415,6 +1417,7 @@ parte sin reescribir ni eliminar los antecedentes del proyecto.
 \input{entrega-4/secciones/02-aplicaciones}
 \input{entrega-4/secciones/03-pruebas-cicd}
 \input{entrega-4/secciones/04-observabilidad-iso}
+\input{entrega-4/secciones/05-contratos-openapi}
 \section{Discusión}
 \label{sec:discusion}
 

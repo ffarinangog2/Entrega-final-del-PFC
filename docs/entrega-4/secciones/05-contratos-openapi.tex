@@ -1,0 +1,55 @@
+\section{Contratos OpenAPI y trazabilidad de interfaz}
+\label{sec:contratos-openapi}
+
+La E5 incorpora contratos OpenAPI 3.1.0 versionados para describir de forma
+reproducible la superficie HTTP de los cuatro servicios de dominio y de la
+fachada expuesta por el API Gateway. Los contratos se conservan en
+\path{docs/openapi/}:
+
+\begin{itemize}
+  \item \texttt{auth-service-openapi.json};
+  \item \texttt{usuarios-service-openapi.json};
+  \item \texttt{academico-laboratorios-service-openapi.json};
+  \item \texttt{reservas-solicitudes-service-openapi.json}; y
+  \item \texttt{api-gateway-openapi.json}.
+\end{itemize}
+
+\subsection{Cobertura y fachada}
+
+El validador contrasta dinámicamente las anotaciones de los controladores con
+cada snapshot. Auth cubre 12/12 operaciones, Usuarios 44/44, Académico 71/71
+y Reservas 79/79, sin operaciones adicionales. La fachada del Gateway contiene
+159 rutas y 224/224 operaciones; también verifica las 6/6 familias configuradas
+en \texttt{GatewayRoutes.java}. Este contrato representa rutas canónicas y los
+alias heredados que el Gateway todavía expone, sin atribuirle controladores
+propios.
+
+\subsection{Seguridad contractual}
+
+Las operaciones externas protegidas declaran un esquema HTTP Bearer con formato
+JWT. Los endpoints públicos de autenticación no exigen ese esquema. Las APIs
+internas de los servicios usan un esquema \texttt{apiKey} en el encabezado
+\texttt{X-Internal-Api-Key}; esas rutas internas no forman parte del contrato de
+fachada del Gateway.
+
+\subsection{Producción, validación y CI}
+
+Los snapshots se extraen determinísticamente de controladores, DTO y rutas
+vigentes sin requerir que los servicios arranquen con infraestructura externa.
+Desde la raíz se validan o regeneran con:
+
+\begin{lstlisting}
+python scripts/validar-contratos-openapi.py
+python scripts/validar-contratos-openapi.py --generate
+\end{lstlisting}
+
+La validación comprueba JSON, estructura OpenAPI, identificadores de operación,
+referencias locales, esquemas de seguridad y deriva método+ruta. El job de CI
+\emph{Validate - OpenAPI contracts} ejecuta la validación sin dependencias
+Python externas.
+
+OpenAPI y Pact son complementarios. OpenAPI describe la superficie de la API,
+sus parámetros y schemas; Pact verifica interacciones consumidor--proveedor
+seleccionadas. Ninguno sustituye al otro. Como limitación, la extracción OpenAPI
+es estática: mantiene trazabilidad estructural, pero no demuestra por sí sola
+todos los comportamientos dinámicos ni las reglas de negocio durante ejecución.

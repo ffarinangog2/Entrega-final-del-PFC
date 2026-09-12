@@ -1,9 +1,9 @@
-# PFC — Entrega 4
+# PFC acumulativo — Sistema de Control de Laboratorios e Infraestructura
 
 ## Sistema de Control de Laboratorios e Infraestructura
 
 SCLI gestiona autenticación, usuarios institucionales, laboratorios, solicitudes y
-reservas. La Entrega 4 integra cinco servicios backend, clientes web y Android,
+reservas. El proyecto acumulativo integra cinco servicios backend, clientes web y Android,
 CockroachDB, análisis PySpark, observabilidad, pruebas automatizadas y entrega de
 imágenes Docker por SHA.
 
@@ -173,6 +173,19 @@ configuración FCM y emisor backend; no está completamente operativo.
 
 ## Pruebas
 
+Cada servicio backend se compila y prueba desde su directorio. Auth, Usuarios,
+Reservas y Gateway incluyen Maven Wrapper; Académico requiere Maven 3 con Java 21:
+
+```bash
+(cd services/auth-service && ./mvnw verify)
+(cd services/usuarios-service && ./mvnw verify)
+(cd services/academico-laboratorios-service && mvn verify)
+(cd services/reservas-solicitudes-service && ./mvnw verify)
+(cd services/api-gateway && ./mvnw verify)
+```
+
+En Windows use `mvnw.cmd` donde exista el Wrapper.
+
 | Suite | Estado |
 | --- | --- |
 | Backend unitarias/integración | Implementado y automatizado con `mvn verify` en cinco servicios |
@@ -191,6 +204,15 @@ Verificación manual del contrato de Reservas en Windows:
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\tests\contract\verify-reservas-provider.ps1
 ```
+
+Los cinco contratos OpenAPI se validan, sin dependencias Python externas, con:
+
+```bash
+python scripts/validar-contratos-openapi.py
+```
+
+El procedimiento de generación, el alcance de cada contrato y la diferencia con
+Pact están documentados en [`docs/openapi/README.md`](docs/openapi/README.md).
 
 ## CI/CD
 
@@ -263,10 +285,9 @@ El rollback usa un SHA anterior y preserva volúmenes CockroachDB.
 
 ## Documentación académica
 
-El documento acumulativo oficial de la Entrega 4 es
+La única fuente oficial del informe final acumulativo es
 [`docs/main.tex`](docs/main.tex). Los documentos de `docs/entrega-3/` y
-`docs/entrega-4/` se conservan como trazabilidad histórica y fuentes de sus
-respectivas entregas.
+`docs/entrega-4/` son snapshots históricos y no sustituyen esa fuente vigente.
 
 ### Compilación reproducible del informe oficial
 
@@ -284,8 +305,9 @@ pdflatex -interaction=nonstopmode -halt-on-error main.tex
 
 La primera pasada genera los auxiliares, BibTeX procesa `referencias.bib`, y
 las dos pasadas finales resuelven citas y referencias cruzadas. El resultado
-esperado es `docs/main.pdf`. GitHub Actions ejecuta automáticamente esta
-validación mediante [`docs.yml`](.github/workflows/docs.yml).
+esperado es `docs/main.pdf`. El PDF no se versiona necesariamente: GitHub Actions
+ejecuta esta validación mediante [`docs.yml`](.github/workflows/docs.yml) y lo
+publica como artifact `informe-final-scli`.
 
 ### Declaración de uso de IA generativa
 

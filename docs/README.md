@@ -1,46 +1,37 @@
 # Documentación académica
 
-## Entrega 3
+## Fuente oficial
 
-Ubicación: `docs/entrega-3/`.
+La única fuente oficial y acumulativa del informe final es [`main.tex`](main.tex).
+GitHub Actions la compila desde `docs/` y publica `main.pdf` como artifact
+`informe-final-scli`. El PDF oficial no se versiona necesariamente en Git.
 
-Estado: documentación histórica conservada como evidencia. Sus fuentes y el
-PDF entregado permanecen juntos para preservar la trazabilidad académica.
-
-## Entrega 4
-
-Ubicación oficial: `docs/entrega-4/`.
-
-**`docs/entrega-4/` es la documentación oficial y vigente.**
-
-Documento fuente oficial: `docs/entrega-4/main.tex`.
-
-PDF final: `docs/entrega-4/Informe_E4_SCLI_FUVV.pdf`.
-
-Las fuentes asociadas están en `docs/entrega-4/secciones/`, la bibliografía en
-`docs/entrega-4/referencias.bib` y las figuras externas propias de la entrega
-deben almacenarse en `docs/entrega-4/figuras/`.
-
-Para reproducir el PDF desde la raíz del repositorio:
+Para reproducir el mismo procedimiento desde la raíz:
 
 ```bash
-cd docs/entrega-4
+cd docs
 pdflatex -interaction=nonstopmode -halt-on-error main.tex
 bibtex main
 pdflatex -interaction=nonstopmode -halt-on-error main.tex
 pdflatex -interaction=nonstopmode -halt-on-error main.tex
 ```
 
-### Evidencias visuales pendientes
+Las fuentes modulares vigentes que consume el informe están en
+`entrega-4/secciones/`. Los ADR, diagramas, evidencias técnicas, contratos
+OpenAPI e informes ISO son documentación complementaria trazable.
 
-La auditoría del repositorio no encontró capturas reales del dashboard de
-Grafana ni del flujo QR ejecutado en un dispositivo. No deben sustituirse con
-imágenes sintéticas ni con capturas históricas. Cuando se obtengan de un entorno
-real, deben eliminarse secretos y datos personales, registrar el SHA, la fecha,
-la zona horaria y el entorno, y guardarse respectivamente como
-`docs/entrega-4/figuras/panel-monitoreo.png` y
-`docs/entrega-4/figuras/qr-scan.png`.
+## Documentación histórica
 
-Los ADR, diagramas, evidencias e informes ISO situados en los demás
-subdirectorios de `docs/` son evidencia técnica compartida. Conservan su
-ubicación original y no reemplazan el documento oficial de Entrega 4.
+`entrega-3/` y `entrega-4/` conservan fuentes y PDFs de entregas anteriores. Son
+snapshots históricos y no reemplazan `docs/main.tex`. Sus inconsistencias
+editoriales se preservan cuando forman parte del material originalmente entregado.
+
+Los PDFs históricos pueden no contener integraciones documentales posteriores.
+Para consultar el estado acumulativo se debe usar la fuente oficial o el artifact
+producido por el workflow de documentación.
+
+## Evidencias visuales pendientes
+
+No hay capturas versionadas del dashboard real de Grafana ni del flujo QR en un
+dispositivo. Si se incorporan después, deben proceder de un entorno real, omitir
+secretos y datos personales, e identificar SHA, fecha, zona horaria y entorno.
