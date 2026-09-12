@@ -112,6 +112,13 @@ scli-mobile-0.1.0-release.apk
 SHA256SUMS.txt
 ```
 
+Para el HEAD `07d845849dc51ff215fb82c83663e316c783a85e`, el job
+`Build - Android release signed` terminó con estado `completed/success`. El
+artifact `scli-mobile-release-07d845849dc51ff215fb82c83663e316c783a85e` está
+disponible en GitHub Actions, dentro del run de CI `34687754162`, con el
+APK release firmado y el checksum verificado. El identificador del paquete es
+`ec.edu.uteq.scli.mobile`.
+
 Para instalar el APK descargado y comprobar su `applicationId`:
 
 ```bash
@@ -121,6 +128,4 @@ adb shell pm list packages ec.edu.uteq.scli.mobile
 
 El keystore privado nunca se sube a Git. Debe conservarse cifrado y respaldado
 en una ubicación externa controlada por el equipo: perderlo impediría firmar
-futuras actualizaciones con la misma identidad. Esta preparación no demuestra
-todavía una publicación release; E7 se completa cuando exista una ejecución CI
-firmada, verificada y descargable.
+futuras actualizaciones con la misma identidad.
