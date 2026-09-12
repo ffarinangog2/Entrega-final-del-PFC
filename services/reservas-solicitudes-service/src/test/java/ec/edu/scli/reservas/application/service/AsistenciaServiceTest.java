@@ -218,10 +218,10 @@ class AsistenciaServiceTest {
         assertThatThrownBy(() -> service.abrir(new AbrirSesionAsistenciaRequest(null, bloqueId), perfil))
                 .isInstanceOf(IllegalStateException.class).hasMessageContaining("corresponde");
 
-        // Hora fuera de rango
+        // Ventana vacia: cualquier hora actual queda fuera de rango.
         bloque.setDiaSemana(diaActual());
-        bloque.setHoraInicio(LocalTime.of(2, 0));
-        bloque.setHoraFin(LocalTime.of(3, 0));
+        bloque.setHoraInicio(LocalTime.MAX);
+        bloque.setHoraFin(LocalTime.MIN);
         assertThatThrownBy(() -> service.abrir(new AbrirSesionAsistenciaRequest(null, bloqueId), perfil))
                 .isInstanceOf(IllegalStateException.class).hasMessageContaining("horario");
     }
