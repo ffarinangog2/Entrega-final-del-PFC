@@ -98,3 +98,59 @@ son intercambiables con la tasa calculada sobre las solicitudes de Locust.
 
 Este resultado permite decidir el criterio acotado de tasa HTTP 5xx. No demuestra
 por sí solo una disponibilidad temporal mayor o igual que 99,5 %.
+
+## Consolidación oficial E3: seguridad, mantenibilidad y compatibilidad
+
+Las tres campañas se ejecutaron sobre el software del SHA
+`fa7d75ec0f75573938bf46ed6a68f0aee99606ac`. El HEAD documental posterior
+incorpora análisis y documentación y no se presenta como el software medido.
+La fuente consolidada inalterada es [`analisis-e3.json`](analisis-e3.json).
+
+### Seguridad
+
+| Repeticiones | Correctas | Proporción | IC95 Wilson | Falsos permitidos | Falsos rechazados | Flaky | Decisión |
+|---:|---:|---:|---|---:|---:|---:|---|
+| 3 | 21/21 | 1,0 | [0,845360981013798; 1,0] | 0 | 0 | 0 | **CUMPLE** |
+
+La decisión se limita a las siete decisiones dinámicas por repetición, fixtures,
+Gateway y entorno ensayados. No constituye una garantía universal de seguridad.
+
+### Mantenibilidad
+
+| Componente | Métrica | Media/IC95 | Umbral | Decisión |
+|---|---|---:|---:|---|
+| Auth | Líneas | 88,042203985932 % | 70 % | CUMPLE |
+| Usuarios | Líneas | 84,0523509452254 % | 70 % | CUMPLE |
+| Académico | Líneas | 83,16089903674634 % | 70 % | CUMPLE |
+| Reservas | Líneas | 84,35857805255023 % | 80 % | CUMPLE |
+| Reservas | Ramas | 56,72559569561876 % | 48 % | CUMPLE |
+| Gateway | Líneas | 88,88888888888889 % | 70 % | CUMPLE |
+| Web | Líneas | 89,91 % | 70 % | CUMPLE |
+| Web | Ramas | 73,69 % | 70 % | CUMPLE |
+| Web | Funciones | 81,87 % | 70 % | CUMPLE |
+| Web | Sentencias | 85,96 % | 70 % | CUMPLE |
+| Android | Líneas | **38,34070796460177 %** | 70 % | **NO CUMPLE** |
+
+Los tres valores de cada métrica fueron idénticos: `sample_sd = 0` y el IC95 t
+es `[media; media]`. Esto describe repetición idéntica del proceso sobre el
+mismo SHA, no certeza universal. La decisión global es **NO CUMPLE únicamente
+por Android**.
+
+### Compatibilidad
+
+| Motor | Aprobados | Fallidos | Omitidos | Flaky | IC95 Wilson | Decisión |
+|---|---:|---:|---:|---:|---|---|
+| Chromium | 24/24 | 0 | 0 | 0 | [0,862023795269197; 1,0] | CUMPLE |
+| Firefox | 24/24 | 0 | 0 | 0 | [0,862023795269197; 1,0] | CUMPLE |
+| WebKit | 24/24 | 0 | 0 | 0 | [0,862023795269197; 1,0] | CUMPLE |
+
+La decisión global es **CUMPLE** para la suite, motores y entorno ensayados; no
+se extrapola a todos los navegadores, versiones o dispositivos.
+
+El diseño y las reglas están en [`../protocolo-e4.md`](../protocolo-e4.md), y
+la cadena requisito → protocolo → productor → raw → análisis → documento está
+en [`TRAZABILIDAD-E3-E4.md`](TRAZABILIDAD-E3-E4.md). La selección compacta
+[`evidencia-e3-canonica/`](evidencia-e3-canonica/) conserva manifiestos,
+resultados consumidos por el analizador y reportes fuente de cobertura. El raw
+E3 completo continúa disponible en el entorno de ejecución y no se versiona por
+su volumen; la selección canónica no sustituye ni modifica esos originales.

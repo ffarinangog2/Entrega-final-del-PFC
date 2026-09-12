@@ -1,5 +1,10 @@
 # Evidencia ISO/IEC 25010 — Seguridad
 
+> **Antecedente / auditoría histórica.** Las secciones fechadas el 2026-09-04
+> describen una revisión estática del SHA `cd61b64325480cbe132af7e56328f7fa5d8b99ef`.
+> Se conservan para trazabilidad y no representan el resultado experimental E3
+> posterior.
+
 **Fecha de revisión:** 2026-09-04
 
 **Rama:** `feature/entrega-4`
@@ -80,3 +85,28 @@ Se separaron 15 operaciones Actuator del negocio: `health`, `info` y `prometheus
 ## Conclusión ISO/IEC 25010
 
 **Estado: PARCIAL.** El HEAD demuestra autenticación JWT en las 160 operaciones externas protegidas, RBAC explícito en 145 y API key en 18 operaciones internas. También existen controles de ámbito concretos en 63 operaciones. Sin embargo, RBAC y scope no son uniformes en todos los dominios, se identifican brechas de aislamiento potencial en Agenda e Incidentes, y falta una validación dinámica integral. Por ello no corresponde declarar seguridad perfecta ni cumplimiento total.
+
+## Resultado experimental oficial E3
+
+La campaña dinámica oficial se ejecutó tres veces sobre el software del SHA
+`fa7d75ec0f75573938bf46ed6a68f0aee99606ac`. Evaluó siete decisiones
+prerregistradas por repetición, para 21 observaciones binarias en total.
+
+| Indicador | Resultado |
+|---|---:|
+| Decisiones correctas | 21/21 |
+| Proporción observada | 1,0 |
+| IC95 Wilson | [0,845360981013798; 1,0] |
+| Accesos incorrectamente permitidos | 0 |
+| Accesos incorrectamente rechazados | 0 |
+| Flaky | 0 |
+| Decisión | **CUMPLE** |
+
+El resultado **CUMPLE** dentro de la matriz dinámica, fixtures, Gateway y entorno
+ensayados. No garantiza seguridad universal ni reemplaza las limitaciones de la
+auditoría estática anterior. El 111/111 histórico mide cobertura JWT estática;
+el 21/21 oficial mide decisiones HTTP dinámicas y no comparte su denominador.
+La fuente consolidada es
+[`analisis-e3.json`](../../experimentos/resultados/analisis-e3.json) y su cadena
+de evidencia se documenta en
+[`TRAZABILIDAD-E3-E4.md`](../../experimentos/resultados/TRAZABILIDAD-E3-E4.md).

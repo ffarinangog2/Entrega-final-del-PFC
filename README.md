@@ -184,7 +184,7 @@ configuración FCM y emisor backend; no está completamente operativo.
 | Integración Compose | Automatizado: health, login y petición autenticada |
 | Playwright | Implementado y gate obligatorio |
 | Locust | Gate controlado: 2 usuarios, 10 segundos, solo contra CI |
-| Cobertura con umbral global | Web y backend tienen gates; Android reporta 45,69 % de líneas, pero no aplica todavía un umbral global de 70 % |
+| Cobertura con umbral global | En E3, Web y backend cumplen sus umbrales; Android obtiene 38,3407 % de líneas y **NO CUMPLE** el umbral documental de 70 % |
 
 Verificación manual del contrato de Reservas en Windows:
 
@@ -230,8 +230,13 @@ es un proxy de endpoints del Gateway y no una medición exclusiva del cliente An
 El [protocolo E4](experimentos/protocolo-e4.md), scripts y
 [resultados](experimentos/resultados/) están en `experimentos/`. El
 [resumen verificable](experimentos/resultados/RESUMEN-ISO25010-E4.md) identifica
-el SHA probado, la evidencia preservada y su manifiesto SHA-256. La eficiencia fue
-medida; la fiabilidad formal no fue ejecutada (`0/10`) y no se afirma disponibilidad.
+los SHA probados, la evidencia preservada y sus manifiestos SHA-256. El
+[análisis oficial E3](experimentos/resultados/analisis-e3.json), ejecutado sobre
+`fa7d75ec0f75573938bf46ed6a68f0aee99606ac`, registra seguridad y compatibilidad
+como **CUMPLE** dentro de los escenarios ensayados, y mantenibilidad como
+**NO CUMPLE** únicamente por Android (38,3407 % de líneas frente al 70 %).
+La [matriz de trazabilidad](experimentos/resultados/TRAZABILIDAD-E3-E4.md)
+relaciona requisitos, protocolos, productores, raw, análisis y documentos.
 
 ## Semillas reproducibles
 
@@ -305,7 +310,8 @@ producidos por ejecuciones trazables y artefactos verificables.
 
 - Completar Firebase/FCM y su emisor backend.
 - Incorporar una métrica E2E móvil identificable, en lugar del proxy por URI del Gateway.
-- Elevar y aplicar un umbral global de cobertura Android; el reporte actual alcanza 45,69 % de líneas.
+- Elevar la cobertura Android: la campaña oficial E3 del SHA `fa7d75ec...`
+  obtuvo 38,3407 % de líneas y **NO CUMPLE** el umbral documental de 70 %.
 - Conservar fuera de Git los HTML e historiales Locust completos que permanecen en la VM; los artefactos canónicos seleccionados y sus hashes sí están versionados.
 - Unificar Node 20/22.22.2 en CI.
 - Incorporar wrapper Maven al servicio académico o documentar Maven localmente.

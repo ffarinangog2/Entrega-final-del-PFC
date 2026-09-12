@@ -403,3 +403,27 @@ reversible y el health interno; exige el literal de confirmación
 `CONFIRM_EXPERIMENTAL_NODE_FAILURE`. El oráculo se ejecuta sobre cada manifiesto
 y la fixture/catálogo declarado. Ningún comando contiene credenciales en sus
 argumentos ni ejecuta las 130 corridas automáticamente.
+
+## Cierre de ejecución E3
+
+Esta sección registra el cierre posterior a la ejecución sin modificar el
+prerregistro anterior. Las campañas de seguridad, mantenibilidad y compatibilidad
+se ejecutaron con tres repeticiones sobre el mismo software:
+
+- SHA experimental: `fa7d75ec0f75573938bf46ed6a68f0aee99606ac`;
+- rama registrada: `feature/entrega-4`;
+- análisis oficial: [`resultados/analisis-e3.json`](resultados/analisis-e3.json);
+- matriz bidireccional: [`resultados/TRAZABILIDAD-E3-E4.md`](resultados/TRAZABILIDAD-E3-E4.md).
+
+| Campaña | Ruta indicada en el prerregistro | Ruta efectiva |
+|---|---|---|
+| Seguridad | `resultados/raw/seguridad_gateway/rep-NN/` | `resultados/raw/e3_seguridad/rep-NN/` |
+| Mantenibilidad | `resultados/raw/mantenibilidad/rep-NN/` | `resultados/raw/e3_mantenibilidad/rep-NN/` |
+| Compatibilidad | `resultados/raw/compatibilidad/web/<motor>/rep-NN/` | `resultados/raw/e3_compatibilidad/rep-NN/`, con resultados por motor dentro de cada repetición |
+| Identidad común | Manifiesto por ejecución | `resultados/raw/e3_study.json` y `manifest.json` por repetición |
+
+El cambio de nombres organiza las tres campañas bajo el prefijo `e3_` y no
+altera población, métricas, repeticiones, umbrales ni reglas de decisión. Los
+criterios y umbrales no fueron modificados después de observar los resultados.
+La evidencia raw está disponible en el entorno de ejecución y actualmente no
+está versionada; el JSON de análisis sí está versionado.

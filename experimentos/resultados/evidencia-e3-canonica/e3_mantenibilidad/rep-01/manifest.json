@@ -1,0 +1,159 @@
+{
+  "git_sha": "fa7d75ec0f75573938bf46ed6a68f0aee99606ac",
+  "git_branch": "feature/entrega-4",
+  "git_worktree_clean": true,
+  "source_tree_clean": true,
+  "allowed_evidence_changes": [],
+  "environment_id": "local-e3-mantenibilidad",
+  "campaign": "mantenibilidad",
+  "repetition": 1,
+  "started_at_utc": "2026-09-12T05:38:47.397078Z",
+  "status": "completed",
+  "evidence_complete": true,
+  "environment": {
+    "os": "Windows-11-10.0.26200-SP0",
+    "python": "3.12.10",
+    "java": "java version \"21.0.7\" 2025-04-15 LTS\nJava(TM) SE Runtime Environment (build 21.0.7+8-LTS-245)\nJava HotSpot(TM) 64-Bit Server VM (build 21.0.7+8-LTS-245, mixed mode, sharing)",
+    "node": "v24.18.0",
+    "npm": "11.16.0",
+    "maven": "Apache Maven 3.9.16 (2bdd9fddda4b155ebf8000e807eb73fd829a51d5)\nMaven home: C:\\Program Files\\JetBrains\\IntelliJ IDEA 2026.1.4\\plugins\\maven-plugin\\lib\\maven3\nJava version: 21.0.7, vendor: Oracle Corporation, runtime: C:\\Program Files\\Java\\jdk-21\nDefault locale: es_ES, platform encoding: UTF-8\nOS name: \"windows 11\", version: \"10.0\", arch: \"amd64\", family: \"windows\"",
+    "gradle_wrapper": "------------------------------------------------------------\nGradle 8.13\n------------------------------------------------------------\n\nBuild time:    2025-02-25 09:22:14 UTC\nRevision:      073314332697ba45c16c0a0ce1891fa6794179ff\n\nKotlin:        2.0.21\nGroovy:        3.0.22\nAnt:           Apache Ant(TM) version 1.10.15 compiled on August 25 2024\nLauncher JVM:  21.0.7 (Oracle Corporation 21.0.7+8-LTS-245)\nDaemon JVM:    C:\\Program Files\\Java\\jdk-21 (no JDK specified, using current Java home)\nOS:            Windows 11 10.0 amd64"
+  },
+  "finished_at_utc": "2026-09-12T05:52:30.095802Z",
+  "components": {
+    "auth": {
+      "command": [
+        "cmd",
+        "/c",
+        "mvnw.cmd",
+        "--batch-mode",
+        "clean",
+        "verify"
+      ],
+      "exit_code": 0,
+      "metrics": {
+        "instruction": 82.66927401613297,
+        "branch": 58.403361344537814,
+        "line": 88.042203985932,
+        "complexity": 62.21590909090909,
+        "method": 78.11158798283262,
+        "class": 98.21428571428571
+      },
+      "tool_version": "Apache Maven 3.9.16 (2bdd9fddda4b155ebf8000e807eb73fd829a51d5)\nMaven home: C:\\Users\\HP\\.m2\\wrapper\\dists\\apache-maven-3.9.16\\0daed3be3ebd1c706f0e69e8b07c6b73f5cc4ea3dfce72a8d0ec2e849ca2ddb0\nJava version: 21.0.7, vendor: Oracle Corporation, runtime: C:\\Program Files\\Java\\jdk-21\nDefault locale: es_ES, platform encoding: UTF-8\nOS name: \"windows 11\", version: \"10.0\", arch: \"amd64\", family: \"windows\""
+    },
+    "usuarios": {
+      "command": [
+        "cmd",
+        "/c",
+        "mvnw.cmd",
+        "--batch-mode",
+        "clean",
+        "verify"
+      ],
+      "exit_code": 0,
+      "metrics": {
+        "instruction": 81.23063775237688,
+        "branch": 59.447983014862,
+        "line": 84.0523509452254,
+        "complexity": 72.14452214452214,
+        "method": 84.2443729903537,
+        "class": 92.5233644859813
+      },
+      "tool_version": "Apache Maven 3.9.16 (2bdd9fddda4b155ebf8000e807eb73fd829a51d5)\nMaven home: C:\\Users\\HP\\.m2\\wrapper\\dists\\apache-maven-3.9.16\\0daed3be3ebd1c706f0e69e8b07c6b73f5cc4ea3dfce72a8d0ec2e849ca2ddb0\nJava version: 21.0.7, vendor: Oracle Corporation, runtime: C:\\Program Files\\Java\\jdk-21\nDefault locale: es_ES, platform encoding: UTF-8\nOS name: \"windows 11\", version: \"10.0\", arch: \"amd64\", family: \"windows\""
+    },
+    "academico": {
+      "command": [
+        "mvn",
+        "--batch-mode",
+        "clean",
+        "verify"
+      ],
+      "exit_code": 0,
+      "metrics": {
+        "instruction": 82.93298520452568,
+        "branch": 49.532710280373834,
+        "line": 83.16089903674634,
+        "complexity": 78.40531561461793,
+        "method": 87.77777777777777,
+        "class": 95.74468085106383
+      },
+      "tool_version": "Apache Maven 3.9.16 (2bdd9fddda4b155ebf8000e807eb73fd829a51d5)\nMaven home: C:\\Program Files\\JetBrains\\IntelliJ IDEA 2026.1.4\\plugins\\maven-plugin\\lib\\maven3\nJava version: 21.0.7, vendor: Oracle Corporation, runtime: C:\\Program Files\\Java\\jdk-21\nDefault locale: es_ES, platform encoding: UTF-8\nOS name: \"windows 11\", version: \"10.0\", arch: \"amd64\", family: \"windows\""
+    },
+    "reservas": {
+      "command": [
+        "cmd",
+        "/c",
+        "mvnw.cmd",
+        "--batch-mode",
+        "clean",
+        "verify"
+      ],
+      "exit_code": 0,
+      "metrics": {
+        "instruction": 80.56994818652849,
+        "branch": 56.72559569561876,
+        "line": 84.35857805255023,
+        "complexity": 64.9581074420897,
+        "method": 78.97058823529412,
+        "class": 93.10344827586206
+      },
+      "tool_version": "Apache Maven 3.9.16 (2bdd9fddda4b155ebf8000e807eb73fd829a51d5)\nMaven home: C:\\Users\\HP\\.m2\\wrapper\\dists\\apache-maven-3.9.16\\0daed3be3ebd1c706f0e69e8b07c6b73f5cc4ea3dfce72a8d0ec2e849ca2ddb0\nJava version: 21.0.7, vendor: Oracle Corporation, runtime: C:\\Program Files\\Java\\jdk-21\nDefault locale: es_ES, platform encoding: UTF-8\nOS name: \"windows 11\", version: \"10.0\", arch: \"amd64\", family: \"windows\""
+    },
+    "gateway": {
+      "command": [
+        "cmd",
+        "/c",
+        "mvnw.cmd",
+        "--batch-mode",
+        "clean",
+        "verify"
+      ],
+      "exit_code": 0,
+      "metrics": {
+        "instruction": 85.23489932885906,
+        "branch": 70.83333333333333,
+        "line": 88.88888888888889,
+        "complexity": 72.1311475409836,
+        "method": 79.59183673469387,
+        "class": 88.88888888888889
+      },
+      "tool_version": "Apache Maven 3.9.16 (2bdd9fddda4b155ebf8000e807eb73fd829a51d5)\nMaven home: C:\\Users\\HP\\.m2\\wrapper\\dists\\apache-maven-3.9.16\\0daed3be3ebd1c706f0e69e8b07c6b73f5cc4ea3dfce72a8d0ec2e849ca2ddb0\nJava version: 21.0.7, vendor: Oracle Corporation, runtime: C:\\Program Files\\Java\\jdk-21\nDefault locale: es_ES, platform encoding: UTF-8\nOS name: \"windows 11\", version: \"10.0\", arch: \"amd64\", family: \"windows\""
+    },
+    "web": {
+      "command": [
+        "npm",
+        "run",
+        "test:coverage"
+      ],
+      "exit_code": 0,
+      "metrics": {
+        "lines": 89.91,
+        "branches": 73.69,
+        "functions": 81.87,
+        "statements": 85.96
+      },
+      "tool_version": "11.16.0"
+    },
+    "android": {
+      "command": [
+        "cmd",
+        "/c",
+        "gradlew.bat",
+        "clean",
+        "testDebugUnitTest",
+        "jacocoTestReport"
+      ],
+      "exit_code": 0,
+      "metrics": {
+        "instruction": 24.37961467918672,
+        "branch": 12.259761278575764,
+        "line": 38.34070796460177,
+        "complexity": 22.482541112863256,
+        "method": 40.35897435897436,
+        "class": 24.444444444444443
+      },
+      "tool_version": "------------------------------------------------------------\nGradle 8.13\n------------------------------------------------------------\n\nBuild time:    2025-02-25 09:22:14 UTC\nRevision:      073314332697ba45c16c0a0ce1891fa6794179ff\n\nKotlin:        2.0.21\nGroovy:        3.0.22\nAnt:           Apache Ant(TM) version 1.10.15 compiled on August 25 2024\nLauncher JVM:  21.0.7 (Oracle Corporation 21.0.7+8-LTS-245)\nDaemon JVM:    C:\\Program Files\\Java\\jdk-21 (no JDK specified, using current Java home)\nOS:            Windows 11 10.0 amd64"
+    }
+  },
+  "exit_code": 0
+}

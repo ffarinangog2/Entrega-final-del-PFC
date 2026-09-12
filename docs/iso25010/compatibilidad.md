@@ -1,5 +1,9 @@
 # ISO/IEC 25010:2023 — Compatibilidad
 
+> **Antecedente / auditoría histórica.** Las secciones fechadas el 2026-09-04
+> describen el SHA `cd61b64325480cbe132af7e56328f7fa5d8b99ef` y se conservan
+> sin convertir su estado PARCIAL en un resultado del experimento posterior.
+
 **Fecha de revisión:** 2026-09-04
 
 **Rama:** `feature/entrega-4`
@@ -50,3 +54,20 @@ La configuración y una ejecución verde en API 29 sostienen funcionamiento obse
 ## Conclusión
 
 **Compatibilidad: PARCIAL.** Web configura Chromium, Firefox y WebKit, pero el HEAD no llegó a ejecutar el job E2E. Android sí cuenta con una corrida instrumentada verde en API 29 y artifact debug para el run de push, aunque el run de PR paralelo falló y no existe una matriz completa. Para cerrar la característica se requiere una ejecución CI integral verde del mismo SHA y conservar sus reportes por motor/API.
+
+## Resultado experimental oficial E3
+
+La campaña oficial ejecutó tres repeticiones completas por motor sobre el SHA
+`fa7d75ec0f75573938bf46ed6a68f0aee99606ac`.
+
+| Motor | Aprobados | Fallidos | Omitidos | Flaky | IC95 Wilson | Decisión |
+|---|---:|---:|---:|---:|---|---|
+| Chromium | 24/24 | 0 | 0 | 0 | [0,862023795269197; 1,0] | CUMPLE |
+| Firefox | 24/24 | 0 | 0 | 0 | [0,862023795269197; 1,0] | CUMPLE |
+| WebKit | 24/24 | 0 | 0 | 0 | [0,862023795269197; 1,0] | CUMPLE |
+
+La decisión experimental global es **CUMPLE** dentro de la suite, versiones de
+los motores y entorno ensayados. No demuestra compatibilidad universal ni
+reemplaza el antecedente Android/API 29. Véanse
+[`analisis-e3.json`](../../experimentos/resultados/analisis-e3.json) y la
+[`matriz de trazabilidad`](../../experimentos/resultados/TRAZABILIDAD-E3-E4.md).

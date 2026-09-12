@@ -475,30 +475,37 @@ solo características con evidencia disponible.
     \hline
     Disponibilidad & Tiempo apto/tiempo total & $\geq99,5\%$ & Diez horas ejecutadas, sin indicador temporal operacionalizado & NO CONCLUYENTE \\
     \hline
-    Seguridad & JWT, RBAC y matriz de endpoints & Acceso autenticado y autorizado & 198 operaciones: 160 JWT, 145 con RBAC, 18 internas con API key y 63 con scope explícito & PARCIAL \\
+    Seguridad & Decisiones dinámicas por Gateway & 100\%; cero falsos permitidos/rechazados y flaky & 21/21; IC95 Wilson [0,845361; 1]; todos los conteos adversos en cero & CUMPLE en matriz \\
     \hline
-    Mantenibilidad & Modularidad, pruebas, cobertura y complejidad & Gates por componente; complejidad $<10$ donde fue medida & Capas, patrones y CI; Backend/Web verdes en \texttt{e43967e}; complejidad medida solo en Usuarios y Mobile con 45,69\% histórico & PARCIAL \\
+    Mantenibilidad & Cobertura por componente & Umbrales previos de líneas y puertas secundarias & Todos cumplen salvo Android: 38,3407\% de líneas frente a 70\% & NO CUMPLE \\
     \hline
-    Compatibilidad & Motores Web y Android & Chromium, Firefox, WebKit; API 26+ & Compose/Playwright y Android API 29 verdes en el push \texttt{e43967e}; alcance acotado a esos entornos & PARCIAL \\
+    Compatibilidad & Suite Web en tres motores & 100\%; cero fallidos, omitidos y flaky & Chromium, Firefox y WebKit: 24/24 cada uno; IC95 Wilson [0,862024; 1] & CUMPLE en suite \\
     \hline
   \end{tabular}
 \end{table}
 
-En seguridad, la matriz actual inventaría 183 operaciones de controlador y 15
-Actuator. Se identifican 160 operaciones externas con JWT, 145 con RBAC
-explícito, 18 internas con API key y 63 con control de ámbito; estos conjuntos
-no son equivalentes ni justifican declarar cobertura total frente a todas las
-amenazas. Persisten limitaciones de scope documentadas en Agenda e Incidentes.
-En mantenibilidad existen gates de cobertura para Backend y Web. El push del
-SHA funcional \texttt{e43967eda31410b7fef060cfc7903cea94efbe96}
-completó los cinco jobs Maven y el job Web; Reservas exige además 80\% de
-líneas y 48\% de ramas. La última evidencia Web documentada registra 86,55\%
-de líneas y 70,33\% de ramas. Mobile conserva como referencia documental
-45,69\% de líneas, bajo 70\%; el job verde no autoriza a reemplazar esa cifra
-sin leer su reporte. En compatibilidad, el mismo SHA completó Compose/Playwright
-y la suite instrumentada Android API 29. Android declara API 26 o superior,
-pero una ejecución en API 29 y tres motores Web no implican compatibilidad
-universal.
+Seguridad, mantenibilidad y compatibilidad se midieron en E3 sobre el SHA
+experimental
+\texttt{fa7d75ec0f75573938bf46ed6a68f0aee99606ac}. Los commits posteriores
+incorporan análisis y documentación; no cambian retrospectivamente el software
+medido. El resultado consolidado se conserva en
+\path{../../experimentos/resultados/analisis-e3.json} y su relación con el
+protocolo, productores y raw se explicita en
+\path{../../experimentos/resultados/TRAZABILIDAD-E3-E4.md}.
+
+En seguridad se realizaron tres repeticiones de siete decisiones: 21/21 fueron
+correctas, con proporción observada 1, IC95 Wilson
+[0,845360981013798; 1], cero accesos incorrectamente permitidos, cero
+incorrectamente rechazados y cero casos flaky. La decisión es \textbf{CUMPLE}
+dentro de la matriz dinámica, fixtures, Gateway y entorno ensayados; no es una
+garantía universal. La auditoría estática anterior de 198 operaciones y sus
+limitaciones de ámbito se conserva como antecedente complementario.
+
+En compatibilidad, Chromium, Firefox y WebKit obtuvieron 24/24 casos aprobados
+por motor, sin fallidos, omitidos ni flaky. Cada proporción observada fue 1 y su
+IC95 Wilson [0,862023795269197; 1]. La decisión es \textbf{CUMPLE} para la
+suite, versiones de motor y entorno ensayados, sin extrapolarla a todos los
+navegadores o dispositivos.
 
 \subsection{Mantenibilidad: evidencia y alcance}
 \label{subsec:mantenibilidad}
@@ -524,12 +531,42 @@ Android. Los umbrales son verificables en configuración: 70\% de líneas para
 Auth, Usuarios, Académico y Gateway; 80\% de líneas y 48\% de ramas para
 Reservas; y 70\% para statements, ramas, funciones y líneas Web.
 
-La conclusión permanece \textbf{PARCIAL}. No existe una medición de complejidad
-global homogénea para todos los componentes, la medición versionada de
-complejidad está acotada a Usuarios, faltan artefactos persistentes de cobertura
-Backend/Web y la cifra Mobile conservada está bajo 70\%. Por ello no se deriva
-un cumplimiento total a partir de que los gates del SHA funcional hayan sido
-verdes.
+La Tabla~\ref{tab:mantenibilidad-e3} presenta todas las puertas oficiales E3.
+Cada métrica produjo el mismo valor en las tres repeticiones, por lo que
+$s=0$ y el IC95 t es degenerado [media; media]. Esto refleja repetición idéntica
+del proceso de medición sobre el mismo SHA, no certeza universal ni independencia
+estadística entre líneas.
+
+\begin{table*}[ht]
+  \centering
+  \small
+  \caption{Resultados oficiales de mantenibilidad E3, tres repeticiones por métrica.}
+  \label{tab:mantenibilidad-e3}
+  \begin{tabular}{|l|l|r|r|l|}
+    \hline
+    \textbf{Componente} & \textbf{Métrica} & \textbf{Media/IC95 (\%)} & \textbf{Umbral (\%)} & \textbf{Decisión} \\
+    \hline
+    Auth & Líneas & 88,0422 & 70 & CUMPLE \\
+    Usuarios & Líneas & 84,0524 & 70 & CUMPLE \\
+    Académico & Líneas & 83,1609 & 70 & CUMPLE \\
+    Reservas & Líneas & 84,3586 & 80 & CUMPLE \\
+    Reservas & Ramas & 56,7256 & 48 & CUMPLE \\
+    Gateway & Líneas & 88,8889 & 70 & CUMPLE \\
+    Web & Líneas & 89,91 & 70 & CUMPLE \\
+    Web & Ramas & 73,69 & 70 & CUMPLE \\
+    Web & Funciones & 81,87 & 70 & CUMPLE \\
+    Web & Sentencias & 85,96 & 70 & CUMPLE \\
+    Android & Líneas & \textbf{38,3407} & 70 & \textbf{NO CUMPLE} \\
+    \hline
+  \end{tabular}
+\end{table*}
+
+La decisión global experimental de mantenibilidad es \textbf{NO CUMPLE
+únicamente por Android}, cuya cobertura de líneas fue
+38,34070796460177\%, inferior al umbral previo de 70\%. Las cifras del SHA
+\texttt{e43967eda31410b7fef060cfc7903cea94efbe96}, incluida la referencia
+Android de 45,69\%, permanecen como antecedentes históricos de CI y no se usan
+como resultado oficial E3.
 
 \subsection{Análisis crítico}
 \label{subsec:analisis-critico-final}
@@ -681,7 +718,7 @@ integral actual.
     \hline
     D3.1 & Cliente Android & Compose/MVVM, Room, QR; incidentes locales y FCM no E2E & Aplicación Mobile & PARCIAL \\
     \hline
-    D3.2 & Calidad Mobile & Pruebas unitarias e instrumentadas; reporte del HEAD con líneas 45,69\% & Pruebas Mobile & PARCIAL \\
+    D3.2 & Calidad Mobile & Antecedente del SHA \texttt{e43967e}: 45,69\%; E3 oficial: 38,3407\%, bajo 70\% & Pruebas Mobile & NO CUMPLE en E3 \\
     \hline
     D4.1 & Contratos Pact & Consumidores y verificadores versionados; resultado por SHA & Pact & EVIDENCIADO EN CI \\
     \hline
