@@ -11,6 +11,7 @@ medido; commits documentales posteriores no sustituyen esa identidad.
 | Seguridad | 21 decisiones dinámicas correctas; cero falsos permitidos/rechazados y flaky | [`../protocolo-e4.md`](../protocolo-e4.md), prerregistro E3 | `ejecutar_e3.py`, `e3_instrumental.py` | [`evidencia-e3-canonica/e3_seguridad/`](evidencia-e3-canonica/e3_seguridad/): manifiestos y decisiones; selección canónica del raw completo no versionado | `analizar_e3.py` → [`analisis-e3.json`](analisis-e3.json) | 21/21; Wilson [0,845360981013798; 1]; CUMPLE en matriz | Resumen, `docs/iso25010/seguridad-ivan.md`, informe E4 | `fa7d75ec0f75573938bf46ed6a68f0aee99606ac` |
 | Mantenibilidad | Cobertura por componente y puertas secundarias sobre tres ejecuciones | [`../protocolo-e4.md`](../protocolo-e4.md), prerregistro E3 | `ejecutar_e3.py`, `e3_instrumental.py` | [`evidencia-e3-canonica/e3_mantenibilidad/`](evidencia-e3-canonica/e3_mantenibilidad/): métricas y reportes fuente compactos; selección canónica del raw completo no versionado | `analizar_e3.py` → [`analisis-e3.json`](analisis-e3.json) | Todos cumplen salvo Android 38,3407 %; global NO CUMPLE | Resumen, `docs/iso25010/mantenibilidad-usuarios.md`, informe E4 | `fa7d75ec0f75573938bf46ed6a68f0aee99606ac` |
 | Compatibilidad | Suite completa aprobada en Chromium, Firefox y WebKit, sin fallidos, omitidos o flaky | [`../protocolo-e4.md`](../protocolo-e4.md), prerregistro E3 | `ejecutar_e3.py`, `e3_instrumental.py` | [`evidencia-e3-canonica/e3_compatibilidad/`](evidencia-e3-canonica/e3_compatibilidad/): manifiestos y resúmenes por motor; selección canónica del raw completo no versionado | `analizar_e3.py` → [`analisis-e3.json`](analisis-e3.json) | 24/24 por motor; Wilson [0,862023795269197; 1]; CUMPLE en suite | Resumen, `docs/iso25010/compatibilidad.md`, informe E4 | `fa7d75ec0f75573938bf46ed6a68f0aee99606ac` |
+| ARBITER | Seguridad observada bajo carga ofrecida, latencia de todos los intentos y disponibilidad HTTP separada | [`../protocolo-e4.md`](../protocolo-e4.md), prerregistro ARBITER | `generador_rafagas.py`, `oraculo_reservas.py`, `ejecutar_campana_arbiter.py` | [`arbiter/campaign/raw/`](arbiter/campaign/raw/): 16.500 `REQUEST`; [`arbiter/campaign/SHA256SUMS`](arbiter/campaign/SHA256SUMS) 315/315 | `analizar_arbiter.py`; censo reproducible con `auditar_http_arbiter.py` | Dobles S0 vs S1--S4: U=64, p=0,0007775304469403844, A12=1,0; HTTP 500 asimétricos, máximo 26,6875 % en Esc-3/S1 | [`arbiter/README.md`](arbiter/README.md), informe E4 | `e43967eda31410b7fef060cfc7903cea94efbe96` |
 
 ### Replicación de mantenibilidad
 
@@ -38,6 +39,9 @@ CUMPLE**.
   estado. `e3_study.json` fija la identidad común del software medido.
 - `iso25010.csv` enlaza las campañas anteriores de eficiencia y fiabilidad con
   sus repeticiones raw, su analizador, el resumen y el informe.
+- La campaña ARBITER conserva cada `HTTP_ERROR` como `REQUEST` con
+  `sent_ns`, `received_ns` y `latency_ms`. El censo HTTP se deriva directamente
+  de esos raw y no redefine la población principal a solo 2xx.
 - Los resultados de `cd61b643...`, `e43967e...` y otros SHA anteriores son
   antecedentes históricos. No se combinan con las decisiones oficiales E3.
 

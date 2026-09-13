@@ -236,10 +236,10 @@ consultas y respuestas Prometheus, salud y estadísticas de contenedores. Los
 historiales completos y HTML voluminosos permanecen en la VM, circunstancia
 registrada en el resumen de evidencia.
 
-El manifiesto \path{../../experimentos/resultados/SHA256SUMS} enumera 198
-archivos. La verificación previa confirmó 195 coincidencias, sin archivos
-ausentes ni hashes distintos, y esta incorporación verificó los hashes de la
-captura y de los dos registros nuevos. SHA-256 permite detectar alteraciones
+El manifiesto general actual
+\path{../../experimentos/resultados/SHA256SUMS} contiene 468 entradas para 468
+archivos. La verificación completa sobre los bytes canónicos versionados produjo
+468 hashes correctos, cero incorrectos y cero archivos ausentes. SHA-256 permite detectar alteraciones
 respecto del manifiesto, pero no constituye una firma ni prueba autenticidad por
 sí solo. La procedencia se apoya adicionalmente en metadata, timestamps, SHA
 probado y el documento
@@ -420,6 +420,47 @@ muestras nominales válidas de Esc-1.
   \end{tabular}
 \end{table}
 
+La Tabla~\ref{tab:arbiter-http} presenta el censo HTTP de la población central
+r2--r9. Se deriva de los registros \texttt{REQUEST} de los raw, no del resumen
+estadístico. Todos los fallos encontrados fueron HTTP 500 y no hubo respuestas
+4xx.
+
+\begin{table}[ht]
+  \centering
+  \scriptsize
+  \caption{Censo HTTP ARBITER en la población central r2--r9.}
+  \label{tab:arbiter-http}
+  \begin{tabular}{|c|c|r|r|r|r|r|}
+    \hline
+    \textbf{Esc.} & \textbf{Estrategia} & \textbf{Requests} & \textbf{2xx} & \textbf{4xx} & \textbf{5xx} & \textbf{Error} \\
+    \hline
+    2 & S0 & 400 & 400 & 0 & 0 & 0\% \\
+    2 & S1 & 400 & 400 & 0 & 0 & 0\% \\
+    2 & S2 & 400 & 348 & 0 & 52 & 13,0000\% \\
+    2 & S3 & 400 & 400 & 0 & 0 & 0\% \\
+    2 & S4 & 400 & 396 & 0 & 4 & 1,0000\% \\
+    \hline
+    3 & S0 & 1\,600 & 1\,586 & 0 & 14 & 0,8750\% \\
+    3 & S1 & 1\,600 & 1\,173 & 0 & 427 & 26,6875\% \\
+    3 & S2 & 1\,600 & 1\,381 & 0 & 219 & 13,6875\% \\
+    3 & S3 & 1\,600 & 1\,600 & 0 & 0 & 0\% \\
+    3 & S4 & 1\,600 & 1\,368 & 0 & 232 & 14,5000\% \\
+    \hline
+  \end{tabular}
+\end{table}
+
+S0 es el baseline formal y control negativo; S3 no lo es. La comparación
+descriptiva de 26,6875\% frente a 0\% corresponde a S1 frente a S3 en Esc-3.
+Respecto del baseline formal S0, la comparación correcta en ese escenario es
+26,6875\% frente a 0,8750\%. Esta asimetría impide atribuir superioridad
+operacional global a S1--S4.
+
+Cada \texttt{HTTP\_ERROR} conserva \texttt{sent\_ns}, \texttt{received\_ns} y
+\texttt{latency\_ms}. Los HTTP 500 fueron incluidos en los promedios por corrida:
+la latencia publicada representa todos los intentos bajo carga, incluidas las
+respuestas 500, y no solo adjudicaciones exitosas. No hubo exclusión selectiva
+de fallos de la población principal.
+
 En S3, los tiempos de recuperación de las ocho muestras analíticas fueron 0,
 0, 1, 0, 0, 0, 0 y 0 ms: media 0,125 ms, mediana 0 ms y rango 0--1 ms. En siete
 casos no se observó demora medible con la resolución milimétrica disponible;
@@ -438,7 +479,7 @@ aprobados.
 
 Para la tasa de doble adjudicación, las comparaciones prerregistradas entre S0
 como grupo A y cada estrategia S1--S4 como grupo B, tanto en Esc-2 como en
-Esc-3, obtuvieron $U=64$, $p=0,0007775$ y $A_{12}=1,0$, con ocho muestras por
+Esc-3, obtuvieron $U=64$, $p=0,0007775304469403844$ y $A_{12}=1,0$, con ocho muestras por
 grupo. $A_{12}$ expresa la probabilidad de que A produzca un valor mayor que B:
 en esta métrica, un valor mayor es desfavorable, de modo que 1,0 representa el
 peor comportamiento de S0 y no su superioridad. Las comparaciones de latencia
@@ -452,10 +493,17 @@ El índice de Jain fue 1,0000, pero no discrimina equidad en este diseño: cada
 corrida usa una única franja y un único equipo y, en S1--S4, normalmente existe
 un solo adjudicatario. Se trata de un resultado degenerado, no de evidencia de
 superioridad. Los rechazos innecesarios medidos fueron cero porque todas las
-solicitudes contenciosas compartieron equipo y franja con una adjudicación
-confirmada. Además, algunas corridas marcadas como completadas contienen
-\texttt{HTTP\_ERROR}; siete corridas de Esc-1 fallaron ante respuestas HTTP 500
-y este escenario aporta solo $n=3$ muestras válidas; I4 e I5 no
+solicitudes contenciosas clasificadas como \texttt{REJECTED} compartieron equipo
+y franja con una adjudicación confirmada. \texttt{HTTP\_ERROR} no se convierte
+en confirmación ni en rechazo: por ello, cero dobles adjudicaciones y cero
+rechazos innecesarios pueden coexistir con fallos HTTP y no significan que todas
+las solicitudes terminaran correctamente. Los valores $U=64$,
+$p=0,0007775304469403844$ y $A_{12}=1,0$ siguen siendo matemáticamente
+reproducibles y los 500 no invalidan su cálculo, pero tampoco prueban
+disponibilidad equivalente. La conclusión queda limitada a seguridad observada
+bajo la carga ofrecida, no a corrección o superioridad operacional absoluta.
+Además, siete corridas de Esc-1 fallaron ante respuestas HTTP 500 y este
+escenario aporta solo $n=3$ muestras válidas; I4 e I5 no
 fueron observados; S3 está limitado por la resolución temporal; y S4 mide
 healthcheck, no consenso directamente. La evidencia solo permite afirmar que no
 se observaron modificaciones en las tablas productivas que fueron verificadas,
@@ -671,6 +719,14 @@ protocolo previo, diez repeticiones nominales, conservación de r1 y r10 y uso
 uniforme de r2--r9 para el análisis central. \textbf{Riesgo residual:} no se
 aislaron por completo CPU, red, cachés ni pausas del runtime en el host.
 
+\textbf{Amenaza:} la disponibilidad HTTP fue asimétrica entre estrategias
+ARBITER; Esc-3/S1 alcanzó 26,6875\% de respuestas 500, mientras Esc-3/S3 tuvo
+0\% y el baseline S0 0,8750\%. \textbf{Efecto:} una estrategia puede evitar
+dobles adjudicaciones porque controla la concurrencia, pero también porque parte
+de la carga falla antes de confirmar. \textbf{Mitigación aplicada:} se conservan
+y publican todos los intentos y códigos HTTP. \textbf{Riesgo residual:} la tasa
+de doble adjudicación no operacionaliza disponibilidad ni corrección total.
+
 \textbf{Amenaza:} la tasa 5xx no operacionaliza tiempo disponible.
 \textbf{Efecto:} el cumplimiento del umbral de errores podría interpretarse
 erróneamente como disponibilidad. \textbf{Mitigación aplicada:} se completaron
@@ -705,6 +761,16 @@ como equivalentes sobreestimaría la experiencia E2E o escondería latencia de
 red y renderizado. \textbf{Mitigación aplicada:} se reportan por separado y se
 explica el punto de medición. \textbf{Riesgo residual:} no existe medición E2E
 real desde el dispositivo.
+
+\textbf{Amenaza:} el estimando de latencia ARBITER mezcla respuestas válidas y
+HTTP 500, con tasas de fallo diferentes entre estrategias. \textbf{Efecto:} no
+puede interpretarse como latencia exclusiva de adjudicaciones exitosas ni como
+comparación de disponibilidad equivalente. \textbf{Mitigación aplicada:} la
+población principal conserva todos los intentos y se informa el censo HTTP por
+separado. \textbf{Riesgo residual:} restringir ahora el análisis principal a
+2xx sería una redefinición post hoc no prerregistrada. Un eventual análisis
+solo-2xx sería exclusivamente una sensibilidad secundaria y no sustituiría el
+resultado principal.
 
 \textbf{Amenaza:} cobertura, número de pruebas y configuración del pipeline no
 equivalen por sí solos a calidad completa. \textbf{Efecto:} declarar
@@ -786,7 +852,10 @@ parcial para la evaluación ISO completa.
 El experimento ARBITER confirmó la utilidad del control negativo: S0 presentó
 dobles adjudicaciones en las 16 muestras analíticas de contención. No se
 observaron dobles adjudicaciones con S1--S4 en las corridas ejecutadas, sin que
-esto constituya una garantía universal. De 130 corridas planificadas se
+esto constituya una garantía universal ni superioridad operacional: los fallos
+HTTP fueron asimétricos y alcanzaron 26,6875\% en Esc-3/S1. El resultado expresa
+seguridad observada bajo la carga ofrecida y no disponibilidad equivalente. De
+130 corridas planificadas se
 completaron 123 y quedaron 99 muestras analíticas válidas; I4 e I5 no fueron
 observados y las mediciones de recuperación conservan las limitaciones de
 resolución y healthcheck descritas en la Sección~\ref{subsec:arbiter-resultados}.

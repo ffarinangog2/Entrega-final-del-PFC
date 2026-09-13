@@ -457,6 +457,30 @@ incluye:
 
 `SHA256SUMS` contiene 315 entradas verificadas y 0 hashes incorrectos.
 
+#### Auditoría HTTP posterior de ARBITER
+
+Sin alterar el prerregistro ni la población principal, la auditoría posterior
+de los raw cuantificó la disponibilidad HTTP de r2--r9. Todos los fallos fueron
+HTTP 500 y no hubo 4xx. En Esc-2, S0/S1/S3 tuvieron 0 %, S2 13,0000 % y S4
+1,0000 %. En Esc-3, S0 tuvo 0,8750 %, S1 26,6875 %, S2 13,6875 %, S3 0 % y S4
+14,5000 %.
+
+S0 permanece como baseline formal; S3 no se redefine como referencia. La
+comparación 26,6875 % frente a 0 % describe S1 frente a S3 en Esc-3; frente a
+S0 corresponde 26,6875 % frente a 0,8750 %. Cada `HTTP_ERROR` conservó
+`sent_ns`, `received_ns` y `latency_ms`, y fue incluido en el promedio de su
+corrida. La latencia principal mide todos los intentos bajo carga, incluidos los
+500, no solo adjudicaciones exitosas.
+
+Los resultados de doble adjudicación (`U = 64`,
+`p = 0,0007775304469403844`, `A12 = 1,0`, `n = 8` por grupo) permanecen
+reproducibles, pero no acreditan disponibilidad equivalente ni superioridad
+operacional total. `HTTP_ERROR` no es una confirmación ni un rechazo; por ello,
+cero dobles adjudicaciones y cero rechazos innecesarios pueden coexistir con
+fallos HTTP. Cambiar la población principal a solo 2xx sería una redefinición
+post hoc. Un eventual análisis solo-2xx se etiquetaría como sensibilidad
+secundaria y no sustituiría el resultado principal.
+
 ## Cierre de ejecución E3
 
 Esta sección registra el cierre posterior a la ejecución sin modificar el

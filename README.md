@@ -285,6 +285,15 @@ La descripción y la evidencia versionada están en el
 que aparece en el prerregistro corresponde únicamente al estado histórico
 previo a la ejecución y **NO representa el resultado actual**.
 
+En la población central r2--r9, todos los fallos ARBITER fueron HTTP 500 y no
+hubo 4xx. La mayor tasa fue Esc-3/S1 con 427 de 1.600 intentos (26,6875 %);
+Esc-3/S3 tuvo 0 %, mientras el baseline formal S0 tuvo 14 de 1.600 (0,8750 %).
+Los `HTTP_ERROR` conservaron su latencia y fueron incluidos en los promedios.
+Por ello, la ausencia observada de dobles adjudicaciones en S1--S4 describe
+seguridad bajo la carga ofrecida, no disponibilidad equivalente ni superioridad
+operacional global. El [censo y su interpretación](experimentos/resultados/arbiter/README.md)
+preservan íntegramente estos resultados desfavorables.
+
 ## Semillas reproducibles
 
 `db/seeds.sql` y `db/seeds_01.sql`–`db/seeds_10.sql` generan datos deterministas
