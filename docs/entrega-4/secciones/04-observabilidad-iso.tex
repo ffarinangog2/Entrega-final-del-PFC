@@ -158,9 +158,10 @@ proceso de prueba documentado y repetible \cite{iso29119_2_2021}.
 \subsection{Preguntas de investigación y respuestas}
 \label{subsec:preguntas-investigacion}
 
-Las preguntas siguientes se formularon a partir de criterios anteriores a las
-mediciones, no como hipótesis retrospectivas. El historial de Git sitúa el
-protocolo inicial y los umbrales de p95 y HTTP 5xx en el commit
+Los criterios, umbrales y diseño experimental fueron declarados antes de la
+ejecución. Las preguntas PI1/PI2 se formalizaron posteriormente en el manuscrito
+utilizando esos criterios preexistentes. El historial de Git sitúa el protocolo
+inicial y los umbrales de p95 y HTTP 5xx en el commit
 \texttt{5b1c498} del 18 de agosto de 2026. El umbral secundario de p99 fue
 incorporado al analizador en \texttt{e1c82c7} el 24 de agosto, antes de que la
 campaña de eficiencia se ejecutara el 30 de agosto. En ambos casos la regla
@@ -174,21 +175,25 @@ la latencia p95 y p99 observada por Locust permanecen por debajo de los
 umbrales previamente declarados de 500 ms y 750 ms, respectivamente, en las
 ocho repeticiones centrales r2--r9 del despliegue SCLI evaluado?
 
-\textbf{Respuesta a PI1.} Solo parcialmente. El archivo
-\path{../../experimentos/resultados/iso25010.csv} registra para p95 una media
-de 57,500000 ms y un IC95 [26,456064; 88,543936] ms: su límite superior cumple
-el umbral de 500 ms. Para p99 registra una media de 624,000000 ms y un IC95
-[116,881810; 1131,118190] ms: el límite superior excede 750 ms y, por tanto,
-\textbf{no cumple la expectativa previa}. La dispersión observada permite
-describir una cola de latencia variable, pero no atribuirle una causa. Los
-valores agregados y la decisión están en
+\textbf{Respuesta a PI1.} Sí. El análisis corregido delimita la población por
+identidad del request y utiliza las filas GET de Reservas/Solicitudes conservadas
+en los CSV raw. Para p95 obtiene media 45,500000 ms e IC95
+[27,304023; 63,695977] ms; para p99, media 371,250000 ms e IC95
+[66,911235; 675,588765] ms. Ambos límites superiores permanecen por debajo de
+500 ms y 750 ms, respectivamente. La selección no filtra respuestas por código
+HTTP, latencia ni éxito/fallo. Excluye \texttt{POST /api/v1/auth/login}
+exclusivamente porque pertenece a Auth y no a las consultas de solo lectura de
+Reservas/Solicitudes. Los valores corregidos y la decisión están en
 \path{../../experimentos/resultados/RESUMEN-ISO25010-E4.md}; el diseño y la
 regla de ocho muestras están en
-\path{../../experimentos/protocolo-e4.md}; y las filas \texttt{Aggregated} que
-sustentan cada percentil se conservan en
+\path{../../experimentos/protocolo-e4.md}; y las filas GET que sustentan cada
+percentil se conservan en
 \path{../../experimentos/resultados/raw/eficiencia_nominal_50u_5m/rep-02/locust_stats.csv}
-hasta \path{../rep-09/locust_stats.csv}. Esta respuesta desfavorable para p99
-no modifica el criterio p95 ni se oculta bajo su resultado favorable.
+hasta \path{../rep-09/locust_stats.csv}. No se repitió ni alteró la campaña.
+El análisis histórico sobre \texttt{Aggregated}, que mezclaba esos GET con
+login, permanece documentado y produjo p95 media 57,500000 ms e IC95
+[26,456064; 88,543936] ms, y p99 media 624,000000 ms e IC95
+[116,881810; 1131,118190] ms; bajo esa población incorrecta p99 no cumplía.
 
 \textbf{PI2.} ¿Al fijar como variable manipulada una carga nominal de 50
 usuarios concurrentes durante una hora sobre las consultas autenticadas de
@@ -257,35 +262,40 @@ el análisis central.
     \hline
     \textbf{Rep.} & \textbf{Requests} & \textbf{HTTP 5xx} & \textbf{p95 (ms)} & \textbf{p99 (ms)} & \textbf{Uso} \\
     \hline
-    r1  & 7041 & 0 & 110 & 2200 & Conservada \\
-    r2  & 7230 & 0 & 25  & 53   & Central \\
-    r3  & 7151 & 0 & 130 & 1600 & Central \\
-    r4  & 7212 & 0 & 25  & 89   & Central \\
-    r5  & 7205 & 0 & 63  & 1400 & Central \\
-    r6  & 7259 & 0 & 34  & 150  & Central \\
-    r7  & 7214 & 0 & 69  & 570  & Central \\
-    r8  & 7209 & 0 & 29  & 270  & Central \\
-    r9  & 7161 & 0 & 85  & 860  & Central \\
-    r10 & 7281 & 0 & 25  & 150  & Conservada \\
+    r1  & 6991 & 0 & 87 & 1000 & Conservada \\
+    r2  & 7180 & 0 & 24 & 40   & Central \\
+    r3  & 7101 & 0 & 80 & 1000 & Central \\
+    r4  & 7162 & 0 & 24 & 45   & Central \\
+    r5  & 7155 & 0 & 54 & 740  & Central \\
+    r6  & 7209 & 0 & 31 & 85   & Central \\
+    r7  & 7164 & 0 & 58 & 410  & Central \\
+    r8  & 7159 & 0 & 27 & 110  & Central \\
+    r9  & 7111 & 0 & 66 & 540  & Central \\
+    r10 & 7231 & 0 & 23 & 88   & Conservada \\
     \hline
   \end{tabular}
 \end{table}
 
-Las ocho repeticiones centrales suman 57\,641 solicitudes. Para p95, los valores
-25, 130, 25, 63, 34, 69, 29 y 85 ms producen media 57,500000 ms, desviación
-muestral 37,132966 ms e IC95 [26,456064; 88,543936] ms. Como el límite superior
-88,543936 ms es menor que 500 ms, la eficiencia \textbf{cumple} para este
+Las ocho repeticiones centrales suman 57\,241 consultas GET de la población
+formal. Para p95, los valores 24, 80, 24, 54, 31, 58, 27 y 66 ms producen media
+45,500000 ms, desviación muestral 21,764978 ms e IC95
+[27,304023; 63,695977] ms. Como el límite superior 63,695977 ms es menor que
+500 ms, la eficiencia \textbf{cumple} para este
 escenario nominal. La conclusión no se extrapola a cargas, duraciones o entornos
 distintos.
 
-El p99 se analiza como indicador secundario. Los valores 53, 1600, 89, 1400,
-150, 570, 270 y 860 ms producen media 624,000000 ms, desviación 606,585526 ms e
-IC95 [116,881810; 1131,118190] ms. El límite superior excede el umbral secundario
-de 750 ms usado por el analizador, por lo que ese indicador no cumple. Este
-umbral no es el criterio principal p95 de la rúbrica: el resultado revela cola
-larga y alta variabilidad, pero no cambia retrospectivamente la decisión p95.
+El p99 se analiza como indicador secundario. Los valores 40, 1000, 45, 740, 85,
+410, 110 y 540 ms producen media 371,250000 ms, desviación 364,032475 ms e IC95
+[66,911235; 675,588765] ms. El límite superior permanece bajo el umbral
+secundario de 750 ms, por lo que ese indicador también cumple. La corrección es
+exclusivamente de delimitación de población y no cambia campaña, raws ni umbral.
 
-Las ocho ventanas centrales contienen 0 HTTP 5xx de 57\,641 solicitudes, es
+Para trazabilidad, el análisis histórico de la fila \texttt{Aggregated} mezcló
+57\,241 GET con 400 login en r2--r9. Produjo p95 media 57,500000 ms e IC95
+[26,456064; 88,543936] ms, y p99 media 624,000000 ms e IC95
+[116,881810; 1131,118190] ms; p99 no cumplía bajo esa población incorrecta.
+
+Las ocho ventanas centrales contienen 0 HTTP 5xx de 57\,241 consultas GET, es
 decir, 0\%, frente al objetivo menor que 1\%. Esto demuestra ausencia de 5xx en
 el escenario observado; no demuestra disponibilidad anual, ausencia de otros
 errores ni fiabilidad absoluta.
@@ -475,9 +485,9 @@ solo características con evidencia disponible.
     \hline
     \textbf{Característica} & \textbf{Métrica} & \textbf{Objetivo} & \textbf{Evidencia/resultado} & \textbf{Estado} \\
     \hline
-    Eficiencia & p95 nominal, 50 usuarios & IC95 superior $<500$ ms & 88,543936 ms & CUMPLE \\
+    Eficiencia & p95 nominal, 50 usuarios & IC95 superior $<500$ ms & Media 45,50 ms; IC95 [27,30; 63,70] ms & CUMPLE \\
     \hline
-    Eficiencia secundaria & p99 nominal & IC95 superior $<750$ ms & Media 624,00 ms; SD 606,59 ms; IC95 [116,88; 1131,12] ms & NO CUMPLE \\
+    Eficiencia secundaria & p99 nominal & IC95 superior $<750$ ms & Media 371,25 ms; SD 364,03 ms; IC95 [66,91; 675,59] ms & CUMPLE \\
     \hline
     Fiabilidad acotada & HTTP 5xx nominal, 50 usuarios/1 h & IC95 superior $<1\%$ & Media 0,061315\%; IC95 [0,032045; 0,090585]\% en r2--r9 & CUMPLE en escenario \\
     \hline
@@ -586,7 +596,7 @@ arquitectura permite relacionar un cambio con pruebas, imagen y despliegue, y el
 manifiesto hace detectables alteraciones en el conjunto experimental.
 
 Las limitaciones impiden una conclusión total. El p99 de eficiencia presenta
-gran dispersión y no cumple su umbral previo; la rampa contiene un máximo
+gran dispersión aunque cumple su umbral previo; la rampa contiene un máximo
 superior a 14 segundos; Mobile permanece bajo 70\% de cobertura; la campaña de
 fiabilidad registró decenas de miles de 401 por repetición y la disponibilidad
 no fue demostrada. A ello se suman el panel Mobile proxy, falta de rollback automático,
@@ -632,7 +642,8 @@ Código de Ética y Práctica Profesional de Ingeniería de Software, aprobado
 conjuntamente por ACM e IEEE Computer Society \cite{acmieee1999secode}, el equipo
 debe comunicar tanto los resultados favorables como los fallos y límites. Por
 ello se mantienen las siete corridas fallidas de ARBITER, los invariantes no
-observados, el incumplimiento p99 y los 401 de la campaña de fiabilidad, en
+observados, el análisis histórico p99 incorrectamente poblado y los 401 de la
+campaña de fiabilidad, en
 lugar de convertir evidencia desfavorable en cumplimiento.
 
 \subsection{Declaración de uso de inteligencia artificial generativa}
@@ -743,7 +754,7 @@ posteriormente se presenta en la Sección~\ref{sec:contratos-openapi}.
     \hline
     D6.2 & Dashboard de seis paneles & JSON canónico; latencia Mobile solo proxy de Gateway & Dashboard & PARCIAL \\
     \hline
-    D7.1 & Experimento ISO 25010 & Eficiencia y fiabilidad 10/10; p99 de eficiencia no cumple; disponibilidad no operacionalizada & ISO/experimentos & PARCIAL \\
+    D7.1 & Experimento ISO 25010 & Eficiencia y fiabilidad 10/10; p95 y p99 de eficiencia cumplen; disponibilidad no operacionalizada & ISO/experimentos & PARCIAL \\
     \hline
     D7.2 & Experimento ARBITER & 130 planificadas; 123 completadas; 99 muestras analíticas válidas & ARBITER/oráculo & PARCIAL \\
     \hline
@@ -766,9 +777,8 @@ cobertura configurados; la evidencia Mobile del HEAD permanece bajo 70\%, por
 lo que no se afirma cumplimiento global ni se atribuyen al HEAD cifras de un
 reporte anterior.
 
-La eficiencia nominal cumple el criterio p95 y no registró HTTP 5xx en las
-muestras centrales. Sin embargo, su p99 no cumple el umbral previo y la rampa
-muestra picos de cola. La campaña de fiabilidad cumple el criterio acotado de
+La eficiencia nominal cumple los criterios p95 y p99 y no registró HTTP 5xx en
+las muestras centrales; la rampa muestra picos de cola. La campaña de fiabilidad cumple el criterio acotado de
 5xx, aunque registró entre 66\,476 y 67\,008 respuestas 401 por repetición. Ese
 resultado no prueba disponibilidad de 99,5\%. La conclusión profesional es
 parcial para la evaluación ISO completa.

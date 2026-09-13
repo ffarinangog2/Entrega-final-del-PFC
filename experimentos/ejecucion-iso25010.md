@@ -40,8 +40,17 @@ verificar su integridad.
 
 ## Obtener métricas reales
 
-El total de requests se toma de la fila agregada de `locust_stats.csv`. La p95 se toma
-de la columna de percentil 95 % del mismo agregado y se contrasta con
+Para PI1, los percentiles se toman por identidad del request en `locust_stats.csv`.
+Pertenecen a la población `GET /api/v1/reservas` y
+`GET /api/v1/reservas/{id}` cuando tengan observaciones. No pertenece a ella
+`POST /api/v1/auth/login`, porque es una operación de Auth y no una consulta de solo
+lectura de Reservas/Solicitudes. La selección no filtra por código HTTP, latencia ni
+éxito/fallo: toda respuesta de los GET incluidos permanece en la población.
+
+La instrucción histórica tomaba el total, p95 y p99 de la fila `Aggregated`. Para PI1
+ese método es incorrecto porque mezcla los GET de Reservas/Solicitudes con el login.
+Se conserva esta explicación para poder reproducir el análisis histórico, pero el
+resultado oficial corregido se obtiene de las filas GET anteriores y se contrasta con
 `prometheus-p95.promql`.
 
 Los fallos de Locust no se copian automáticamente a `failures`: pueden incluir errores

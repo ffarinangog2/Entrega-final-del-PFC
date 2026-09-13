@@ -35,15 +35,35 @@ Las diez repeticiones finalizaron con `exit_code=0`, pertenecen al SHA indicado 
 registran 0 fallos HTTP. El análisis estadístico usa exclusivamente r2–r9; r1 y r10
 se conservan, pero se excluyen según el protocolo.
 
-Resultados calculados por `experimentos/analizar_iso25010.py`:
+Resultados oficiales corregidos por `experimentos/analizar_iso25010.py` directamente
+desde las filas GET identificadas de los `locust_stats.csv` raw. Se incluye toda
+respuesta de esos GET sin filtrar por código HTTP, latencia ni éxito/fallo. El login se
+excluye exclusivamente porque pertenece a Auth y no a la población formal de consultas
+de solo lectura de Reservas/Solicitudes:
 
 | Métrica | n | Media | s muestral | IC95 | Decisión |
 | --- | ---: | ---: | ---: | --- | --- |
 | HTTP 5xx | 8 | 0 % | 0 % | [0; 0] % | CUMPLE `<1 %` |
-| p95 Locust | 8 | 57,500000 ms | 37,132966 ms | [26,456064; 88,543936] ms | CUMPLE `<500 ms` |
-| p99 Locust | 8 | 624,000000 ms | 606,585526 ms | [116,881810; 1.131,118190] ms | NO CUMPLE `<750 ms` |
+| p95 Locust | 8 | 45,500000 ms | 21,764978 ms | [27,304023; 63,695977] ms | CUMPLE `<500 ms` |
+| p99 Locust | 8 | 371,250000 ms | 364,032475 ms | [66,911235; 675,588765] ms | CUMPLE `<750 ms` |
 
-El cálculo usa `df=7` y `t(0,975;7)=2,364624251`.
+El cálculo usa `df=7` y `t(0,975;7)=2,364624251`. Las ocho repeticiones
+centrales contienen 57.241 observaciones de la población formal.
+
+### Análisis histórico preservado
+
+El análisis anterior tomó la fila `Aggregated`, que mezcla GET de
+Reservas/Solicitudes con 50 observaciones de `POST /api/v1/auth/login` por repetición,
+y no corresponde a la población formal utilizada para responder PI1. Produjo p95 media
+57,500000 ms, desviación 37,132966 ms e IC95 [26,456064; 88,543936] ms, por lo que
+p95 cumplía. Para p99 produjo media 624,000000 ms, desviación 606,585526 ms e IC95
+[116,881810; 1.131,118190] ms, por lo que p99 no cumplía `<750 ms`. Estos valores se
+mantienen visibles únicamente como trazabilidad del análisis histórico incorrectamente
+poblado; no se alteraron ni repitieron las campañas ni los raws.
+
+Los criterios, umbrales, r2–r9, regla del IC y diseño de carga basado en consultas GET
+fueron declarados antes de la ejecución. Las preguntas PI1/PI2 se formalizaron
+posteriormente en el manuscrito utilizando esos criterios preexistentes.
 
 Como contraste, los resultados Prometheus p95 de r2–r9 producen:
 
