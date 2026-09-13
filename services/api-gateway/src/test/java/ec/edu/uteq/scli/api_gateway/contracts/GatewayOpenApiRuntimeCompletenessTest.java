@@ -1,34 +1,32 @@
 package ec.edu.uteq.scli.api_gateway.contracts;
 
-import com.sun.net.httpserver.HttpExchange;
-import com.sun.net.httpserver.HttpServer;
 import ec.edu.scli.contracts.RuntimeContractVerifier;
 import ec.edu.scli.contracts.RuntimeContractVerifier.Operation;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.cloud.gateway.server.mvc.common.MvcUtils;
+import org.springframework.cloud.gateway.server.mvc.handler.ProxyExchangeHandlerFunction;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.HttpMethod;
-import org.springframework.http.MediaType;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.springframework.web.servlet.function.ServerRequest;
+import org.springframework.web.servlet.function.ServerResponse;
 
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
@@ -39,28 +37,41 @@ class GatewayOpenApiRuntimeCompletenessTest {
             "usuarios", "docs/openapi/usuarios-service-openapi.json",
             "academico", "docs/openapi/academico-laboratorios-service-openapi.json",
             "reservas", "docs/openapi/reservas-solicitudes-service-openapi.json");
-    private static final Map<String, BackendProbe> PROBES = new LinkedHashMap<>();
+    private static final Map<String, String> BACKEND_URLS = Map.of(
+            "auth", "http://auth.test.invalid:18081",
+            "usuarios", "http://usuarios.test.invalid:18082",
+            "academico", "http://academico.test.invalid:18083",
+            "reservas", "http://reservas.test.invalid:18084");
 
     @Autowired
     private MockMvc mockMvc;
 
-    @BeforeAll
-    static void startBackends() {
-        ensureBackendsStarted();
-    }
+    @MockitoBean
+    private ProxyExchangeHandlerFunction proxyExchangeHandler;
 
-    @AfterAll
-    static void stopBackends() {
-        PROBES.values().forEach(BackendProbe::close);
-    }
+    private final ConcurrentLinkedQueue<RoutedRequest> routedRequests =
+            new ConcurrentLinkedQueue<>();
 
     @DynamicPropertySource
     static void backendUrls(DynamicPropertyRegistry registry) {
-        ensureBackendsStarted();
-        registry.add("AUTH_SERVICE_URL", () -> PROBES.get("auth").url());
-        registry.add("USUARIOS_SERVICE_URL", () -> PROBES.get("usuarios").url());
-        registry.add("ACADEMICO_SERVICE_URL", () -> PROBES.get("academico").url());
-        registry.add("RESERVAS_SOLICITUDES_SERVICE_URL", () -> PROBES.get("reservas").url());
+        registry.add("AUTH_SERVICE_URL", () -> BACKEND_URLS.get("auth"));
+        registry.add("USUARIOS_SERVICE_URL", () -> BACKEND_URLS.get("usuarios"));
+        registry.add("ACADEMICO_SERVICE_URL", () -> BACKEND_URLS.get("academico"));
+        registry.add("RESERVAS_SOLICITUDES_SERVICE_URL", () -> BACKEND_URLS.get("reservas"));
+    }
+
+    @BeforeEach
+    void captureRequestsAfterRouterFilters() {
+        routedRequests.clear();
+        reset(proxyExchangeHandler);
+        when(proxyExchangeHandler.handle(any(ServerRequest.class))).thenAnswer(invocation -> {
+            ServerRequest request = invocation.getArgument(0);
+            String backend = MvcUtils.<java.net.URI>getAttribute(
+                    request, MvcUtils.GATEWAY_REQUEST_URL_ATTR).toString();
+            routedRequests.add(new RoutedRequest(
+                    request.method().name(), request.uri().getRawPath(), backend));
+            return ServerResponse.noContent().build();
+        });
     }
 
     @Test
@@ -115,31 +126,18 @@ class GatewayOpenApiRuntimeCompletenessTest {
 
     private void assertRouted(Operation operation, String expectedService) throws Exception {
         assertThat(expectedService).as("backend de %s", operation).isNotNull();
-        PROBES.values().forEach(BackendProbe::clear);
+        routedRequests.clear();
         String concretePath = concretePath(operation.path());
 
-        MockHttpServletRequestBuilder request = MockMvcRequestBuilders.request(
-                HttpMethod.valueOf(operation.method()), concretePath);
-        if (methodCarriesBody(operation.method())) {
-            request.contentType(MediaType.APPLICATION_JSON).content("{}");
-        }
-
-        mockMvc.perform(request)
+        mockMvc.perform(MockMvcRequestBuilders.request(
+                        HttpMethod.valueOf(operation.method()), concretePath))
                 .andExpect(status().isNoContent());
 
-        for (Map.Entry<String, BackendProbe> probe : PROBES.entrySet()) {
-            if (probe.getKey().equals(expectedService)) {
-                assertThat(probe.getValue().requests())
-                        .as("request enviada al backend %s", expectedService)
-                        .containsExactly(operation.method() + " " + expectedBackendPath(concretePath));
-            } else {
-                assertThat(probe.getValue().requests()).isEmpty();
-            }
-        }
-    }
-
-    private static boolean methodCarriesBody(String method) {
-        return method.equals("POST") || method.equals("PUT") || method.equals("PATCH");
+        assertThat(routedRequests)
+                .as("request transformada por el router para %s", operation)
+                .containsExactly(new RoutedRequest(
+                        operation.method(), expectedBackendPath(concretePath),
+                        BACKEND_URLS.get(expectedService)));
     }
 
     private static void addAliases(
@@ -186,51 +184,6 @@ class GatewayOpenApiRuntimeCompletenessTest {
         return result.toString();
     }
 
-    private static synchronized void ensureBackendsStarted() {
-        if (!PROBES.isEmpty()) {
-            return;
-        }
-        try {
-            for (String service : CONTRACTS.keySet()) {
-                PROBES.put(service, new BackendProbe());
-            }
-        } catch (IOException exception) {
-            throw new IllegalStateException("No se pudieron iniciar backends de prueba", exception);
-        }
-    }
-
-    private static final class BackendProbe implements AutoCloseable {
-        private final HttpServer server;
-        private final ConcurrentLinkedQueue<String> requests = new ConcurrentLinkedQueue<>();
-
-        private BackendProbe() throws IOException {
-            server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
-            server.createContext("/", this::handle);
-            server.start();
-        }
-
-        private String url() {
-            return "http://127.0.0.1:" + server.getAddress().getPort();
-        }
-
-        private List<String> requests() {
-            return new ArrayList<>(requests);
-        }
-
-        private void clear() {
-            requests.clear();
-        }
-
-        private void handle(HttpExchange exchange) throws IOException {
-            exchange.getRequestBody().readAllBytes();
-            requests.add(exchange.getRequestMethod() + " " + exchange.getRequestURI().getPath());
-            exchange.sendResponseHeaders(204, -1);
-            exchange.close();
-        }
-
-        @Override
-        public void close() {
-            server.stop(0);
-        }
+    private record RoutedRequest(String method, String path, String backend) {
     }
 }
