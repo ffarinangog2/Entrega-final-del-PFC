@@ -12,6 +12,23 @@ medido; commits documentales posteriores no sustituyen esa identidad.
 | Mantenibilidad | Cobertura por componente y puertas secundarias sobre tres ejecuciones | [`../protocolo-e4.md`](../protocolo-e4.md), prerregistro E3 | `ejecutar_e3.py`, `e3_instrumental.py` | [`evidencia-e3-canonica/e3_mantenibilidad/`](evidencia-e3-canonica/e3_mantenibilidad/): métricas y reportes fuente compactos; selección canónica del raw completo no versionado | `analizar_e3.py` → [`analisis-e3.json`](analisis-e3.json) | Todos cumplen salvo Android 38,3407 %; global NO CUMPLE | Resumen, `docs/iso25010/mantenibilidad-usuarios.md`, informe E4 | `fa7d75ec0f75573938bf46ed6a68f0aee99606ac` |
 | Compatibilidad | Suite completa aprobada en Chromium, Firefox y WebKit, sin fallidos, omitidos o flaky | [`../protocolo-e4.md`](../protocolo-e4.md), prerregistro E3 | `ejecutar_e3.py`, `e3_instrumental.py` | [`evidencia-e3-canonica/e3_compatibilidad/`](evidencia-e3-canonica/e3_compatibilidad/): manifiestos y resúmenes por motor; selección canónica del raw completo no versionado | `analizar_e3.py` → [`analisis-e3.json`](analisis-e3.json) | 24/24 por motor; Wilson [0,862023795269197; 1]; CUMPLE en suite | Resumen, `docs/iso25010/compatibilidad.md`, informe E4 | `fa7d75ec0f75573938bf46ed6a68f0aee99606ac` |
 
+### Replicación de mantenibilidad
+
+`rep-01`, `rep-02` y `rep-03` son ejecuciones separadas en ventanas UTC no
+solapadas (05:38:47–05:52:30, 05:53:48–06:05:14 y 06:07:00–06:18:59). Cada una
+tiene manifiesto propio. Los informes Android conservados tienen hashes
+`3152520e…`, `689c5141…` y `07d393d0…`, y sesiones JaCoCo
+`DESKTOP-N45EJGV-f3ab9b30`, `DESKTOP-N45EJGV-b268151` y
+`DESKTOP-N45EJGV-f0c2743e`, respectivamente. La tabla completa está en el
+[`README` de la evidencia canónica](evidencia-e3-canonica/README.md).
+
+Las tres ejecuciones produjeron 38,34070796460177 % para Android. La igualdad
+produce media = 38,34070796460177 %, `sample_sd = 0` e IC95 =
+[38,34070796460177; 38,34070796460177]. Es reproducibilidad determinista de la
+misma suite sobre el mismo SHA, no una demostración estadística de independencia
+ni de precisión fuerte. Se preservan el umbral de 70 % y la decisión **NO
+CUMPLE**.
+
 ## Lectura inversa desde los artefactos
 
 - `analisis-e3.json` se obtiene de las tres carpetas raw E3 mediante

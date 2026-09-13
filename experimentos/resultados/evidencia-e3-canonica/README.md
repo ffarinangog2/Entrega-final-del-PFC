@@ -28,6 +28,29 @@ anteriores, que permanecen separadas y etiquetadas como antecedentes.
 | `e3_mantenibilidad/rep-NN/android/report/jacocoTestReport.xml` | Reporte fuente compacto de cobertura Android. |
 | `MANIFEST-SHA256.txt` | Hash SHA-256 de cada archivo incluido en este paquete, salvo el propio manifiesto. |
 
+## Procedencia de las repeticiones de mantenibilidad
+
+Las tres repeticiones son invocaciones separadas del instrumental, ejecutadas
+en ventanas UTC no solapadas. Sus manifiestos registran respectivamente las
+repeticiones 1, 2 y 3, el mismo SHA experimental y comandos completos. Los
+hashes SHA-256 de esos manifiestos son `9847d840af99d40be19a6d3f81dc4eb84958271769e13b127dde8a17895e219b`,
+`e3eea04f7860e7ba6ff4523898e19eb1133f0f4f34c1a0298651fac792897deb` y
+`3bf1c5aa18e87ff01f4ed5c68bed220abfc3c73900583cc11520bdf7ebff652e`.
+
+| Repetición | Ventana UTC | SHA-256 `metricas.csv` | SHA-256 informe Android | `sessioninfo` JaCoCo Android | Cobertura Android |
+|---|---|---|---|---|---:|
+| `rep-01` | 2026-09-12 05:38:47.397078–05:52:30.095802 | `d336496f1f9ec8d144853b64e310dceb9c2262885b1d061029062cfbeb5eeac5` | `3152520eb897ae2bbf7044cbb884036f6e35ec5297fc481573a4eda0b810fd0e` | `DESKTOP-N45EJGV-f3ab9b30` | 38,34070796460177 % |
+| `rep-02` | 2026-09-12 05:53:48.384042–06:05:14.745791 | `d336496f1f9ec8d144853b64e310dceb9c2262885b1d061029062cfbeb5eeac5` | `689c514199693da3a1d3f0f208697fc6cae7f8c4d299868ef714c7d611d77815` | `DESKTOP-N45EJGV-b268151` | 38,34070796460177 % |
+| `rep-03` | 2026-09-12 06:07:00.038156–06:18:59.123202 | `d336496f1f9ec8d144853b64e310dceb9c2262885b1d061029062cfbeb5eeac5` | `07d393d05fedd9e569bbe2c566e0441d1a6cfb6645940ebf64449658ba11338a` | `DESKTOP-N45EJGV-f0c2743e` | 38,34070796460177 % |
+
+La igualdad de `metricas.csv` y de la cobertura es el resultado determinista de
+la misma suite sobre el mismo SHA. No se utiliza `sample_sd = 0` ni el IC95
+degenerado como prueba de independencia o precisión fuerte: la separación se
+establece por la procedencia registrada y por los reportes Android con sesiones
+y hashes diferentes. El raw completo conserva los logs, pero estos metadatos y
+reportes compactos bastan para comprobar la separación sin versionar derivados
+voluminosos.
+
 `analizar_e3.py` no necesita los `playwright.json` para producir
 `analisis-e3.json`; por eso no se incluyeron. Tampoco se copiaron HTML, logs ni
 otros derivados voluminosos. La trazabilidad completa está en
