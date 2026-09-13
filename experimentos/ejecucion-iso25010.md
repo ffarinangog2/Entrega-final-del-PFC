@@ -14,6 +14,25 @@ Fiabilidad, 50 usuarios durante 1 hora:
 powershell -ExecutionPolicy Bypass -File experimentos/ejecutar_iso25010.ps1 -Escenario fiabilidad_nominal_50u_1h -Repeticion 1 -HostObjetivo http://localhost:8080
 ```
 
+Campaña correctiva E2 con renovación de sesión, en una ruta independiente:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File experimentos/ejecutar_iso25010.ps1 -Escenario fiabilidad_nominal_50u_1h_refresh -Repeticion 1 -HostObjetivo http://localhost:8080
+```
+
+En Ubuntu 24.04 no se presupone la instalación de PowerShell. El launcher Bash
+nativo equivalente para la campaña correctiva es:
+
+```bash
+bash experimentos/ejecutar_iso25010.sh --scenario fiabilidad_nominal_50u_1h_refresh --repetition 1 --host http://localhost:8080
+```
+
+Ambos launchers escriben exclusivamente en
+`experimentos/resultados/raw/fiabilidad_nominal_50u_1h_refresh/rep-NN/`, rechazan
+sobrescrituras y preservan el código real de Locust en metadata. La salida tabular
+correctiva se registra separadamente en `resultados/iso25010-correctiva.csv`; no se
+modifican las filas históricas de `resultados/iso25010.csv`.
+
 El host es obligatorio y configurable. Para la prueba integrada local debe ser el API
 Gateway en `http://localhost:8080`. La herramienta no inicia servicios. Antes de una
 ejecución real se debe instalar `tests/load/requirements.txt` y verificar el ambiente.

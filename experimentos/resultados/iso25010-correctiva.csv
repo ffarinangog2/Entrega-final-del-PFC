@@ -1,0 +1,11 @@
+escenario,repeticion,usuarios,duracion,total_requests,failures,failure_rate_percent,p95_ms,p99_ms,valida,observacion
+fiabilidad_nominal_50u_1h_refresh,1,50,1h,,,,,,,
+fiabilidad_nominal_50u_1h_refresh,2,50,1h,,,,,,,
+fiabilidad_nominal_50u_1h_refresh,3,50,1h,,,,,,,
+fiabilidad_nominal_50u_1h_refresh,4,50,1h,,,,,,,
+fiabilidad_nominal_50u_1h_refresh,5,50,1h,,,,,,,
+fiabilidad_nominal_50u_1h_refresh,6,50,1h,,,,,,,
+fiabilidad_nominal_50u_1h_refresh,7,50,1h,,,,,,,
+fiabilidad_nominal_50u_1h_refresh,8,50,1h,,,,,,,
+fiabilidad_nominal_50u_1h_refresh,9,50,1h,,,,,,,
+fiabilidad_nominal_50u_1h_refresh,10,50,1h,,,,,,,

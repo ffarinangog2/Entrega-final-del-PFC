@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
 import json
 import math
 import os
@@ -11,7 +12,18 @@ import tempfile
 from pathlib import Path
 
 
-SCENARIOS = {"eficiencia_nominal_50u_5m", "fiabilidad_nominal_50u_1h"}
+HISTORICAL_RELIABILITY = "fiabilidad_nominal_50u_1h"
+CORRECTIVE_RELIABILITY = "fiabilidad_nominal_50u_1h_refresh"
+RELIABILITY_SCENARIOS = {HISTORICAL_RELIABILITY, CORRECTIVE_RELIABILITY}
+SCENARIOS = {"eficiencia_nominal_50u_5m", *RELIABILITY_SCENARIOS}
+BUSINESS_REQUESTS = {
+    ("GET", "GET /api/v1/reservas"),
+    ("GET", "GET /api/v1/reservas/{id}"),
+}
+SESSION_REQUESTS = {
+    ("POST", "POST /api/v1/auth/login"),
+    ("POST", "POST /api/v1/auth/refresh"),
+}
 RELIABILITY_EVIDENCE = {
     "metadata.json",
     "environment.txt",
@@ -41,6 +53,107 @@ RELIABILITY_EVIDENCE = {
     "deployment-state-after.txt",
     "reservas-service.log",
 }
+CORRECTIVE_EVIDENCE = RELIABILITY_EVIDENCE | {
+    "locust_requests.csv",
+    "phase-summary.json",
+    "gateway-service.log",
+    "phase-boundaries.json",
+    "prometheus-gateway-status-by-uri.promql",
+    "prometheus-gateway-status-by-uri-result.json",
+    "prometheus-reservas-status-by-uri.promql",
+    "prometheus-reservas-status-by-uri-result.json",
+    "SHA256SUMS",
+}
+
+
+def request_population(evidence_dir: Path) -> dict[str, int | bool]:
+    with (evidence_dir / "locust_stats.csv").open(
+        encoding="utf-8-sig", newline=""
+    ) as stream:
+        rows = list(csv.DictReader(stream))
+
+    counts: dict[tuple[str, str], int] = {}
+    for row in rows:
+        key = (row.get("Type", ""), row.get("Name", ""))
+        if key == ("", "Aggregated"):
+            continue
+        try:
+            count = int(row.get("Request Count", "0"))
+        except ValueError as error:
+            raise ValueError(f"Request Count inválido para {key}") from error
+        counts[key] = counts.get(key, 0) + count
+
+    business_get_count = sum(counts.get(key, 0) for key in BUSINESS_REQUESTS)
+    login_count = counts.get(("POST", "POST /api/v1/auth/login"), 0)
+    refresh_count = counts.get(("POST", "POST /api/v1/auth/refresh"), 0)
+    protected_names = {name for _, name in BUSINESS_REQUESTS | SESSION_REQUESTS}
+    identity_collision = any(
+        name in protected_names
+        and (request_type, name) not in BUSINESS_REQUESTS | SESSION_REQUESTS
+        and count > 0
+        for (request_type, name), count in counts.items()
+    )
+    names_separated = login_count > 0 and refresh_count > 0 and not identity_collision
+    return {
+        "business_get_count": business_get_count,
+        "login_request_count": login_count,
+        "refresh_request_count": refresh_count,
+        "business_population_valid": business_get_count > 0,
+        "request_names_separated": names_separated,
+    }
+
+
+def business_event_metrics(evidence_dir: Path) -> dict[str, int]:
+    with (evidence_dir / "locust_requests.csv").open(
+        encoding="utf-8-sig", newline=""
+    ) as stream:
+        rows = list(csv.DictReader(stream))
+    business = [
+        row
+        for row in rows
+        if (row.get("request_type"), row.get("name")) in BUSINESS_REQUESTS
+    ]
+    five_xx = sum(
+        1
+        for row in business
+        if row.get("status_code", "").isdigit()
+        and 500 <= int(row["status_code"]) <= 599
+    )
+    return {"business_event_count": len(business), "business_http_5xx": five_xx}
+
+
+def verify_sha256_manifest(evidence_dir: Path) -> int:
+    manifest = evidence_dir / "SHA256SUMS"
+    if not manifest.is_file():
+        raise ValueError("Falta SHA256SUMS en la repetición")
+    expected: dict[str, str] = {}
+    for line in manifest.read_text(encoding="utf-8-sig").splitlines():
+        if not line.strip():
+            continue
+        try:
+            digest, relative = line.split("  ", 1)
+        except ValueError as error:
+            raise ValueError("Línea inválida en SHA256SUMS") from error
+        if len(digest) != 64 or any(character not in "0123456789abcdef" for character in digest):
+            raise ValueError(f"Hash SHA-256 inválido para {relative}")
+        relative_path = Path(relative)
+        if relative_path.is_absolute() or ".." in relative_path.parts or relative in expected:
+            raise ValueError(f"Ruta inválida o duplicada en SHA256SUMS: {relative}")
+        expected[relative] = digest
+
+    actual_files = {
+        path.relative_to(evidence_dir).as_posix(): path
+        for path in evidence_dir.rglob("*")
+        if path.is_file() and path.name != "SHA256SUMS"
+    }
+    if set(expected) != set(actual_files):
+        missing = sorted(set(actual_files) - set(expected))
+        extra = sorted(set(expected) - set(actual_files))
+        raise ValueError(f"SHA256SUMS no cubre exactamente la evidencia: faltan={missing}, sobran={extra}")
+    for relative, path in actual_files.items():
+        if hashlib.sha256(path.read_bytes()).hexdigest() != expected[relative]:
+            raise ValueError(f"Hash incorrecto: {relative}")
+    return len(expected)
 
 
 def parse_args() -> argparse.Namespace:
@@ -53,12 +166,16 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--p99-ms", required=True, type=float)
     parser.add_argument("--evidence-dir", required=True, type=Path)
     parser.add_argument("--observation", default="")
-    parser.add_argument(
-        "--csv-path",
-        type=Path,
-        default=Path(__file__).parent / "resultados" / "iso25010.csv",
-    )
-    return parser.parse_args()
+    parser.add_argument("--csv-path", type=Path)
+    args = parser.parse_args()
+    if args.csv_path is None:
+        filename = (
+            "iso25010-correctiva.csv"
+            if args.scenario == CORRECTIVE_RELIABILITY
+            else "iso25010.csv"
+        )
+        args.csv_path = Path(__file__).parent / "resultados" / filename
+    return args
 
 
 def validate_evidence(args: argparse.Namespace) -> None:
@@ -66,17 +183,21 @@ def validate_evidence(args: argparse.Namespace) -> None:
     if not args.evidence_dir.resolve().as_posix().endswith(expected_suffix.as_posix()):
         raise ValueError("La ruta de evidencia no coincide con escenario/repetición")
     required_names = {"metadata.json", "locust_stats.csv", "prometheus-5xx-result.txt"}
-    if args.scenario == "fiabilidad_nominal_50u_1h":
-        required_names = RELIABILITY_EVIDENCE
+    if args.scenario in RELIABILITY_SCENARIOS:
+        required_names = (
+            CORRECTIVE_EVIDENCE
+            if args.scenario == CORRECTIVE_RELIABILITY
+            else RELIABILITY_EVIDENCE
+        )
     for path in (args.evidence_dir / name for name in sorted(required_names)):
-        allow_empty = path.name == "reservas-service.log"
+        allow_empty = path.name in {"gateway-service.log", "reservas-service.log"}
         if not path.is_file() or (path.stat().st_size == 0 and not allow_empty):
             raise ValueError(f"Falta evidencia real: {path}")
     metadata_path = args.evidence_dir / "metadata.json"
     metadata = json.loads(metadata_path.read_text(encoding="utf-8-sig"))
     if metadata.get("scenario") != args.scenario or metadata.get("repetition") != args.repetition:
         raise ValueError("Los metadatos no coinciden con escenario/repetición")
-    if args.scenario == "fiabilidad_nominal_50u_1h":
+    if args.scenario in RELIABILITY_SCENARIOS:
         if metadata.get("status") != "completed" or metadata.get("execution_completed") is not True:
             raise ValueError("La ejecución experimental no consta como completada")
         if metadata.get("duration_completed") is not True:
@@ -95,7 +216,9 @@ def validate_evidence(args: argparse.Namespace) -> None:
             raise ValueError("Los metadatos no corresponden a 50 usuarios y spawn-rate 10")
         if metadata.get("planned_duration") != "1h" or metadata.get("planned_duration_seconds") != 3600:
             raise ValueError("Los metadatos no corresponden a la duración oficial de una hora")
-        if not isinstance(metadata.get("locust_exit_code"), int):
+        if isinstance(metadata.get("locust_exit_code"), bool) or not isinstance(
+            metadata.get("locust_exit_code"), int
+        ):
             raise ValueError("Falta el código de salida real de Locust")
         for field in (
             "started_at_utc", "finished_at_utc", "git_branch", "git_sha",
@@ -104,6 +227,38 @@ def validate_evidence(args: argparse.Namespace) -> None:
         ):
             if not metadata.get(field):
                 raise ValueError(f"Falta metadata obligatoria: {field}")
+        if args.scenario == CORRECTIVE_RELIABILITY:
+            if metadata.get("gateway_log_capture_succeeded") is not True:
+                raise ValueError("La captura de logs del Gateway no consta como exitosa")
+            if not isinstance(metadata.get("gateway_log_content_length"), int):
+                raise ValueError("Falta la longitud de los logs del Gateway")
+            population = request_population(args.evidence_dir)
+            event_metrics = business_event_metrics(args.evidence_dir)
+            if population["business_population_valid"] is not True:
+                raise ValueError("La repetición no contiene GET de negocio")
+            if population["request_names_separated"] is not True:
+                raise ValueError("Login, refresh y GET no están separados correctamente")
+            for field, value in population.items():
+                if metadata.get(field) != value:
+                    raise ValueError(f"Metadata de población inconsistente: {field}")
+            for field, value in event_metrics.items():
+                if metadata.get(field) != value:
+                    raise ValueError(f"Metadata de eventos inconsistente: {field}")
+            if metadata.get("business_events_consistent") is not True:
+                raise ValueError("El registro por evento no coincide con locust_stats.csv")
+            if metadata.get("prometheus_reservas_arrival_valid") is not True:
+                raise ValueError("Prometheus no demuestra llegada a Reservas después de t=900 s")
+            if event_metrics["business_event_count"] != population["business_get_count"]:
+                raise ValueError("Los GET por evento no coinciden con locust_stats.csv")
+            if args.total_requests != event_metrics["business_event_count"]:
+                raise ValueError("total_requests no coincide con los GET de negocio")
+            if args.http_5xx != event_metrics["business_http_5xx"]:
+                raise ValueError("http_5xx no coincide con los GET de negocio")
+            if metadata.get("manifest_valid") is not True:
+                raise ValueError("El manifiesto no consta como válido")
+            entries = verify_sha256_manifest(args.evidence_dir)
+            if metadata.get("manifest_entries") != entries:
+                raise ValueError("El número de entradas del manifiesto no coincide")
     elif metadata.get("status") != "completed" or metadata.get("exit_code") != 0:
         raise ValueError("La ejecución Locust no consta como completada correctamente")
 
