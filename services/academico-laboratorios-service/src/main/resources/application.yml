@@ -1,0 +1,87 @@
+server:
+  port: ${SERVER_PORT:8083}
+
+spring:
+  application:
+    name: academico-laboratorios-service
+
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc:
+          time_zone: UTC
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    validate-on-migrate: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+
+  endpoint:
+    health:
+      show-details: always
+
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+
+  tracing:
+    sampling:
+      probability: 1.0
+
+  otlp:
+    tracing:
+      endpoint: ${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:http://localhost:4318/v1/traces}
+    logging:
+      endpoint: ${OTEL_EXPORTER_OTLP_LOGS_ENDPOINT:http://otel-collector:4318/v1/logs}
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+
+app:
+  internal-api-key: ${INTERNAL_API_KEY:clave-interna-desarrollo}
+  initial-data:
+    enabled: ${INITIAL_DATA_ENABLED:false}
+
+usuarios:
+  service:
+    url: ${USUARIOS_SERVICE_URL:http://localhost:8082}
+
+security:
+  jwt:
+    issuer: ${JWT_ISSUER:scli-auth-service}
+    secret: ${JWT_SECRET}
+
+prometheus:
+  url: ${PROMETHEUS_URL:http://prometheus:9090}
+
+logging:
+  structured:
+    format:
+      console: logstash
+    json:
+      add:
+        service: academico-laboratorios-service
+      rename:
+        traceId: trace_id
+        spanId: span_id
+
+

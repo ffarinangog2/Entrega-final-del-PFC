@@ -1,0 +1,8 @@
+security:
+  jwt:
+    issuer: scli-auth-service
+    secret: MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=
+
+management:
+  tracing:
+    enabled: false

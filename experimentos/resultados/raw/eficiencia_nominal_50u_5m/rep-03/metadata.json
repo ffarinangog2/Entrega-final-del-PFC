@@ -1,0 +1,1 @@
+{"status":"completed","scenario":"eficiencia_nominal_50u_5m","repetition":3,"host":"http://127.0.0.1:8080","users":50,"spawn_rate":10,"duration":"5m","sha":"a47f0441f644bea5f52944b7a11216f37b2242de","started_at_utc":"2026-08-30T04:42:17Z","finished_at_utc":"2026-08-30T04:47:21Z","started_epoch":1788064937,"finished_epoch":1788065241,"exit_code":0}

@@ -1,0 +1,1 @@
+{"status":"success","data":{"resultType":"vector","result":[{"metric":{},"value":[1789110027,"12.05020920502092"]}]}}

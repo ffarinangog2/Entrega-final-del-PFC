@@ -1,0 +1,217 @@
+\section{Introducción}
+\label{sec:introduccion-e4}
+
+La Entrega 4 consolida el sistema distribuido de gestión de laboratorios como
+un producto integrado. El trabajo parte de la infraestructura distribuida ya
+disponible, pero su aportación no consiste en presentar nuevamente esa base: se
+centra en delimitar los servicios, ordenar el código de negocio, ofrecer clientes
+web y móvil y establecer mecanismos verificables de seguridad, pruebas,
+integración y despliegue continuos y observabilidad. La arquitectura se trata,
+por tanto, como un conjunto de decisiones que condicionan atributos de calidad
+y no solamente como un diagrama de componentes. Esta perspectiva es coherente
+con el papel que la literatura asigna a la arquitectura en la modificabilidad,
+la seguridad, el rendimiento y la testabilidad de un sistema
+\cite{bass2021softwarearchitecture}.
+
+La solución incorpora una aplicación web en React y una aplicación Android con
+Jetpack Compose, ambas consumidoras de un punto de entrada común. La seguridad
+se aplica mediante autenticación JWT, sesiones de renovación y autorización por
+roles; su centralización en el perímetro reduce exposiciones innecesarias, aunque
+no sustituye los controles de cada servicio. Esta defensa en varios niveles es
+relevante porque la comunicación distribuida amplía la superficie de ataque y
+obliga a considerar conjuntamente identidad, infraestructura y desarrollo
+\cite{berardi2022microservicesecurity}.
+
+La verificación comprende pruebas unitarias, de integración, contratos,
+interfaces y carga, coordinadas por el flujo de CI/CD. Prometheus, Grafana,
+OpenTelemetry, Tempo, Loki y cAdvisor aportan métricas, trazas, registros y datos
+de recursos para observar el comportamiento desplegado. Finalmente, la
+evaluación adopta el modelo de calidad de producto ISO/IEC 25010:2023, que
+proporciona características y subcaracterísticas para especificar y evaluar la
+calidad de productos TIC \cite{iso25010_2023}. Los capítulos posteriores
+distinguen las propiedades demostradas de las mediciones incompletas, evitando
+convertir configuraciones o pruebas no ejecutadas en resultados experimentales.
+
+\section{Arquitectura de la solución}
+\label{sec:arquitectura-solucion}
+
+\subsection{Límites de servicio y comunicación}
+\label{subsec:limites-servicio}
+
+El sistema adopta una descomposición por capacidades, formalizada en el
+ADR-002\footnote{Evidencia interna: \path{../adr/ADR-002-microservicios.md}.}.
+\texttt{auth-service} gestiona autenticación, emisión de tokens y sesiones de
+renovación; \texttt{usuarios-service} administra perfiles institucionales;
+\texttt{academico-laboratorios-service} mantiene los catálogos académicos y el
+inventario de espacios y equipos; y \texttt{reservas-solicitudes-service}
+controla solicitudes, disponibilidad, bloqueos y reservas. El
+\texttt{api-gateway} completa la topología como punto de entrada para ruteo,
+CORS y validación de autenticación, sin incorporar reglas del dominio.
+
+Los clientes React y Android acceden a las API a través del Gateway. Las
+operaciones que requieren información de otra capacidad utilizan contratos HTTP
+explícitos entre servicios; no comparten repositorios ni entidades JPA. Cada
+servicio conserva sus migraciones y su base lógica en CockroachDB. Esta
+separación favorece la evolución y prueba independiente, pero introduce latencia,
+errores parciales y compatibilidad de contratos como preocupaciones de diseño.
+La literatura reporta precisamente que el despliegue y los patrones de
+comunicación son tan relevantes como la delimitación inicial de los
+microservicios \cite{aksakalli2021deployment}.
+
+Docker proporciona unidades reproducibles de ejecución para los servicios y la
+infraestructura de soporte. El flujo observable es: cliente, Gateway, servicio
+propietario del caso de uso y persistencia. En paralelo, los servicios exportan
+telemetría hacia la infraestructura de observabilidad. Los diagramas C4 de
+contexto y contenedores existentes\footnote{Evidencia interna:
+\path{../diagrams/c4-nivel1.png} y
+\path{../diagrams/c4-nivel2.png}.} documentan estos límites; se referencian sin
+duplicarlos dentro del nuevo informe.
+
+La descomposición no elimina los compromisos propios de un sistema distribuido.
+No existe una transacción ACID única que abarque las bases de todos los
+servicios, de modo que los casos de uso interservicio deben gestionar fallos y
+consistencia de forma explícita. Asimismo, el Gateway constituye un punto común
+de acceso, pero los servicios siguen siendo responsables de validar las
+operaciones que protegen. Estas consecuencias se consideran parte de la
+arquitectura real y no defectos ocultos por la representación C4.
+
+\subsection{Decisiones arquitectónicas registradas}
+\label{subsec:adr-e4}
+
+Los ADR preservan el contexto y las consecuencias de decisiones que el código
+por sí solo no explica. El ADR-001\footnote{Evidencia interna:
+\path{../adr/ADR-001-arquitectura.md}.} registra la reorganización por capas de
+\texttt{academico-laboratorios-service}; el ADR-002 fija los límites de los
+microservicios y la propiedad de sus datos. El ADR-005\footnote{Evidencia
+interna: \path{../adr/ADR-005-patrones-gof.md}.} identifica los patrones que
+participan en rutas reales y también documenta deuda arquitectónica. Por último,
+el ADR-006\footnote{Evidencia interna:
+\path{../adr/ADR-006-eleccion-movil.md}.} justifica Kotlin y Jetpack Compose,
+MVVM, Room y las integraciones nativas como base del cliente móvil.
+
+Los ADR-003 y ADR-004 no se presentan como resultados de esta entrega: sus
+decisiones sobre distribución de datos constituyen antecedentes de la
+infraestructura. Esta distinción evita atribuir a la Entrega 4 trabajo ya
+documentado y mantiene el foco en la consolidación arquitectónica y de calidad.
+
+\section{Arquitectura por capas y principios SOLID}
+\label{sec:capas-solid}
+
+\subsection{Organización del código}
+
+Los servicios con reglas de negocio se organizan, con variaciones heredadas, en
+cuatro zonas. La capa \emph{presentation} contiene controladores REST, DTO y la
+traducción de excepciones a respuestas HTTP. La capa \emph{application}
+orquesta servicios y casos de uso; decide el orden de las operaciones, pero
+delega las reglas específicas. \emph{Domain} contiene modelos, estados,
+estrategias, eventos y puertos que expresan las necesidades del negocio.
+Finalmente, \emph{infrastructure} aporta adaptadores HTTP, seguridad,
+observabilidad y persistencia, incluidas las entidades JPA y las
+implementaciones Spring Data.
+
+Esta dirección permite que un controlador dependa de un caso de uso y que el
+caso de uso dependa de un puerto, mientras el adaptador concreto implementa ese
+puerto desde el exterior. En consecuencia, una prueba puede reemplazar la base
+de datos o un cliente remoto por un doble sin trasladar detalles de JPA al
+escenario de negocio. El API Gateway es una excepción deliberada: sus paquetes
+de configuración, rutas, seguridad y registro corresponden a infraestructura;
+crear para él un dominio vacío no mejoraría la separación.
+
+\subsection{Aplicación razonada de SOLID}
+
+La responsabilidad única se refleja en controladores que adaptan HTTP,
+servicios que coordinan casos de uso y repositorios que resuelven persistencia.
+La inversión de dependencias se materializa cuando aplicación y dominio conocen
+interfaces como \texttt{UsuarioRepository} o los puertos
+\texttt{*RepositoryPort}, y los adaptadores de infraestructura dependen de esas
+abstracciones. Strategy y State ofrecen puntos de extensión sin reescribir los
+servicios coordinadores, lo que aproxima el principio abierto/cerrado. Las
+interfaces son acotadas al comportamiento requerido por sus consumidores, y
+las implementaciones de estados pueden sustituirse a través de sus contratos.
+
+Estos elementos mejoran mantenibilidad y testabilidad, pero no demuestran un
+cumplimiento perfecto de SOLID. En
+\texttt{academico-laboratorios-service}, varios puertos del dominio importan
+\texttt{org.springframework.data.domain.Page} y
+\texttt{org.springframework.data.domain.Pageable}. El dominio queda así
+acoplado al modelo de paginación de Spring Data, pese a que la persistencia se
+implemente mediante adaptadores. Sustituir esos tipos por contratos propios y
+mapearlos en infraestructura cerraría la brecha, pero exige una migración
+coordinada de servicios y controladores. Se registra, por ello, como deuda
+técnica y no se oculta bajo una afirmación absoluta de independencia.
+
+\section{Patrones de diseño aplicados}
+\label{sec:patrones-gof}
+
+Los patrones siguientes se identificaron por sus participantes, consumidores y
+comportamiento, no solamente por el nombre de una clase. Su uso responde a
+problemas concretos del sistema y complementa la separación por capas.
+
+\subsection{Repository y Factory Method}
+
+\textbf{Repository.} El problema consiste en evitar que los casos de uso
+conozcan JPA o Spring Data. En Auth, \texttt{UsuarioRepository} define el puerto
+del dominio y \texttt{UsuarioPersistenceAdapter} lo implementa mediante
+\texttt{UsuarioAuthRepository}; el mismo esquema puerto--adaptador aparece en
+Usuarios, Académico y Reservas. El beneficio es sustituir la persistencia en
+pruebas y concentrar el mapeo. Su aplicación es parcial en los puertos paginados
+de Académico por la dependencia de Spring ya señalada.
+
+\textbf{Factory Method.} La construcción del principal de seguridad no debe
+quedar fijada en el servicio que carga usuarios. \texttt{UserDetailsFactory}
+declara \texttt{crear(Usuario)} y \texttt{DefaultUserDetailsFactory} produce
+\texttt{CustomUserDetails}; \texttt{CustomUserDetailsService} consume la
+interfaz. La construcción queda encapsulada y puede sustituirse en pruebas sin
+duplicar conocimiento del producto concreto.
+
+\subsection{Strategy y State}
+
+\textbf{Strategy.} La disponibilidad de un laboratorio es una política que
+puede evolucionar sin reescribir la orquestación. La interfaz
+\texttt{DisponibilidadStrategy} define la evaluación y
+\texttt{DisponibilidadSinConflictosStrategy} comprueba fecha, laboratorio,
+cruces y bloqueos. \texttt{StrategyConfig} selecciona la implementación y
+\texttt{DisponibilidadServiceImpl} la utiliza. Aunque actualmente existe una
+sola estrategia concreta, el punto de variación es real, puro y probado.
+
+\textbf{State.} Las transiciones de solicitudes y reservas no se distribuyen en
+condicionales de los controladores. \texttt{SolicitudReservaState} y
+\texttt{ReservaState} definen los contratos; sus estados concretos encapsulan
+las acciones permitidas, mientras \texttt{SolicitudReservaServiceImpl} y
+\texttt{ReservaServiceImpl} delegan en ellos. El patrón centraliza invariantes y
+facilita probar transiciones, a cambio de mantener más clases y actualizar el
+selector cuando se incorpora un estado.
+
+\subsection{Observer, Facade y Singleton}
+
+\textbf{Observer.} La creación o el cambio de estado de un perfil debe poder
+producir efectos secundarios sin acoplarlos al caso de uso.
+\texttt{PerfilEventListener} define el observador,
+\texttt{LoggingPerfilEventListener} implementa el registro y
+\texttt{PerfilServiceImpl} publica \texttt{PerfilEvent}. La extensión con otros
+observadores no modifica el servicio; como consecuencia crítica, la notificación
+actual es síncrona y un listener costoso podría aumentar la latencia.
+
+\textbf{Facade.} Construir el detalle completo de un laboratorio requiere
+coordinar laboratorio, piso, bloque, campus y equipos.
+\texttt{LaboratorioDetalleFacadeImpl}, a través de
+\texttt{LaboratorioDetalleFacade}, ofrece una operación única y evita que el
+controlador replique esa coordinación. El beneficio es una interfaz simple para
+una composición real; la implementación mantiene, no obstante, una dependencia
+con un DTO de presentación que constituye otra oportunidad de desacoplamiento.
+
+\textbf{Singleton.} El conteo de peticiones HTTP requiere un registro único por
+aplicación para no fragmentar las métricas. Las implementaciones
+\texttt{HttpRequestsMetricsRegistry} de Académico y Usuarios son componentes de
+Spring, conservan una instancia compartida y la exponen mediante
+\texttt{getInstance()}; los filtros HTTP son sus clientes. Se obtiene un punto
+de registro coherente, pero se mezcla el ciclo de vida del contenedor con estado
+estático, lo que dificulta su sustitución frente a una inyección de constructor
+convencional.
+
+En conjunto, los siete patrones resuelven persistencia, creación, variación de
+políticas, transiciones, reacción a eventos, composición y registro compartido.
+Su valor no reside en maximizar el número de patrones, sino en hacer explícitas
+decisiones que reducen acoplamiento en rutas verificables. Las limitaciones
+descritas muestran que el diseño sigue siendo perfectible y proporcionan una
+base concreta para trabajo posterior.

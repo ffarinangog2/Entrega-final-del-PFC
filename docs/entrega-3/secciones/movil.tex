@@ -1,0 +1,142 @@
+\section{Aplicación móvil}
+\label{sec:aplicacion-movil}
+
+\subsection{Arquitectura MVVM}
+
+La aplicación móvil \texttt{apps/mobile} se desarrolló en Kotlin con
+Jetpack Compose, siguiendo el patrón arquitectónico Modelo-Vista-VistaModelo
+(MVVM) recomendado oficialmente para Android \cite{android2024architecture}.
+\texttt{profile}, \texttt{qr}, \texttt{notifications}, \texttt{reservas})
+vive en su propio paquete bajo \texttt{features/}, con capas internas
+\texttt{presentation} (composables y \texttt{ViewModel}) y \texttt{data}
+(repositorios y fuentes remotas/locales), replicando a menor escala la
+separación de responsabilidades del backend. La configuración de
+\emph{build} fija \texttt{compileSdk}/\texttt{targetSdk} en 34 y
+\texttt{minSdk} en 26.
+
+\subsection{Autenticación segura}
+
+La autenticación móvil consume el mismo flujo de acceso expuesto por el
+API Gateway y utilizado por la aplicación web. El estado de sesión se
+gestiona desde \texttt{AuthViewModel}, que coordina el inicio de sesión,
+la persistencia de credenciales, la recuperación de la sesión existente
+y el cierre de sesión.
+
+Los tokens se almacenan mediante \texttt{EncryptedAuthStorage.kt},
+apoyado en \texttt{androidx.security:security-crypto}, evitando guardar
+credenciales sensibles en texto plano. El \emph{access token} se adjunta
+automáticamente a las solicitudes protegidas mediante el cliente HTTP
+compartido.
+
+Cuando una petición protegida devuelve \texttt{401}, el mecanismo de
+renovación utiliza el \emph{refresh token} para solicitar un nuevo par
+de tokens. Las renovaciones concurrentes se coordinan para evitar múltiples
+peticiones de \emph{refresh} ante varios errores simultáneos, y la petición
+original se reintenta como máximo una vez. Una respuesta \texttt{403} no
+activa la renovación, ya que representa falta de autorización y no expiración
+de la sesión.
+
+Los nuevos tokens generados se almacenan nuevamente de forma cifrada. Si
+la renovación falla o la sesión deja de ser válida, las credenciales se
+eliminan y la navegación retorna a la pantalla de inicio de sesión. De esta
+forma, la aplicación mantiene autenticación persistente de manera controlada,
+sin conservar tokens en almacenamiento inseguro.
+
+\subsection{Módulo de incidentes y notificaciones}
+
+El módulo de incidentes permite registrar y consultar novedades sobre
+el estado de los laboratorios. Las notificaciones push se apoyan en
+Firebase Cloud Messaging (\texttt{ScliFirebaseMessagingService.kt},
+\texttt{NotificationHelper.kt}). Es importante documentar con
+honestidad el estado real de esta capacidad: el proyecto todavía no
+cuenta con el archivo \texttt{google-services.json} necesario para
+activar el complemento de Firebase (el \texttt{build.gradle.kts}
+aplica el complemento condicionalmente, solo si el archivo existe), por
+lo que el envío de notificaciones push no es funcional en el estado
+actual del repositorio, aunque el código de la capacidad está
+completo y listo para activarse en cuanto se configure la credencial.
+
+\subsection{Escaneo de código QR}
+
+La segunda capacidad del dispositivo exigida por la guía es el acceso
+a la cámara, implementado mediante CameraX
+(\texttt{camera-camera2}, \texttt{camera-lifecycle}, \texttt{camera-view})
+y ML Kit Barcode Scanning para la detección del código. El flujo
+completo, implementado en \texttt{QrScanScreen.kt},
+\texttt{QrViewModel.kt} y \texttt{QrRepository.kt}, consiste en
+escanear el código QR de un laboratorio, resolver el identificador
+UUID capturado, y consultar el endpoint de detalle completo expuesto
+por el patrón Facade del backend (\texttt{LaboratorioDetalleFacade}),
+el mismo que reutiliza el panel web de monitoreo
+(Sección~\ref{sec:aplicacion-web}). La funcionalidad está cubierta por
+tres pruebas instrumentadas (\texttt{QrFlowTest.kt}), que verifican el
+caso de un QR válido mostrando el detalle del laboratorio, un UUID
+inválido mostrando un mensaje de error, y una falla de red mostrando
+el mensaje correspondiente del \emph{gateway}.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.7\linewidth]{figuras/qr-scan.png}
+\caption{Flujo de escaneo de código QR}
+\label{fig:qr-scan}
+\end{figure}
+
+\subsection{Módulo de reservas móvil}
+
+El módulo móvil de reservas conserva la arquitectura MVVM y consume
+exclusivamente las rutas públicas del \emph{gateway}. La navegación y las
+acciones visibles se derivan de los permisos almacenados en la sesión:
+\texttt{SOLICITUD\_CREAR} habilita ``Nueva solicitud'' y los permisos de
+lectura o gestión habilitan listas, detalle, calendario y operaciones
+administrativas. De este modo, un estudiante, coordinador o decano no ve
+acciones operativas que no le corresponden, sin trasladar al cliente la
+responsabilidad de autorizar.
+
+La antigua reserva rápida se presenta como una solicitud institucional y
+ya no solicita UUID al usuario. A partir del \texttt{perfilId} de la
+sesión se obtiene el identificador real de docente y se cargan materias,
+período vigente, laboratorios y horarios. El formulario muestra valores
+humanos, permite comprobar disponibilidad y conserva la misma
+\texttt{Idempotency-Key} cuando una petición se reintenta por renovación de
+sesión o por un fallo transitorio de red.
+
+\texttt{ReservasScreen} separa solicitudes y reservas; el alcance de los
+datos procede siempre del backend. \texttt{SolicitudDetalleScreen}
+presenta el historial y, en estado \texttt{PROPUESTA}, los datos de la
+alternativa. El docente propietario puede aceptar, rechazar o retirar lo
+que le corresponde, mientras el administrador de piso dispone de revisión,
+propuesta, aprobación, rechazo y cancelación únicamente cuando sus permisos
+y adscripción lo autorizan. La vista de calendario ofrece una relación
+sencilla de fecha, franja, laboratorio y estado.
+
+El interceptor añade el \emph{access token} y coordina las renovaciones
+concurrentes para que varias respuestas \texttt{401} provoquen una sola
+petición de \emph{refresh}. La petición original se repite como máximo una
+vez; un \texttt{403} nunca inicia este proceso. Los tokens rotados continúan
+almacenándose mediante el almacenamiento cifrado existente y, si la
+renovación falla, la sesión se elimina y la navegación retorna al ingreso.
+
+Room actúa únicamente como caché de lectura frente a
+\texttt{IOException} o ausencia de red. Una respuesta \texttt{401} o
+\texttt{403} no se sustituye con datos locales y las escrituras no simulan
+éxito fuera de línea. Esta separación evita mostrar información almacenada
+como si acabara de ser autorizada por el servidor.
+
+\subsection{Capacidades del dispositivo utilizadas}
+
+La Tabla~\ref{tab:capacidades-movil} resume las dos capacidades del
+dispositivo exigidas por la guía y su estado real de funcionamiento.
+
+\begin{table}[htbp]
+\centering
+\caption{Capacidades del dispositivo utilizadas}
+\label{tab:capacidades-movil}
+\begin{tabular}{lll}
+\toprule
+Capacidad & Uso & Estado \\
+\midrule
+Cámara (CameraX + ML Kit) & Escaneo QR de laboratorio & Funcional \\
+Notificaciones push (FCM) & Alertas de incidentes/reservas & Pendiente de credencial \\
+\bottomrule
+\end{tabular}
+\end{table}

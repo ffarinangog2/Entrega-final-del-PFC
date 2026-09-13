@@ -1,0 +1,16 @@
+cff-version: 1.2.0
+message: "Si utiliza este proyecto, cite esta Entrega 4 y a sus autores."
+title: "SCLI: Sistema de Control de Laboratorios e Infraestructura"
+type: software
+version: "Entrega 4"
+date-released: 2026-09-03
+repository-code: "https://github.com/ffarinangog2/Entrega-final-del-PFC"
+authors:
+  - family-names: "Farinango"
+    given-names: "Freddy"
+  - family-names: "Villamarín"
+    given-names: "Iván"
+  - family-names: "Urbina"
+    given-names: "Isaías"
+  - family-names: "Vinueza"
+    given-names: "Harold"

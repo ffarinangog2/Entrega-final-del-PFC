@@ -1,0 +1,153 @@
+\section{Aplicación web}
+\label{sec:aplicacion-web}
+
+\subsection{Arquitectura de la aplicación}
+
+La aplicación web \texttt{apps/web} se construyó como una \emph{single
+page application} (SPA) con React~18, TypeScript y Vite como
+empaquetador. La organización del código sigue el patrón
+\emph{feature-based}: cada dominio funcional (laboratorios, monitoreo,
+reservas) vive en su propio directorio bajo \texttt{src/features/},
+con sus componentes, llamadas a la API y pruebas colocalizadas, en
+lugar de agruparse por tipo técnico. Los directorios
+\texttt{src/router/}, \texttt{src/auth/}, \texttt{src/i18n/} y
+\texttt{src/services/} concentran responsabilidades transversales
+compartidas por todas las características.
+
+\subsection{Enrutamiento y control de acceso}
+
+El enrutamiento se implementó con \texttt{react-router-dom},
+definiendo las cinco rutas principales exigidas por la guía, además de
+las subrutas propias del módulo de reservas. La
+Tabla~\ref{tab:rutas-web} resume las rutas y su protección.
+
+\begin{table}[htbp]
+\centering
+\caption{Rutas de la aplicación web}
+\label{tab:rutas-web}
+\begin{tabular}{lll}
+\toprule
+Ruta & Descripción & Protegida \\
+\midrule
+/login & Inicio de sesión & No \\
+/main & Panel principal & Sí \\
+/settings & Configuración de usuario & Sí \\
+/about & Información del sistema & No \\
+/reservas & Listado de reservas & Sí \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Las rutas protegidas se envuelven mediante el componente
+\texttt{ProtectedRoute.tsx}, que verifica la presencia de un token de
+sesión válido antes de renderizar la ruta solicitada y redirige a
+\texttt{/login} en caso contrario.
+
+\subsection{Internacionalización y tema}
+
+La aplicación soporta español e inglés mediante archivos de traducción
+independientes bajo \texttt{src/i18n/locales/}. La preferencia de
+idioma y el tema visual (claro u oscuro) se gestionan de forma
+centralizada en \texttt{store/preferencesStore.ts} y persisten entre
+sesiones. El comportamiento de ambos mecanismos está cubierto por
+pruebas automatizadas (\texttt{settings-theme-i18n.spec.ts}).
+
+\subsection{Autenticación y gestión de sesión}
+
+El token JWT y su información asociada se almacenan en
+\texttt{sessionStorage} en lugar de \texttt{localStorage}, decisión
+deliberada para limitar la persistencia del token al ciclo de vida de
+la pestaña del navegador y reducir la superficie de exposición ante
+ataques de tipo \emph{cross-site scripting}. El contexto
+\texttt{AuthContext.tsx} centraliza el inicio de sesión, la renovación
+de token y el cierre de sesión, exponiéndolos al resto de la
+aplicación mediante un \emph{hook} de React.
+
+\subsection{Panel de monitoreo de laboratorios}
+
+El panel de monitoreo, implementado en
+\texttt{LaboratoriosPanel.tsx} y \texttt{MonitoreoPanel.tsx}, consume
+el endpoint de detalle completo expuesto por el patrón Facade del
+backend (\texttt{LaboratorioDetalleFacade}, Sección~\ref{sec:pruebas-cicd})
+y la serie histórica de ocupación expuesta por
+\texttt{PrometheusQueryClient}. El diseño visual se inspiró en la
+identidad institucional de la UTEQ: encabezado en verde institucional,
+tarjetas blancas con un borde izquierdo y un indicador luminoso
+coloreado según el estado del laboratorio, una barra de capacidad
+ocupada y tipografía monoespaciada (\texttt{JetBrains Mono}) para los
+códigos de laboratorio. El cliente tipado \texttt{academicoApi.ts}
+refleja exactamente los campos de \texttt{LaboratorioResponse.java}
+del backend, evitando divergencias de contrato entre frontend y
+backend. El componente cuenta con pruebas unitarias que cubren los
+estados de carga, éxito, error y lista vacía.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth]{figuras/panel-monitoreo.png}
+\caption{Panel de monitoreo de laboratorios}
+\label{fig:panel-monitoreo}
+\end{figure}
+
+\subsection{Módulo de reservas}
+
+El módulo de reservas implementa el flujo institucional desde el
+\emph{gateway}, sin conexiones directas desde el navegador hacia los
+microservicios internos. La autorización visual reutiliza los permisos
+incluidos en la sesión: \texttt{SOLICITUD\_CREAR} habilita la nueva
+solicitud, mientras \texttt{SOLICITUD\_LEER},
+\texttt{RESERVA\_LEER} y \texttt{AGENDA\_GESTIONAR} controlan los
+listados y el calendario. Estas comprobaciones mejoran la experiencia de
+usuario, pero la decisión definitiva de acceso permanece en el backend.
+
+\texttt{NuevaSolicitudPage} elimina la introducción manual de UUID. Para
+un docente, la página resuelve primero su registro institucional a partir
+del \texttt{perfilId} autenticado y carga mediante rutas canónicas las
+materias, el período lectivo actual, los laboratorios y sus horarios. El
+usuario selecciona opciones mediante nombres y códigos legibles, comprueba
+la disponibilidad del laboratorio y envía la solicitud con una
+\texttt{Idempotency-Key} estable durante los reintentos del mismo intento
+lógico. La identidad del solicitante vuelve a ser validada y derivada por
+el servicio de reservas.
+
+La vista de reservas agrupa solicitudes y reservas respetando el ámbito
+devuelto por el backend. Un docente observa sus propios registros; un
+\texttt{ADMINISTRADOR\_PISO}, únicamente los laboratorios adscritos a su
+piso; y \texttt{ADMINISTRADOR} conserva el alcance global. El detalle
+muestra estado, fecha, horario, laboratorio, motivo, observación e
+historial. Cuando existe una propuesta alternativa, el docente propietario
+puede aceptarla o rechazarla, mientras el gestor autorizado puede poner la
+solicitud en revisión, proponer otra franja, aprobarla o rechazarla.
+
+La cancelación solo se presenta para estados admitidos por la máquina de
+estados. En una solicitud aprobada, el backend cancela transaccionalmente
+la solicitud y su reserva programada, evitando estados divergentes. El
+calendario reutiliza el mismo alcance institucional y representa fecha,
+hora, laboratorio y estado sin reconstruir reglas de seguridad en el
+cliente.
+
+Todas las llamadas utilizan un cliente HTTP centralizado con Bearer. Ante
+un \texttt{401} se intenta una única renovación y se reintenta una vez la
+petición original; un \texttt{403} no activa la renovación. Si la sesión
+no puede renovarse, se limpian las credenciales de sesión y se redirige al
+inicio de sesión. Los conflictos de estado o disponibilidad se presentan
+como mensajes funcionales y no como excepciones internas.
+
+\subsection{Empaquetado y despliegue}
+
+La aplicación se empaqueta mediante un \texttt{Dockerfile} de
+construcción en dos etapas: una primera etapa instala dependencias y
+genera el artefacto de producción en \texttt{dist/}; posteriormente, una segunda etapa basada
+en Nginx sirve los archivos estáticos de la SPA. Esta separación reduce
+el tamaño de la imagen final y evita incluir dependencias de desarrollo
+en ejecución.
+
+El servicio web se integra en \texttt{docker-compose.yml} y consume las
+API exclusivamente mediante el API Gateway. De esta forma, el navegador
+no accede directamente a los puertos internos de Auth, Usuarios,
+Académico/Laboratorios o Reservas/Solicitudes, manteniendo al Gateway
+como punto único de entrada al sistema.
+
+El pipeline de integración continua genera y valida el artefacto web
+antes de construir su imagen Docker. Las pruebas unitarias y E2E se
+ejecutan previamente al empaquetado, de modo que una versión con errores
+no continúe hacia las etapas de construcción y publicación.

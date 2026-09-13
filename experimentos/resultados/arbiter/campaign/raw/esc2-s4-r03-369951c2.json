@@ -1,0 +1,1921 @@
+{
+  "run_id": "esc2-s4-r03-369951c2",
+  "strategy": "s4",
+  "scenario": "esc2",
+  "repetition": 3,
+  "seed": 20260907,
+  "sha": "e43967eda31410b7fef060cfc7903cea94efbe96",
+  "agents": 50,
+  "equipment_id": "11111111-1111-1111-1111-111111111111",
+  "laboratory_id": "22222222-2222-2222-2222-222222222222",
+  "starts_at": "2026-09-07T08:00:00Z",
+  "ends_at": "2026-09-07T10:00:00Z",
+  "started_source": "synchronized_barrier",
+  "decision_source": "reservas-solicitudes-service",
+  "endpoint": "http://172.18.0.6:8084/api/v1/internal/experimentos/arbiter/adjudicar",
+  "records": [
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788576277138545755,
+      "sent_ns": 1788576277153199843,
+      "received_ns": 1788576277985599965,
+      "latency_ms": 832.400122,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s4-r03-369951c2",
+          "request_id": "req-0035",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "62e83451-704c-5265-92b1-1c4044b3bca2",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "REJECTED",
+        "version": 0,
+        "strategy": "s4",
+        "decided_at": "2026-09-05T02:44:37.946939519Z",
+        "reason": "REAL_CONFLICT",
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s4-r03-369951c2",
+          "requestId": "req-0035",
+          "estrategia": "s4",
+          "estado": "REJECTED",
+          "motivo": "REAL_CONFLICT",
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:44:37.946939519Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788576277134736515,
+      "sent_ns": 1788576277178570001,
+      "received_ns": 1788576277985987525,
+      "latency_ms": 807.417524,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s4-r03-369951c2",
+          "request_id": "req-0014",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "6d90fe29-4bcd-567a-a9f1-a8e512335546",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "REJECTED",
+        "version": 0,
+        "strategy": "s4",
+        "decided_at": "2026-09-05T02:44:37.939781860Z",
+        "reason": "REAL_CONFLICT",
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s4-r03-369951c2",
+          "requestId": "req-0014",
+          "estrategia": "s4",
+          "estado": "REJECTED",
+          "motivo": "REAL_CONFLICT",
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:44:37.939781860Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788576277131103906,
+      "sent_ns": 1788576277176272481,
+      "received_ns": 1788576277990167694,
+      "latency_ms": 813.895213,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s4-r03-369951c2",
+          "request_id": "req-0000",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "0321be0c-e3c8-5922-a88f-9da068c9ae9c",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "REJECTED",
+        "version": 0,
+        "strategy": "s4",
+        "decided_at": "2026-09-05T02:44:37.957338378Z",
+        "reason": "REAL_CONFLICT",
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s4-r03-369951c2",
+          "requestId": "req-0000",
+          "estrategia": "s4",
+          "estado": "REJECTED",
+          "motivo": "REAL_CONFLICT",
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:44:37.957338378Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788576277139231265,
+      "sent_ns": 1788576277183417900,
+      "received_ns": 1788576277990570685,
+      "latency_ms": 807.152785,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s4-r03-369951c2",
+          "request_id": "req-0039",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "a4610d90-00aa-53ab-8868-5aa853719944",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "CONFIRMED",
+        "version": 0,
+        "strategy": "s4",
+        "decided_at": "2026-09-05T02:44:37.887983825Z",
+        "reason": null,
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s4-r03-369951c2",
+          "requestId": "req-0039",
+          "estrategia": "s4",
+          "estado": "CONFIRMED",
+          "motivo": null,
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:44:37.887983825Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788576277134194965,
+      "sent_ns": 1788576277192297259,
+      "received_ns": 1788576277990862615,
+      "latency_ms": 798.565356,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s4-r03-369951c2",
+          "request_id": "req-0011",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "6216cf48-6dd7-5d6f-985c-a1ae4dfb7cb8",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "REJECTED",
+        "version": 0,
+        "strategy": "s4",
+        "decided_at": "2026-09-05T02:44:37.931546341Z",
+        "reason": "REAL_CONFLICT",
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s4-r03-369951c2",
+          "requestId": "req-0011",
+          "estrategia": "s4",
+          "estado": "REJECTED",
+          "motivo": "REAL_CONFLICT",
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:44:37.931546341Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788576277135744845,
+      "sent_ns": 1788576277170539362,
+      "received_ns": 1788576277991521444,
+      "latency_ms": 820.982082,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s4-r03-369951c2",
+          "request_id": "req-0019",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "4d43113e-b168-5446-a019-df32f2bd80a7",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "REJECTED",
+        "version": 0,
+        "strategy": "s4",
+        "decided_at": "2026-09-05T02:44:37.918924442Z",
+        "reason": "REAL_CONFLICT",
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s4-r03-369951c2",
+          "requestId": "req-0019",
+          "estrategia": "s4",
+          "estado": "REJECTED",
+          "motivo": "REAL_CONFLICT",
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:44:37.918924442Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788576277139744165,
+      "sent_ns": 1788576277177599531,
+      "received_ns": 1788576278001334463,
+      "latency_ms": 823.734932,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s4-r03-369951c2",
+          "request_id": "req-0043",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "a98307ed-0281-50c7-9f59-054e8b611712",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "REJECTED",
+        "version": 0,
+        "strategy": "s4",
+        "decided_at": "2026-09-05T02:44:37.974678276Z",
+        "reason": "REAL_CONFLICT",
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s4-r03-369951c2",
+          "requestId": "req-0043",
+          "estrategia": "s4",
+          "estado": "REJECTED",
+          "motivo": "REAL_CONFLICT",
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:44:37.974678276Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788576277141782085,
+      "sent_ns": 1788576277170153421,
+      "received_ns": 1788576278030257200,
+      "latency_ms": 860.103779,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s4-r03-369951c2",
+          "request_id": "req-0048",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "91d0ab0e-6337-5038-a134-ef5743287959",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "REJECTED",
+        "version": 0,
+        "strategy": "s4",
+        "decided_at": "2026-09-05T02:44:38.017611231Z",
+        "reason": "REAL_CONFLICT",
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s4-r03-369951c2",
+          "requestId": "req-0048",
+          "estrategia": "s4",
+          "estado": "REJECTED",
+          "motivo": "REAL_CONFLICT",
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:44:38.017611231Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788576277139506075,
+      "sent_ns": 1788576277156243323,
+      "received_ns": 1788576278033176010,
+      "latency_ms": 876.932687,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s4-r03-369951c2",
+          "request_id": "req-0041",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "f74fb312-f526-50e7-b3ac-c894a2eb80b4",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "REJECTED",
+        "version": 0,
+        "strategy": "s4",
+        "decided_at": "2026-09-05T02:44:38.005382813Z",
+        "reason": "REAL_CONFLICT",
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s4-r03-369951c2",
+          "requestId": "req-0041",
+          "estrategia": "s4",
+          "estado": "REJECTED",
+          "motivo": "REAL_CONFLICT",
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:44:38.005382813Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788576277133853475,
+      "sent_ns": 1788576277167186142,
+      "received_ns": 1788576278037814780,
+      "latency_ms": 870.628638,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s4-r03-369951c2",
+          "request_id": "req-0009",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "a0913916-1523-5a3e-b781-f2f16ee3b3f8",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "REJECTED",
+        "version": 0,
+        "strategy": "s4",
+        "decided_at": "2026-09-05T02:44:38.008785882Z",
+        "reason": "REAL_CONFLICT",
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s4-r03-369951c2",
+          "requestId": "req-0009",
+          "estrategia": "s4",
+          "estado": "REJECTED",
+          "motivo": "REAL_CONFLICT",
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:44:38.008785882Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788576277142535735,
+      "sent_ns": 1788576277148675774,
+      "received_ns": 1788576278040708389,
+      "latency_ms": 892.032615,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s4-r03-369951c2",
+          "request_id": "req-0049",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "5ea69dcd-0f48-5ce9-93d7-da2820db36ac",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "REJECTED",
+        "version": 0,
+        "strategy": "s4",
+        "decided_at": "2026-09-05T02:44:38.026220700Z",
+        "reason": "REAL_CONFLICT",
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s4-r03-369951c2",
+          "requestId": "req-0049",
+          "estrategia": "s4",
+          "estado": "REJECTED",
+          "motivo": "REAL_CONFLICT",
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:44:38.026220700Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788576277138806935,
+      "sent_ns": 1788576277180403880,
+      "received_ns": 1788576278041666849,
+      "latency_ms": 861.262969,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s4-r03-369951c2",
+          "request_id": "req-0036",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "ffb75f64-eecf-5fed-8847-786b7ae4550d",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "REJECTED",
+        "version": 0,
+        "strategy": "s4",
+        "decided_at": "2026-09-05T02:44:38.021721611Z",
+        "reason": "REAL_CONFLICT",
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s4-r03-369951c2",
+          "requestId": "req-0036",
+          "estrategia": "s4",
+          "estado": "REJECTED",
+          "motivo": "REAL_CONFLICT",
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:44:38.021721611Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788576277134020336,
+      "sent_ns": 1788576277145177134,
+      "received_ns": 1788576278085358614,
+      "latency_ms": 940.18148,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s4-r03-369951c2",
+          "request_id": "req-0010",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "90e5d8b8-9920-55cd-84ad-6eaabcc4aa4b",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "REJECTED",
+        "version": 0,
+        "strategy": "s4",
+        "decided_at": "2026-09-05T02:44:38.048048279Z",
+        "reason": "REAL_CONFLICT",
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s4-r03-369951c2",
+          "requestId": "req-0010",
+          "estrategia": "s4",
+          "estado": "REJECTED",
+          "motivo": "REAL_CONFLICT",
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:44:38.048048279Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788576277133321656,
+      "sent_ns": 1788576277154482483,
+      "received_ns": 1788576278089588794,
+      "latency_ms": 935.106311,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s4-r03-369951c2",
+          "request_id": "req-0006",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "15b57093-de94-59be-897e-25c37211b41a",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "REJECTED",
+        "version": 0,
+        "strategy": "s4",
+        "decided_at": "2026-09-05T02:44:38.061619997Z",
+        "reason": "REAL_CONFLICT",
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s4-r03-369951c2",
+          "requestId": "req-0006",
+          "estrategia": "s4",
+          "estado": "REJECTED",
+          "motivo": "REAL_CONFLICT",
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:44:38.061619997Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788576277132226786,
+      "sent_ns": 1788576277144002864,
+      "received_ns": 1788576278095506143,
+      "latency_ms": 951.503279,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s4-r03-369951c2",
+          "request_id": "req-0003",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "9d5486e7-4db6-550b-b2d4-35532ea558bd",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "REJECTED",
+        "version": 0,
+        "strategy": "s4",
+        "decided_at": "2026-09-05T02:44:38.085589625Z",
+        "reason": "REAL_CONFLICT",
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s4-r03-369951c2",
+          "requestId": "req-0003",
+          "estrategia": "s4",
+          "estado": "REJECTED",
+          "motivo": "REAL_CONFLICT",
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:44:38.085589625Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788576277134851785,
+      "sent_ns": 1788576277169926082,
+      "received_ns": 1788576278096467423,
+      "latency_ms": 926.541341,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s4-r03-369951c2",
+          "request_id": "req-0015",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "f1cca91c-57f6-5428-88cf-4e5939d29a18",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "REJECTED",
+        "version": 0,
+        "strategy": "s4",
+        "decided_at": "2026-09-05T02:44:38.079617935Z",
+        "reason": "REAL_CONFLICT",
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s4-r03-369951c2",
+          "requestId": "req-0015",
+          "estrategia": "s4",
+          "estado": "REJECTED",
+          "motivo": "REAL_CONFLICT",
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:44:38.079617935Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788576277135612415,
+      "sent_ns": 1788576277181675080,
+      "received_ns": 1788576278096706523,
+      "latency_ms": 915.031443,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s4-r03-369951c2",
+          "request_id": "req-0018",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "6975ef0a-78d7-5894-b6f0-b73da943fb08",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "REJECTED",
+        "version": 0,
+        "strategy": "s4",
+        "decided_at": "2026-09-05T02:44:38.065809236Z",
+        "reason": "REAL_CONFLICT",
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s4-r03-369951c2",
+          "requestId": "req-0018",
+          "estrategia": "s4",
+          "estado": "REJECTED",
+          "motivo": "REAL_CONFLICT",
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:44:38.065809236Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788576277131636336,
+      "sent_ns": 1788576277143757335,
+      "received_ns": 1788576278097228823,
+      "latency_ms": 953.471488,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s4-r03-369951c2",
+          "request_id": "req-0001",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "64ec4f5a-f790-58ee-b678-a8b6848bb1e0",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "REJECTED",
+        "version": 0,
+        "strategy": "s4",
+        "decided_at": "2026-09-05T02:44:38.049270538Z",
+        "reason": "REAL_CONFLICT",
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s4-r03-369951c2",
+          "requestId": "req-0001",
+          "estrategia": "s4",
+          "estado": "REJECTED",
+          "motivo": "REAL_CONFLICT",
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:44:38.049270538Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788576277138975315,
+      "sent_ns": 1788576277149583604,
+      "received_ns": 1788576278100977153,
+      "latency_ms": 951.393549,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s4-r03-369951c2",
+          "request_id": "req-0037",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "a8c630b8-e661-5b86-8881-10c237d02091",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "REJECTED",
+        "version": 0,
+        "strategy": "s4",
+        "decided_at": "2026-09-05T02:44:38.061038967Z",
+        "reason": "REAL_CONFLICT",
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s4-r03-369951c2",
+          "requestId": "req-0037",
+          "estrategia": "s4",
+          "estado": "REJECTED",
+          "motivo": "REAL_CONFLICT",
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:44:38.061038967Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788576277136888755,
+      "sent_ns": 1788576277170807301,
+      "received_ns": 1788576278101114283,
+      "latency_ms": 930.306982,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s4-r03-369951c2",
+          "request_id": "req-0025",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "81e3b8e7-f708-5e1a-93e2-62f069e430bf",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "REJECTED",
+        "version": 0,
+        "strategy": "s4",
+        "decided_at": "2026-09-05T02:44:38.072673986Z",
+        "reason": "REAL_CONFLICT",
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s4-r03-369951c2",
+          "requestId": "req-0025",
+          "estrategia": "s4",
+          "estado": "REJECTED",
+          "motivo": "REAL_CONFLICT",
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:44:38.072673986Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788576277133576376,
+      "sent_ns": 1788576277176917731,
+      "received_ns": 1788576278102231532,
+      "latency_ms": 925.313801,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s4-r03-369951c2",
+          "request_id": "req-0007",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "bc302625-38a9-529a-8fdb-27b53d4f9807",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "REJECTED",
+        "version": 0,
+        "strategy": "s4",
+        "decided_at": "2026-09-05T02:44:38.097159733Z",
+        "reason": "REAL_CONFLICT",
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s4-r03-369951c2",
+          "requestId": "req-0007",
+          "estrategia": "s4",
+          "estado": "REJECTED",
+          "motivo": "REAL_CONFLICT",
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:44:38.097159733Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788576277136162675,
+      "sent_ns": 1788576277178015351,
+      "received_ns": 1788576278106229722,
+      "latency_ms": 928.214371,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s4-r03-369951c2",
+          "request_id": "req-0022",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "4c1d939a-b686-5e12-8061-c19760c04d94",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "REJECTED",
+        "version": 0,
+        "strategy": "s4",
+        "decided_at": "2026-09-05T02:44:38.083509845Z",
+        "reason": "REAL_CONFLICT",
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s4-r03-369951c2",
+          "requestId": "req-0022",
+          "estrategia": "s4",
+          "estado": "REJECTED",
+          "motivo": "REAL_CONFLICT",
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:44:38.083509845Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788576277137176285,
+      "sent_ns": 1788576277169390362,
+      "received_ns": 1788576278119191001,
+      "latency_ms": 949.800639,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s4-r03-369951c2",
+          "request_id": "req-0027",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "f58dfff4-a38e-56a0-b3f2-bc23c066d33d",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "REJECTED",
+        "version": 0,
+        "strategy": "s4",
+        "decided_at": "2026-09-05T02:44:38.103935443Z",
+        "reason": "REAL_CONFLICT",
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s4-r03-369951c2",
+          "requestId": "req-0027",
+          "estrategia": "s4",
+          "estado": "REJECTED",
+          "motivo": "REAL_CONFLICT",
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:44:38.103935443Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788576277139910185,
+      "sent_ns": 1788576277143083615,
+      "received_ns": 1788576278131890210,
+      "latency_ms": 988.806595,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s4-r03-369951c2",
+          "request_id": "req-0044",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "5bac0d03-3f0e-5f54-9d43-3d778df8d1aa",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "REJECTED",
+        "version": 0,
+        "strategy": "s4",
+        "decided_at": "2026-09-05T02:44:38.109085732Z",
+        "reason": "REAL_CONFLICT",
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s4-r03-369951c2",
+          "requestId": "req-0044",
+          "estrategia": "s4",
+          "estado": "REJECTED",
+          "motivo": "REAL_CONFLICT",
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:44:38.109085732Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788576277138229945,
+      "sent_ns": 1788576277167890182,
+      "received_ns": 1788576278138814448,
+      "latency_ms": 970.924266,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s4-r03-369951c2",
+          "request_id": "req-0033",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "c9f7801a-2c30-5b39-915d-9c82e5c57992",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "REJECTED",
+        "version": 0,
+        "strategy": "s4",
+        "decided_at": "2026-09-05T02:44:38.111324882Z",
+        "reason": "REAL_CONFLICT",
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s4-r03-369951c2",
+          "requestId": "req-0033",
+          "estrategia": "s4",
+          "estado": "REJECTED",
+          "motivo": "REAL_CONFLICT",
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:44:38.111324882Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788576277134612445,
+      "sent_ns": 1788576277146579704,
+      "received_ns": 1788576278143787798,
+      "latency_ms": 997.208094,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s4-r03-369951c2",
+          "request_id": "req-0013",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "1f3fc4e9-7cad-5713-aafc-549b84a7b54a",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "REJECTED",
+        "version": 0,
+        "strategy": "s4",
+        "decided_at": "2026-09-05T02:44:38.133476569Z",
+        "reason": "REAL_CONFLICT",
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s4-r03-369951c2",
+          "requestId": "req-0013",
+          "estrategia": "s4",
+          "estado": "REJECTED",
+          "motivo": "REAL_CONFLICT",
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:44:38.133476569Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788576277139378485,
+      "sent_ns": 1788576277174052481,
+      "received_ns": 1788576278146859688,
+      "latency_ms": 972.807207,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s4-r03-369951c2",
+          "request_id": "req-0040",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "94d5a0eb-9c51-5503-a532-116620f047ab",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "REJECTED",
+        "version": 0,
+        "strategy": "s4",
+        "decided_at": "2026-09-05T02:44:38.112375272Z",
+        "reason": "REAL_CONFLICT",
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s4-r03-369951c2",
+          "requestId": "req-0040",
+          "estrategia": "s4",
+          "estado": "REJECTED",
+          "motivo": "REAL_CONFLICT",
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:44:38.112375272Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788576277137475575,
+      "sent_ns": 1788576277174770221,
+      "received_ns": 1788576278152597707,
+      "latency_ms": 977.827486,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s4-r03-369951c2",
+          "request_id": "req-0029",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "484b0dee-983b-5516-ac72-e89023ed7657",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "REJECTED",
+        "version": 0,
+        "strategy": "s4",
+        "decided_at": "2026-09-05T02:44:38.129661280Z",
+        "reason": "REAL_CONFLICT",
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s4-r03-369951c2",
+          "requestId": "req-0029",
+          "estrategia": "s4",
+          "estado": "REJECTED",
+          "motivo": "REAL_CONFLICT",
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:44:38.129661280Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788576277132935685,
+      "sent_ns": 1788576277144250934,
+      "received_ns": 1788576278154232767,
+      "latency_ms": 1009.981833,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s4-r03-369951c2",
+          "request_id": "req-0005",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "93d77e80-66d9-53eb-89aa-393e3543b016",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "REJECTED",
+        "version": 0,
+        "strategy": "s4",
+        "decided_at": "2026-09-05T02:44:38.114815271Z",
+        "reason": "REAL_CONFLICT",
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s4-r03-369951c2",
+          "requestId": "req-0005",
+          "estrategia": "s4",
+          "estado": "REJECTED",
+          "motivo": "REAL_CONFLICT",
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:44:38.114815271Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788576277137633425,
+      "sent_ns": 1788576277148110414,
+      "received_ns": 1788576278161139786,
+      "latency_ms": 1013.029372,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s4-r03-369951c2",
+          "request_id": "req-0030",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "1c3b4e70-8d27-5956-9895-22f72e55062f",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "REJECTED",
+        "version": 0,
+        "strategy": "s4",
+        "decided_at": "2026-09-05T02:44:38.126774370Z",
+        "reason": "REAL_CONFLICT",
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s4-r03-369951c2",
+          "requestId": "req-0030",
+          "estrategia": "s4",
+          "estado": "REJECTED",
+          "motivo": "REAL_CONFLICT",
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:44:38.126774370Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788576277141422705,
+      "sent_ns": 1788576277180779240,
+      "received_ns": 1788576278161969746,
+      "latency_ms": 981.190506,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s4-r03-369951c2",
+          "request_id": "req-0047",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "3e72c2f1-79f6-59b8-854a-3a0868ef1fc9",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "REJECTED",
+        "version": 0,
+        "strategy": "s4",
+        "decided_at": "2026-09-05T02:44:38.129188290Z",
+        "reason": "REAL_CONFLICT",
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s4-r03-369951c2",
+          "requestId": "req-0047",
+          "estrategia": "s4",
+          "estado": "REJECTED",
+          "motivo": "REAL_CONFLICT",
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:44:38.129188290Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788576277138091675,
+      "sent_ns": 1788576277151971713,
+      "received_ns": 1788576278164159206,
+      "latency_ms": 1012.187493,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s4-r03-369951c2",
+          "request_id": "req-0032",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "be7ae77e-1ba9-577d-af7a-052573b6bf15",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "REJECTED",
+        "version": 0,
+        "strategy": "s4",
+        "decided_at": "2026-09-05T02:44:38.144579508Z",
+        "reason": "REAL_CONFLICT",
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s4-r03-369951c2",
+          "requestId": "req-0032",
+          "estrategia": "s4",
+          "estado": "REJECTED",
+          "motivo": "REAL_CONFLICT",
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:44:38.144579508Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788576277140351285,
+      "sent_ns": 1788576277144788774,
+      "received_ns": 1788576278166969996,
+      "latency_ms": 1022.181222,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s4-r03-369951c2",
+          "request_id": "req-0045",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "3c98dcca-1733-5198-b3b8-b34a74bb1416",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "REJECTED",
+        "version": 0,
+        "strategy": "s4",
+        "decided_at": "2026-09-05T02:44:38.145869958Z",
+        "reason": "REAL_CONFLICT",
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s4-r03-369951c2",
+          "requestId": "req-0045",
+          "estrategia": "s4",
+          "estado": "REJECTED",
+          "motivo": "REAL_CONFLICT",
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:44:38.145869958Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788576277139120265,
+      "sent_ns": 1788576277172247071,
+      "received_ns": 1788576278167616016,
+      "latency_ms": 995.368945,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s4-r03-369951c2",
+          "request_id": "req-0038",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "7b9af850-f740-5285-ae1a-c271f946cdb5",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "REJECTED",
+        "version": 0,
+        "strategy": "s4",
+        "decided_at": "2026-09-05T02:44:38.147562988Z",
+        "reason": "REAL_CONFLICT",
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s4-r03-369951c2",
+          "requestId": "req-0038",
+          "estrategia": "s4",
+          "estado": "REJECTED",
+          "motivo": "REAL_CONFLICT",
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:44:38.147562988Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788576277135211925,
+      "sent_ns": 1788576277146884084,
+      "received_ns": 1788576278169116726,
+      "latency_ms": 1022.232642,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s4-r03-369951c2",
+          "request_id": "req-0016",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "b8513bb1-b6f5-547b-8d20-2af84e1a408b",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "REJECTED",
+        "version": 0,
+        "strategy": "s4",
+        "decided_at": "2026-09-05T02:44:38.152572547Z",
+        "reason": "REAL_CONFLICT",
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s4-r03-369951c2",
+          "requestId": "req-0016",
+          "estrategia": "s4",
+          "estado": "REJECTED",
+          "motivo": "REAL_CONFLICT",
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:44:38.152572547Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788576277138405065,
+      "sent_ns": 1788576277183777330,
+      "received_ns": 1788576278187449193,
+      "latency_ms": 1003.671863,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s4-r03-369951c2",
+          "request_id": "req-0034",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "1e60027d-3bd4-5ac4-8986-5078227228b5",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "REJECTED",
+        "version": 0,
+        "strategy": "s4",
+        "decided_at": "2026-09-05T02:44:38.173729025Z",
+        "reason": "REAL_CONFLICT",
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s4-r03-369951c2",
+          "requestId": "req-0034",
+          "estrategia": "s4",
+          "estado": "REJECTED",
+          "motivo": "REAL_CONFLICT",
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:44:38.173729025Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788576277136668085,
+      "sent_ns": 1788576277144480924,
+      "received_ns": 1788576278189658663,
+      "latency_ms": 1045.177739,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s4-r03-369951c2",
+          "request_id": "req-0024",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "a336f9b4-cb6e-529c-9730-6fa8eccf379d",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "REJECTED",
+        "version": 0,
+        "strategy": "s4",
+        "decided_at": "2026-09-05T02:44:38.168037716Z",
+        "reason": "REAL_CONFLICT",
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s4-r03-369951c2",
+          "requestId": "req-0024",
+          "estrategia": "s4",
+          "estado": "REJECTED",
+          "motivo": "REAL_CONFLICT",
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:44:38.168037716Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788576277137049935,
+      "sent_ns": 1788576277179101680,
+      "received_ns": 1788576278195441023,
+      "latency_ms": 1016.339343,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s4-r03-369951c2",
+          "request_id": "req-0026",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "006eabec-fca4-5d06-8b04-1cc718512c96",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "REJECTED",
+        "version": 0,
+        "strategy": "s4",
+        "decided_at": "2026-09-05T02:44:38.172399475Z",
+        "reason": "REAL_CONFLICT",
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s4-r03-369951c2",
+          "requestId": "req-0026",
+          "estrategia": "s4",
+          "estado": "REJECTED",
+          "motivo": "REAL_CONFLICT",
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:44:38.172399475Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788576277134457216,
+      "sent_ns": 1788576277179973151,
+      "received_ns": 1788576278201795172,
+      "latency_ms": 1021.822021,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s4-r03-369951c2",
+          "request_id": "req-0012",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "def01da0-1aaa-54e8-ae28-c29664c7a235",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "REJECTED",
+        "version": 0,
+        "strategy": "s4",
+        "decided_at": "2026-09-05T02:44:38.171897385Z",
+        "reason": "REAL_CONFLICT",
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s4-r03-369951c2",
+          "requestId": "req-0012",
+          "estrategia": "s4",
+          "estado": "REJECTED",
+          "motivo": "REAL_CONFLICT",
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:44:38.171897385Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788576277131929326,
+      "sent_ns": 1788576277175717261,
+      "received_ns": 1788576278207361052,
+      "latency_ms": 1031.643791,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s4-r03-369951c2",
+          "request_id": "req-0002",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "0f5a2549-9786-58cf-a99f-5141ea59484e",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "REJECTED",
+        "version": 0,
+        "strategy": "s4",
+        "decided_at": "2026-09-05T02:44:38.183498064Z",
+        "reason": "REAL_CONFLICT",
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s4-r03-369951c2",
+          "requestId": "req-0002",
+          "estrategia": "s4",
+          "estado": "REJECTED",
+          "motivo": "REAL_CONFLICT",
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:44:38.183498064Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788576277140864315,
+      "sent_ns": 1788576277144935514,
+      "received_ns": 1788576278207726461,
+      "latency_ms": 1062.790947,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s4-r03-369951c2",
+          "request_id": "req-0046",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "d74d47e1-1485-5887-ac4e-02e4e6fec90c",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "REJECTED",
+        "version": 0,
+        "strategy": "s4",
+        "decided_at": "2026-09-05T02:44:38.188785673Z",
+        "reason": "REAL_CONFLICT",
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s4-r03-369951c2",
+          "requestId": "req-0046",
+          "estrategia": "s4",
+          "estado": "REJECTED",
+          "motivo": "REAL_CONFLICT",
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:44:38.188785673Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788576277133722976,
+      "sent_ns": 1788576277149139314,
+      "received_ns": 1788576278209540921,
+      "latency_ms": 1060.401607,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s4-r03-369951c2",
+          "request_id": "req-0008",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "87734b31-8a5b-5b16-80fa-384d812d131e",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "REJECTED",
+        "version": 0,
+        "strategy": "s4",
+        "decided_at": "2026-09-05T02:44:38.188149193Z",
+        "reason": "REAL_CONFLICT",
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s4-r03-369951c2",
+          "requestId": "req-0008",
+          "estrategia": "s4",
+          "estado": "REJECTED",
+          "motivo": "REAL_CONFLICT",
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:44:38.188149193Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788576277139630435,
+      "sent_ns": 1788576277155472873,
+      "received_ns": 1788576278210088821,
+      "latency_ms": 1054.615948,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s4-r03-369951c2",
+          "request_id": "req-0042",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "f4c71f19-0b88-595d-a32a-262034f16b6e",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "REJECTED",
+        "version": 0,
+        "strategy": "s4",
+        "decided_at": "2026-09-05T02:44:38.187580783Z",
+        "reason": "REAL_CONFLICT",
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s4-r03-369951c2",
+          "requestId": "req-0042",
+          "estrategia": "s4",
+          "estado": "REJECTED",
+          "motivo": "REAL_CONFLICT",
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:44:38.187580783Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788576277136009445,
+      "sent_ns": 1788576277181968501,
+      "received_ns": 1788576278217563051,
+      "latency_ms": 1035.59455,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s4-r03-369951c2",
+          "request_id": "req-0021",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "6069b3b0-788e-5945-bd45-0eb233d1dcd2",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "REJECTED",
+        "version": 0,
+        "strategy": "s4",
+        "decided_at": "2026-09-05T02:44:38.197369362Z",
+        "reason": "REAL_CONFLICT",
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s4-r03-369951c2",
+          "requestId": "req-0021",
+          "estrategia": "s4",
+          "estado": "REJECTED",
+          "motivo": "REAL_CONFLICT",
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:44:38.197369362Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788576277137901735,
+      "sent_ns": 1788576277166544852,
+      "received_ns": 1788576278219190480,
+      "latency_ms": 1052.645628,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s4-r03-369951c2",
+          "request_id": "req-0031",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "fd6b968a-3623-5be4-a268-c84ab7c3f605",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "REJECTED",
+        "version": 0,
+        "strategy": "s4",
+        "decided_at": "2026-09-05T02:44:38.205660152Z",
+        "reason": "REAL_CONFLICT",
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s4-r03-369951c2",
+          "requestId": "req-0031",
+          "estrategia": "s4",
+          "estado": "REJECTED",
+          "motivo": "REAL_CONFLICT",
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:44:38.205660152Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788576277136397555,
+      "sent_ns": 1788576277155906053,
+      "received_ns": 1788576278220701640,
+      "latency_ms": 1064.795587,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s4-r03-369951c2",
+          "request_id": "req-0023",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "7c680708-cd92-56ca-83fd-3a08ae42ea81",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "REJECTED",
+        "version": 0,
+        "strategy": "s4",
+        "decided_at": "2026-09-05T02:44:38.206005042Z",
+        "reason": "REAL_CONFLICT",
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s4-r03-369951c2",
+          "requestId": "req-0023",
+          "estrategia": "s4",
+          "estado": "REJECTED",
+          "motivo": "REAL_CONFLICT",
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:44:38.206005042Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788576277132482136,
+      "sent_ns": 1788576277154096043,
+      "received_ns": 1788576278222396970,
+      "latency_ms": 1068.300927,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s4-r03-369951c2",
+          "request_id": "req-0004",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "a0cd40fa-4223-5fa9-bfd7-f7cfcef6a639",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "REJECTED",
+        "version": 0,
+        "strategy": "s4",
+        "decided_at": "2026-09-05T02:44:38.216112391Z",
+        "reason": "REAL_CONFLICT",
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s4-r03-369951c2",
+          "requestId": "req-0004",
+          "estrategia": "s4",
+          "estado": "REJECTED",
+          "motivo": "REAL_CONFLICT",
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:44:38.216112391Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788576277135429805,
+      "sent_ns": 1788576277189911960,
+      "received_ns": 1788576278223782740,
+      "latency_ms": 1033.87078,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s4-r03-369951c2",
+          "request_id": "req-0017",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "286db463-b813-53e1-bc85-9ee362ec2e7e",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "REJECTED",
+        "version": 0,
+        "strategy": "s4",
+        "decided_at": "2026-09-05T02:44:38.197013532Z",
+        "reason": "REAL_CONFLICT",
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s4-r03-369951c2",
+          "requestId": "req-0017",
+          "estrategia": "s4",
+          "estado": "REJECTED",
+          "motivo": "REAL_CONFLICT",
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:44:38.197013532Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788576277135863335,
+      "sent_ns": 1788576277171114731,
+      "received_ns": 1788576278225176649,
+      "latency_ms": 1054.061918,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s4-r03-369951c2",
+          "request_id": "req-0020",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "39fdc957-a41c-56c8-830e-e9f8beef7b03",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "REJECTED",
+        "version": 0,
+        "strategy": "s4",
+        "decided_at": "2026-09-05T02:44:38.214502521Z",
+        "reason": "REAL_CONFLICT",
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s4-r03-369951c2",
+          "requestId": "req-0020",
+          "estrategia": "s4",
+          "estado": "REJECTED",
+          "motivo": "REAL_CONFLICT",
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:44:38.214502521Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788576277137320895,
+      "sent_ns": 1788576277181272650,
+      "received_ns": 1788576278225858559,
+      "latency_ms": 1044.585909,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s4-r03-369951c2",
+          "request_id": "req-0028",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "72c10092-1a57-5ea9-bb8b-534458c398a1",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "REJECTED",
+        "version": 0,
+        "strategy": "s4",
+        "decided_at": "2026-09-05T02:44:38.214855431Z",
+        "reason": "REAL_CONFLICT",
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s4-r03-369951c2",
+          "requestId": "req-0028",
+          "estrategia": "s4",
+          "estado": "REJECTED",
+          "motivo": "REAL_CONFLICT",
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:44:38.214855431Z"
+        }
+      }
+    }
+  ],
+  "started_at": "2026-09-05T02:44:37.130399+00:00",
+  "finished_at": "2026-09-05T02:44:38.235611+00:00",
+  "excluded_from_analysis": false
+}

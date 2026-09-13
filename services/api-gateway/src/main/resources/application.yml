@@ -1,0 +1,52 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+
+  # Las rutas se declaran únicamente en GatewayRoutes.java. Evita que una
+  # segunda lista YAML diverja de los contratos canónicos.
+
+security:
+  jwt:
+    issuer: ${JWT_ISSUER:scli-auth-service}
+    secret: ${JWT_SECRET}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+
+  endpoint:
+    health:
+      show-details: always
+
+  opentelemetry:
+    logging:
+      export:
+        otlp:
+          endpoint: ${OTEL_EXPORTER_OTLP_LOGS_ENDPOINT:http://otel-collector:4318/v1/logs}
+  tracing:
+    sampling:
+      probability: ${MANAGEMENT_TRACING_SAMPLING_PROBABILITY:1.0}
+  metrics:
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+
+logging:
+  structured:
+    format:
+      console: logstash
+    json:
+      add:
+        service: api-gateway
+      rename:
+        traceId: trace_id
+        spanId: span_id
+  level:
+    root: INFO
+    org.springframework.cloud.gateway: TRACE
+    org.springframework.cloud.gateway.server.mvc: TRACE

@@ -1,0 +1,11 @@
+build/
+.gradle/
+local.properties
+.idea/
+*.iml
+.cxx/
+captures/
+
+# Se agrega manualmente desde Firebase Console (ver apps/mobile/README.md).
+# Si el equipo decide versionarlo, sacar esta línea a propósito.
+app/google-services.json

@@ -37,15 +37,9 @@ class JdbcConfig:
     @classmethod
     def desde_entorno(cls) -> "JdbcConfig":
         return cls(
-            url=os.getenv(
-                "RESERVAS_JDBC_URL",
-                (
-                    "jdbc:postgresql://localhost:26261,localhost:26262,"
-                    "localhost:26263/reservas_db?sslmode=disable"
-                ),
-            ),
-            usuario=os.getenv("RESERVAS_DB_USERNAME", "root"),
-            password=os.getenv("RESERVAS_DB_PASSWORD", ""),
+            url=os.environ["RESERVAS_JDBC_URL"],
+            usuario=os.environ["RESERVAS_DB_USERNAME"],
+            password=os.environ["RESERVAS_DB_PASSWORD"],
         )
 
     def propiedades(self) -> dict[str, str]:
@@ -172,7 +166,7 @@ def construir_pipeline(fuentes: dict[str, DataFrame]) -> DataFrame:
 
 
 def ejecutar_pipeline() -> None:
-    """Construye el plan lógico sin exportar resultados ni generar métricas."""
+    """Construye el plan lógico sin exportar resultados ni generar métricas ."""
 
     spark = crear_sesion()
     try:

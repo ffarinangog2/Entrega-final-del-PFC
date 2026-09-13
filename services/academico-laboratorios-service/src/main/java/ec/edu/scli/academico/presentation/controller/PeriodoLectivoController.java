@@ -1,0 +1,71 @@
+package ec.edu.scli.academico.presentation.controller;
+
+import java.net.URI;
+import java.util.UUID;
+
+import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import ec.edu.scli.academico.application.service.PeriodoLectivoService;
+import ec.edu.scli.academico.presentation.dto.periodolectivo.PeriodoLectivoRequest;
+import ec.edu.scli.academico.presentation.dto.periodolectivo.PeriodoLectivoResponse;
+import jakarta.validation.Valid;
+
+@RestController
+@RequestMapping("/api/v1/periodos-lectivos")
+public class PeriodoLectivoController {
+
+    private final PeriodoLectivoService periodoLectivoService;
+
+    public PeriodoLectivoController(PeriodoLectivoService periodoLectivoService) {
+        this.periodoLectivoService = periodoLectivoService;
+    }
+
+    @PostMapping
+    public ResponseEntity<PeriodoLectivoResponse> crear(@Valid @RequestBody PeriodoLectivoRequest request) {
+
+        PeriodoLectivoResponse creado = periodoLectivoService.crear(request);
+
+        URI ubicacion = URI.create("/api/v1/periodos-lectivos/" + creado.id());
+
+        return ResponseEntity.created(ubicacion).body(creado);
+    }
+
+    @GetMapping
+    public ResponseEntity<Page<PeriodoLectivoResponse>> listar(
+            @RequestParam(required = false) String codigo,
+            @ParameterObject Pageable pageable
+    ) {
+        return ResponseEntity.ok(periodoLectivoService.listar(codigo, pageable));
+    }
+
+    // Nota: se registra ANTES que "/{id}" para que Spring no interprete
+    // "actual" como si fuera un UUID de path variable.
+    @GetMapping("/actual")
+    public ResponseEntity<PeriodoLectivoResponse> obtenerActual() {
+        return ResponseEntity.ok(periodoLectivoService.obtenerActual());
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<PeriodoLectivoResponse> obtenerPorId(@PathVariable UUID id) {
+        return ResponseEntity.ok(periodoLectivoService.obtenerPorId(id));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<PeriodoLectivoResponse> actualizar(
+            @PathVariable UUID id,
+            @Valid @RequestBody PeriodoLectivoRequest request
+    ) {
+        return ResponseEntity.ok(periodoLectivoService.actualizar(id, request));
+    }
+}

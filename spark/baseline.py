@@ -29,15 +29,7 @@ class PandasDbConfig:
 
     @classmethod
     def desde_entorno(cls) -> "PandasDbConfig":
-        return cls(
-            url=os.getenv(
-                "RESERVAS_PANDAS_URL",
-                (
-                    "postgresql+psycopg://root@localhost:26261/"
-                    "reservas_db?sslmode=disable"
-                ),
-            )
-        )
+        return cls(url=os.environ["RESERVAS_PANDAS_URL"])
 
 
 def crear_motor(config: PandasDbConfig) -> Engine:

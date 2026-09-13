@@ -1,0 +1,33 @@
+server:
+  port: 0
+
+spring:
+  application:
+    name: usuarios-service
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:26258/usuarios_db}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: none
+    properties:
+      hibernate:
+        format_sql: false
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+security:
+  jwt:
+    issuer: scli-auth-service
+    secret: MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=
+
+app:
+  internal-api-key: test-internal-api-key
+  security:
+    data-encryption-key: MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=
+    data-hash-key: MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=

@@ -1,0 +1,59 @@
+C4Container
+    title Diagrama de Contenedores - SCLI - Nivel 2
+
+    Person(docente, "Docente", "Consulta horarios y materias")
+    Person(tecnico, "Tecnico de laboratorio", "Gestiona reservas, incidentes y escaneo QR")
+    Person(administrador, "Administrador", "Administra catalogo academico y de laboratorios")
+    Person(estudiante, "Estudiante", "Consulta disponibilidad de laboratorios")
+
+    System_Boundary(scli, "SCLI") {
+        Container(web, "Aplicacion Web", "React 18 + TypeScript + Vite", "SPA: monitoreo, laboratorios, reservas, calendario, settings")
+        Container(mobile, "Aplicacion Movil", "Kotlin + Jetpack Compose", "App para tecnicos: reservas rapidas, incidentes, escaneo QR, offline")
+
+        Container(gateway, "API Gateway", "Spring Cloud Gateway", "Punto de entrada unico; enruta a los microservicios")
+
+        Container(auth, "auth-service", "Spring Boot 3.5", "Autenticacion, JWT, sesiones")
+        ContainerDb(crdbAuth, "CockroachDB - Auth", "CockroachDB v26.2", "Credenciales y sesiones")
+
+        Container(usuarios, "usuarios-service", "Spring Boot 3.5", "Administradores, docentes, estudiantes, tecnicos")
+        ContainerDb(crdbUsuarios, "CockroachDB - Usuarios", "CockroachDB v24.3", "Perfiles de usuario")
+
+        Container(academico, "academico-laboratorios-service", "Spring Boot 3.5", "Campus, facultades, laboratorios, equipos, horarios")
+        ContainerDb(crdbAcademico, "CockroachDB - Academico", "CockroachDB v26.2", "Catalogo academico y laboratorios")
+
+        Container(reservas, "reservas-solicitudes-service", "Spring Boot 3.5", "Reservas y solicitudes de laboratorio")
+        ContainerDb(crdbE3, "Cluster CockroachDB E3", "CockroachDB, 3 nodos", "Cluster distribuido heredado de E3 (reservas y datos historicos)")
+
+        Container(prometheus, "Prometheus", "Prometheus v3.0", "Recoleccion de metricas de todos los servicios")
+        Container(otel, "OTel Collector", "OpenTelemetry Collector", "Recoleccion y enrutamiento de trazas distribuidas de todos los servicios")
+        Container(cadvisor, "cAdvisor", "cAdvisor v0.47", "Metricas de uso de recursos por contenedor")
+        Container(grafana, "Grafana", "Grafana 11.3", "Dashboards de observabilidad")
+    }
+
+    System_Ext(fcm, "Firebase Cloud Messaging", "Notificaciones push")
+
+    Rel(docente, web, "Usa", "HTTPS")
+    Rel(administrador, web, "Usa", "HTTPS")
+    Rel(estudiante, web, "Usa", "HTTPS")
+    Rel(tecnico, mobile, "Usa", "HTTPS")
+
+    Rel(web, gateway, "Consume API", "HTTPS/JSON")
+    Rel(mobile, gateway, "Consume API", "HTTPS/JSON")
+
+    Rel(gateway, auth, "Enruta", "HTTP")
+    Rel(gateway, usuarios, "Enruta", "HTTP")
+    Rel(gateway, academico, "Enruta", "HTTP")
+    Rel(gateway, reservas, "Enruta", "HTTP")
+
+    Rel(auth, crdbAuth, "Lee/escribe", "SQL")
+    Rel(usuarios, crdbUsuarios, "Lee/escribe", "SQL")
+    Rel(academico, crdbAcademico, "Lee/escribe", "SQL")
+    Rel(reservas, crdbE3, "Lee/escribe", "SQL")
+
+    Rel(academico, prometheus, "Consulta ocupacion historica", "PromQL")
+    Rel(prometheus, academico, "Scrapea /actuator/prometheus (los 4 microservicios)", "HTTP")
+    Rel(prometheus, cadvisor, "Scrapea metricas de contenedores", "HTTP")
+    Rel(academico, otel, "Exporta trazas (los 4 microservicios)", "OTLP")
+    Rel(grafana, prometheus, "Consulta metricas", "PromQL")
+
+    Rel(mobile, fcm, "Recibe notificaciones", "HTTPS")

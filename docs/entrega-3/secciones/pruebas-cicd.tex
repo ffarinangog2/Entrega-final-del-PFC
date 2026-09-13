@@ -1,0 +1,135 @@
+\section{Pruebas y CI/CD}
+\label{sec:pruebas-cicd}
+
+\subsection{Pirámide de pruebas}
+
+La estrategia de pruebas del sistema cubre cuatro niveles. Las pruebas
+unitarias emplean JUnit~5 y Mockito para el backend, aislando cada
+componente de sus dependencias mediante dobles de prueba de los puertos
+de dominio, sin necesitar infraestructura real. Las pruebas de integración verifican la persistencia contra instancias reales de
+CockroachDB. En \texttt{auth-service} se emplea Testcontainers para levantar
+dinámicamente una instancia aislada durante la ejecución de las pruebas,
+mientras otros escenarios de integración utilizan la infraestructura definida
+en Docker Compose. Las pruebas de contrato,
+implementadas con Pact, validan la compatibilidad entre los
+microservicios consumidores y proveedores de la API interna. Las
+pruebas de extremo a extremo emplean Playwright para la aplicación web,
+en tres motores de navegador (Chromium, Firefox y WebKit), y Espresso
+para las pruebas instrumentadas de la aplicación móvil. Finalmente, las
+pruebas de carga con Locust evalúan el comportamiento del sistema bajo
+tráfico simulado.
+
+\subsection{Cobertura de código por microservicio}
+
+La cobertura de líneas se mide con JaCoCo en cada microservicio backend,
+con un umbral mínimo exigido del 70\,\% verificado automáticamente
+mediante la regla \texttt{jacoco:check} en el ciclo de vida de Maven.
+La Tabla~\ref{tab:cobertura} resume el estado medido a la fecha de este
+informe.
+
+\begin{table}[htbp]
+\centering
+\caption{Cobertura de código por microservicio (JaCoCo)}
+\label{tab:cobertura}
+\begin{tabular}{lll}
+\toprule
+Microservicio & Cobertura & Tests \\
+\midrule
+academico-laboratorios-service & $\geq$ 70\,\% & 254 \\
+usuarios-service & Por confirmar & --- \\
+reservas-solicitudes-service & $>80\,\%$ líneas; $>48\,\%$ ramas & 110 \\
+auth-service & $\geq$ 70\,\% & 30 \\
+api-gateway & 78.70\,\% & 11 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+El microservicio \texttt{academico-laboratorios-service} alcanza una
+cobertura verificada superior al umbral exigido, con 254 pruebas
+unitarias distribuidas en las cuatro capas de su arquitectura
+hexagonal: 11 servicios de aplicación, 12 controladores de
+presentación, la fachada de coordinación (\texttt{LaboratorioDetalleFacadeImpl})
+y los 11 adaptadores de persistencia que implementan el patrón
+Repository sobre Spring Data JPA.
+
+Para \texttt{reservas-solicitudes-service}, la verificación final del
+módulo ejecutó 110 pruebas sin fallos, errores ni pruebas omitidas. La
+suite cubre ownership del docente, ámbito del administrador de piso,
+transiciones y propuestas, cancelación transaccional, idempotencia de
+creación y aprobación, migraciones Flyway y concurrencia sobre
+CockroachDB. JaCoCo registró más del 80\,\% de líneas y más del
+48\,\% de ramas; el umbral se comprueba durante \texttt{mvn verify} para
+detectar regresiones futuras.
+
+En \texttt{auth-service}, la suite completa ejecutó 30 pruebas sin fallos,
+errores ni omisiones. Además, se incorporó una prueba de integración del
+repositorio utilizando Testcontainers con una instancia real de CockroachDB,
+sobre la cual Flyway aplica las migraciones antes de validar operaciones de
+persistencia y lectura mediante JPA.
+
+En \texttt{api-gateway}, JaCoCo registró una cobertura de líneas del
+78.70\,\% (85 de 108 líneas), superando el umbral mínimo del 70\,\%.
+La ejecución de \texttt{mvn clean verify} completó 11 pruebas sin fallos
+ni errores, y la regla \texttt{jacoco:check} quedó integrada en la fase
+\texttt{verify} para impedir regresiones de cobertura.
+
+En la web, las pruebas unitarias, ESLint y la construcción de producción
+finalizaron correctamente. El flujo E2E de reservas obtuvo dos ejecuciones
+consecutivas de 2/2 casos aprobados, sin reintentos automáticos, y la suite
+E2E preexistente completó 6/6 casos. En Android se ejecutaron 76 pruebas
+sin fallos ni omisiones, Android Lint terminó con cero errores y se generó
+el APK de depuración. La validación visual en dispositivo quedó fuera de
+la evidencia automatizada por no existir emulador o dispositivo disponible
+en el entorno de ejecución.
+
+Las pruebas de contrato con Pact incluyen además el flujo de autenticación
+\texttt{POST /api/v1/auth/login}. El contrato valida la estructura de la
+solicitud, la respuesta HTTP exitosa, los tokens de acceso y renovación,
+su tiempo de expiración y la información del usuario autenticado, incluidos
+roles, permisos y tipos de perfil. La suite de contratos ejecutó seis pruebas
+sin fallos ni errores.
+
+\subsection{Pipeline de integración continua}
+
+El pipeline de \texttt{GitHub Actions}, definido en
+\texttt{.github/workflows/ci.yml}, ejecuta un conjunto de trabajos
+encadenados sobre cada \emph{push} y \emph{pull request} a la rama de
+trabajo, siguiendo el enfoque de entrega continua descrito por
+Humble y Farley \cite{humble2010continuous}.
+
+\begin{table}[htbp]
+\centering
+\caption{Jobs del pipeline de integración continua}
+\label{tab:jobs-cicd}
+\begin{tabular}{lll}
+\toprule
+Job & Propósito & Estado \\
+\midrule
+lint & Checkstyle (backend) + ESLint (web) & Completo \\
+build-test & Compilación y pruebas unitarias Maven & Completo \\
+crdb-tests & Pruebas contra el clúster CockroachDB E3 & Pendiente \\
+test-web & Pruebas unitarias con Vitest & Completo \\
+test-mobile & Pruebas unitarias e instrumentadas & Completo \\
+build-mobile-apk & Empaquetado del APK de depuración & Completo \\
+build-images & Publicación de imágenes en GHCR & Completo \\
+integration & Levantamiento y verificación del stack & Completo \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+El job \texttt{crdb-tests} permanece como una tarea pendiente
+explícitamente marcada en el propio flujo de trabajo, condicionada a la
+finalización del esquema de \texttt{reservas-solicitudes-service}; se
+documenta con honestidad en lugar de presentarlo como resuelto.
+
+\subsection{Análisis estático de código}
+
+El job \texttt{lint} integra dos herramientas de análisis estático
+según la tecnología de cada componente. Para los microservicios backend
+en Java se emplea \texttt{maven-checkstyle-plugin} con una configuración
+propia (\texttt{checkstyle.xml}) que cubre reglas de importaciones no
+utilizadas, llaves obligatorias, longitud máxima de línea (120
+caracteres) y equivalencia entre \texttt{equals} y \texttt{hashCode}.
+Para la aplicación web se emplea \texttt{ESLint} sobre el código
+TypeScript/React. Ambas herramientas se ejecutan automáticamente en
+cada integración y detienen el pipeline si detectan violaciones.

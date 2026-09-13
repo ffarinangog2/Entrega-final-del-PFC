@@ -1,0 +1,1921 @@
+{
+  "run_id": "esc2-s0-r01-ce4dacc0",
+  "strategy": "s0",
+  "scenario": "esc2",
+  "repetition": 1,
+  "seed": 20260905,
+  "sha": "e43967eda31410b7fef060cfc7903cea94efbe96",
+  "agents": 50,
+  "equipment_id": "11111111-1111-1111-1111-111111111111",
+  "laboratory_id": "22222222-2222-2222-2222-222222222222",
+  "starts_at": "2026-09-07T08:00:00Z",
+  "ends_at": "2026-09-07T10:00:00Z",
+  "started_source": "synchronized_barrier",
+  "decision_source": "reservas-solicitudes-service",
+  "endpoint": "http://172.18.0.6:8084/api/v1/internal/experimentos/arbiter/adjudicar",
+  "records": [
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788575962746530083,
+      "sent_ns": 1788575962815950516,
+      "received_ns": 1788575963404219943,
+      "latency_ms": 588.269427,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s0-r01-ce4dacc0",
+          "request_id": "req-0010",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "a6e38d3f-376a-5738-a580-1ab0c227f493",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "CONFIRMED",
+        "version": 0,
+        "strategy": "s0",
+        "decided_at": "2026-09-05T02:39:23.387937235Z",
+        "reason": null,
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s0-r01-ce4dacc0",
+          "requestId": "req-0010",
+          "estrategia": "s0",
+          "estado": "CONFIRMED",
+          "motivo": null,
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:39:23.387937235Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788575962752923722,
+      "sent_ns": 1788575962764876161,
+      "received_ns": 1788575963404426273,
+      "latency_ms": 639.550112,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s0-r01-ce4dacc0",
+          "request_id": "req-0028",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "13a267a4-9df2-5e47-9fab-c2137f3df46c",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "CONFIRMED",
+        "version": 0,
+        "strategy": "s0",
+        "decided_at": "2026-09-05T02:39:23.354269289Z",
+        "reason": null,
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s0-r01-ce4dacc0",
+          "requestId": "req-0028",
+          "estrategia": "s0",
+          "estado": "CONFIRMED",
+          "motivo": null,
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:39:23.354269289Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788575962757566372,
+      "sent_ns": 1788575962778988470,
+      "received_ns": 1788575963404770933,
+      "latency_ms": 625.782463,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s0-r01-ce4dacc0",
+          "request_id": "req-0042",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "89f89950-b2e2-5831-a079-ab4970d74723",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "CONFIRMED",
+        "version": 0,
+        "strategy": "s0",
+        "decided_at": "2026-09-05T02:39:23.362234248Z",
+        "reason": null,
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s0-r01-ce4dacc0",
+          "requestId": "req-0042",
+          "estrategia": "s0",
+          "estado": "CONFIRMED",
+          "motivo": null,
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:39:23.362234248Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788575962754647912,
+      "sent_ns": 1788575962791658329,
+      "received_ns": 1788575963431410431,
+      "latency_ms": 639.752102,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s0-r01-ce4dacc0",
+          "request_id": "req-0034",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "3ce9370d-bd90-5e1e-a86c-78a0474cc200",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "CONFIRMED",
+        "version": 0,
+        "strategy": "s0",
+        "decided_at": "2026-09-05T02:39:23.381499886Z",
+        "reason": null,
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s0-r01-ce4dacc0",
+          "requestId": "req-0034",
+          "estrategia": "s0",
+          "estado": "CONFIRMED",
+          "motivo": null,
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:39:23.381499886Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788575962744454613,
+      "sent_ns": 1788575962765887961,
+      "received_ns": 1788575963433016350,
+      "latency_ms": 667.128389,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s0-r01-ce4dacc0",
+          "request_id": "req-0005",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "cbbdb752-edfe-5645-8bbd-aefc0b0dbeca",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "CONFIRMED",
+        "version": 0,
+        "strategy": "s0",
+        "decided_at": "2026-09-05T02:39:23.414961592Z",
+        "reason": null,
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s0-r01-ce4dacc0",
+          "requestId": "req-0005",
+          "estrategia": "s0",
+          "estado": "CONFIRMED",
+          "motivo": null,
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:39:23.414961592Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788575962746216433,
+      "sent_ns": 1788575962792524078,
+      "received_ns": 1788575963442418339,
+      "latency_ms": 649.894261,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s0-r01-ce4dacc0",
+          "request_id": "req-0009",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "4c6c6293-31b5-5209-b8ce-c2fa13327445",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "CONFIRMED",
+        "version": 0,
+        "strategy": "s0",
+        "decided_at": "2026-09-05T02:39:23.342687760Z",
+        "reason": null,
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s0-r01-ce4dacc0",
+          "requestId": "req-0009",
+          "estrategia": "s0",
+          "estado": "CONFIRMED",
+          "motivo": null,
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:39:23.342687760Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788575962754405562,
+      "sent_ns": 1788575962813448366,
+      "received_ns": 1788575963451426408,
+      "latency_ms": 637.978042,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s0-r01-ce4dacc0",
+          "request_id": "req-0033",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "ddf657ec-9931-5ed9-8dec-d3a82f09add5",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "CONFIRMED",
+        "version": 0,
+        "strategy": "s0",
+        "decided_at": "2026-09-05T02:39:23.342520220Z",
+        "reason": null,
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s0-r01-ce4dacc0",
+          "requestId": "req-0033",
+          "estrategia": "s0",
+          "estado": "CONFIRMED",
+          "motivo": null,
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:39:23.342520220Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788575962751589533,
+      "sent_ns": 1788575962782597169,
+      "received_ns": 1788575963451647638,
+      "latency_ms": 669.050469,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s0-r01-ce4dacc0",
+          "request_id": "req-0024",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "f36d1b32-581e-5538-9d82-62ca6d1d6a2f",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "CONFIRMED",
+        "version": 0,
+        "strategy": "s0",
+        "decided_at": "2026-09-05T02:39:23.371186937Z",
+        "reason": null,
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s0-r01-ce4dacc0",
+          "requestId": "req-0024",
+          "estrategia": "s0",
+          "estado": "CONFIRMED",
+          "motivo": null,
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:39:23.371186937Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788575962749003043,
+      "sent_ns": 1788575962783974959,
+      "received_ns": 1788575963454566008,
+      "latency_ms": 670.591049,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s0-r01-ce4dacc0",
+          "request_id": "req-0018",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "c79300c5-f427-5298-adcf-39ef8f211c29",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "CONFIRMED",
+        "version": 0,
+        "strategy": "s0",
+        "decided_at": "2026-09-05T02:39:23.352805389Z",
+        "reason": null,
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s0-r01-ce4dacc0",
+          "requestId": "req-0018",
+          "estrategia": "s0",
+          "estado": "CONFIRMED",
+          "motivo": null,
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:39:23.352805389Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788575962745228423,
+      "sent_ns": 1788575962761063682,
+      "received_ns": 1788575963456822648,
+      "latency_ms": 695.758966,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s0-r01-ce4dacc0",
+          "request_id": "req-0007",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "3d865058-aafb-5c4a-a1fe-3847b8a6d682",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "CONFIRMED",
+        "version": 0,
+        "strategy": "s0",
+        "decided_at": "2026-09-05T02:39:23.369681597Z",
+        "reason": null,
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s0-r01-ce4dacc0",
+          "requestId": "req-0007",
+          "estrategia": "s0",
+          "estado": "CONFIRMED",
+          "motivo": null,
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:39:23.369681597Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788575962755319022,
+      "sent_ns": 1788575962769554531,
+      "received_ns": 1788575963457116778,
+      "latency_ms": 687.562247,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s0-r01-ce4dacc0",
+          "request_id": "req-0036",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "380a5e1c-306c-5283-9a5c-f79d17edc70c",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "CONFIRMED",
+        "version": 0,
+        "strategy": "s0",
+        "decided_at": "2026-09-05T02:39:23.434018580Z",
+        "reason": null,
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s0-r01-ce4dacc0",
+          "requestId": "req-0036",
+          "estrategia": "s0",
+          "estado": "CONFIRMED",
+          "motivo": null,
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:39:23.434018580Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788575962750720563,
+      "sent_ns": 1788575962784968129,
+      "received_ns": 1788575963459261228,
+      "latency_ms": 674.293099,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s0-r01-ce4dacc0",
+          "request_id": "req-0022",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "39600ca3-12c5-548a-a102-a54fe6260b68",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "CONFIRMED",
+        "version": 0,
+        "strategy": "s0",
+        "decided_at": "2026-09-05T02:39:23.434732490Z",
+        "reason": null,
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s0-r01-ce4dacc0",
+          "requestId": "req-0022",
+          "estrategia": "s0",
+          "estado": "CONFIRMED",
+          "motivo": null,
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:39:23.434732490Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788575962742592244,
+      "sent_ns": 1788575962811605346,
+      "received_ns": 1788575963469806946,
+      "latency_ms": 658.2016,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s0-r01-ce4dacc0",
+          "request_id": "req-0001",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "9867cc0d-6cec-5ea0-aa2a-8769c68e969d",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "CONFIRMED",
+        "version": 0,
+        "strategy": "s0",
+        "decided_at": "2026-09-05T02:39:23.424254891Z",
+        "reason": null,
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s0-r01-ce4dacc0",
+          "requestId": "req-0001",
+          "estrategia": "s0",
+          "estado": "CONFIRMED",
+          "motivo": null,
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:39:23.424254891Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788575962747626753,
+      "sent_ns": 1788575962763243671,
+      "received_ns": 1788575963505450523,
+      "latency_ms": 742.206852,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s0-r01-ce4dacc0",
+          "request_id": "req-0013",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "61ce2942-0e59-5a94-a317-9530f839a411",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "CONFIRMED",
+        "version": 0,
+        "strategy": "s0",
+        "decided_at": "2026-09-05T02:39:23.360924428Z",
+        "reason": null,
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s0-r01-ce4dacc0",
+          "requestId": "req-0013",
+          "estrategia": "s0",
+          "estado": "CONFIRMED",
+          "motivo": null,
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:39:23.360924428Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788575962748489943,
+      "sent_ns": 1788575962787750349,
+      "received_ns": 1788575963511179252,
+      "latency_ms": 723.428903,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s0-r01-ce4dacc0",
+          "request_id": "req-0016",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "dd027a60-9ffc-5d8f-a4b3-e57344d9167d",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "CONFIRMED",
+        "version": 0,
+        "strategy": "s0",
+        "decided_at": "2026-09-05T02:39:23.456414048Z",
+        "reason": null,
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s0-r01-ce4dacc0",
+          "requestId": "req-0016",
+          "estrategia": "s0",
+          "estado": "CONFIRMED",
+          "motivo": null,
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:39:23.456414048Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788575962754844872,
+      "sent_ns": 1788575962781843470,
+      "received_ns": 1788575963513760542,
+      "latency_ms": 731.917072,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s0-r01-ce4dacc0",
+          "request_id": "req-0035",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "6a2714b6-2ac1-5b74-a9e8-ef55a1db9634",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "CONFIRMED",
+        "version": 0,
+        "strategy": "s0",
+        "decided_at": "2026-09-05T02:39:23.500475103Z",
+        "reason": null,
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s0-r01-ce4dacc0",
+          "requestId": "req-0035",
+          "estrategia": "s0",
+          "estado": "CONFIRMED",
+          "motivo": null,
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:39:23.500475103Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788575962748762583,
+      "sent_ns": 1788575962778478780,
+      "received_ns": 1788575963514261102,
+      "latency_ms": 735.782322,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s0-r01-ce4dacc0",
+          "request_id": "req-0017",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "a58ef016-f7d2-5e07-bd20-394d8532385a",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "CONFIRMED",
+        "version": 0,
+        "strategy": "s0",
+        "decided_at": "2026-09-05T02:39:23.463713177Z",
+        "reason": null,
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s0-r01-ce4dacc0",
+          "requestId": "req-0017",
+          "estrategia": "s0",
+          "estado": "CONFIRMED",
+          "motivo": null,
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:39:23.463713177Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788575962752432203,
+      "sent_ns": 1788575962764191081,
+      "received_ns": 1788575963532350050,
+      "latency_ms": 768.158969,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s0-r01-ce4dacc0",
+          "request_id": "req-0027",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "93b5d779-34c2-5b4f-aafe-82098a51b619",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "CONFIRMED",
+        "version": 0,
+        "strategy": "s0",
+        "decided_at": "2026-09-05T02:39:23.514887411Z",
+        "reason": null,
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s0-r01-ce4dacc0",
+          "requestId": "req-0027",
+          "estrategia": "s0",
+          "estado": "CONFIRMED",
+          "motivo": null,
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:39:23.514887411Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788575962754116922,
+      "sent_ns": 1788575962807876977,
+      "received_ns": 1788575963537949539,
+      "latency_ms": 730.072562,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s0-r01-ce4dacc0",
+          "request_id": "req-0032",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "2789de75-49dd-57db-ab1b-18421153f47d",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "CONFIRMED",
+        "version": 0,
+        "strategy": "s0",
+        "decided_at": "2026-09-05T02:39:23.521331551Z",
+        "reason": null,
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s0-r01-ce4dacc0",
+          "requestId": "req-0032",
+          "estrategia": "s0",
+          "estado": "CONFIRMED",
+          "motivo": null,
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:39:23.521331551Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788575962750396613,
+      "sent_ns": 1788575962763763441,
+      "received_ns": 1788575963538427709,
+      "latency_ms": 774.664268,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s0-r01-ce4dacc0",
+          "request_id": "req-0021",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "36b2a057-40f5-5acb-9346-94a0eb63cb3c",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "CONFIRMED",
+        "version": 0,
+        "strategy": "s0",
+        "decided_at": "2026-09-05T02:39:23.484206135Z",
+        "reason": null,
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s0-r01-ce4dacc0",
+          "requestId": "req-0021",
+          "estrategia": "s0",
+          "estado": "CONFIRMED",
+          "motivo": null,
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:39:23.484206135Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788575962744802614,
+      "sent_ns": 1788575962812828986,
+      "received_ns": 1788575963540161609,
+      "latency_ms": 727.332623,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s0-r01-ce4dacc0",
+          "request_id": "req-0006",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "d8735934-5653-5f79-aabc-98d612b599b0",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "CONFIRMED",
+        "version": 0,
+        "strategy": "s0",
+        "decided_at": "2026-09-05T02:39:23.492401064Z",
+        "reason": null,
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s0-r01-ce4dacc0",
+          "requestId": "req-0006",
+          "estrategia": "s0",
+          "estado": "CONFIRMED",
+          "motivo": null,
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:39:23.492401064Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788575962758019442,
+      "sent_ns": 1788575962783106679,
+      "received_ns": 1788575963544351489,
+      "latency_ms": 761.24481,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s0-r01-ce4dacc0",
+          "request_id": "req-0043",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "abf094a3-bdad-5f51-a0ec-b5685725d564",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "CONFIRMED",
+        "version": 0,
+        "strategy": "s0",
+        "decided_at": "2026-09-05T02:39:23.540603899Z",
+        "reason": null,
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s0-r01-ce4dacc0",
+          "requestId": "req-0043",
+          "estrategia": "s0",
+          "estado": "CONFIRMED",
+          "motivo": null,
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:39:23.540603899Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788575962758788182,
+      "sent_ns": 1788575962765163971,
+      "received_ns": 1788575963545096208,
+      "latency_ms": 779.932237,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s0-r01-ce4dacc0",
+          "request_id": "req-0045",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "1958bd13-c2d7-585f-afa0-4445c26142f4",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "CONFIRMED",
+        "version": 0,
+        "strategy": "s0",
+        "decided_at": "2026-09-05T02:39:23.469089427Z",
+        "reason": null,
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s0-r01-ce4dacc0",
+          "requestId": "req-0045",
+          "estrategia": "s0",
+          "estado": "CONFIRMED",
+          "motivo": null,
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:39:23.469089427Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788575962748136413,
+      "sent_ns": 1788575962810873156,
+      "received_ns": 1788575963545232568,
+      "latency_ms": 734.359412,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s0-r01-ce4dacc0",
+          "request_id": "req-0015",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "b8d9df60-a522-5d74-99db-e081e10d7226",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "CONFIRMED",
+        "version": 0,
+        "strategy": "s0",
+        "decided_at": "2026-09-05T02:39:23.485521135Z",
+        "reason": null,
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s0-r01-ce4dacc0",
+          "requestId": "req-0015",
+          "estrategia": "s0",
+          "estado": "CONFIRMED",
+          "motivo": null,
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:39:23.485521135Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788575962751271853,
+      "sent_ns": 1788575962812433316,
+      "received_ns": 1788575963570372866,
+      "latency_ms": 757.93955,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s0-r01-ce4dacc0",
+          "request_id": "req-0023",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "2366571f-c6d5-54ca-86ad-f23932b45b41",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "CONFIRMED",
+        "version": 0,
+        "strategy": "s0",
+        "decided_at": "2026-09-05T02:39:23.498197713Z",
+        "reason": null,
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s0-r01-ce4dacc0",
+          "requestId": "req-0023",
+          "estrategia": "s0",
+          "estado": "CONFIRMED",
+          "motivo": null,
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:39:23.498197713Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788575962751816453,
+      "sent_ns": 1788575962808404897,
+      "received_ns": 1788575963583422624,
+      "latency_ms": 775.017727,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s0-r01-ce4dacc0",
+          "request_id": "req-0025",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "abcbb332-5411-5e42-81f4-579c2cd479d3",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "CONFIRMED",
+        "version": 0,
+        "strategy": "s0",
+        "decided_at": "2026-09-05T02:39:23.532811940Z",
+        "reason": null,
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s0-r01-ce4dacc0",
+          "requestId": "req-0025",
+          "estrategia": "s0",
+          "estado": "CONFIRMED",
+          "motivo": null,
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:39:23.532811940Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788575962756534022,
+      "sent_ns": 1788575962815036506,
+      "received_ns": 1788575963585545124,
+      "latency_ms": 770.508618,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s0-r01-ce4dacc0",
+          "request_id": "req-0041",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "f25ac03e-d171-5239-96eb-a4cb12f2252a",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "CONFIRMED",
+        "version": 0,
+        "strategy": "s0",
+        "decided_at": "2026-09-05T02:39:23.545746948Z",
+        "reason": null,
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s0-r01-ce4dacc0",
+          "requestId": "req-0041",
+          "estrategia": "s0",
+          "estado": "CONFIRMED",
+          "motivo": null,
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:39:23.545746948Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788575962756352832,
+      "sent_ns": 1788575962768046681,
+      "received_ns": 1788575963607776872,
+      "latency_ms": 839.730191,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s0-r01-ce4dacc0",
+          "request_id": "req-0040",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "06b48352-77f9-5bb8-9994-4c4889302470",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "CONFIRMED",
+        "version": 0,
+        "strategy": "s0",
+        "decided_at": "2026-09-05T02:39:23.556148717Z",
+        "reason": null,
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s0-r01-ce4dacc0",
+          "requestId": "req-0040",
+          "estrategia": "s0",
+          "estado": "CONFIRMED",
+          "motivo": null,
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:39:23.556148717Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788575962747899983,
+      "sent_ns": 1788575962812635116,
+      "received_ns": 1788575963613618641,
+      "latency_ms": 800.983525,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s0-r01-ce4dacc0",
+          "request_id": "req-0014",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "0bc27981-4a9e-5378-a2cf-32f438f7870c",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "CONFIRMED",
+        "version": 0,
+        "strategy": "s0",
+        "decided_at": "2026-09-05T02:39:23.586085704Z",
+        "reason": null,
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s0-r01-ce4dacc0",
+          "requestId": "req-0014",
+          "estrategia": "s0",
+          "estado": "CONFIRMED",
+          "motivo": null,
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:39:23.586085704Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788575962749970133,
+      "sent_ns": 1788575962773293130,
+      "received_ns": 1788575963616915661,
+      "latency_ms": 843.622531,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s0-r01-ce4dacc0",
+          "request_id": "req-0020",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "674b7d8f-d92e-5412-9db8-bce5d6666f6e",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "CONFIRMED",
+        "version": 0,
+        "strategy": "s0",
+        "decided_at": "2026-09-05T02:39:23.568962756Z",
+        "reason": null,
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s0-r01-ce4dacc0",
+          "requestId": "req-0020",
+          "estrategia": "s0",
+          "estado": "CONFIRMED",
+          "motivo": null,
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:39:23.568962756Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788575962743005074,
+      "sent_ns": 1788575962806975427,
+      "received_ns": 1788575963622862200,
+      "latency_ms": 815.886773,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s0-r01-ce4dacc0",
+          "request_id": "req-0002",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "5e217aab-dcf9-5fad-a11a-62009e06038e",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "CONFIRMED",
+        "version": 0,
+        "strategy": "s0",
+        "decided_at": "2026-09-05T02:39:23.583942384Z",
+        "reason": null,
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s0-r01-ce4dacc0",
+          "requestId": "req-0002",
+          "estrategia": "s0",
+          "estado": "CONFIRMED",
+          "motivo": null,
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:39:23.583942384Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788575962756136592,
+      "sent_ns": 1788575962765485581,
+      "received_ns": 1788575963630579579,
+      "latency_ms": 865.093998,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s0-r01-ce4dacc0",
+          "request_id": "req-0039",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "9417feec-c385-5bb4-adf3-70382cf0dd0d",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "CONFIRMED",
+        "version": 0,
+        "strategy": "s0",
+        "decided_at": "2026-09-05T02:39:23.568877696Z",
+        "reason": null,
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s0-r01-ce4dacc0",
+          "requestId": "req-0039",
+          "estrategia": "s0",
+          "estado": "CONFIRMED",
+          "motivo": null,
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:39:23.568877696Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788575962747369923,
+      "sent_ns": 1788575962766202421,
+      "received_ns": 1788575963632439149,
+      "latency_ms": 866.236728,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s0-r01-ce4dacc0",
+          "request_id": "req-0012",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "564d1844-310d-578c-8410-0a7591f4e371",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "CONFIRMED",
+        "version": 0,
+        "strategy": "s0",
+        "decided_at": "2026-09-05T02:39:23.583726164Z",
+        "reason": null,
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s0-r01-ce4dacc0",
+          "requestId": "req-0012",
+          "estrategia": "s0",
+          "estado": "CONFIRMED",
+          "motivo": null,
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:39:23.583726164Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788575962745613403,
+      "sent_ns": 1788575962814409536,
+      "received_ns": 1788575963632796729,
+      "latency_ms": 818.387193,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s0-r01-ce4dacc0",
+          "request_id": "req-0008",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "78ba0ca9-ecaf-5a64-ad23-0a1d6a397708",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "CONFIRMED",
+        "version": 0,
+        "strategy": "s0",
+        "decided_at": "2026-09-05T02:39:23.569235466Z",
+        "reason": null,
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s0-r01-ce4dacc0",
+          "requestId": "req-0008",
+          "estrategia": "s0",
+          "estado": "CONFIRMED",
+          "motivo": null,
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:39:23.569235466Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788575962759484092,
+      "sent_ns": 1788575962760817302,
+      "received_ns": 1788575963638919988,
+      "latency_ms": 878.102686,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s0-r01-ce4dacc0",
+          "request_id": "req-0048",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "fed7c8dc-0190-5789-b919-1ab3606bff8d",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "CONFIRMED",
+        "version": 0,
+        "strategy": "s0",
+        "decided_at": "2026-09-05T02:39:23.600321183Z",
+        "reason": null,
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s0-r01-ce4dacc0",
+          "requestId": "req-0048",
+          "estrategia": "s0",
+          "estado": "CONFIRMED",
+          "motivo": null,
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:39:23.600321183Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788575962743393884,
+      "sent_ns": 1788575962760117732,
+      "received_ns": 1788575963645047418,
+      "latency_ms": 884.929686,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s0-r01-ce4dacc0",
+          "request_id": "req-0003",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "86c74176-fe32-5696-8fcc-127c26f13141",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "CONFIRMED",
+        "version": 0,
+        "strategy": "s0",
+        "decided_at": "2026-09-05T02:39:23.597353633Z",
+        "reason": null,
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s0-r01-ce4dacc0",
+          "requestId": "req-0003",
+          "estrategia": "s0",
+          "estado": "CONFIRMED",
+          "motivo": null,
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:39:23.597353633Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788575962759007642,
+      "sent_ns": 1788575962793487548,
+      "received_ns": 1788575963651148817,
+      "latency_ms": 857.661269,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s0-r01-ce4dacc0",
+          "request_id": "req-0046",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "ecd28c4f-97f5-533a-976e-df3279a7e2e6",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "CONFIRMED",
+        "version": 0,
+        "strategy": "s0",
+        "decided_at": "2026-09-05T02:39:23.615423621Z",
+        "reason": null,
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s0-r01-ce4dacc0",
+          "requestId": "req-0046",
+          "estrategia": "s0",
+          "estado": "CONFIRMED",
+          "motivo": null,
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:39:23.615423621Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788575962755678352,
+      "sent_ns": 1788575962809982707,
+      "received_ns": 1788575963653764197,
+      "latency_ms": 843.78149,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s0-r01-ce4dacc0",
+          "request_id": "req-0037",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "78e6c2b3-3505-5f1a-bfa4-d94c32160bcc",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "CONFIRMED",
+        "version": 0,
+        "strategy": "s0",
+        "decided_at": "2026-09-05T02:39:23.612731391Z",
+        "reason": null,
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s0-r01-ce4dacc0",
+          "requestId": "req-0037",
+          "estrategia": "s0",
+          "estado": "CONFIRMED",
+          "motivo": null,
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:39:23.612731391Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788575962759732292,
+      "sent_ns": 1788575962767307411,
+      "received_ns": 1788575963654262707,
+      "latency_ms": 886.955296,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s0-r01-ce4dacc0",
+          "request_id": "req-0049",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "8bdb1f51-5dd0-5c06-9c69-75013953eca7",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "CONFIRMED",
+        "version": 0,
+        "strategy": "s0",
+        "decided_at": "2026-09-05T02:39:23.617273361Z",
+        "reason": null,
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s0-r01-ce4dacc0",
+          "requestId": "req-0049",
+          "estrategia": "s0",
+          "estado": "CONFIRMED",
+          "motivo": null,
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:39:23.617273361Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788575962753730233,
+      "sent_ns": 1788575962809309776,
+      "received_ns": 1788575963655416197,
+      "latency_ms": 846.106421,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s0-r01-ce4dacc0",
+          "request_id": "req-0031",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "e91f82e2-fffa-5a6a-878f-5ac99ae92d95",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "CONFIRMED",
+        "version": 0,
+        "strategy": "s0",
+        "decided_at": "2026-09-05T02:39:23.631723199Z",
+        "reason": null,
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s0-r01-ce4dacc0",
+          "requestId": "req-0031",
+          "estrategia": "s0",
+          "estado": "CONFIRMED",
+          "motivo": null,
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:39:23.631723199Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788575962759251542,
+      "sent_ns": 1788575962767787471,
+      "received_ns": 1788575963656500337,
+      "latency_ms": 888.712866,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s0-r01-ce4dacc0",
+          "request_id": "req-0047",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "e689c137-506d-5364-83c4-0c5c7fdeede0",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "CONFIRMED",
+        "version": 0,
+        "strategy": "s0",
+        "decided_at": "2026-09-05T02:39:23.642709218Z",
+        "reason": null,
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s0-r01-ce4dacc0",
+          "requestId": "req-0047",
+          "estrategia": "s0",
+          "estado": "CONFIRMED",
+          "motivo": null,
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:39:23.642709218Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788575962755896152,
+      "sent_ns": 1788575962774074530,
+      "received_ns": 1788575963659250996,
+      "latency_ms": 885.176466,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s0-r01-ce4dacc0",
+          "request_id": "req-0038",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "4f306ec4-8892-5302-b38d-ec8da60062a5",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "CONFIRMED",
+        "version": 0,
+        "strategy": "s0",
+        "decided_at": "2026-09-05T02:39:23.641888938Z",
+        "reason": null,
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s0-r01-ce4dacc0",
+          "requestId": "req-0038",
+          "estrategia": "s0",
+          "estado": "CONFIRMED",
+          "motivo": null,
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:39:23.641888938Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788575962753531962,
+      "sent_ns": 1788575962767014201,
+      "received_ns": 1788575963668239125,
+      "latency_ms": 901.224924,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s0-r01-ce4dacc0",
+          "request_id": "req-0030",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "5f9fa5c9-c67b-524e-94e2-82b8e393ab0f",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "CONFIRMED",
+        "version": 0,
+        "strategy": "s0",
+        "decided_at": "2026-09-05T02:39:23.656328406Z",
+        "reason": null,
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s0-r01-ce4dacc0",
+          "requestId": "req-0030",
+          "estrategia": "s0",
+          "estado": "CONFIRMED",
+          "motivo": null,
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:39:23.656328406Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788575962746764943,
+      "sent_ns": 1788575962761552202,
+      "received_ns": 1788575963675734135,
+      "latency_ms": 914.181933,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s0-r01-ce4dacc0",
+          "request_id": "req-0011",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "83551c01-8fc8-5bce-9c4c-a25627cf43ba",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "CONFIRMED",
+        "version": 0,
+        "strategy": "s0",
+        "decided_at": "2026-09-05T02:39:23.665062146Z",
+        "reason": null,
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s0-r01-ce4dacc0",
+          "requestId": "req-0011",
+          "estrategia": "s0",
+          "estado": "CONFIRMED",
+          "motivo": null,
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:39:23.665062146Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788575962753217303,
+      "sent_ns": 1788575962792204239,
+      "received_ns": 1788575963679123104,
+      "latency_ms": 886.918865,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s0-r01-ce4dacc0",
+          "request_id": "req-0029",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "3148264b-e4a1-5852-afe3-e1761567ede8",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "CONFIRMED",
+        "version": 0,
+        "strategy": "s0",
+        "decided_at": "2026-09-05T02:39:23.654329777Z",
+        "reason": null,
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s0-r01-ce4dacc0",
+          "requestId": "req-0029",
+          "estrategia": "s0",
+          "estado": "CONFIRMED",
+          "motivo": null,
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:39:23.654329777Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788575962744031893,
+      "sent_ns": 1788575962813853286,
+      "received_ns": 1788575963683031304,
+      "latency_ms": 869.178018,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s0-r01-ce4dacc0",
+          "request_id": "req-0004",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "3132ff3c-9abf-52d7-8145-183395b04bac",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "CONFIRMED",
+        "version": 0,
+        "strategy": "s0",
+        "decided_at": "2026-09-05T02:39:23.674105175Z",
+        "reason": null,
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s0-r01-ce4dacc0",
+          "requestId": "req-0004",
+          "estrategia": "s0",
+          "estado": "CONFIRMED",
+          "motivo": null,
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:39:23.674105175Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788575962741713164,
+      "sent_ns": 1788575962788348979,
+      "received_ns": 1788575963684458974,
+      "latency_ms": 896.109995,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s0-r01-ce4dacc0",
+          "request_id": "req-0000",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "decdffcb-2b38-5cb9-a2ba-b601a9c3e47f",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "CONFIRMED",
+        "version": 0,
+        "strategy": "s0",
+        "decided_at": "2026-09-05T02:39:23.674606464Z",
+        "reason": null,
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s0-r01-ce4dacc0",
+          "requestId": "req-0000",
+          "estrategia": "s0",
+          "estado": "CONFIRMED",
+          "motivo": null,
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:39:23.674606464Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788575962749565703,
+      "sent_ns": 1788575962793920898,
+      "received_ns": 1788575963685856914,
+      "latency_ms": 891.936016,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s0-r01-ce4dacc0",
+          "request_id": "req-0019",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "4b82ceec-ca51-54b0-85ec-fa795ea4e0fe",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "CONFIRMED",
+        "version": 0,
+        "strategy": "s0",
+        "decided_at": "2026-09-05T02:39:23.652185827Z",
+        "reason": null,
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s0-r01-ce4dacc0",
+          "requestId": "req-0019",
+          "estrategia": "s0",
+          "estado": "CONFIRMED",
+          "motivo": null,
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:39:23.652185827Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788575962752061913,
+      "sent_ns": 1788575962793741658,
+      "received_ns": 1788575963707062161,
+      "latency_ms": 913.320503,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s0-r01-ce4dacc0",
+          "request_id": "req-0026",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "821c1970-3aeb-57af-9ff0-675ac9f2d973",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "CONFIRMED",
+        "version": 0,
+        "strategy": "s0",
+        "decided_at": "2026-09-05T02:39:23.673443235Z",
+        "reason": null,
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s0-r01-ce4dacc0",
+          "requestId": "req-0026",
+          "estrategia": "s0",
+          "estado": "CONFIRMED",
+          "motivo": null,
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:39:23.673443235Z"
+        }
+      }
+    },
+    {
+      "type": "REQUEST",
+      "ready_ns": 1788575962758516902,
+      "sent_ns": 1788575962784343809,
+      "received_ns": 1788575963707741401,
+      "latency_ms": 923.397592,
+      "allocation": {
+        "request": {
+          "run_id": "esc2-s0-r01-ce4dacc0",
+          "request_id": "req-0044",
+          "equipment_id": "11111111-1111-1111-1111-111111111111",
+          "laboratory_id": "22222222-2222-2222-2222-222222222222",
+          "user_id": "08982d54-11a1-513a-b429-d2feb879e0c6",
+          "starts_at": "2026-09-07T08:00:00Z",
+          "ends_at": "2026-09-07T10:00:00Z"
+        },
+        "status": "CONFIRMED",
+        "version": 0,
+        "strategy": "s0",
+        "decided_at": "2026-09-05T02:39:23.665638986Z",
+        "reason": null,
+        "node_id": null,
+        "leader_id": null,
+        "lamport": null,
+        "backend_response": {
+          "runId": "esc2-s0-r01-ce4dacc0",
+          "requestId": "req-0044",
+          "estrategia": "s0",
+          "estado": "CONFIRMED",
+          "motivo": null,
+          "version": 0,
+          "nodeId": null,
+          "leaderId": null,
+          "lamport": null,
+          "decididoEn": "2026-09-05T02:39:23.665638986Z"
+        }
+      }
+    }
+  ],
+  "started_at": "2026-09-05T02:39:22.740497+00:00",
+  "finished_at": "2026-09-05T02:39:23.775020+00:00",
+  "excluded_from_analysis": true
+}

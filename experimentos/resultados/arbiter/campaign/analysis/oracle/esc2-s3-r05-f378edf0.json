@@ -1,0 +1,26 @@
+{
+  "run_id": "esc2-s3-r05-f378edf0",
+  "invariants": {
+    "I1_NO_DOUBLE_ALLOCATION": "PASS",
+    "I2_EXACTLY_ONE_ASSIGNEE": "PASS",
+    "I3_NOT_IN_MAINTENANCE": "PASS",
+    "I4_RELEASE_EXACTLY_ONCE": "NOT_OBSERVED",
+    "I5_VALID_ACCESS_ONLY": "NOT_OBSERVED"
+  },
+  "violations": {
+    "I1_NO_DOUBLE_ALLOCATION": [],
+    "I2_EXACTLY_ONE_ASSIGNEE": [],
+    "I3_NOT_IN_MAINTENANCE": []
+  },
+  "confirmed": 1,
+  "rejected": 49,
+  "double_allocation_rate": 0.0,
+  "double_allocation_ci95": [
+    0.0,
+    0.7934506856227626
+  ],
+  "unnecessary_rejections": 0,
+  "jain_users": 1.0,
+  "jain_equipment": 1.0,
+  "fixture_source": "synthetic-versioned-fixture"
+}

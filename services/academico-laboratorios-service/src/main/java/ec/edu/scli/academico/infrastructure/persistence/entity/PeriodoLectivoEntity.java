@@ -1,0 +1,142 @@
+package ec.edu.scli.academico.infrastructure.persistence.entity;
+
+import java.time.LocalDate;
+import java.time.OffsetDateTime;
+import java.util.UUID;
+
+import ec.edu.scli.academico.infrastructure.persistence.generator.AssignedOrGeneratedUuid;
+
+import ec.edu.scli.academico.enums.EstadoPeriodo;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
+import jakarta.persistence.Table;
+
+@Entity
+@Table(name = "periodos_lectivos")
+public class PeriodoLectivoEntity {
+
+    @Id
+    @AssignedOrGeneratedUuid
+    private UUID id;
+
+    @Column(name = "codigo", nullable = false, unique = true, length = 20)
+    private String codigo;
+
+    @Column(name = "nombre", nullable = false, length = 100)
+    private String nombre;
+
+    @Column(name = "fecha_inicio", nullable = false)
+    private LocalDate fechaInicio;
+
+    @Column(name = "fecha_fin", nullable = false)
+    private LocalDate fechaFin;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "estado", nullable = false, length = 20)
+    private EstadoPeriodo estado = EstadoPeriodo.PLANIFICADO;
+
+    @Column(name = "ppa_codigo", length = 40)
+    private String ppaCodigo;
+
+    @Column(name = "ppa_nombre", length = 120)
+    private String ppaNombre;
+
+    @Column(name = "ciclo_academico")
+    private Integer cicloAcademico;
+
+    @Column(name = "creado_en", nullable = false, updatable = false)
+    private OffsetDateTime creadoEn;
+
+    @Column(name = "actualizado_en", nullable = false)
+    private OffsetDateTime actualizadoEn;
+
+    @PrePersist
+    protected void alPersistir() {
+        OffsetDateTime ahora = OffsetDateTime.now();
+        this.creadoEn = ahora;
+        this.actualizadoEn = ahora;
+    }
+
+    @PreUpdate
+    protected void alActualizar() {
+        this.actualizadoEn = OffsetDateTime.now();
+    }
+
+    // ---------- Getters y Setters ----------
+
+    public UUID getId() {
+        return id;
+    }
+
+    public void setId(UUID id) {
+        this.id = id;
+    }
+
+    public String getCodigo() {
+        return codigo;
+    }
+
+    public void setCodigo(String codigo) {
+        this.codigo = codigo;
+    }
+
+    public String getNombre() {
+        return nombre;
+    }
+
+    public void setNombre(String nombre) {
+        this.nombre = nombre;
+    }
+
+    public LocalDate getFechaInicio() {
+        return fechaInicio;
+    }
+
+    public void setFechaInicio(LocalDate fechaInicio) {
+        this.fechaInicio = fechaInicio;
+    }
+
+    public LocalDate getFechaFin() {
+        return fechaFin;
+    }
+
+    public void setFechaFin(LocalDate fechaFin) {
+        this.fechaFin = fechaFin;
+    }
+
+    public EstadoPeriodo getEstado() {
+        return estado;
+    }
+
+    public void setEstado(EstadoPeriodo estado) {
+        this.estado = estado;
+    }
+
+    public String getPpaCodigo() { return ppaCodigo; }
+    public void setPpaCodigo(String value) { ppaCodigo = value; }
+    public String getPpaNombre() { return ppaNombre; }
+    public void setPpaNombre(String value) { ppaNombre = value; }
+    public Integer getCicloAcademico() { return cicloAcademico; }
+    public void setCicloAcademico(Integer value) { cicloAcademico = value; }
+
+    public OffsetDateTime getCreadoEn() {
+        return creadoEn;
+    }
+
+    public void setCreadoEn(OffsetDateTime creadoEn) {
+        this.creadoEn = creadoEn;
+    }
+
+    public OffsetDateTime getActualizadoEn() {
+        return actualizadoEn;
+    }
+
+    public void setActualizadoEn(OffsetDateTime actualizadoEn) {
+        this.actualizadoEn = actualizadoEn;
+    }
+}

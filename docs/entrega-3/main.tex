@@ -1,0 +1,1610 @@
+% ============================================================================
+% Informe acumulativo Entrega 4 (E4) - SCLI - Aplicaciones Distribuidas
+% UTEQ - Facultad de Ciencias de la Computación - Ingeniería de Software
+% Equipo PFC: ForáCode
+% Compilar con: pdflatex (dos pasadas). Ver README.md.
+% IEEEtran.cls no está disponible en este entorno; se reproduce el estilo
+% IEEE (dos columnas, numeración de secciones, citas IEEE) con article.cls.
+% ============================================================================
+\documentclass[10pt,twocolumn]{article}
+
+% --- Codificación y tipografía compatibles con pdfLaTeX ---------------------
+% fontspec/polyglossia se sustituyen por el mecanismo clásico de LaTeX porque
+% este entorno no dispone de luaotfload/XeTeX de forma estable con pdfLaTeX.
+% newtxtext/newtxmath no están instalados en este sistema; se emplea el
+% paquete PSNFSS estándar (mathptmx/helvet/courier), que es la alternativa
+% habitual y produce el mismo tipo de letra Times con soporte matemático
+% completo para pdfLaTeX. La opción provide=* de babel es necesaria porque
+% este TeX Live no incluye el archivo clásico spanish.ldf del paquete
+% babel-spanish, solo los locales nuevos basados en .ini.
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish,provide=*]{babel}
+\usepackage[margin=1.9cm,columnsep=0.6cm]{geometry}
+\usepackage{mathptmx}
+\usepackage{helvet}
+\usepackage{courier}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{caption}
+\captionsetup{font=small,labelfont=bf}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true,linkcolor=blue!50!black,citecolor=blue!50!black,urlcolor=blue!50!black,pdftitle={SCLI - Entrega 4},pdfauthor={Equipo ForáCode}}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{abstract}
+\usepackage{tikz}
+\usetikzlibrary{positioning,arrows.meta,shapes.geometric}
+
+\definecolor{codebg}{HTML}{F5F5F5}
+\definecolor{codekw}{HTML}{1B4F8C}
+\definecolor{codestr}{HTML}{0B7285}
+\definecolor{codecom}{HTML}{6A737D}
+
+\lstset{
+  basicstyle=\ttfamily\scriptsize,
+  keywordstyle=\color{codekw}\bfseries,
+  commentstyle=\color{codecom}\itshape,
+  stringstyle=\color{codestr},
+  backgroundcolor=\color{codebg},
+  frame=single,
+  rulecolor=\color{black!30},
+  breaklines=true,
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny\color{black!50},
+  numbersep=5pt,
+  captionpos=b,
+  tabsize=2,
+  columns=flexible,
+  extendedchars=true,
+  literate=%
+    {á}{{\'a}}1 {é}{{\'e}}1 {í}{{\'i}}1 {ó}{{\'o}}1 {ú}{{\'u}}1
+    {Á}{{\'A}}1 {É}{{\'E}}1 {Í}{{\'I}}1 {Ó}{{\'O}}1 {Ú}{{\'U}}1
+    {ñ}{{\~n}}1 {Ñ}{{\~N}}1 {ü}{{\"u}}1 {Ü}{{\"U}}1 {¿}{{?`}}1 {¡}{{!`}}1,
+}
+\lstdefinelanguage{sql}{
+  morekeywords={CREATE,TABLE,DATABASE,IF,NOT,EXISTS,USE,PARTITION,BY,RANGE,ALTER,CONFIGURE,ZONE,USING,VALUES,SELECT,FROM,WHERE,INSERT,INTO,COUNT,PRIMARY,KEY,CONSTRAINT,CHECK,UNIQUE,INDEX,ON,COMMENT,COLUMN,IS,DEFAULT},
+  morecomment=[l]{--},
+  morestring=[b]',
+  sensitive=false,
+}
+
+\titleformat{\section}{\normalfont\large\bfseries}{\thesection.}{0.5em}{}
+\titleformat{\subsection}{\normalfont\normalsize\bfseries}{\thesubsection.}{0.5em}{}
+\titleformat{\subsubsection}{\normalfont\normalsize\itshape}{\thesubsubsection.}{0.5em}{}
+
+\newcommand{\RepoURL}{https://github.com/iavillamarin98-pred/Proyecto\_Fin\_de\_Curso\_scli}
+
+% Encabezado (fancyhdr) eliminado según instrucción; se conserva la
+% numeración de página normal (\pagestyle{plain}, predeterminado de
+% article.cls) y la numeración de secciones estándar de LaTeX.
+\pagestyle{plain}
+
+\begin{document}
+
+% ---------------------------------------------------------------------------
+\twocolumn[
+\begin{center}
+{\LARGE\bfseries Sistema de Control de Laboratorios e Informática (SCLI):
+integración distribuida, aplicaciones cliente y evaluación de calidad}
+
+\vspace{6pt}
+{\large Entrega 4 del Proyecto Fin de Curso}
+
+\vspace{10pt}
+{\normalsize
+Freddy Farinango, Iván Villamarín, Isaías Urbina, Harold Vinueza
+
+Equipo PFC ForáCode
+
+Carrera de Ingeniería de Software, Facultad de Ciencias de la Computación
+
+Universidad Técnica Estatal de Quevedo (UTEQ), Ecuador
+
+\texttt{\RepoURL}
+}
+
+\vspace{12pt}
+\end{center}
+]
+
+\begin{abstract}
+Este informe acumulativo documenta la Entrega 4 (E4) del Proyecto Fin de
+Curso del sistema SCLI (Sistema de Control de Laboratorios e Informática).
+Se conserva como antecedente verificable el diseño distribuido desarrollado
+en la E3: el clúster CockroachDB de tres nodos, la replicación, la
+tolerancia a fallos y el pipeline analítico. Sobre esa base, la E4 integra
+la aplicación web, la aplicación móvil, la seguridad institucional, las
+pruebas automatizadas, la observabilidad y la evaluación guiada por
+ISO/IEC 25010:2023. El módulo de reservas y solicitudes incorpora
+idempotencia, control de concurrencia, ownership del docente, ámbito del
+administrador de piso, propuestas alternativas y cancelación transaccional.
+El documento distingue los resultados efectivamente verificados de los
+protocolos y evidencias experimentales que aún deban ejecutarse, evitando
+presentar configuraciones o estimaciones como mediciones finales.
+\end{abstract}
+
+\begin{abstract}
+\textbf{Abstract.} This cumulative report documents the fourth deliverable
+(E4) of the SCLI capstone project. It preserves the distributed-data work
+from E3 as a technical baseline, including the three-node CockroachDB
+cluster, replication, fault-tolerance verification, and the analytical
+pipeline. E4 extends that baseline with web and mobile clients,
+institutional authorization, automated testing, observability, and an
+ISO/IEC 25010:2023-oriented quality assessment. The reservations module
+adds idempotency, concurrency control, teacher ownership, floor-scoped
+administration, alternative proposals, and transactional cancellation.
+Measured evidence is explicitly separated from experimental procedures
+that remain to be executed, so configuration and estimated values are not
+reported as final results.
+\end{abstract}
+
+\vspace{6pt}
+
+\section{Introducción}
+\label{sec:intro}
+
+El proyecto SCLI (Sistema de Control de Laboratorios e Informática) atiende
+la gestión de laboratorios, reservas y solicitudes académicas de la
+Universidad Técnica Estatal de Quevedo. El sistema se construye de manera
+acumulativa a lo largo del Proyecto Fin de Curso: las entregas previas
+establecieron el dominio, los actores y la arquitectura de microservicios
+desplegada mediante contenedores, con un servicio de autenticación, un
+servicio de usuarios, un servicio académico-laboratorios y un servicio de
+reservas y solicitudes, cada uno propietario de su propia base de datos, un
+\texttt{api-gateway} que centraliza el enrutamiento hacia los cuatro
+servicios, y autenticación basada en JSON Web Tokens (JWT) según la
+especificación RFC 7519~\cite{venckauskas2023jwt}, validados por cada microservicio de
+forma independiente sin necesidad de consultar al servicio de
+autenticación en cada petición. Esta arquitectura de microservicios sigue
+los principios de sistemas orientados a recursos discutidos por
+Fielding~\cite{li2021microservices} en su caracterización del estilo REST, y los
+límites de servicio se trazaron siguiendo las heurísticas de descomposición
+por dominio de Newman~\cite{li2021microservices}.
+
+Como antecedente directo, la Entrega 3 (E3) añadió las dos capas que hacían
+falta para que el sistema
+sea distribuido en sentido pleno: una capa de persistencia distribuida real,
+con fragmentación, replicación y consenso, sustituyendo las bases mono-nodo
+utilizadas hasta ahora, y un pipeline de procesamiento paralelo que
+consume esos datos y mide su rendimiento frente a un baseline secuencial.
+Concretamente, este informe documenta:
+
+\begin{itemize}[leftmargin=*,itemsep=2pt]
+  \item el diseño del esquema de fragmentación horizontal temporal para las
+  tablas del dominio de reservas, registrado en el ADR-003;
+  \item el despliegue de un clúster CockroachDB de tres nodos dedicado al
+  microservicio de reservas y solicitudes, con una política de replicación
+  triple documentada en el ADR-004;
+  \item la verificación experimental de la tolerancia a fallos del clúster
+  ante la caída de uno y de dos nodos, con evidencia de latencia y capturas
+  de consola;
+  \item la integración de la capa de aplicación con el nivel de
+  aislamiento transaccional serializable que exige un sistema
+  consistente como CockroachDB;
+  \item el pipeline analítico en PySpark, con cinco transformaciones sobre
+  el esquema de reservas, y su línea base equivalente en pandas.
+\end{itemize}
+
+Un principio explícito de la E3, enunciado en la guía docente, fue
+la complementariedad con la Entrega 4: cada artefacto producido allí
+--esquema, clúster, pipeline y protocolo experimental-- se plantea como
+una pieza reutilizable, no como un ejercicio desechable, condición
+necesaria para que la E4 aborde la calidad, la interfaz web, la interfaz
+móvil y la observabilidad de manera integral.
+Por esa misma razón, este informe distingue con
+cuidado entre lo que el equipo verificó empíricamente y lo que quedó
+diseñado o codificado pero todavía sin ejecutar, en lugar de presentar
+resultados que no fueron efectivamente medidos. El resto del documento se
+organiza siguiendo esa misma lógica: la Sección~\ref{sec:relacionados}
+sitúa el trabajo frente a la literatura; la
+Sección~\ref{sec:teoria} formaliza el marco teórico aplicado; las
+Secciones~\ref{sec:esquema} a~\ref{sec:pipeline} documentan lo construido;
+la Sección~\ref{sec:protocolo} documenta el protocolo de medición diseñado
+y su estado de ejecución; y las
+Secciones~\ref{sec:discusion} y~\ref{sec:conclusiones} interpretan los
+resultados históricos. A continuación, las secciones específicas de E4
+documentan la aplicación web, la aplicación móvil, las pruebas y CI/CD, la
+observabilidad y la evaluación ISO/IEC 25010:2023, conservando así la
+trazabilidad entre entregas sin confundir su estado temporal.
+
+\section{Trabajos relacionados}
+\label{sec:relacionados}
+
+El diseño de bases de datos distribuidas parte de los principios de
+transparencia de fragmentación, replicación y ubicación establecidos por
+Özsu y Valduriez~\cite{ozsu2020}, quienes caracterizan un sistema de base de
+datos distribuido como un conjunto de bases lógicamente relacionadas que se
+perciben como una única base ante el usuario. Kleppmann~\cite{kleppmann2022}
+complementa esta perspectiva con un tratamiento orientado a la ingeniería de
+sistemas de datos modernos, discutiendo de forma extensa los compromisos
+entre consistencia, disponibilidad y particionamiento que enmarcan
+decisiones como las tomadas en este proyecto.
+
+El teorema CAP de Brewer~\cite{lee2023cap} y su reformulación posterior como
+PACELC por Abadi~\cite{lee2023cap} son el marco teórico bajo el cual se
+interpreta el comportamiento observado del clúster: CockroachDB se posiciona
+explícitamente como un sistema CP, y el trabajo de
+Taft~\emph{et al.}~\cite{taft2020} --el artículo de referencia de sus
+autores originales publicado en SIGMOD 2020-- describe en detalle cómo la
+base de datos logra consistencia serializable mediante el algoritmo de
+consenso Raft de Ongaro y Ousterhout~\cite{huang2020tidb}, sacrificando
+disponibilidad ante particiones de red severas. La verificación de
+tolerancia a fallos realizada en este trabajo (Sección~\ref{sec:cluster})
+reproduce, a pequeña escala y sobre datos propios, el comportamiento que
+estos trabajos predicen teóricamente.
+
+En la capa de procesamiento paralelo, el modelo de \emph{Resilient
+Distributed Datasets} (RDD) de Zaharia~\emph{et al.}~\cite{wang2022spark}
+fundamenta el diseño del pipeline PySpark implementado en este proyecto, y
+la guía de Chambers y Zaharia~\cite{wang2022spark} orienta las decisiones
+prácticas de la API de DataFrames utilizada. La revisión de Salloum
+\emph{et al.}~\cite{wang2022spark} sobre analítica de macrodatos con Apache
+Spark documenta patrones de uso comparables a los aplicados aquí (filtrado,
+combinación de conjuntos, ventanas de agregación y transformaciones de
+aprendizaje automático ligero). El marco metodológico para reportar la
+comparación de rendimiento se apoya en las guías de experimentación en
+ingeniería de software de Wohlin~\emph{et al.}~\cite{verdecchia2023} y en las
+recomendaciones de Jain~\cite{baltes2022sampling} para el diseño experimental de
+sistemas de cómputo, si bien --como se explica en la
+Sección~\ref{sec:protocolo}-- la ejecución completa de ese protocolo queda
+pendiente para un ciclo posterior.
+
+Cooper~\emph{et al.}~\cite{taipalus2023dbms} introducen el benchmark YCSB
+(\emph{Yahoo! Cloud Serving Benchmark}), un marco de referencia ampliamente
+adoptado para comparar sistemas de almacenamiento distribuido bajo cargas
+mixtas de lectura y escritura; aunque este proyecto no ejecuta YCSB
+directamente, su enfoque de variar sistemáticamente la carga y reportar
+percentiles de latencia inspira la estructura de la Tabla~\ref{tab:latencia}
+de este informe y es una referencia natural para extender el protocolo
+experimental de la Sección~\ref{sec:protocolo} en la siguiente entrega.
+Finalmente, la práctica de documentar decisiones arquitectónicas mediante
+registros ligeros (\emph{Architectural Decision Records}, ADR) --aplicada
+en los ADR-003 y ADR-004 de la Sección~\ref{sec:esquema}-- sigue la
+convención popularizada por Michael Nygard y adoptada de forma extendida en
+proyectos de arquitectura de microservicios como el descrito por
+Newman~\cite{li2021microservices}, cuya guía sobre sistemas de grano fino orientó
+también las decisiones de límites de servicio tomadas en las entregas
+previas del PFC.
+
+\section{Fundamento teórico}
+\label{sec:teoria}
+
+\subsection{Modelo de bases de datos distribuidas}
+
+Un sistema de base de datos distribuido (SBDD) se define como un conjunto
+de múltiples bases de datos lógicamente relacionadas, gestionadas por un
+único sistema y percibidas por el usuario como una única base~\cite{ozsu2020}.
+Sus objetivos de diseño son la transparencia de fragmentación, replicación
+y ubicación, la autonomía local de cada nodo, la disponibilidad y la
+escalabilidad horizontal.
+
+La \emph{fragmentación horizontal} de una relación $R$ produce fragmentos
+$R_1, R_2, \ldots, R_n$ mediante selección sobre un atributo particionador:
+\begin{equation}
+R_i = \sigma_{p_i}(R)
+\label{eq:fragmentacion}
+\end{equation}
+donde $\{p_i\}$ son predicados mutuamente excluyentes y colectivamente
+exhaustivos. La \emph{replicación} exige un factor $f \geq 3$ para tolerar
+la caída de un nodo conservando quórum mayoritario: un sistema con factor
+de replicación $f$ tolera la pérdida simultánea de hasta
+$\lfloor (f-1)/2 \rfloor$ réplicas por rango, siempre que se mantenga el
+quórum de escritura $\lceil f/2 \rceil + 1$~\cite{huang2020tidb,taft2020}. Con
+$f=3$, el quórum de escritura es $2$ y el sistema tolera la caída de
+$\lfloor 2/2 \rfloor = 1$ réplica, exactamente el comportamiento verificado
+empíricamente en la Sección~\ref{sec:cluster}.
+
+\subsubsection{Taxonomía de transparencia}
+
+Özsu y Valduriez~\cite{ozsu2020} descomponen la transparencia de un SBDD en
+cuatro niveles independientes, útiles para situar con precisión qué
+garantiza efectivamente la arquitectura de esta entrega. La
+\emph{transparencia de fragmentación} oculta al cliente que una relación
+está dividida en fragmentos; en SCLI, la aplicación consulta
+\texttt{solicitudes\_reserva} como una tabla única sin conocer, ni deber
+conocer, sus futuras particiones temporales. La \emph{transparencia de
+ubicación} oculta en qué nodo físico reside cada fragmento; CockroachDB la
+provee de forma nativa mediante su capa de distribución, que enruta cada
+consulta SQL al conjunto de rangos correspondiente sin intervención de la
+aplicación. La \emph{transparencia de replicación} oculta cuántas copias
+existen de cada dato y cómo se sincronizan; en este proyecto corresponde
+exactamente al mecanismo de Raft descrito en la
+Sección~\ref{sec:consenso}. Finalmente, la \emph{transparencia de
+concurrencia y de fallos} garantiza que transacciones simultáneas y fallos
+parciales de nodos no produzcan resultados incorrectos ni requieran lógica
+especial en la capa de aplicación; esta es, en sentido estricto, la
+propiedad que la Sección~\ref{sec:tolerancia} verifica empíricamente para
+el caso de la caída de un nodo.
+
+\subsection{Teorema CAP y modelo PACELC}
+
+El teorema CAP establece que un sistema distribuido no puede satisfacer
+simultáneamente consistencia, disponibilidad y tolerancia a particiones de
+red~\cite{lee2023cap}. El modelo PACELC extiende esta discusión
+incorporando el compromiso entre latencia y consistencia incluso en
+ausencia de particiones: en presencia de una partición ($P$), el sistema
+elige entre disponibilidad ($A$) y consistencia ($C$); en su ausencia
+($E$), elige entre latencia ($L$) y consistencia ($C$)~\cite{lee2023cap}.
+CockroachDB se ubica como un sistema \mbox{PC/EC}: prioriza consistencia
+serializable tanto ante particiones como en operación normal, sacrificando
+disponibilidad de escritura cuando el clúster pierde el quórum
+mayoritario~\cite{taft2020}. Este posicionamiento es exactamente el que se
+observó en el escenario de dos nodos caídos descrito en la
+Sección~\ref{sec:tolerancia}.
+
+\subsection{Consenso distribuido: Raft}
+\label{sec:consenso}
+
+El algoritmo Raft descompone el problema del consenso distribuido en tres
+subproblemas independientes: elección de líder, replicación del registro de
+operaciones (\emph{log}) y seguridad~\cite{huang2020tidb}. En CockroachDB, cada
+rango de datos --la unidad atómica de fragmentación y replicación del
+motor-- constituye un grupo Raft independiente con su propio líder. Una
+escritura se considera comprometida (\emph{committed}) cuando el líder
+recibe confirmación de una mayoría estricta de las réplicas del grupo,
+garantizando durabilidad frente a la caída de una minoría de nodos. Cuando
+el líder deja de estar disponible y sobreviven réplicas suficientes para
+alcanzar mayoría, el grupo elige un nuevo líder y continúa operando; en caso
+contrario, el rango deja de aceptar escrituras hasta que se restablezca el
+quórum~\cite{huang2020tidb}.
+
+\subsection{Modelo de programación paralela y leyes de escalamiento}
+
+El modelo RDD (\emph{Resilient Distributed Dataset}) de Apache Spark
+abstrae una colección distribuida e inmutable de datos, con linaje de
+transformaciones, evaluación perezosa (\emph{lazy evaluation}) y tolerancia
+a fallos mediante recómputo del linaje en lugar de replicación
+física~\cite{wang2022spark}. Sobre este modelo se construye la API de
+DataFrames utilizada en el pipeline de la Sección~\ref{sec:pipeline}.
+
+La Ley de Amdahl expresa el \emph{speedup} teórico máximo alcanzable al
+paralelizar un programa con una fracción $p$ paralelizable sobre $N$
+procesadores, dejando $(1-p)$ como fracción estrictamente secuencial:
+\begin{equation}
+S(N) = \frac{1}{(1-p) + \dfrac{p}{N}}
+\label{eq:amdahl}
+\end{equation}
+La ley predice un límite asintótico de $S(N) \to 1/(1-p)$ cuando
+$N \to \infty$, lo que implica que, para fracciones secuenciales incluso
+pequeñas, el beneficio marginal de añadir más núcleos decae
+rápidamente~\cite{poolla2023amdahl}. Gustafson replantea esta lectura observando
+que, en la práctica, el volumen de trabajo suele escalar junto con los
+recursos disponibles en lugar de permanecer fijo, lo que produce una
+estimación de \emph{speedup} escalado distinta y menos pesimista para
+cargas de trabajo que crecen con el tamaño del clúster~\cite{sun2023gustafson}.
+Como se explica en la Sección~\ref{sec:protocolo}, este proyecto no cuenta
+todavía con mediciones ejecutadas de $N$ y $t(N)$ que permitan ajustar $p$
+empíricamente; la Ecuación~\eqref{eq:amdahl} se documenta aquí como el marco
+que se aplicará cuando el protocolo experimental se ejecute.
+
+Para ilustrar la lectura de la Ecuación~\eqref{eq:amdahl} con valores
+hipotéticos --no medidos-- considérese un pipeline con $p=0.8$ de fracción
+paralelizable, un valor plausible para una carga dominada por
+combinaciones (\emph{joins}) y agregaciones sobre particiones
+independientes. El límite asintótico sería
+$S(\infty) = 1/(1-0.8) = 5$, y ya con $N=8$ núcleos se alcanzaría
+$S(8) = 1/(0.2 + 0.8/8) = 3.33$, es decir, el $66.7\,\%$ del \emph{speedup}
+máximo teórico. La pregunta obligatoria de la defensa (Anexo B, ítem 3 de
+la guía de la entrega) --con cuántos núcleos se alcanza el 90\,\% del
+\emph{speedup} máximo-- se resuelve despejando $N$ de
+$S(N) = 0.9 \cdot S(\infty)$ en la Ecuación~\eqref{eq:amdahl}, lo que para
+$p=0.8$ arroja $N \approx 36$ núcleos; valores de $p$ más altos reducen
+drásticamente ese requisito. Este cálculo se reproducirá con el $p$
+efectivamente estimado a partir de las mediciones del protocolo
+(Sección~\ref{sec:protocolo}) una vez ejecutado.
+
+Formalmente, Gustafson define el \emph{speedup escalado} $S_g(N)$ asumiendo
+que el tiempo secuencial se mantiene fijo mientras el tamaño del problema
+crece proporcionalmente a $N$:
+\begin{equation}
+S_g(N) = N - \alpha \cdot (N-1)
+\label{eq:gustafson}
+\end{equation}
+donde $\alpha$ es la fracción de tiempo que permanece secuencial en la
+ejecución paralela (no en la secuencial, a diferencia de $p$ en Amdahl). La
+diferencia conceptual entre ambas leyes es relevante para este proyecto
+porque el pipeline de reservas procesa un volumen de datos que, en
+producción, crecería con el uso real del sistema y no permanecería fijo;
+la Sección~\ref{sec:discusion} retoma esta distinción al interpretar qué
+ley es la lectura más apropiada para el dominio de SCLI.
+
+\section{Diseño del esquema distribuido}
+\label{sec:esquema}
+
+El microservicio \texttt{reservas-solicitudes-service} es propietario de
+cuatro tablas del dominio de reservas: \texttt{solicitudes\_reserva},
+\texttt{reservas}, \texttt{historial\_solicitudes} y
+\texttt{bloqueos\_agenda}, más una quinta tabla de configuración
+(\texttt{configuraciones\_reserva}) que fija parámetros globales de
+anticipación mínima y máxima, duración permitida y política de fines de
+semana. El esquema vigente, heredado de la entrega anterior, se crea
+mediante migraciones Flyway y conserva claves primarias \texttt{UUID}
+simples; los identificadores de usuarios, docentes, laboratorios, materias
+y periodos lectivos son referencias externas por UUID, sin claves foráneas
+entre los cuatro microservicios del sistema, preservando así el patrón de
+base de datos por microservicio establecido en E2.
+
+\subsection{Modelo de datos y patrón de acceso}
+\label{sec:modelodatos}
+
+Las relaciones persistentes dentro del límite del microservicio son: una
+solicitud puede producir una reserva y cada reserva pertenece a una única
+solicitud (relación 1:1 diferida en el tiempo, ya que una solicitud puede
+existir sin haber sido aprobada todavía); una solicitud tiene múltiples
+eventos de historial (relación 1:N con \texttt{historial\_solicitudes}); y
+un bloqueo de agenda no tiene clave foránea hacia las otras tablas, pero
+participa en las mismas consultas operativas mediante laboratorio, fecha y
+franja horaria. El Listado~\ref{lst:schema} reproduce el fragmento
+central del esquema ejecutable aplicado en el clúster, correspondiente a la
+tabla \texttt{solicitudes\_reserva}.
+
+\begin{lstlisting}[language=sql,caption={Fragmento de \texttt{db/schema.sql}: definición de \texttt{solicitudes\_reserva}.},label={lst:schema}]
+CREATE TABLE solicitudes_reserva (
+  id UUID DEFAULT gen_random_uuid(),
+  solicitante_id UUID NOT NULL,
+  docente_id UUID NOT NULL,
+  laboratorio_id UUID NOT NULL,
+  materia_id UUID NOT NULL,
+  periodo_lectivo_id UUID NOT NULL,
+  fecha_reserva DATE NOT NULL,
+  hora_inicio TIME NOT NULL,
+  hora_fin TIME NOT NULL,
+  numero_participantes INTEGER NOT NULL,
+  estado VARCHAR(30) NOT NULL
+    DEFAULT 'PENDIENTE',
+  creada_en TIMESTAMPTZ NOT NULL
+    DEFAULT CURRENT_TIMESTAMP,
+  version BIGINT NOT NULL DEFAULT 0,
+  CONSTRAINT pk_solicitudes_reserva
+    PRIMARY KEY (id),
+  CONSTRAINT ck_solicitudes_reserva_horas
+    CHECK (hora_fin > hora_inicio),
+  CONSTRAINT ck_solicitudes_reserva_estado
+    CHECK (estado IN ('PENDIENTE',
+      'EN_REVISION','APROBADA',
+      'RECHAZADA','CANCELADA','EXPIRADA'))
+);
+\end{lstlisting}
+
+Nótese la columna \texttt{version}, empleada para control de concurrencia
+optimista a nivel de aplicación, y la restricción \texttt{CHECK} sobre el
+estado, que documenta en el propio esquema el ciclo de vida de una
+solicitud sin depender exclusivamente de la capa de aplicación para
+mantener la integridad de ese invariante. Las consultas de disponibilidad,
+calendario y detección de conflictos acotan los datos por
+\texttt{laboratorio\_id} y por rangos temporales; el historial se consulta
+por \texttt{solicitud\_id} y se ordena por \texttt{fecha\_hora}. Este
+patrón de acceso es el que motiva directamente la estrategia de
+fragmentación descrita a continuación.
+
+\subsection{Estrategia de fragmentación (ADR-003)}
+
+
+Las consultas operativas dominantes del dominio --disponibilidad de
+laboratorios, calendario y detección de conflictos-- acotan los datos por
+\texttt{laboratorio\_id} y por rangos de fecha. Se evaluaron cinco
+alternativas de fragmentación antes de decidir:
+
+\begin{itemize}[leftmargin=*,itemsep=1pt]
+  \item \textbf{Distribución automática por UUID}: sin estrategia explícita
+  de fragmentación temporal ni base para administrar retención por periodo.
+  \item \textbf{Hash del identificador}: distribuye uniformemente las
+  escrituras pero no mejora la poda de consultas por fecha y rompe la
+  alineación natural entre agenda, solicitudes y reservas de un mismo
+  periodo.
+  \item \textbf{Por laboratorio}: se aproxima a las consultas de
+  disponibilidad, pero la actividad de los laboratorios no es uniforme y
+  concentraría carga en los más usados.
+  \item \textbf{Por estado}: los estados cambian durante el ciclo de vida
+  de una solicitud, lo que movería filas entre particiones sin beneficiar
+  las consultas históricas.
+  \item \textbf{Por rangos temporales} (adoptada): coincide con los
+  filtros existentes y permite administrar periodos cerrados.
+\end{itemize}
+
+Se adoptó \texttt{PARTITION BY RANGE} sobre índices temporales, con
+intervalos trimestrales de calendario semiabiertos (inicio incluido, fin
+excluido), sin sustituir las claves primarias UUID existentes. La
+Tabla~\ref{tab:fragmentacion} resume la columna de partición asignada a
+cada tabla.
+
+\begin{table}[t]
+\centering
+\caption{Claves de partición temporal por tabla (ADR-003).}
+\label{tab:fragmentacion}
+\small
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Tabla} & \textbf{Columna temporal} \\
+\midrule
+\texttt{solicitudes\_reserva} & \texttt{fecha\_reserva} \\
+\texttt{reservas} & \texttt{fecha\_reserva} \\
+\texttt{historial\_solicitudes} & \texttt{fecha\_hora} \\
+\texttt{bloqueos\_agenda} & \texttt{fecha} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+La fecha de creación (\texttt{solicitudes\_reserva.}\allowbreak\texttt{creada\_en}) se descartó
+como clave de fragmentación porque las operaciones críticas consultan la
+fecha \emph{reservada}, no la fecha de creación; se conserva como dato de
+auditoría. Los nombres lógicos y los límites trimestrales de
+\texttt{solicitudes\_reserva}, \texttt{reservas} y \texttt{bloqueos\_agenda}
+se alinean para que los datos de una misma fecha de agenda pertenezcan al
+mismo intervalo lógico. \texttt{historial\_solicitudes} conserva su propia
+partición por \texttt{fecha\_hora}, sin duplicar \texttt{fecha\_reserva}
+solo para forzar colocalización, evitando así una redundancia que
+introduciría una nueva regla de consistencia a mantener.
+
+\subsubsection{Particiones de cobertura y diseño de índices}
+
+El ADR-003 exige que cada ciclo de implementación mantenga, además de las
+particiones trimestrales operativas, una partición anterior de cobertura y
+una partición futura de cobertura, de modo que fechas fuera del calendario
+previsto no generen errores de inserción en lugar de degradar
+silenciosamente el rendimiento de poda de rangos. Los índices temporales
+deberán anteponer la columna de partición y continuar con las columnas
+efectivamente usadas por las consultas: fecha, laboratorio y horario para
+solicitudes, reservas y bloqueos; fecha del evento y solicitud para el
+historial. El ADR-003 establece explícitamente que, antes de aplicar esta
+estrategia, el equipo debe verificar con \texttt{EXPLAIN} que las consultas
+de disponibilidad y calendario efectivamente usen los índices particionados
+y que exista poda de particiones (\emph{partition pruning}); esa
+verificación --al depender del DDL todavía no materializado-- es también
+trabajo pendiente hacia la E4.
+
+\subsubsection{Dos niveles de colocalización}
+
+El ADR-003 distingue explícitamente dos niveles de colocalización que es
+importante no confundir. El primer nivel es la \emph{alineación lógica}:
+que los nombres y límites trimestrales de las particiones de
+\texttt{solicitudes\_reserva}, \texttt{reservas} y \texttt{bloqueos\_agenda}
+coincidan, de modo que una consulta de agenda para una fecha determinada
+recaiga conceptualmente en el mismo intervalo en las tres tablas. El
+segundo nivel es la \emph{colocalización física}: que CockroachDB
+efectivamente almacene esos rangos en los mismos nodos o en nodos cercanos,
+lo cual requiere políticas de localidad o de zona adicionales que el
+ADR-003 explícitamente deja fuera de su alcance y remite a una decisión
+posterior sustentada en la topología definitiva del clúster. Confundir
+ambos niveles sería un error conceptual grave: la alineación lógica no
+garantiza por sí sola ninguna mejora de latencia si las particiones
+correspondientes terminan distribuidas en nodos distintos por el
+asignador automático de CockroachDB.
+
+Es importante precisar el alcance real de esta decisión a la fecha de este
+informe: el ADR-003 fue redactado y aprobado internamente por el equipo,
+pero el \texttt{DDL} correspondiente (las cláusulas
+\texttt{PARTITION BY RANGE} concretas, con sus límites de calendario y
+particiones de cobertura) todavía no se materializó en
+\texttt{db/schema.sql}. El esquema efectivamente aplicado en el clúster
+(Sección~\ref{sec:cluster}) crea las cinco tablas del dominio sin
+particiones activas; la fragmentación queda documentada como decisión
+arquitectónica lista para su siguiente subpaso de implementación, tal como
+exige el principio de complementariedad E3\,$\rightarrow$\,E4 enunciado en
+la introducción.
+
+\subsection{Estrategia de replicación (ADR-004)}
+
+El ADR-004 completa la decisión de colocación física dejada abierta por el
+ADR-003, fijando la política de réplicas para el clúster CockroachDB E3
+mediante el comando de la Listado~\ref{lst:replicas}.
+
+\begin{lstlisting}[language=sql,caption={Política de replicación del clúster E3 (ADR-004).},label={lst:replicas}]
+ALTER RANGE default CONFIGURE ZONE
+  USING num_replicas = 3;
+\end{lstlisting}
+
+Se descartaron una y dos réplicas por no ofrecer mayoría capaz de
+sobrevivir a la caída de un nodo (con dos réplicas, la mayoría necesaria es
+de dos, de modo que la pérdida de cualquiera de las dos impide confirmar
+escrituras), y se descartaron cinco o más réplicas por exceder la topología
+de tres nodos disponible en esta entrega sin aportar diversidad efectiva de
+colocación. Con $f=3$, el quórum de escritura es $2$, que es exactamente el
+comportamiento verificado en la Sección~\ref{sec:tolerancia}.
+
+\subsubsection{Alcance de la política y su interpretación correcta}
+
+El ADR-004 advierte explícitamente contra una interpretación incorrecta de
+su propio alcance: el comando \texttt{ALTER RANGE default CONFIGURE ZONE}
+configura una política a nivel de \emph{clúster}, no una propiedad de una
+tabla o de una aplicación en particular. Para que la política de tres
+réplicas aplique efectivamente solo a los datos de
+\texttt{reservas-solicitudes-service} --y no arrastre, sin quererlo, otros
+datos que eventualmente se aloje en el mismo clúster-- el ADR-004 establece
+como condición que el clúster E3 permanezca dedicado exclusivamente a ese
+microservicio mientras el alcance actual esté vigente. Si en una evolución
+futura el clúster llegara a alojar datos de otros dominios, el ADR exige
+reevaluar el efecto global de la política \texttt{RANGE default} o
+sustituirla por políticas de zona con un alcance más específico por tabla
+o por base de datos. Esta salvedad es relevante para la Entrega 4: cualquier
+decisión de escalar el clúster a otros microservicios deberá revisar
+primero esta condición.
+
+\subsubsection{Relación entre replicación y consenso}
+
+El ADR-004 explica la mecánica interna que conecta la política de
+replicación con el algoritmo de consenso descrito en la
+Sección~\ref{sec:teoria}: cada rango de CockroachDB constituye un grupo de
+replicación independiente cuyas réplicas participan en una instancia de
+Raft. Una de las réplicas mantiene el liderazgo del grupo y coordina las
+propuestas de cambio; el líder envía \emph{heartbeats} periódicos a los
+seguidores para mantener sus registros replicados, y si esos
+\emph{heartbeats} dejan de llegar, los seguidores se convierten en
+candidatos tras un tiempo de espera aleatorio y celebran una nueva
+elección. Con tres réplicas, el grupo tolera la pérdida de una sin dejar de
+poder elegir líder y confirmar escrituras; con dos réplicas activas
+supervivientes tras la caída de la tercera, el grupo sigue teniendo mayoría
+($2$ de $3$) y continúa operando con normalidad, que es exactamente el
+comportamiento capturado en la Figura~\ref{fig:1nodo}.
+
+El clúster E3
+se reserva, en el alcance vigente, exclusivamente para los datos de
+\texttt{reservas-solicitudes-service}; los servicios de autenticación,
+usuarios y académico-laboratorios continúan sobre instancias CockroachDB de
+un solo nodo cada uno, sin cambios respecto de la entrega anterior.
+
+\section{Clúster CockroachDB y su verificación}
+\label{sec:cluster}
+
+\subsection{Arquitectura general del sistema}
+
+El sistema SCLI completo, tras esta entrega, se compone de cuatro
+microservicios Spring Boot (\texttt{auth-service},
+\texttt{usuarios-service}, \texttt{academico-laboratorios-service} y
+\texttt{reservas-solicitudes-service}), un \texttt{api-gateway} que
+enruta las peticiones del frontend, y un frontend en React
+(\texttt{scli-front}). Los tres primeros microservicios conservan cada
+uno su propia instancia CockroachDB de un solo nodo, sin cambios en esta
+entrega; el cuarto es el único que consume el clúster distribuido de tres
+nodos que se describe en esta sección. Esta decisión de alcance --no migrar
+los cuatro microservicios al clúster distribuido en el mismo ciclo-- se
+tomó deliberadamente para acotar el riesgo de la entrega a un único punto
+de integración crítico, dejando la migración de los demás servicios como
+trabajo candidato para ciclos posteriores si el patrón de acceso de esos
+dominios llegara a justificarlo.
+
+\begin{figure*}[t]
+\centering
+\begin{tikzpicture}[
+    svc/.style={draw=black!60,fill=black!5,rounded corners,minimum width=3.1cm,minimum height=0.9cm,align=center,font=\scriptsize},
+    dbmono/.style={draw=black!40,fill=black!2,rounded corners,minimum width=3.0cm,minimum height=0.8cm,align=center,font=\tiny},
+    dbe3/.style={draw=black!70,fill=black!10,circle,minimum size=0.9cm,align=center,font=\tiny},
+  ]
+  \node[svc] (fe) at (0,4.6) {scli-front};
+  \node[svc] (gw) at (0,3.5) {api-gateway};
+  \node[svc] (auth) at (-6.2,2.2) {auth-service};
+  \node[svc] (usr)  at (-2.1,2.2) {usuarios-service};
+  \node[svc] (aca)  at (2.1,2.2)  {academico-laboratorios-service};
+  \node[svc] (res)  at (6.2,2.2)  {reservas-solicitudes-service};
+  \node[dbmono] (dbauth) at (-6.2,0.7) {CockroachDB\\auth\_db (1 nodo)};
+  \node[dbmono] (dbusr)  at (-2.1,0.7) {CockroachDB\\usuarios\_db (1 nodo)};
+  \node[dbmono] (dbaca)  at (2.1,0.7)  {CockroachDB\\academico\_db (1 nodo)};
+  \node[draw=black!70,thick,rounded corners,fill=black!3,minimum width=3.6cm,minimum height=1.3cm] (e3box) at (6.2,0.55) {};
+  \node[dbe3,draw] (n1) at (5.4,0.55) {e3-1};
+  \node[dbe3,draw] (n2) at (6.2,0.55) {e3-2};
+  \node[dbe3,draw] (n3) at (7.0,0.55) {e3-3};
+  \node[font=\tiny,anchor=north] at (6.2,1.3) {Clúster E3: 3 nodos, $f=3$};
+  \draw[-{Latex}] (fe) -- (gw);
+  \draw[-{Latex}] (gw) -- (auth);
+  \draw[-{Latex}] (gw) -- (usr);
+  \draw[-{Latex}] (gw) -- (aca);
+  \draw[-{Latex}] (gw) -- (res);
+  \draw[-{Latex},black!50] (auth) -- (dbauth);
+  \draw[-{Latex},black!50] (usr) -- (dbusr);
+  \draw[-{Latex},black!50] (aca) -- (dbaca);
+  \draw[-{Latex},thick] (res) -- (e3box.north);
+\end{tikzpicture}
+\caption{Arquitectura de despliegue del sistema SCLI tras la Entrega 3.
+Tres microservicios conservan su base de datos mono-nodo heredada de E2; el
+microservicio de reservas y solicitudes es el único que consume el clúster
+CockroachDB distribuido de tres nodos añadido en esta entrega.}
+\label{fig:arquitectura}
+\end{figure*}
+
+La Figura~\ref{fig:arquitectura} resume esta topología. Es una
+representación de despliegue equivalente, a nivel C4, al diagrama de nivel
+3 (componentes y contenedores) que el equipo mantiene en
+{\small\texttt{docs/evidencias/diagramas\_arquitectura/}}\allowbreak
+{\small\texttt{arquitecturaScli.drawio}};
+se reproduce aquí en \TeX\ nativo para que el documento compile sin
+dependencias externas de imágenes vectoriales.
+
+
+\subsubsection{Vistas C4}
+
+Las Figuras~\ref{fig:c4-nivel1}, \ref{fig:c4-nivel2} y
+\ref{fig:c4-nivel3} presentan la arquitectura del sistema en los tres
+primeros niveles del modelo C4: contexto, contenedores y componentes
+internos del microservicio \texttt{academico-laboratorios-service}.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth]{../diagrams/c4-nivel1.png}
+\caption{C4 Nivel 1 -- Contexto del sistema SCLI}
+\label{fig:c4-nivel1}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth]{../diagrams/c4-nivel2.png}
+\caption{C4 Nivel 2 -- Contenedores del sistema}
+\label{fig:c4-nivel2}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth]{../diagrams/c4-nivel3.png}
+\caption{C4 Nivel 3 -- Componentes de academico-laboratorios-service}
+\label{fig:c4-nivel3}
+\end{figure}
+
+
+
+
+\subsection{Despliegue con Docker Compose}
+
+El clúster E3 se añadió al \texttt{docker-compose.yml} heredado de la
+entrega anterior como tres servicios independientes
+(\texttt{crdb-e3-1}, \texttt{crdb-e3-2}, \texttt{crdb-e3-3}), cada uno con
+volumen de datos propio y descubrimiento mutuo mediante la bandera
+\texttt{--join}, más un cuarto servicio de inicialización
+(\texttt{crdb-e3-init}) responsable de ejecutar \texttt{cockroach init} y
+aplicar el esquema una única vez. Los tres nodos comparten la red interna
+\texttt{scli-network} del proyecto. El Listado~\ref{lst:compose} muestra
+la definición de uno de los tres nodos y del servicio de inicialización,
+tal como está versionado en el repositorio.
+
+\begin{lstlisting}[caption={Definición de un nodo del clúster E3 y de su servicio de inicialización (\texttt{docker-compose.yml}).},label={lst:compose}]
+crdb-e3-1:
+  image: cockroachdb/cockroach:v26.2.0
+  command:
+    - start
+    - --certs-dir=/cockroach/cockroach-certs
+    - --join=crdb-e3-1,crdb-e3-2,
+      crdb-e3-3
+  ports:
+    - "${CRDB_E3_1_SQL_PORT}:26257"
+    - "${CRDB_E3_1_HTTP_PORT}:8080"
+  volumes:
+    - crdb-e3-1-data:/cockroach/
+      cockroach-data
+  networks: [scli-network]
+
+crdb-e3-init:
+  depends_on: [crdb-e3-1, crdb-e3-2,
+    crdb-e3-3]
+  entrypoint: /bin/sh
+  # cockroach init + carga condicional
+  # de db/schema.sql si no existe
+  volumes:
+    - ./db/schema.sql:/schema.sql:ro
+  networks: [scli-network]
+\end{lstlisting}
+
+El servicio \texttt{crdb-e3-init} verifica, antes de aplicar el esquema, si
+la tabla \texttt{configuraciones\_reserva} ya existe en
+\texttt{reservas\_db}; en ese caso omite la carga para que reinicios
+sucesivos del entorno no fallen por intentar recrear un esquema ya
+presente. Esta guarda de idempotencia es la misma razón por la que, como se
+documentó en la Sección~\ref{sec:esquema}, la fragmentación temporal del
+ADR-003 no puede materializarse simplemente añadiendo cláusulas
+\texttt{PARTITION BY RANGE} al final del archivo: requiere una migración
+explícita que distinga el esquema ya aplicado del esquema fragmentado, lo
+que se documenta como trabajo pendiente hacia la E4. La
+Figura~\ref{fig:docker} muestra los tres contenedores del clúster E3
+activos junto al resto de servicios del sistema.
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{../evidencias/cluster_3_nodos_docker.png}
+  \caption{Los tres nodos \texttt{scli-crdb-e3-*} activos en Docker, junto al
+  resto de servicios del sistema SCLI.}
+  \label{fig:docker}
+\end{figure}
+
+\subsection{Integración con aislamiento serializable}
+\label{sec:serializable}
+
+El Módulo A de la guía de la entrega exige explicitar transacciones con
+nivel \texttt{SERIALIZABLE} al refactorizar el microservicio principal.
+En \texttt{reservas-solicitudes-service}, las operaciones que modifican el
+estado de una solicitud o de una reserva --aprobar, rechazar, cancelar,
+crear una reserva a partir de una solicitud aprobada-- están anotadas
+explícitamente con \texttt{@Transactional(isolation =
+  Isolation.SERIALIZABLE)} en la capa de servicio, como muestra el
+Listado~\ref{lst:isolation}.
+
+\begin{lstlisting}[language=Java,caption={Transacción serializable en la aprobación de una solicitud (\texttt{SolicitudReservaServiceImpl.java}).},label={lst:isolation}]
+@Override
+@Transactional(
+    isolation = Isolation.SERIALIZABLE)
+public ReservaResponse aprobar(
+    UUID id,
+    AprobarSolicitudRequest request,
+    String claveIdempotencia,
+    UUID usuarioAutenticadoId) {
+  SolicitudReserva solicitud =
+    solicitudReservaRepository
+      .findByIdForUpdate(id)
+      .orElseThrow(() ->
+        new IllegalArgumentException(
+          "No existe la solicitud"));
+  // ... validación de conflicto de
+  // horario y transición de estado
+}
+\end{lstlisting}
+
+Este nivel de aislamiento es intencional y directamente relacionado con el
+teorema CAP discutido en la Sección~\ref{sec:teoria}: CockroachDB
+implementa \texttt{SERIALIZABLE} como su único nivel de aislamiento
+transaccional --a diferencia de PostgreSQL, que ofrece varios niveles y usa
+\texttt{READ COMMITTED} por defecto-- precisamente para sostener la
+consistencia fuerte que su posicionamiento como sistema CP promete. La
+combinación de \texttt{findByIdForUpdate} (que adquiere un bloqueo de fila)
+con aislamiento serializable es la salvaguarda de aplicación contra dos
+aprobaciones concurrentes de la misma solicitud, un escenario de
+concurrencia real del dominio de reservas de laboratorios que no se limita
+a una preocupación teórica: dos docentes podrían intentar aprobar la misma
+solicitud casi simultáneamente desde sesiones distintas del sistema.
+
+\subsection{Reproducibilidad y trazabilidad}
+
+Todo el trabajo de esta entrega se desarrolló en la rama
+\texttt{feature/entrega-3}, integrada a \texttt{main} mediante solicitudes
+de extracción (\emph{pull requests}) individuales por integrante --con
+ramas propias \texttt{feature/entrega-3-farinango},
+\texttt{feature/entrega-3-villamarin}, \texttt{feature/entrega-3-urbina} y
+\texttt{feature/entrega-3-vinueza}-- y revisión cruzada antes de cada
+fusión, siguiendo el mismo flujo de trabajo establecido en la entrega
+anterior. El archivo \texttt{.env.example} del repositorio documenta las
+variables de entorno necesarias para levantar el sistema completo,
+incluidas las credenciales del clúster E3, y el comando
+\texttt{docker compose up -d} desde la raíz del repositorio construye y
+levanta los cuatro microservicios, el \texttt{api-gateway}, las tres
+instancias CockroachDB de un solo nodo y el clúster de tres nodos en un
+único paso, sin configuración manual adicional. La carga de datos de
+referencia (Sección~\ref{sec:carga}) es determinista: el generador de las
+100\,000 filas de \texttt{solicitudes\_reserva} produce siempre el mismo
+conjunto de datos a partir de una semilla fija, lo que permite repetir la
+verificación de tolerancia a fallos sobre exactamente el mismo volumen de
+datos en ejecuciones futuras.
+
+\subsection{Verificación de estado y del esquema aplicado}
+\label{sec:verificacion}
+
+El comando \texttt{cockroach node status --certs-dir=/cockroach/cockroach-certs}, ejecutado sobre el
+nodo \texttt{crdb-e3-1}, confirma que los tres nodos se reconocen
+mutuamente y reportan \texttt{is\_live=true} e \texttt{is\_available=true}
+(Figura~\ref{fig:status}). El esquema aplicado en la base de datos
+\texttt{reservas\_db} contiene las cinco tablas del dominio de reservas más
+la tabla de control de migraciones de Flyway
+(Figura~\ref{fig:schema}), confirmando que la inicialización del clúster
+se completó correctamente.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{../evidencias/cluster_3_nodos_estado.png}
+  \caption{Estado de los tres nodos del clúster E3 (\texttt{cockroach node
+  status}): los tres reportan \texttt{is\_live=true}.}
+  \label{fig:status}
+\end{figure}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{../evidencias/schema_tablas_cluster.png}
+  \caption{Tablas del esquema \texttt{reservas\_db} aplicado en el clúster
+  E3.}
+  \label{fig:schema}
+\end{figure}
+
+La consulta \texttt{SHOW ZONE CONFIGURATION FOR RANGE default} confirma que
+la política de replicación del ADR-004 quedó efectivamente configurada con
+\texttt{num\_replicas = 3} (Figura~\ref{fig:replicas}).
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{../evidencias/replicacion_num_replicas_3.png}
+  \caption{Configuración de zona del rango \texttt{default}, con
+  \texttt{num\_replicas = 3} aplicado.}
+  \label{fig:replicas}
+\end{figure}
+
+\subsection{Carga de datos de referencia}
+\label{sec:carga}
+
+Se cargó la tabla \texttt{solicitudes\_reserva} con 100\,000 filas mediante
+un generador reproducible, en lotes de 10\,000 filas. La
+Figura~\ref{fig:carga100k} muestra la verificación del conteo total
+mediante \texttt{SELECT COUNT(*)} tras completar la carga.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{../evidencias/carga_100000_registros.png}
+  \caption{Verificación del conteo total (100\,000 filas) en
+  \texttt{solicitudes\_reserva} tras la carga por lotes.}
+  \label{fig:carga100k}
+\end{figure}
+
+\subsubsection{Metodología de generación}
+
+El repositorio versiona diez archivos \texttt{db/seeds\_01.sql} a
+\texttt{db/seeds\_10.sql} de 10\,000 sentencias \texttt{INSERT} cada uno,
+más un \texttt{db/seeds.sql} de referencia con los valores de configuración
+mínimos necesarios para que las restricciones \texttt{CHECK} del esquema
+--como la verificación \texttt{hora\_fin > hora\_inicio}, mostrada en el
+Listado~\ref{lst:schema}-- se satisfagan en cada fila generada. Dividir la
+carga en diez archivos de 10\,000 filas, en lugar de un único archivo de
+100\,000, respondió a una razón práctica: permite verificar el conteo
+parcial tras cada lote (como se documentó en la bitácora del equipo con la
+captura de la carga del primer lote) antes de continuar con el siguiente,
+detectando así cualquier violación de restricción temprano en el proceso en
+lugar de al final de una transacción de gran tamaño. Los identificadores
+UUID de solicitante, docente, laboratorio, materia y periodo lectivo
+referenciados en las filas generadas son valores fijos y deterministas, no
+extraídos de los otros tres microservicios del sistema; esto es coherente
+con el diseño sin claves foráneas entre bases de datos descrito en la
+Sección~\ref{sec:esquema}, pero implica que el conjunto de datos de
+referencia es sintético y no representa necesariamente la distribución real
+de solicitudes que produciría el sistema en operación, limitación que se
+retoma en la Sección~\ref{sec:discusion}.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{../evidencias/seeds_sql_creado.png}
+  \caption{Fragmento de \texttt{db/seeds\_05.sql}: sentencia
+  \texttt{INSERT} de configuración de reservas con los parámetros mínimos y
+  máximos exigidos por las restricciones del esquema.}
+  \label{fig:seeds}
+\end{figure}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{../evidencias/carga_lote_01_10000.png}
+  \caption{Verificación del conteo parcial (10\,000 filas) tras cargar el
+  primer lote de \texttt{db/seeds\_01.sql}.}
+  \label{fig:lote1}
+\end{figure}
+
+\subsection{Verificación experimental de tolerancia a fallos}
+\label{sec:tolerancia}
+
+Siguiendo el protocolo del Módulo D de la guía de la entrega, se ejecutó la
+siguiente secuencia sobre el clúster con las 100\,000 filas ya cargadas:
+(i)~consulta \texttt{SELECT COUNT(*)} con los tres nodos operativos;
+(ii)~detención abrupta del nodo \texttt{scli-crdb-e3-2} con
+\texttt{docker stop}; (iii)~reconsulta con un nodo caído;
+(iv)~reincorporación del nodo detenido y reconsulta tras la reconvergencia;
+(v)~repetición del experimento deteniendo dos de los tres nodos. La
+Tabla~\ref{tab:latencia} resume los resultados de latencia observados.
+
+\begin{table}[t]
+  \centering
+  \caption{Latencia de \texttt{SELECT COUNT(*)} por escenario de disponibilidad del clúster.}
+  \label{tab:latencia}
+  \small
+  \begin{tabular}{@{}p{3.6cm}p{2.4cm}r@{}}
+    \toprule
+    \textbf{Escenario} & \textbf{Resultado} & \textbf{Latencia} \\
+    \midrule
+    Clúster operativo (3 nodos) & Consulta exitosa & 2604.54 ms \\
+    Un nodo fuera de servicio & Consulta exitosa & 2681.40 ms \\
+    Clúster recuperado (3 nodos) & Consulta exitosa & 2906.34 ms \\
+    Dos nodos fuera de servicio & Sin quórum & No aplica \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Las Figuras~\ref{fig:1nodo} y~\ref{fig:2nodos} muestran la evidencia de
+consola de ambos escenarios de fallo. Con un nodo caído, \texttt{cockroach
+node status} reporta al nodo detenido con \texttt{is\_live=false} mientras
+los otros dos permanecen disponibles, y la consulta se sirve con éxito
+porque el grupo Raft de cada rango conserva su mayoría de dos réplicas de
+tres. Con dos nodos caídos, ningún rango conserva mayoría y la consulta no
+puede completarse hasta restablecer el quórum, consistente con la
+Sección~\ref{sec:teoria}.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{../evidencias/tolerancia_fallo_un_nodo.png}
+  \caption{Un nodo detenido (\texttt{crdb-e3-2}): el clúster conserva quórum
+  y la consulta se ejecuta con éxito.}
+  \label{fig:1nodo}
+\end{figure}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{../evidencias/tolerancia_fallo_dos_nodos.png}
+  \caption{Dos nodos detenidos: los tres nodos reportan
+  \texttt{is\_live=false} y el clúster pierde disponibilidad de escritura.}
+  \label{fig:2nodos}
+\end{figure}
+
+Tras reiniciar el nodo detenido, el clúster recuperó su estado de los tres
+nodos operativos (Figura~\ref{fig:recuperacion}), confirmando que la
+reconvergencia de Raft no requirió intervención manual adicional más allá
+de reiniciar el proceso del nodo.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{../evidencias/recuperacion_cluster_3_nodos.png}
+  \caption{Recuperación completa del clúster tras reiniciar el nodo
+  detenido.}
+  \label{fig:recuperacion}
+\end{figure}
+
+\subsubsection{Evidencia de las mediciones de latencia}
+
+Las Figuras~\ref{fig:latantes}--\ref{fig:latdespues} muestran las capturas
+de consola de PowerShell (\texttt{Measure-Command}) que respaldan cada una
+de las tres latencias numéricas de la Tabla~\ref{tab:latencia}, medidas
+con el mismo comando \texttt{SELECT COUNT(*)} sobre
+\texttt{solicitudes\_reserva} en los tres escenarios de disponibilidad del
+clúster.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{../evidencias/latencia_antes_fallo.png}
+  \caption{Latencia con los tres nodos operativos: 2604.54\,ms.}
+  \label{fig:latantes}
+\end{figure}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{../evidencias/latencia_un_nodo_caido.png}
+  \caption{Latencia con un nodo caído: 2681.40\,ms.}
+  \label{fig:latcaido}
+\end{figure}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{../evidencias/latencia_despues_recuperacion.png}
+  \caption{Latencia tras la recuperación completa: 2906.34\,ms.}
+  \label{fig:latdespues}
+\end{figure}
+
+\subsubsection{Nota metodológica sobre la latencia reportada}
+
+Las cuatro latencias de la Tabla~\ref{tab:latencia} corresponden a una
+medición puntual por escenario ($n=1$), no a un promedio de repeticiones.
+El protocolo experimental del Módulo F (Sección~\ref{sec:protocolo}) exige
+$r=10$ repeticiones por nivel con intervalo de confianza al 95\,\%; esa
+ejecución sistemática todavía no se realizó para este escenario de
+tolerancia a fallos, y se documenta explícitamente como trabajo pendiente
+en la Sección~\ref{sec:discusion} en lugar de presentar una única
+observación como si fuera una serie estadística.
+
+\subsection{Pruebas de integración con Testcontainers}
+
+El Módulo A de la guía de la entrega exige actualizar las pruebas de
+integración para levantar el clúster con \emph{Testcontainers} en lugar de
+depender de una base de datos local. \texttt{usuarios-service} y
+\texttt{reservas-solicitudes-service} incorporan sendas pruebas de
+integración (\texttt{CockroachFlywayIntegrationTest} y
+\texttt{CockroachFlywayIntegrationTests}, respectivamente) que instancian
+un contenedor \texttt{CockroachContainer} de la biblioteca
+\texttt{testcontainers-java} en tiempo de ejecución de la prueba,
+registran su URL JDBC dinámicamente mediante
+\texttt{@DynamicPropertySource}, habilitan las migraciones de Flyway sobre
+ese contenedor efímero, y verifican que el esquema se aplique
+correctamente contando las filas de una tabla de referencia poblada por
+las migraciones (once perfiles, en el caso de
+\texttt{usuarios-service}). Esta estrategia --contenedor CockroachDB
+efímero por ejecución de prueba, en lugar de una base compartida entre
+ejecuciones-- es la que garantiza que las pruebas de integración no
+dependan de un estado externo persistente y puedan ejecutarse de forma
+aislada en el flujo de integración continua heredado de la entrega
+anterior. Nótese que estas pruebas verifican la aplicación correcta del
+esquema \emph{mono-nodo} de cada microservicio; la extensión de este mismo
+patrón para levantar el clúster de tres nodos del ADR-004 dentro de una
+prueba de integración --en lugar de contra el entorno Docker Compose
+persistente usado en la Sección~\ref{sec:tolerancia}-- queda como mejora
+concreta para el ciclo de la E4.
+
+\section{Pipeline analítico paralelo}
+\label{sec:pipeline}
+
+\subsection{Arquitectura del pipeline}
+
+El pipeline de PySpark (\texttt{spark/pipeline.py}) obtiene sus fuentes
+directamente del clúster CockroachDB E3 mediante el conector JDBC de
+PostgreSQL --protocolo con el que CockroachDB es compatible-- y aplica
+exactamente cinco transformaciones sobre el dominio de reservas, en el
+mismo orden en su línea base equivalente escrita en pandas
+(\texttt{spark/baseline.py}). El Listado~\ref{lst:pipeline} muestra la
+composición de las transformaciones en la versión Spark.
+
+\begin{lstlisting}[language=Python,caption={Composición de las cinco transformaciones del pipeline (\texttt{spark/pipeline.py}).},label={lst:pipeline}]
+def construir_pipeline(fuentes):
+    reservas_activas = filtrar_reservas_activas(
+        fuentes["reservas"])
+    datos = unir_solicitudes_con_reservas(
+        fuentes["solicitudes_reserva"],
+        reservas_activas)
+    datos = agregar_dimensiones_temporales(datos)
+    datos = agregar_participantes_por_periodo(
+        datos)
+    return categorizar_numero_participantes(
+        datos)
+\end{lstlisting}
+
+Las cinco transformaciones, en orden de aplicación, son:
+
+\begin{enumerate}[leftmargin=*,itemsep=1pt]
+  \item \textbf{Filtrado}: conserva únicamente las reservas en estado
+  \texttt{PROGRAMADA} o \texttt{EN\_CURSO}, descartando canceladas,
+  rechazadas o expiradas.
+  \item \textbf{Combinación (\emph{join})}: relaciona cada reserva activa
+  con los datos de su solicitud de origen mediante una unión interna sobre
+  \texttt{solicitud\_id}, seleccionando y renombrando las columnas
+  relevantes de ambas tablas.
+  \item \textbf{Transformación de tipos temporales}: normaliza
+  \texttt{fecha\_reserva} a tipo fecha y deriva año, trimestre y primer día
+  del mes como columnas de calendario.
+  \item \textbf{Agregación con ventana}: calcula, mediante una función de
+  ventana particionada por laboratorio, año y trimestre, la suma de
+  participantes por periodo (\texttt{participantes\_laboratorio\_trimestre}).
+  \item \textbf{Transformación de aprendizaje automático}: aplica un
+  \texttt{Bucketizer} de \texttt{pyspark.ml.feature} para discretizar el
+  número de participantes de cada reserva en cuatro intervalos numéricos
+  ($<10$, $[10,20)$, $[20,30)$, $\geq 30$).
+\end{enumerate}
+
+La línea base en pandas replica exactamente la misma secuencia lógica: la
+combinación se implementa con \texttt{DataFrame.merge}, la agregación de
+ventana con \texttt{groupby(...).transform('sum')} y la discretización con
+\texttt{pandas.cut} usando los mismos límites de intervalo que el
+\texttt{Bucketizer} de Spark, de modo que ambos tratamientos son
+funcionalmente equivalentes y comparables bajo el mismo conjunto de datos.
+Ambos scripts exportan su resultado en formato Parquet. El
+Listado~\ref{lst:baseline} muestra la función equivalente de agregación por
+ventana en la línea base, que ilustra la correspondencia deliberada entre
+ambas implementaciones.
+
+\begin{lstlisting}[language=Python,caption={Agregación por ventana equivalente en la línea base pandas (\texttt{spark/baseline.py}).},label={lst:baseline}]
+def agregar_participantes_por_periodo(
+    datos):
+    grupos = ["laboratorio_id",
+        "anio_reserva",
+        "trimestre_reserva"]
+    resultado = datos.copy()
+    resultado[
+      "participantes_laboratorio_"
+      "trimestre"] = (
+        resultado
+        .groupby(grupos, dropna=False)
+        ["numero_participantes"]
+        .transform("sum")
+    )
+    return resultado
+\end{lstlisting}
+
+\subsection{Configuración de lectura distribuida}
+
+La lectura JDBC del pipeline Spark se parametriza para leer en paralelo por
+particiones de la columna \texttt{id}, evitando que la extracción completa
+del clúster se sirva desde un único nodo lector. La configuración por
+defecto establece 16 particiones de lectura sobre el rango de
+identificadores del conjunto de datos, y la sesión de Spark se construye
+con \texttt{spark.sql.shuffle.partitions} ajustado explícitamente en lugar
+de usar el valor por defecto de 200 particiones, que resultaría
+sobredimensionado para un volumen de $10^5$ filas y produciría una sobrecarga
+de coordinación desproporcionada frente al trabajo útil por partición. La
+cadena de conexión y las credenciales se externalizan mediante las
+variables de entorno \texttt{RESERVAS\_JDBC\_URL},
+\texttt{RESERVAS\_DB\_USERNAME} y \texttt{RESERVAS\_DB\_PASSWORD}, con
+valores por defecto que apuntan a los tres puertos SQL locales del clúster
+E3 (\texttt{26261}, \texttt{26262}, \texttt{26263}), de modo que el
+controlador JDBC de PostgreSQL pueda alternar entre nodos si alguno no
+responde.
+
+\subsection{Detalle de la transformación de combinación}
+
+La segunda transformación del pipeline --la combinación entre solicitudes
+y reservas activas-- ilustra una decisión de diseño relevante para la
+correspondencia entre ambas implementaciones: en lugar de unir todas las
+columnas de ambas tablas y arrastrar sufijos ambiguos, ambas versiones
+seleccionan y renombran explícitamente solo las catorce columnas
+necesarias para las transformaciones posteriores, tal como se aprecia en el
+Listado~\ref{lst:join}.
+
+\begin{lstlisting}[language=Python,caption={Combinación explícita de columnas en \texttt{pipeline.py}.},label={lst:join}]
+def unir_solicitudes_con_reservas(
+    solicitudes, reservas):
+    s = solicitudes.alias("solicitud")
+    r = reservas.alias("reserva")
+    return s.join(
+        r,
+        F.col("solicitud.id") ==
+          F.col("reserva.solicitud_id"),
+        "inner",
+    ).select(
+        F.col("reserva.id")
+          .alias("reserva_id"),
+        F.col("reserva.laboratorio_id"),
+        F.col("reserva.fecha_reserva"),
+        F.col("solicitud.solicitante_id"),
+        F.col("solicitud.docente_id"),
+        F.col("solicitud.numero_"
+          "participantes"),
+    )
+\end{lstlisting}
+
+Esta decisión --preferir una proyección explícita de columnas sobre un
+\texttt{join} sin seleccionar-- reduce el volumen de datos que viaja entre
+etapas del plan de ejecución distribuido de Spark y elimina la ambigüedad
+de nombres de columna duplicados entre \texttt{solicitudes\_reserva} y
+\texttt{reservas} (ambas tienen columnas \texttt{id},
+\texttt{laboratorio\_id} y \texttt{fecha\_reserva}), que de otro modo
+obligaría a resolver sufijos automáticos tanto en la versión Spark como en
+la versión pandas de manera potencialmente inconsistente.
+
+\subsection{Estado de implementación}
+
+A la fecha de este informe, tanto \texttt{pipeline.py} como
+\texttt{baseline.py} están completos y son ejecutables de forma
+independiente contra el clúster E3, pero \textbf{ninguno de los dos se ha
+ejecutado todavía de manera sistemática} sobre el dataset de referencia de
+100\,000 filas cargado en la Sección~\ref{sec:cluster}. El
+Listado~\ref{lst:orquestador} resume el orquestador experimental
+(\texttt{experiments/run\_comparison.py}) construido para automatizar esa
+comparación cuando se ejecute: alterna el orden de los dos tratamientos,
+descarta una iteración de calentamiento, muestrea CPU y memoria del árbol
+de procesos con \texttt{psutil}, y registra una observación por repetición
+conforme al esquema JSON \texttt{experiments/metrics/metric-schema.json}.
+
+\begin{lstlisting}[language=Python,caption={Firma de los tratamientos configurados en \texttt{experiment-config.json}.},label={lst:orquestador}]
+"treatments": [
+  {"id": "pandas-baseline",
+   "entrypoint": "spark/baseline.py"},
+  {"id": "pyspark-pipeline",
+   "entrypoint": "spark/pipeline.py"}
+],
+"execution": {
+  "warmup_iterations": 1,
+  "measured_iterations": 5,
+  "alternate_treatment_order": true
+}
+\end{lstlisting}
+
+El archivo de resultados agregados (\texttt{experiments/metrics/results/
+comparacion.csv}) existe en el repositorio como una plantilla vacía --con
+sus 26 columnas declaradas y ninguna fila de datos-- que el orquestador
+completará únicamente cuando se ejecuten repeticiones reales. No se
+presenta en este informe ninguna cifra de \emph{speedup}, uso de CPU o
+memoria para el par pandas/PySpark, precisamente porque esa medición no
+existe todavía; sí se documenta el protocolo con el que se generará
+(Sección~\ref{sec:protocolo}).
+
+\section{Protocolo experimental y resultados}
+\label{sec:protocolo}
+
+\subsection{Diseño del protocolo}
+
+El protocolo experimental (\texttt{experiments/protocolo-experimental.md})
+sigue las recomendaciones de Jain~\cite{baltes2022sampling} y de
+Wohlin~\emph{et al.}~\cite{verdecchia2023} para la comparación de sistemas de
+cómputo, y define, sin ejecutarlos todavía, los siguientes elementos:
+
+\textbf{Hipótesis.} $H_1$: el pipeline paralelo con $N$ núcleos presenta un
+tiempo medio de ejecución menor que la línea base secuencial para
+$|D| \geq 5\times10^5$ registros; $H_0$: no hay diferencia significativa.
+
+\textbf{Variable independiente.} Motor de procesamiento
+(\texttt{pandas-baseline} o \texttt{pyspark-pipeline}).
+
+\textbf{Variables dependientes.} Tiempo total de ejecución en milisegundos,
+utilización media y máxima de CPU, memoria residente media y máxima, filas
+procesadas y rendimiento en filas por segundo.
+
+\textbf{Variables controladas.} Versión del conjunto de datos, estado de
+CockroachDB antes de cada tratamiento, equipo y recursos disponibles,
+versiones de Python, pandas, Java y Spark, configuración de Spark, número
+de repeticiones y calentamientos, y procesos externos activos durante la
+medición.
+
+\textbf{Diseño.} Preparación de una instantánea identificable del conjunto
+de datos; registro del entorno y las versiones; iteraciones de calentamiento
+excluidas de los resultados; alternancia del orden de los tratamientos para
+reducir el sesgo de caché y de orden de ejecución; $r=10$ repeticiones
+medidas por tratamiento (según el Anexo A de la guía de la entrega), de las
+cuales se descartan la primera y la última como calentamiento y
+enfriamiento; registro de una observación por ejecución conforme al esquema
+JSON, incluidas las ejecuciones fallidas.
+
+\textbf{Análisis planificado.} Media $\bar t$, desviación típica $s$ e
+intervalo de confianza al 95\,\% mediante
+$\bar t \pm 1.96 \cdot s/\sqrt{r}$; contraste con prueba $t$ pareada si se
+cumple el supuesto de normalidad, o prueba de Wilcoxon en caso contrario.
+
+\subsection{Esquema de registro de observaciones}
+
+Cada ejecución medida se registra conforme al esquema JSON
+\texttt{experiments/metrics/metric-schema.json}, que declara como campos
+obligatorios un identificador único de ejecución (\texttt{run\_id}), la
+versión del protocolo, el tratamiento (\texttt{pandas-baseline} o
+\texttt{pyspark-pipeline}), el identificador y la instantánea del conjunto
+de datos, marcas de tiempo de inicio y fin, duración en milisegundos,
+utilización de CPU media y máxima, memoria residente media y máxima, filas
+procesadas, rendimiento en filas por segundo, estado de la ejecución
+(\texttt{completed}, \texttt{failed} o \texttt{timeout}) y una descripción
+del entorno de ejecución (equipo, sistema operativo, modelo de CPU, número
+de núcleos lógicos, memoria del sistema y versiones de Python, pandas, Java
+y Spark). Esta granularidad permite, entre otras cosas, detectar si una
+diferencia de rendimiento observada se debe al motor de procesamiento o a
+un cambio de entorno entre ejecuciones, y es la misma estructura que se
+reutilizará para las métricas Prometheus incrementales previstas para la
+E4.
+
+\textbf{Condiciones de validez de una repetición.} Una repetición se
+considera válida cuando termina sin error y produce el resultado esperado;
+los dos tratamientos deben procesar la misma cantidad de filas de entrada
+para que la comparación sea funcionalmente equivalente; los datos fuente no
+deben modificarse entre tratamientos equivalentes; y una interrupción
+externa debe registrarse como ejecución fallida en lugar de eliminarse
+silenciosamente del conjunto de datos. El rendimiento se calcula siempre
+\emph{a posteriori} a partir de filas procesadas y tiempo de ejecución
+medidos; el protocolo prohíbe explícitamente registrar valores estimados o
+interpolados en el archivo de resultados, precisamente para evitar la
+situación --que este informe busca no repetir-- de presentar una cifra sin
+respaldo empírico directo.
+
+\subsection{Resultados disponibles}
+
+De los dos frentes experimentales de esta entrega, únicamente la
+verificación de tolerancia a fallos del clúster (Tabla~\ref{tab:latencia},
+Sección~\ref{sec:tolerancia}) cuenta con evidencia medida, y se trata de
+una observación puntual por escenario, no de una serie con repeticiones. La
+comparación pandas/PySpark descrita en el protocolo anterior no tiene
+ejecuciones registradas: el archivo de resultados agregados está vacío y
+ningún valor de \emph{speedup}, $p$ estimado en la Ecuación~\eqref{eq:amdahl},
+ni intervalo de confianza puede reportarse honestamente en este informe.
+Esta limitación se retoma como principal amenaza a la validez de conclusión
+en la Sección~\ref{sec:discusion}.
+
+\subsection{Estado de cumplimiento por módulo}
+
+La Tabla~\ref{tab:modulos} resume, para los siete módulos técnicos
+definidos en la guía de la entrega (Módulos A a G), el estado alcanzado a
+la fecha de este informe, distinguiendo explícitamente entre lo completado,
+lo parcialmente completado y lo pendiente, en lugar de reportar un estado
+binario que ocultaría matices relevantes para la defensa oral.
+
+\begin{table}[t]
+\centering
+\caption{Estado de cumplimiento de los módulos técnicos de la E3.}
+\label{tab:modulos}
+\small
+\begin{tabular}{@{}p{2.6cm}p{5cm}@{}}
+\toprule
+\textbf{Módulo} & \textbf{Estado} \\
+\midrule
+A. Refactorización & Reservas migrado al clúster; los otros tres
+microservicios sin cambios (alcance acotado, Sección~\ref{sec:cluster}). \\
+B. Esquema distribuido & ADR-003 aprobado; DDL de partición pendiente. \\
+C. Clúster Docker & Completo y verificado (Sección~\ref{sec:cluster}). \\
+D. Tolerancia a fallos & Completo, con evidencia y bitácora; latencia
+puntual, no repetida. \\
+E. Pipeline Spark & Código completo (5 transformaciones); sin ejecución
+sobre el dataset de referencia. \\
+F. Protocolo experimental & Diseñado con detalle; sin repeticiones
+ejecutadas. \\
+G. Métricas Prometheus & No iniciado en este ciclo. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Continuidad e integración de la Entrega 4}
+\label{sec:integracion-e4}
+
+Las secciones anteriores se conservan como línea base y evidencia histórica
+de la Entrega 3; no representan por sí solas el estado final del sistema.
+La Entrega 4 continúa ese trabajo mediante los componentes cliente, la
+automatización de calidad y la observabilidad que se presentan a
+continuación. Cada sección modular se mantiene en
+\texttt{docs/secciones/} para facilitar que los responsables actualicen su
+parte sin reescribir ni eliminar los antecedentes del proyecto.
+
+\input{secciones/web}
+\input{secciones/movil}
+\input{secciones/pruebas-cicd}
+\input{secciones/observabilidad}
+\input{secciones/iso25010}
+\section{Discusión}
+\label{sec:discusion}
+
+\subsection{Interpretación}
+
+La verificación de tolerancia a fallos confirma, sobre datos y
+contenedores propios del equipo, el comportamiento teórico descrito en la
+Sección~\ref{sec:teoria}: con factor de replicación $f=3$ y quórum de
+escritura $2$, el clúster tolera exactamente la caída de un nodo y pierde
+disponibilidad de escritura al perder dos de tres réplicas por rango. El
+incremento moderado de latencia observado al caer un nodo (de 2604.54\,ms a
+2681.40\,ms, un 2.9\,\% adicional) es consistente con el costo de que el
+grupo Raft opere con dos réplicas activas en lugar de tres, aunque una
+diferencia de este tamaño sobre una sola observación no permite descartar
+que sea ruido del entorno; una conclusión estadísticamente sólida requeriría
+las repeticiones que el protocolo de la Sección~\ref{sec:protocolo}
+todavía no ejecutó. Un segundo dato observable en la Tabla~\ref{tab:latencia}
+es que la latencia tras la recuperación del clúster (2906.34\,ms) resultó
+mayor que la latencia con un nodo caído (2681.40\,ms), en lugar de volver
+al valor previo al fallo (2604.54\,ms). Esto es consistente con el proceso
+de reconvergencia de Raft: al reincorporarse, el nodo reiniciado debe
+recibir del líder los registros de operaciones que se acumularon durante su
+ausencia antes de poder servir lecturas consistentes, lo que añade
+sobrecarga temporal justo en la ventana de la medición; no se interpreta
+como un problema del clúster, sino como el costo esperado de la
+recuperación, y sería interesante --en una repetición futura del
+protocolo-- medir cuánto tiempo tarda la latencia en volver a su línea
+base tras la reincorporación.
+
+Respecto de la elección entre la Ley de Amdahl y la reevaluación de
+Gustafson discutida en la Sección~\ref{sec:teoria}, el dominio de SCLI
+favorece conceptualmente la lectura de Gustafson: el volumen de reservas
+que el sistema procesará en producción crecerá con el número de periodos
+académicos acumulados y con la adopción del sistema por más laboratorios,
+en lugar de permanecer fijo en las $10^5$ filas usadas como conjunto de
+referencia en esta entrega. Sin mediciones de $t(N)$ para al menos dos
+valores de $N$, sin embargo, ninguna de las dos leyes puede aplicarse más
+allá de esta discusión cualitativa; ajustar $p$ o $\alpha$ empíricamente
+es, junto con la ejecución del protocolo comparativo, el primer paso
+pendiente hacia la E4.
+
+\subsection{Amenazas a la validez}
+
+\textbf{Internas.} (i) Ausencia de repeticiones en la medición de latencia
+de tolerancia a fallos: una sola observación por escenario no permite
+distinguir variación real de ruido del sistema anfitrión. (ii) Calentamiento
+de JVM no aislado: como el pipeline PySpark aún no se ejecutó, no hay
+evidencia propia sobre cuánto afecta el arranque de la máquina virtual de
+Java al tiempo total reportado por el orquestador cuando se use. (iii)
+Estado compartido del equipo de desarrollo: las capturas se tomaron en
+máquinas de desarrollo individuales de los integrantes, no en un entorno de
+medición dedicado y aislado de otros procesos.
+
+\textbf{Externas.} (i) Representatividad del dataset: las 100\,000 filas
+cargadas se generaron de forma sintética y reproducible, pero no reflejan
+necesariamente la distribución real de reservas de laboratorios de la UTEQ
+en producción. (ii) Generalidad a otras cargas: los resultados de
+tolerancia a fallos se midieron sobre una única consulta de agregación
+(\texttt{SELECT COUNT(*)}); el comportamiento ante consultas transaccionales
+más complejas o con mayor concurrencia de escritura no se evaluó. (iii)
+Generalidad de la topología: los tres nodos del clúster E3 se ejecutan como
+contenedores en un mismo equipo físico, sin la latencia de red ni la
+heterogeneidad de hardware que tendría un despliegue geo-distribuido real
+como el que describen Taft~\emph{et al.}~\cite{taft2020} para clústeres de
+producción; los resultados de latencia de este informe no deben
+extrapolarse directamente a un escenario multi-región.
+
+\textbf{Validez de constructo.} La Tabla~\ref{tab:latencia} usa la
+latencia de una única consulta como indicador de disponibilidad, lo cual es
+una operacionalización razonable pero parcial del concepto de
+``tolerancia a fallos'': un indicador más completo --pendiente para la E4--
+combinaría esta métrica con la tasa de reintentos de transacciones
+(\texttt{crdb\_transaction\_retries\_total}, Módulo G) y con el tiempo de
+reconvergencia del líder Raft tras una elección, ninguno de los cuales se
+midió en este ciclo.
+
+\subsection{Limitaciones}
+
+Las limitaciones principales de esta entrega, declaradas explícitamente en
+lugar de disimuladas, son las siguientes.
+
+\textbf{Fragmentación no materializada.} La fragmentación temporal del
+ADR-003 está diseñada y justificada, pero el \texttt{DDL} correspondiente
+no está en \texttt{db/schema.sql}; en consecuencia, ninguna de las
+afirmaciones de la Sección~\ref{sec:esquema} sobre poda de particiones se
+verificó todavía con \texttt{EXPLAIN} sobre el esquema real.
+
+\textbf{Comparación de rendimiento no ejecutada.} La comparación
+pandas/PySpark no tiene ejecuciones registradas y, en consecuencia, no hay
+verificación empírica de la Ley de Amdahl ni de la reevaluación de
+Gustafson sobre datos propios del proyecto; toda cifra de \emph{speedup}
+que se mencionara sin esta ejecución sería una invención, no un resultado.
+
+\textbf{Observabilidad incompleta.} Las métricas Prometheus incrementales
+exigidas por el Módulo G de la guía de la entrega
+(\texttt{crdb\_query\_duration\_seconds},
+\texttt{crdb\_transaction\_retries\_total} y
+\texttt{crdb\_pool\_active\_connections}) no se implementaron en este
+ciclo; el \texttt{endpoint} \texttt{/metrics} heredado de la entrega
+anterior no expone todavía indicadores específicos de las consultas al
+clúster distribuido.
+
+\textbf{Alcance de la refactorización.} Solo el microservicio de
+reservas y solicitudes consume el clúster distribuido; los otros tres
+microservicios permanecen sobre instancias de un solo nodo, de modo que
+las garantías de tolerancia a fallos descritas en este informe no se
+extienden todavía al resto del sistema.
+
+\textbf{Escala del experimento de tolerancia a fallos.} La verificación de
+la Sección~\ref{sec:tolerancia} se realizó sobre una única consulta de
+conteo, sin concurrencia de escrituras simultáneas; el comportamiento del
+clúster bajo carga transaccional concurrente durante la caída de un nodo
+--que es plausiblemente distinto del caso de una sola conexión de
+lectura-- no fue evaluado.
+
+\section{Conclusiones de la base distribuida y continuidad en la Entrega 4}
+\label{sec:conclusiones}
+
+La Entrega 3 consolidó la capa de persistencia distribuida del sistema
+SCLI: el clúster CockroachDB de tres nodos está desplegado, verificado y
+demuestra tolerancia a la caída de un nodo con el comportamiento exacto que
+predice la teoría de consenso Raft, y la estrategia de fragmentación y
+replicación quedó documentada mediante dos ADR que fundamentan las
+decisiones de diseño en el patrón de acceso real del dominio. El pipeline
+analítico paralelo y su línea base secuencial están implementados y son
+funcionalmente equivalentes, aunque su comparación empírica de rendimiento
+queda pendiente. En conjunto, estos avances responden a los objetivos
+específicos 1 a 3 de la Sección~\ref{sec:intro} (diseño del esquema,
+despliegue del clúster y verificación de tolerancia a fallos) de manera
+completa, y a los objetivos 4 a 6 (protocolo comparativo, pipeline PySpark
+y verificación de las leyes de escalamiento) de manera parcial: el código
+y el protocolo existen, pero la ejecución y el análisis estadístico
+todavía no.
+
+Respondiendo directamente a la pregunta de integración del Anexo B de la
+guía de la entrega --qué artefactos de esta entrega serán consumidos, sin
+modificación, por la Entrega 4-- los artefactos que la Entrega 4
+reutilizará directamente, sin modificación, son: el clúster CockroachDB E3
+y su esquema de base de datos;
+los ADR-003 y ADR-004 como fundamento de cualquier decisión de observabilidad
+o escalamiento posterior; el pipeline \texttt{spark/pipeline.py} y su línea
+base \texttt{spark/baseline.py}; y el orquestador experimental
+\texttt{experiments/run\_comparison.py}, listo para producir las mediciones
+que este informe no pudo reportar todavía. El trabajo inmediato hacia la
+E4 consiste en materializar el DDL de fragmentación, ejecutar el protocolo
+comparativo con las diez repeticiones especificadas, y extender el
+\texttt{endpoint} de métricas con los tres instrumentos Prometheus
+definidos en el Módulo G, sobre los cuales se construirá el panel de
+observabilidad consolidado de la siguiente entrega.
+
+\subsection{Ruta histórica planteada hacia la Entrega 4}
+
+En orden de prioridad, el equipo propone la siguiente secuencia de trabajo
+para el inicio del próximo ciclo, cada paso condicionado a la finalización
+del anterior: (i)~escribir y versionar el \texttt{DDL} de
+\texttt{PARTITION BY RANGE} con los límites trimestrales y las particiones
+de cobertura del ADR-003, y verificar con \texttt{EXPLAIN} que las
+consultas de disponibilidad usan poda de particiones; (ii)~ejecutar
+\texttt{experiments/run\_comparison.py} con $r=10$ repeticiones por
+tratamiento sobre el dataset de 100\,000 filas ya cargado, alternando el
+orden de \texttt{pandas-baseline} y \texttt{pyspark-pipeline} conforme al
+protocolo de la Sección~\ref{sec:protocolo}; (iii)~calcular la media, la
+desviación típica y el intervalo de confianza al 95\,\% de las mediciones
+resultantes, y ajustar empíricamente $p$ en la Ecuación~\eqref{eq:amdahl};
+(iv)~repetir la verificación de tolerancia a fallos de la
+Sección~\ref{sec:tolerancia} con $r=10$ repeticiones por escenario, en
+lugar de la observación puntual reportada en este informe; y
+(v)~instrumentar los tres contadores e histogramas Prometheus del Módulo G
+sobre el microservicio de reservas, como base directa del panel de
+observabilidad que la E4 exige para el sistema completo.
+
+\subsection{Continuidad materializada en la Entrega 4}
+
+La E4 reutiliza la base distribuida anterior y la integra con clientes web
+y móvil que acceden exclusivamente mediante el \texttt{api-gateway}. Las
+secciones modulares de este informe documentan el control de acceso por
+permisos, el flujo institucional de solicitudes y reservas, las pruebas de
+regresión y contrato, y la instrumentación de observabilidad. En el dominio
+de reservas se verificaron la idempotencia de creación y aprobación, la
+exclusión de reservas solapadas bajo concurrencia, el ownership del docente,
+el ámbito operativo por piso y la coherencia transaccional de las
+cancelaciones.
+
+La evaluación de calidad mantiene una separación explícita entre evidencia
+automatizada disponible y mediciones finales pendientes. Esta distinción
+permite que el documento continúe creciendo con resultados reproducibles
+sin eliminar la fundamentación y las decisiones técnicas heredadas de la
+entrega anterior.
+
+\bibliographystyle{ieeetr}
+\bibliography{Referencias}
+
+\end{document}
