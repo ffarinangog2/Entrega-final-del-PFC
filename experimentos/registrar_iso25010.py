@@ -24,6 +24,13 @@ SESSION_REQUESTS = {
     ("POST", "POST /api/v1/auth/login"),
     ("POST", "POST /api/v1/auth/refresh"),
 }
+
+
+def attempt_directory_name(repetition: int, attempt: int) -> str:
+    if repetition not in range(1, 11) or attempt < 1:
+        raise ValueError("Repetición/intento fuera de rango")
+    base = f"rep-{repetition:02d}"
+    return base if attempt == 1 else f"{base}-attempt-{attempt:02d}"
 RELIABILITY_EVIDENCE = {
     "metadata.json",
     "environment.txt",
@@ -160,6 +167,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--scenario", required=True, choices=sorted(SCENARIOS))
     parser.add_argument("--repetition", required=True, type=int, choices=range(1, 11))
+    parser.add_argument("--attempt", type=int, default=1)
     parser.add_argument("--total-requests", required=True, type=int)
     parser.add_argument("--http-5xx", required=True, type=int)
     parser.add_argument("--p95-ms", required=True, type=float)
@@ -168,6 +176,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--observation", default="")
     parser.add_argument("--csv-path", type=Path)
     args = parser.parse_args()
+    if args.attempt < 1:
+        parser.error("--attempt debe ser mayor o igual que 1")
     if args.csv_path is None:
         filename = (
             "iso25010-correctiva.csv"
@@ -179,7 +189,10 @@ def parse_args() -> argparse.Namespace:
 
 
 def validate_evidence(args: argparse.Namespace) -> None:
-    expected_suffix = Path(args.scenario) / f"rep-{args.repetition:02d}"
+    attempt = getattr(args, "attempt", 1)
+    expected_suffix = Path(args.scenario) / attempt_directory_name(
+        args.repetition, attempt
+    )
     if not args.evidence_dir.resolve().as_posix().endswith(expected_suffix.as_posix()):
         raise ValueError("La ruta de evidencia no coincide con escenario/repetición")
     required_names = {"metadata.json", "locust_stats.csv", "prometheus-5xx-result.txt"}
@@ -197,6 +210,8 @@ def validate_evidence(args: argparse.Namespace) -> None:
     metadata = json.loads(metadata_path.read_text(encoding="utf-8-sig"))
     if metadata.get("scenario") != args.scenario or metadata.get("repetition") != args.repetition:
         raise ValueError("Los metadatos no coinciden con escenario/repetición")
+    if metadata.get("attempt", 1) != attempt:
+        raise ValueError("Los metadatos no coinciden con el intento solicitado")
     if args.scenario in RELIABILITY_SCENARIOS:
         if metadata.get("status") != "completed" or metadata.get("execution_completed") is not True:
             raise ValueError("La ejecución experimental no consta como completada")
@@ -228,6 +243,14 @@ def validate_evidence(args: argparse.Namespace) -> None:
             if not metadata.get(field):
                 raise ValueError(f"Falta metadata obligatoria: {field}")
         if args.scenario == CORRECTIVE_RELIABILITY:
+            elapsed = metadata.get("elapsed_seconds")
+            if (
+                isinstance(elapsed, bool)
+                or not isinstance(elapsed, (int, float))
+                or not math.isfinite(elapsed)
+                or elapsed < 3595
+            ):
+                raise ValueError("La duración real no alcanza la hora con tolerancia de 5 s")
             if metadata.get("gateway_log_capture_succeeded") is not True:
                 raise ValueError("La captura de logs del Gateway no consta como exitosa")
             if not isinstance(metadata.get("gateway_log_content_length"), int):
@@ -290,9 +313,15 @@ def update_csv(args: argparse.Namespace) -> float:
     if len(matches) != 1:
         raise ValueError("La plantilla no contiene una única fila para la repetición")
     row = matches[0]
-    measured_fields = ("total_requests", "failures", "failure_rate_percent", "p95_ms", "p99_ms", "valida")
+    measured_fields = (
+        "total_requests", "failures", "failure_rate_percent", "p95_ms", "p99_ms", "valida"
+    )
     if any(row[field].strip() for field in measured_fields):
         raise ValueError("La fila ya contiene mediciones; no se sobrescribirá")
+    if args.scenario == CORRECTIVE_RELIABILITY:
+        if "intento" not in fieldnames:
+            raise ValueError("La salida correctiva no contiene la columna intento")
+        row["intento"] = str(getattr(args, "attempt", 1))
 
     failure_rate = 100.0 * args.http_5xx / args.total_requests
     row.update(

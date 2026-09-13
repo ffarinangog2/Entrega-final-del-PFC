@@ -16,6 +16,7 @@ from experimentos.registrar_iso25010 import (
     CORRECTIVE_EVIDENCE,
     CORRECTIVE_RELIABILITY,
     business_event_metrics,
+    attempt_directory_name,
     request_population,
     verify_sha256_manifest,
 )
@@ -29,6 +30,9 @@ SECRET_PATTERNS = (
 BUSINESS_URIS = {name.removeprefix("GET ") for _, name in BUSINESS_REQUESTS}
 RESERVAS_JOB = "reservas-solicitudes-service"
 PROMETHEUS_STEP_SECONDS = 15.0
+# Prometheus representa sus timestamps internamente con resolución de milisegundos.
+# Esta cota sólo se aplica a sus muestras, nunca a los eventos Locust.
+PROMETHEUS_TIME_RESOLUTION_SECONDS = 0.001
 EMPTY_ALLOWED_EVIDENCE = {"gateway-service.log", "reservas-service.log"}
 
 
@@ -141,7 +145,10 @@ def validate_prometheus_arrival(
                 raise ValueError("Muestra Prometheus de Reservas inválida") from error
             if not math.isfinite(timestamp) or not math.isfinite(counter) or counter < 0:
                 raise ValueError("Muestra Prometheus de Reservas inválida")
-            if timestamp < start_epoch or timestamp > finish_epoch:
+            if (
+                timestamp < start_epoch - PROMETHEUS_TIME_RESOLUTION_SECONDS
+                or timestamp > finish_epoch + PROMETHEUS_TIME_RESOLUTION_SECONDS
+            ):
                 raise ValueError("Prometheus contiene muestras fuera de la repetición")
             points.append((timestamp, counter))
         points.sort()
@@ -154,14 +161,21 @@ def validate_prometheus_arrival(
             and points[-1][0] >= finish_epoch - PROMETHEUS_STEP_SECONDS
         ):
             covers_exact_interval = True
-        if any(timestamp == split_epoch for timestamp, _ in points):
+        if any(
+            abs(timestamp - split_epoch) <= PROMETHEUS_TIME_RESOLUTION_SECONDS
+            for timestamp, _ in points
+        ):
             covers_split = True
         previous_timestamp, previous_counter = points[0]
         for timestamp, counter in points[1:]:
             delta = counter - previous_counter
             if delta > 0:
                 total_activity += delta
-                if timestamp > split_epoch and previous_timestamp >= split_epoch:
+                if (
+                    timestamp > split_epoch
+                    and previous_timestamp
+                    >= split_epoch - PROMETHEUS_TIME_RESOLUTION_SECONDS
+                ):
                     post_900_activity += delta
             previous_timestamp, previous_counter = timestamp, counter
 
@@ -266,17 +280,23 @@ def _write_phase_summary(evidence_dir: Path) -> dict[str, object]:
     return prometheus
 
 
-def finalize(evidence_dir: Path, scenario: str, repetition: int) -> dict[str, object]:
+def finalize(
+    evidence_dir: Path, scenario: str, repetition: int, attempt: int = 1
+) -> dict[str, object]:
     if scenario != CORRECTIVE_RELIABILITY:
         raise ValueError("El finalizador sólo admite la campaña correctiva E2")
-    expected = Path(scenario) / f"rep-{repetition:02d}"
+    expected = Path(scenario) / attempt_directory_name(repetition, attempt)
     if not evidence_dir.resolve().as_posix().endswith(expected.as_posix()):
         raise ValueError("La ruta no corresponde a la campaña correctiva/repetición")
 
     metadata_path = evidence_dir / "metadata.json"
     metadata = json.loads(metadata_path.read_text(encoding="utf-8-sig"))
-    if metadata.get("scenario") != scenario or metadata.get("repetition") != repetition:
-        raise ValueError("Metadata no corresponde a la campaña correctiva/repetición")
+    if (
+        metadata.get("scenario") != scenario
+        or metadata.get("repetition") != repetition
+        or metadata.get("attempt", 1) != attempt
+    ):
+        raise ValueError("Metadata no corresponde a la campaña/repetición/intento")
 
     validation_errors: list[str] = []
     try:
@@ -330,9 +350,21 @@ def finalize(evidence_dir: Path, scenario: str, repetition: int) -> dict[str, ob
     if not metadata["secret_scan_passed"]:
         validation_errors.append("La evidencia contiene un posible secreto")
 
+    elapsed = metadata.get("elapsed_seconds")
+    duration_evidence_valid = bool(
+        not isinstance(elapsed, bool)
+        and isinstance(elapsed, (int, float))
+        and math.isfinite(elapsed)
+        and elapsed >= 3595
+    )
+    metadata["duration_evidence_valid"] = duration_evidence_valid
+    if not duration_evidence_valid:
+        validation_errors.append("La duración real no alcanza la hora con tolerancia de 5 s")
+
     base_completed = all(
         (
             metadata.get("duration_completed") is True,
+            duration_evidence_valid,
             metadata.get("evidence_complete") is True,
             metadata.get("environment_consistent") is True,
             metadata.get("git_worktree_clean_before") is True,
@@ -373,9 +405,14 @@ def main() -> int:
     parser.add_argument("--evidence-dir", required=True, type=Path)
     parser.add_argument("--scenario", required=True)
     parser.add_argument("--repetition", required=True, type=int, choices=range(1, 11))
+    parser.add_argument("--attempt", type=int, default=1)
     args = parser.parse_args()
+    if args.attempt < 1:
+        parser.error("--attempt debe ser mayor o igual que 1")
     try:
-        metadata = finalize(args.evidence_dir, args.scenario, args.repetition)
+        metadata = finalize(
+            args.evidence_dir, args.scenario, args.repetition, args.attempt
+        )
     except (OSError, ValueError, json.JSONDecodeError) as error:
         # No se modifica evidencia potencialmente hasheada. El fallo se comunica
         # exclusivamente por stderr/exit code y el registrador vuelve a verificar.

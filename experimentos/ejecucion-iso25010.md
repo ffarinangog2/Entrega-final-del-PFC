@@ -33,6 +33,12 @@ sobrescrituras y preservan el código real de Locust en metadata. La salida tabu
 correctiva se registra separadamente en `resultados/iso25010-correctiva.csv`; no se
 modifican las filas históricas de `resultados/iso25010.csv`.
 
+El primer intento conserva el nombre `rep-NN`. Si una ejecución queda inválida, su
+evidencia no se borra ni sobrescribe: el reintento se declara con `-Intento 2` en
+PowerShell o `--attempt 2` en Bash y se almacena como
+`rep-NN-attempt-02`. Metadata y CSV separan la repetición estadística del intento;
+solo un intento que complete todas las validaciones puede registrarse.
+
 El host es obligatorio y configurable. Para la prueba integrada local debe ser el API
 Gateway en `http://localhost:8080`. La herramienta no inicia servicios. Antes de una
 ejecución real se debe instalar `tests/load/requirements.txt` y verificar el ambiente.

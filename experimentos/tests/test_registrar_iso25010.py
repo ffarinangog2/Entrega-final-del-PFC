@@ -136,9 +136,9 @@ class RegistrarFiabilidadCorrectivaTest(unittest.TestCase):
         self._write_prometheus_arrival()
         self.csv_path = self.root / "iso25010-correctiva.csv"
         self.csv_path.write_text(
-            "escenario,repeticion,usuarios,duracion,total_requests,failures,"
+            "escenario,repeticion,intento,usuarios,duracion,total_requests,failures,"
             "failure_rate_percent,p95_ms,p99_ms,valida,observacion\n"
-            f"{registrar_iso25010.CORRECTIVE_RELIABILITY},2,50,1h,,,,,,,\n",
+            f"{registrar_iso25010.CORRECTIVE_RELIABILITY},2,,50,1h,,,,,,,\n",
             encoding="utf-8",
         )
         self._write_metadata(exit_code=1)
@@ -200,6 +200,7 @@ class RegistrarFiabilidadCorrectivaTest(unittest.TestCase):
             "status": "running",
             "scenario": registrar_iso25010.CORRECTIVE_RELIABILITY,
             "repetition": 2,
+            "attempt": 1,
             "users": 50,
             "spawn_rate": 10,
             "planned_duration": "1h",
@@ -216,6 +217,7 @@ class RegistrarFiabilidadCorrectivaTest(unittest.TestCase):
             "deployment_fingerprint_after": "container image digest",
             "environment_consistent": completed,
             "duration_completed": completed,
+            "elapsed_seconds": 3601.0 if completed else 120.0,
             "execution_completed": False,
             "evidence_complete": False,
             "reservas_log_capture_succeeded": completed,
@@ -232,6 +234,7 @@ class RegistrarFiabilidadCorrectivaTest(unittest.TestCase):
         return argparse.Namespace(
             scenario=registrar_iso25010.CORRECTIVE_RELIABILITY,
             repetition=2,
+            attempt=1,
             total_requests=100,
             http_5xx=http_5xx,
             p95_ms=100.0,
@@ -256,6 +259,34 @@ class RegistrarFiabilidadCorrectivaTest(unittest.TestCase):
             registrar_iso25010.HISTORICAL_RELIABILITY,
         )
         self.assertIn(registrar_iso25010.CORRECTIVE_RELIABILITY, self.evidence.parts)
+
+    def test_retry_attempt_has_separate_path_and_is_recorded(self):
+        retry = self.evidence.with_name("rep-02-attempt-02")
+        self.evidence.rename(retry)
+        self.evidence = retry
+        metadata_path = self.evidence / "metadata.json"
+        metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+        metadata["attempt"] = 2
+        metadata_path.write_text(json.dumps(metadata), encoding="utf-8")
+        result = finalizar_evidencia_iso25010.finalize(
+            self.evidence, registrar_iso25010.CORRECTIVE_RELIABILITY, 2, 2
+        )
+        self.assertTrue(result["execution_completed"])
+        args = argparse.Namespace(**{**vars(self.args()), "attempt": 2})
+        registrar_iso25010.update_csv(args)
+        with self.csv_path.open(encoding="utf-8", newline="") as stream:
+            row = next(csv.DictReader(stream))
+        self.assertEqual("2", row["repeticion"])
+        self.assertEqual("2", row["intento"])
+
+    def test_short_duration_remains_invalid(self):
+        metadata_path = self.evidence / "metadata.json"
+        metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+        metadata["elapsed_seconds"] = 3594.999
+        metadata_path.write_text(json.dumps(metadata), encoding="utf-8")
+        result = self.finalize()
+        self.assertFalse(result["execution_completed"])
+        self.assertFalse(result["duration_evidence_valid"])
 
     def test_zero_business_gets_is_rejected_and_auth_is_not_population(self):
         self._write_stats(business_gets=0, login=50, refresh=50)
@@ -293,6 +324,55 @@ class RegistrarFiabilidadCorrectivaTest(unittest.TestCase):
         (self.evidence / "reservas-service.log").write_text("", encoding="utf-8")
         metadata = self.finalize()
         self.assertTrue(metadata["execution_completed"])
+
+    def test_fractional_event_inside_final_second_is_valid(self):
+        boundaries = {"start_epoch": 1000.0, "split_epoch": 1900.0, "finish_epoch": 4600.5}
+        (self.evidence / "phase-boundaries.json").write_text(
+            json.dumps(boundaries), encoding="utf-8"
+        )
+        events_path = self.evidence / "locust_requests.csv"
+        rows = events_path.read_text(encoding="utf-8").splitlines()
+        rows[-3] = rows[-3].replace(rows[-3].split(",", 1)[0], "4600.25", 1)
+        events_path.write_text("\n".join(rows) + "\n", encoding="utf-8")
+        self._write_prometheus_arrival(
+            result=[
+                {
+                    "metric": {
+                        "job": "reservas-solicitudes-service",
+                        "method": "GET",
+                        "uri": "/api/v1/reservas",
+                        "status": "200",
+                    },
+                    "values": [[1000.0, "0"], [1900.0, "80"], [4600.5, "100"]],
+                }
+            ]
+        )
+        self.assertTrue(self.finalize()["execution_completed"])
+
+    def test_event_really_after_precise_finish_is_invalid(self):
+        boundaries = {"start_epoch": 1000.0, "split_epoch": 1900.0, "finish_epoch": 4600.5}
+        (self.evidence / "phase-boundaries.json").write_text(
+            json.dumps(boundaries), encoding="utf-8"
+        )
+        events_path = self.evidence / "locust_requests.csv"
+        rows = events_path.read_text(encoding="utf-8").splitlines()
+        rows[-3] = rows[-3].replace(rows[-3].split(",", 1)[0], "4600.500001", 1)
+        events_path.write_text("\n".join(rows) + "\n", encoding="utf-8")
+        result = self.finalize()
+        self.assertFalse(result["execution_completed"])
+        self.assertIn("fuera del intervalo", result["launcher_error"])
+
+    def test_event_at_900_boundary_belongs_only_to_second_phase(self):
+        events_path = self.evidence / "locust_requests.csv"
+        rows = events_path.read_text(encoding="utf-8").splitlines()
+        rows[1] = rows[1].replace("1001,", "1900,", 1)
+        events_path.write_text("\n".join(rows) + "\n", encoding="utf-8")
+        self.finalize()
+        phases = json.loads(
+            (self.evidence / "phase-summary.json").read_text(encoding="utf-8")
+        )
+        self.assertEqual(79, phases["t_lt_900"]["get_total"])
+        self.assertEqual(21, phases["t_gte_900"]["get_total"])
 
     def test_denominator_and_5xx_must_match_business_events(self):
         self.finalize()

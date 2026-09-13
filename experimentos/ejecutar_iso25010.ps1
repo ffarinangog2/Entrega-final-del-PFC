@@ -4,6 +4,8 @@ param(
     [string]$Escenario,
     [ValidateRange(0, 10)]
     [int]$Repeticion = 0,
+    [ValidateRange(1, 99)]
+    [int]$Intento = 1,
     [Parameter(Mandatory = $true)]
     [ValidatePattern('^https?://')]
     [string]$HostObjetivo,
@@ -67,7 +69,13 @@ $rawRoot = if ($EvidenceRoot) {
 } else {
     Join-Path $PSScriptRoot 'resultados/raw'
 }
-$repetitionName = if ($Precheck) { $null } else { 'rep-{0:D2}' -f $Repeticion }
+$repetitionName = if ($Precheck) {
+    $null
+} elseif ($Intento -eq 1) {
+    'rep-{0:D2}' -f $Repeticion
+} else {
+    'rep-{0:D2}-attempt-{1:D2}' -f $Repeticion, $Intento
+}
 $evidenceDirectory = if ($Precheck) {
     Join-Path $rawRoot '_precheck/fiabilidad_nominal_50u_1h'
 } elseif ($DryRun) {
@@ -81,6 +89,25 @@ if ((Test-Path -LiteralPath $evidenceDirectory -PathType Leaf)) {
 if ((Test-Path -LiteralPath $evidenceDirectory) -and
         (Get-ChildItem -LiteralPath $evidenceDirectory -Force | Select-Object -First 1)) {
     throw "El directorio de evidencia ya contiene archivos: $evidenceDirectory"
+}
+if (-not $DryRun -and $Intento -gt 1) {
+    $previousAttempt = $Intento - 1
+    $previousName = if ($previousAttempt -eq 1) {
+        'rep-{0:D2}' -f $Repeticion
+    } else {
+        'rep-{0:D2}-attempt-{1:D2}' -f $Repeticion, $previousAttempt
+    }
+    $previousMetadataPath = Join-Path $rawRoot "$Escenario/$previousName/metadata.json"
+    if (-not (Test-Path -LiteralPath $previousMetadataPath -PathType Leaf)) {
+        throw "No existe metadata del intento anterior: $previousMetadataPath"
+    }
+    $previousMetadata = Get-Content -LiteralPath $previousMetadataPath -Raw -Encoding utf8 | ConvertFrom-Json
+    $recordedAttempt = if ($null -eq $previousMetadata.attempt) { 1 } else { [int]$previousMetadata.attempt }
+    if ($previousMetadata.repetition -ne $Repeticion -or
+        $recordedAttempt -ne $previousAttempt -or
+        $previousMetadata.execution_completed -eq $true) {
+        throw 'El intento anterior no consta como intento inválido auditable.'
+    }
 }
 
 function Write-Evidence([string]$Name, [AllowEmptyString()][string]$Content) {
@@ -96,19 +123,28 @@ function Invoke-HttpCapture([string]$Name, [string]$Uri) {
     $response = Invoke-WebRequest -UseBasicParsing -Uri $Uri -TimeoutSec 30
     Write-Evidence $Name $response.Content
 }
-function Invoke-PrometheusQuery([string]$Name, [string]$Query, [long]$Epoch) {
+function Invoke-PrometheusQuery([string]$Name, [string]$Query, [double]$Epoch) {
     $encoded = [uri]::EscapeDataString($Query.Trim())
-    Invoke-HttpCapture $Name "$($PrometheusUrl.TrimEnd('/'))/api/v1/query?query=$encoded&time=$Epoch"
+    $timeValue = $Epoch.ToString('F7', [Globalization.CultureInfo]::InvariantCulture)
+    Invoke-HttpCapture $Name "$($PrometheusUrl.TrimEnd('/'))/api/v1/query?query=$encoded&time=$timeValue"
 }
 function Invoke-PrometheusRangeQuery(
     [string]$Name,
     [string]$Query,
-    [long]$StartEpoch,
-    [long]$EndEpoch
+    [double]$StartEpoch,
+    [double]$EndEpoch
 ) {
     $encoded = [uri]::EscapeDataString($Query.Trim())
-    $uri = "$($PrometheusUrl.TrimEnd('/'))/api/v1/query_range?query=$encoded&start=$StartEpoch&end=$EndEpoch&step=15"
+    $startValue = $StartEpoch.ToString('F7', [Globalization.CultureInfo]::InvariantCulture)
+    $endValue = $EndEpoch.ToString('F7', [Globalization.CultureInfo]::InvariantCulture)
+    $uri = "$($PrometheusUrl.TrimEnd('/'))/api/v1/query_range?query=$encoded&start=$startValue&end=$endValue&step=15"
     Invoke-HttpCapture $Name $uri
+}
+function Get-UnixEpochSeconds([datetime]$Time) {
+    $offset = [DateTimeOffset]$Time
+    $whole = $offset.ToUnixTimeSeconds()
+    $fraction = ($offset.UtcDateTime.Ticks % [TimeSpan]::TicksPerSecond) / [double][TimeSpan]::TicksPerSecond
+    return [double]$whole + $fraction
 }
 function Capture-ServiceLog(
     [string]$Name,
@@ -226,7 +262,7 @@ $metadataRepetition = if ($Precheck) { $null } else { $Repeticion }
 $metadata = [ordered]@{
     status = if ($DryRun) { 'dry-run' } else { 'planned' }
     precheck = [bool]$Precheck; official = -not [bool]$Precheck
-    scenario = $Escenario; repetition = $metadataRepetition; host = $HostObjetivo
+    scenario = $Escenario; repetition = $metadataRepetition; attempt = $Intento; host = $HostObjetivo
     prometheus_url = $PrometheusUrl; users = $users; spawn_rate = $spawnRate
     planned_duration = $config.Duration; planned_duration_seconds = $config.Seconds
     command = $displayCommand; created_at_utc = (Get-Date).ToUniversalTime().ToString('o')
@@ -309,8 +345,8 @@ try {
         (Test-Path $statsPath) -and (Get-Item $statsPath).Length -gt 0)
     try {
         if ($startTime) {
-            $epoch = ([DateTimeOffset]$finishTime).ToUnixTimeSeconds()
-            $startEpoch = ([DateTimeOffset]$startTime).ToUnixTimeSeconds()
+            $epoch = Get-UnixEpochSeconds $finishTime
+            $startEpoch = Get-UnixEpochSeconds $startTime
             Invoke-PrometheusQuery 'prometheus-5xx-result.txt' $fiveXxCount $epoch
             Invoke-PrometheusQuery 'prometheus-5xx-percent-result.txt' $fiveXxPercent $epoch
             Invoke-PrometheusQuery 'prometheus-p95-result.txt' $p95 $epoch
@@ -375,7 +411,8 @@ try {
         Push-Location $repositoryRoot
         try {
             & $pythonCommand -m experimentos.finalizar_evidencia_iso25010 `
-                --evidence-dir $evidenceDirectory --scenario $Escenario --repetition $Repeticion
+                --evidence-dir $evidenceDirectory --scenario $Escenario `
+                --repetition $Repeticion --attempt $Intento
             $finalizerExitCode = $LASTEXITCODE
         } finally {
             Pop-Location

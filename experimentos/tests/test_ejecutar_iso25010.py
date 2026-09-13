@@ -110,6 +110,18 @@ class UbuntuLauncherTest(unittest.TestCase):
             source.index("New-Item -ItemType Directory -Force -Path $evidenceDirectory"),
         )
 
+    def test_launchers_preserve_fractional_epoch_boundaries(self) -> None:
+        bash_source = BASH_LAUNCHER.read_text(encoding="utf-8")
+        powershell_source = LAUNCHER.read_text(encoding="utf-8-sig")
+        self.assertIn("date -u +%s.%N", bash_source)
+        self.assertIn("Get-UnixEpochSeconds $finishTime", powershell_source)
+        self.assertNotIn("ToUnixTimeSeconds()\n            $startEpoch", powershell_source)
+
+    def test_retry_attempt_uses_a_new_directory(self) -> None:
+        source = BASH_LAUNCHER.read_text(encoding="utf-8")
+        self.assertIn("rep-%02d-attempt-%02d", source)
+        self.assertIn('--attempt "$attempt"', source)
+
 
 if __name__ == "__main__":
     unittest.main()

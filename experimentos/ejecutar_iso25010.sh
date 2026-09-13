@@ -4,6 +4,7 @@ set -uo pipefail
 
 scenario=""
 repetition=""
+attempt="1"
 target_host=""
 prometheus_url="http://localhost:9090"
 compose_file="docker-compose.yml"
@@ -14,6 +15,7 @@ while (($#)); do
   case "$1" in
     --scenario) scenario="$2"; shift 2 ;;
     --repetition) repetition="$2"; shift 2 ;;
+    --attempt) attempt="$2"; shift 2 ;;
     --host) target_host="$2"; shift 2 ;;
     --prometheus-url) prometheus_url="$2"; shift 2 ;;
     --compose-file) compose_file="$2"; shift 2 ;;
@@ -26,6 +28,7 @@ done
 corrective="fiabilidad_nominal_50u_1h_refresh"
 [[ "$scenario" == "$corrective" ]] || { echo "Sólo se admite $corrective" >&2; exit 2; }
 [[ "$repetition" =~ ^([1-9]|10)$ ]] || { echo "--repetition debe estar entre 1 y 10" >&2; exit 2; }
+[[ "$attempt" =~ ^[1-9][0-9]*$ ]] || { echo "--attempt debe ser mayor o igual que 1" >&2; exit 2; }
 [[ "$target_host" =~ ^https?:// ]] || { echo "--host debe ser HTTP(S)" >&2; exit 2; }
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -37,6 +40,9 @@ python_command="$(command -v python3 || command -v python || true)"
 mkdir -p "$evidence_root"
 evidence_root="$(cd "$evidence_root" && pwd)"
 printf -v repetition_name 'rep-%02d' "$repetition"
+if [[ "$attempt" -gt 1 ]]; then
+  printf -v repetition_name 'rep-%02d-attempt-%02d' "$repetition" "$attempt"
+fi
 if $dry_run; then
   evidence_dir="$evidence_root/_dry-run/$scenario/$repetition_name"
 else
@@ -49,6 +55,22 @@ fi
 if [[ -d "$evidence_dir" && -n "$(find "$evidence_dir" -mindepth 1 -maxdepth 1 -print -quit)" ]]; then
   echo "El directorio de evidencia ya contiene archivos: $evidence_dir" >&2
   exit 2
+fi
+if ! $dry_run && [[ "$attempt" -gt 1 ]]; then
+  previous_attempt=$((attempt - 1))
+  if [[ "$previous_attempt" -eq 1 ]]; then
+    printf -v previous_name 'rep-%02d' "$repetition"
+  else
+    printf -v previous_name 'rep-%02d-attempt-%02d' "$repetition" "$previous_attempt"
+  fi
+  previous_metadata="$evidence_root/$scenario/$previous_name/metadata.json"
+  [[ -f "$previous_metadata" ]] || {
+    echo "No existe metadata del intento anterior: $previous_metadata" >&2; exit 2;
+  }
+  "$python_command" -c 'import json,sys; data=json.load(open(sys.argv[1],encoding="utf-8-sig")); expected_rep=int(sys.argv[2]); expected_attempt=int(sys.argv[3]); valid=data.get("repetition")==expected_rep and data.get("attempt",1)==expected_attempt and data.get("execution_completed") is not True; raise SystemExit(0 if valid else 1)' \
+    "$previous_metadata" "$repetition" "$previous_attempt" || {
+      echo "El intento anterior no consta como intento inválido auditable" >&2; exit 2;
+    }
 fi
 git_sha="$(git -C "$repository_root" rev-parse HEAD)"
 git_branch="$(git -C "$repository_root" symbolic-ref --quiet --short HEAD || printf 'detached@%s' "${git_sha:0:7}")"
@@ -130,6 +152,7 @@ printf '%s\n' "$reservas_status" > "$evidence_dir/prometheus-reservas-status-by-
 command_display="$(printf '%q ' "${locust_command[@]}")"
 export SCLI_METADATA_PATH="$evidence_dir/metadata.json"
 export SCLI_SCENARIO="$scenario" SCLI_REPETITION="$repetition" SCLI_HOST="$target_host"
+export SCLI_ATTEMPT="$attempt"
 export SCLI_PROMETHEUS="$prometheus_url" SCLI_USERS="$users" SCLI_SPAWN="$spawn_rate"
 export SCLI_COMMAND="$command_display" SCLI_GIT_BRANCH="$git_branch" SCLI_GIT_SHA="$git_sha"
 export SCLI_DRY_RUN="$dry_run"
@@ -140,6 +163,7 @@ metadata = {
     "status": "dry-run" if os.environ.get("SCLI_DRY_RUN") == "true" else "planned",
     "precheck": False, "official": True,
     "scenario": os.environ["SCLI_SCENARIO"], "repetition": int(os.environ["SCLI_REPETITION"]),
+    "attempt": int(os.environ["SCLI_ATTEMPT"]),
     "host": os.environ["SCLI_HOST"], "prometheus_url": os.environ["SCLI_PROMETHEUS"],
     "users": int(os.environ["SCLI_USERS"]), "spawn_rate": int(os.environ["SCLI_SPAWN"]),
     "planned_duration": "1h", "planned_duration_seconds": 3600,
@@ -205,17 +229,17 @@ printf 'git_branch=%s\ngit_sha=%s\nhost=%s\nprometheus_url=%s\npython=%s\nlocust
   "$git_branch" "$git_sha" "$target_host" "$prometheus_url" "$($python_command --version)" \
   "$locust_version" "$(uname -a)" > "$evidence_dir/environment.txt"
 
-start_epoch="$(date -u +%s)"
-start_iso="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+start_epoch="$(date -u +%s.%N)"
+start_iso="$($python_command -c 'import sys; from datetime import datetime,timezone; print(datetime.fromtimestamp(float(sys.argv[1]),timezone.utc).isoformat())' "$start_epoch")"
 export LOCUST_REQUEST_LOG="$evidence_dir/locust_requests.csv"
 metadata_patch "{\"status\":\"running\",\"started_at_utc\":\"$start_iso\",\"locust_version\":$("$python_command" -c 'import json,sys; print(json.dumps(sys.argv[1]))' "$locust_version"),\"deployment_fingerprint_before\":$("$python_command" -c 'import json,sys; print(json.dumps(sys.argv[1]))' "$deployment_before")}"
 
 set +e
 "${locust_command[@]}" > "$locust_log" 2>&1
 locust_exit_code=$?
-finish_epoch="$(date -u +%s)"
-finish_iso="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-elapsed=$((finish_epoch - start_epoch))
+finish_epoch="$(date -u +%s.%N)"
+finish_iso="$($python_command -c 'import sys; from datetime import datetime,timezone; print(datetime.fromtimestamp(float(sys.argv[1]),timezone.utc).isoformat())' "$finish_epoch")"
+elapsed="$($python_command -c 'import sys; print(float(sys.argv[2])-float(sys.argv[1]))' "$start_epoch" "$finish_epoch")"
 
 prom_query "$five_xx_count" "$finish_epoch" "$evidence_dir/prometheus-5xx-result.txt"
 prom_query "$five_xx_percent" "$finish_epoch" "$evidence_dir/prometheus-5xx-percent-result.txt"
@@ -233,23 +257,24 @@ docker compose -f "$compose_path" logs --no-color --since "$start_iso" --until "
 reservas_log_exit=$?
 deployment_after="$(fingerprint)"
 printf '%s\n' "$deployment_after" > "$evidence_dir/deployment-state-after.txt"
-"$python_command" -c 'import json,sys; json.dump({"started_at_utc":sys.argv[1],"split_at_seconds":900,"split_at_utc":sys.argv[2],"finished_at_utc":sys.argv[3],"start_epoch":int(sys.argv[4]),"split_epoch":int(sys.argv[4])+900,"finish_epoch":int(sys.argv[5])},open(sys.argv[6],"w",encoding="utf-8"),indent=2)' \
-  "$start_iso" "$(date -u -d "@$((start_epoch + 900))" +%Y-%m-%dT%H:%M:%SZ)" "$finish_iso" \
-  "$start_epoch" "$finish_epoch" "$evidence_dir/phase-boundaries.json"
+"$python_command" -c 'import json,sys; from datetime import datetime,timezone; start=float(sys.argv[3]); finish=float(sys.argv[4]); split=start+900.0; json.dump({"started_at_utc":sys.argv[1],"split_at_seconds":900,"split_at_utc":datetime.fromtimestamp(split,timezone.utc).isoformat(),"finished_at_utc":sys.argv[2],"start_epoch":start,"split_epoch":split,"finish_epoch":finish},open(sys.argv[5],"w",encoding="utf-8"),indent=2)' \
+  "$start_iso" "$finish_iso" "$start_epoch" "$finish_epoch" "$evidence_dir/phase-boundaries.json"
 
 git_sha_after="$(git -C "$repository_root" rev-parse HEAD)"
 git_status_after="$(git_experiment_status)"
 environment_consistent=false
 [[ "$git_sha_after" == "$git_sha" && "$git_status_after" == "$git_status_before" && "$deployment_after" == "$deployment_before" ]] && environment_consistent=true
 duration_completed=false
-[[ "$elapsed" -ge 3595 && -s "$evidence_dir/locust_stats.csv" ]] && duration_completed=true
+"$python_command" -c 'import sys; raise SystemExit(0 if float(sys.argv[1]) >= 3595 else 1)' "$elapsed" \
+  && [[ -s "$evidence_dir/locust_stats.csv" ]] && duration_completed=true
 reservas_log_ok=false; [[ "$reservas_log_exit" -eq 0 ]] && reservas_log_ok=true
 gateway_log_ok=false; [[ "$gateway_log_exit" -eq 0 ]] && gateway_log_ok=true
 metadata_patch "{\"finished_at_utc\":\"$finish_iso\",\"elapsed_seconds\":$elapsed,\"locust_exit_code\":$locust_exit_code,\"duration_completed\":$duration_completed,\"environment_consistent\":$environment_consistent,\"git_sha_after\":\"$git_sha_after\",\"deployment_fingerprint_after\":$("$python_command" -c 'import json,sys; print(json.dumps(sys.argv[1]))' "$deployment_after"),\"reservas_log_capture_succeeded\":$reservas_log_ok,\"reservas_log_content_length\":$(wc -c < "$evidence_dir/reservas-service.log"),\"gateway_log_capture_succeeded\":$gateway_log_ok,\"gateway_log_content_length\":$(wc -c < "$evidence_dir/gateway-service.log")}"
 
 cd "$repository_root"
 "$python_command" -m experimentos.finalizar_evidencia_iso25010 \
-  --evidence-dir "$evidence_dir" --scenario "$scenario" --repetition "$repetition"
+  --evidence-dir "$evidence_dir" --scenario "$scenario" --repetition "$repetition" \
+  --attempt "$attempt"
 finalizer_exit=$?
 echo "Código real de Locust: $locust_exit_code"
 if [[ "$finalizer_exit" -eq 0 ]]; then
