@@ -216,14 +216,18 @@ Verificación manual del contrato de Reservas en Windows:
 powershell -ExecutionPolicy Bypass -File .\tests\contract\verify-reservas-provider.ps1
 ```
 
-Los cinco contratos OpenAPI se validan, sin dependencias Python externas, con:
+La estructura y los snapshots de los cinco contratos OpenAPI se validan, sin
+dependencias Python externas, con:
 
 ```bash
 python scripts/validar-contratos-openapi.py
 ```
 
-El procedimiento de generación, el alcance de cada contrato y la diferencia con
-Pact están documentados en [`docs/openapi/README.md`](docs/openapi/README.md).
+La completitud método+ruta se valida independientemente durante `mvn verify`
+contra `RequestMappingHandlerMapping` y los `RouterFunction` reales. El
+procedimiento de generación, ambas capas de validación, el alcance de cada
+contrato y la diferencia con Pact están documentados en
+[`docs/openapi/README.md`](docs/openapi/README.md).
 
 ## CI/CD
 

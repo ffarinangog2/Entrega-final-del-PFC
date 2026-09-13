@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
-"""Genera y valida los contratos OpenAPI versionados a partir del codigo Spring MVC.
+"""Genera snapshots y ejecuta validaciones OpenAPI estructurales auxiliares.
 
 No requiere paquetes externos. Use --generate para actualizar docs/openapi/*.json;
 sin argumentos, el programa solo valida y nunca modifica archivos.
+
+La completitud metodo+ruta no se acredita con este extractor regex: la fuente
+autoritativa son las pruebas Java sobre RequestMappingHandlerMapping y los
+RouterFunction reales, ejecutadas por ``mvn verify`` en cada modulo.
 """
 from __future__ import annotations
 
@@ -281,7 +285,7 @@ def main() -> int:
         if any(route.startswith("/api/v1/tecnicos") for _, route in actual): errors.append(f"{label}: contiene /api/v1/tecnicos obsoleto")
         if doc != generated[label]: errors.append(f"{label}: el snapshot difiere de la extracción determinista vigente")
         loaded[label] = doc or {}
-        print(f"{label}: {len(actual & expected[label])}/{len(expected[label])} operaciones cubiertas; extras={len(extra)}")
+        print(f"{label}: {len(actual & expected[label])}/{len(expected[label])} coincidencias auxiliares del snapshot; extras={len(extra)}")
     gateway_doc, structural = validate_doc(DOCS / "api-gateway-openapi.json"); errors += structural
     expected_gateway = operation_keys(gateway)
     actual_gateway = operation_keys(gateway_doc or {})
@@ -295,7 +299,7 @@ def main() -> int:
         gateway_source = gateway_files[0].read_text(encoding="utf-8")
     for marker in ("authApiRoute", "authServiceRoute", "usuariosServiceRoute", "usuariosApiRoute", "reservasSolicitudesServiceRoute", "academicoServiceRoute"):
         if marker not in gateway_source: errors.append(f"Gateway: falta familia configurada {marker}")
-    print(f"Gateway: {len(actual_gateway)}/{len(expected_gateway)} operaciones de fachada; 6/6 familias de routing verificadas")
+    print(f"Gateway: {len(actual_gateway)}/{len(expected_gateway)} coincidencias auxiliares de fachada; 6/6 marcadores presentes")
     print(f"OpenAPI structural validation: {'OK' if not errors else 'FAIL'} ({len(errors)} errores)")
     for error in errors: print(f"ERROR: {error}")
     return 1 if errors else 0
