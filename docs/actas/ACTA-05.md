@@ -1,15 +1,22 @@
-# Acta 05 — APK Android release firmado y cierre técnico E7
+# Registro retrospectivo 05 — APK Android release firmado y cierre técnico E7
 
-- **Fecha:** 12/09/2026
-- **Hora:** Desde las 19:00
-- **Modalidad:** Google Meet
-- **Participantes:**
+- **Fecha verificable de registro:** 12/09/2026
+- **Commit de consolidación:** `1ce91ba05e8048fda75a8479d368684a2c338430`
+- **Hito técnico asociado:** commit E7 del 12/09/2026 y ejecución de Actions
+  iniciada a las 08:13:05Z y terminada a las 08:41:30Z.
+- **Naturaleza:** registro retrospectivo de decisiones y trabajos verificables;
+  no constituye prueba de una reunión sincrónica.
+- **Participantes consignados en el registro:**
   - Freddy Farinango
   - Isaías Urbina
   - Iván Villamarín
   - Harold Vinueza
-- **Estado:** Confirmada
-- **Bloque:** Jornada posterior del mismo día al trabajo documentado en el Acta 04.
+
+La hora, modalidad y asistencia de una reunión no están demostradas por
+Git/GitHub. Las responsabilidades se conservan como atribución retrospectiva.
+El registro E8 fue consolidado a las 08:33:13Z, mientras la ejecución citada
+seguía activa; su conclusión exitosa a las 08:41:30Z se verificó posteriormente
+mediante la API de GitHub.
 
 ## Objetivo
 
@@ -23,7 +30,7 @@ el APK Android release mediante GitHub Actions.
 - Construcción release, `zipalign`, firma y verificación con `apksigner`.
 - Checksum SHA-256 y publicación controlada como artifact.
 
-## Decisiones y acuerdos
+## Decisiones consolidadas retrospectivamente
 
 - Mantener el keystore fuera de Git y reconstruirlo temporalmente en el runner.
 - Ejecutar el job firmado únicamente en pushes autorizados a
@@ -40,10 +47,11 @@ el APK Android release mediante GitHub Actions.
 | Verificar firma y checksum dentro del pipeline | Iván Villamarín | Completada | Run de Actions `34682703140` |
 | Documentar secrets, descarga, verificación e instalación | Harold Vinueza | Completada | `README.md` y `apps/mobile/README.md` |
 
-## Resultados de la jornada
+## Resultados verificables
 
 El commit E7 incorporó la protección de materiales de firma y el job Android
-release. La ejecución posterior de GitHub Actions `34682703140` finalizó
+release. La ejecución `34682703140`, concluida después del commit de
+consolidación de estas actas, finalizó
 correctamente: construyó el APK, verificó su firma, comprobó el checksum y
 publicó el artifact asociado al SHA del commit.
 

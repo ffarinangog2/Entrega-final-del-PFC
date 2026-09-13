@@ -22,11 +22,12 @@ OpenAPI e informes ISO son documentación complementaria trazable.
 
 ## Trabajo colaborativo
 
-Las [actas del equipo](actas/README.md) registran las cinco jornadas confirmadas,
-los roles generales, los acuerdos respaldados por el proyecto y su seguimiento
-mediante commits, ADR, workflows y documentos versionados. Los commits acreditan
-los resultados del trabajo; cada acta conserva por separado el registro de la
-reunión realizada mediante Google Meet.
+Los [registros retrospectivos del equipo](actas/README.md) consolidan cinco
+bloques de trabajo, los roles generales, los acuerdos respaldados por el
+proyecto y su seguimiento mediante commits, ADR, workflows y documentos
+versionados. Los cinco registros fueron creados el 12/09/2026 en el commit
+`1ce91ba05e8048fda75a8479d368684a2c338430`. Git acredita los resultados
+técnicos, pero no una reunión, su modalidad, hora o asistencia.
 
 ## Documentación histórica
 

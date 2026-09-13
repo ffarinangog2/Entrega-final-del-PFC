@@ -1,14 +1,20 @@
-# Acta 04 — Trazabilidad, documentación y contratos OpenAPI E4–E6
+# Registro retrospectivo 04 — Trazabilidad, documentación y contratos OpenAPI E4–E6
 
-- **Fecha:** 12/09/2026
-- **Hora:** Desde las 19:00
-- **Modalidad:** Google Meet
-- **Participantes:**
+- **Fecha verificable de registro:** 12/09/2026
+- **Commit de consolidación:** `1ce91ba05e8048fda75a8479d368684a2c338430`
+- **Periodo técnico asociado:** 12/09/2026, según las fechas de los commits
+  E4–E6 citados.
+- **Naturaleza:** registro retrospectivo de decisiones y trabajos verificables;
+  no constituye prueba de una reunión sincrónica.
+- **Participantes consignados en el registro:**
   - Freddy Farinango
   - Isaías Urbina
   - Iván Villamarín
   - Harold Vinueza
-- **Estado:** Confirmada
+
+La fecha de los trabajos y commits sí es verificable. La hora, modalidad y
+asistencia de una reunión no lo son mediante Git/GitHub; las responsabilidades
+se conservan como atribución del registro consolidado.
 
 ## Objetivo
 
@@ -22,7 +28,7 @@ OpenAPI y consolidar una única fuente oficial del informe.
 - Validador reproducible y gate OpenAPI en CI.
 - Fuente documental oficial y conservación de snapshots históricos.
 
-## Decisiones y acuerdos
+## Decisiones consolidadas retrospectivamente
 
 - Enlazar protocolo, productor, evidencia canónica, análisis y resultado
   interpretado sin alterar el raw ni el análisis E3.
@@ -39,7 +45,7 @@ OpenAPI y consolidar una única fuente oficial del informe.
 | Verificar cobertura contractual y resultados E3 | Iván Villamarín | Completada | Matriz E3/E4 y validador OpenAPI |
 | Consolidar trazabilidad e informe acumulativo | Harold Vinueza | Completada | `docs/main.tex` y documentación histórica |
 
-## Resultados de la jornada
+## Resultados verificables
 
 E4 incorporó evidencia experimental canónica y trazabilidad; E5 completó los
 contratos OpenAPI y su gate; E6 unificó la fuente oficial sin eliminar los

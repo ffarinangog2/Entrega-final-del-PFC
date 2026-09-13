@@ -1,14 +1,20 @@
-# Acta 03 — Experimentación ISO 25010 y preparación/cierre de E3
+# Registro retrospectivo 03 — Experimentación ISO 25010 y preparación/cierre de E3
 
-- **Fecha:** 11/09/2026
-- **Hora:** Desde las 19:00
-- **Modalidad:** Google Meet
-- **Participantes:**
+- **Fecha verificable de registro:** 12/09/2026
+- **Commit de consolidación:** `1ce91ba05e8048fda75a8479d368684a2c338430`
+- **Periodo técnico asociado:** 11–12/09/2026, según las fechas de los commits
+  citados.
+- **Naturaleza:** registro retrospectivo de decisiones y trabajos verificables;
+  no prueba una reunión celebrada el 11/09/2026.
+- **Participantes consignados en el registro:**
   - Freddy Farinango
   - Isaías Urbina
   - Iván Villamarín
   - Harold Vinueza
-- **Estado:** Confirmada
+
+Git permite verificar la preparación, el SHA experimental y los resultados
+versionados. No permite demostrar una hora, modalidad o asistencia sincrónica;
+las responsabilidades se conservan como atribución retrospectiva.
 
 ## Objetivo
 
@@ -22,7 +28,7 @@ Seguridad y Compatibilidad y su posterior cierre experimental.
 - Separación entre protocolo, ejecución, análisis e interpretación.
 - Identificación del SHA del software medido.
 
-## Decisiones y acuerdos
+## Decisiones consolidadas retrospectivamente
 
 - Ejecutar las campañas con los criterios y umbrales prerregistrados.
 - Mantener separados el SHA experimental y los commits documentales posteriores.
@@ -38,7 +44,7 @@ Seguridad y Compatibilidad y su posterior cierre experimental.
 | Revisar criterios, métricas y análisis | Iván Villamarín | Completada | `experimentos/analizar_e3.py` y `analisis-e3.json` |
 | Mantener la trazabilidad documental de la campaña | Harold Vinueza | Completada posteriormente | Resumen y matriz E3/E4 |
 
-## Resultados de la jornada
+## Resultados verificables
 
 Se prepararon las campañas experimentales de Mantenibilidad, Seguridad y
 Compatibilidad. El software medido quedó identificado posteriormente con el SHA
@@ -54,6 +60,7 @@ registraron sin cambiar sus criterios ni reinterpretarlos en esta acta.
 
 ## Seguimiento
 
-El análisis y la selección canónica de evidencia fueron incorporados después en
+El registro fue consolidado el 12/09/2026. El análisis y la selección canónica
+de evidencia fueron incorporados después en
 E4. La interpretación oficial continúa en los documentos de resultados E3/E4;
 esta acta no sustituye esos resultados.

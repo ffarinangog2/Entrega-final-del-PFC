@@ -1,14 +1,20 @@
-# Acta 02 — Integración, pruebas y CI/CD
+# Registro retrospectivo 02 — Integración, pruebas y CI/CD
 
-- **Fecha:** 28/08/2026
-- **Hora:** Desde las 19:00
-- **Modalidad:** Google Meet
-- **Participantes:**
+- **Fecha verificable de registro:** 12/09/2026
+- **Commit de consolidación:** `1ce91ba05e8048fda75a8479d368684a2c338430`
+- **Periodo técnico asociado:** 24–29/08/2026, según las fechas de los commits
+  citados.
+- **Naturaleza:** registro retrospectivo de decisiones y trabajos verificables;
+  no prueba una reunión celebrada el 28/08/2026.
+- **Participantes consignados en el registro:**
   - Freddy Farinango
   - Isaías Urbina
   - Iván Villamarín
   - Harold Vinueza
-- **Estado:** Confirmada
+
+Git acredita los commits y artefactos enumerados, pero no una hora, modalidad o
+lista de asistencia de una reunión. Las responsabilidades se conservan como
+atribución del registro consolidado.
 
 ## Objetivo
 
@@ -22,7 +28,7 @@ responsabilidades de integración continua y despliegue continuo.
 - Contratos Pact para interacciones seleccionadas.
 - Publicación condicionada a gates y separación entre CI y CD.
 
-## Decisiones y acuerdos
+## Decisiones consolidadas retrospectivamente
 
 - Mantener validaciones de backend, web, móvil e integración como gates del
   pipeline.
@@ -40,7 +46,7 @@ responsabilidades de integración continua y despliegue continuo.
 | Verificar pruebas y contratos Pact | Iván Villamarín | Completada | `30a55723cb7eb22a59669946de82984e39b1ca09` |
 | Documentar la separación y sus evidencias | Harold Vinueza | Completada | `.github/workflows/ci.yml`, `.github/workflows/cd.yml` |
 
-## Resultados de la jornada
+## Resultados verificables
 
 El repositorio incorporó validaciones para las distintas capas y separó el
 pipeline de integración del proceso de despliegue.
@@ -54,6 +60,7 @@ pipeline de integración del proceso de despliegue.
 
 ## Seguimiento
 
-Los gates evolucionaron posteriormente hacia el workflow acumulativo de CI/CD.
+Este registro fue creado el 12/09/2026. Los gates evolucionaron posteriormente
+hacia el workflow acumulativo de CI/CD.
 Los contratos Pact permanecieron como complemento de los contratos OpenAPI
 incorporados en E5.
