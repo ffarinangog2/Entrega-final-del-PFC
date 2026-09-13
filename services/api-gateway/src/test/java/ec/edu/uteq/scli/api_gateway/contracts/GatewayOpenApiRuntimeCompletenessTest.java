@@ -11,9 +11,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 import java.io.IOException;
@@ -116,8 +118,13 @@ class GatewayOpenApiRuntimeCompletenessTest {
         PROBES.values().forEach(BackendProbe::clear);
         String concretePath = concretePath(operation.path());
 
-        mockMvc.perform(MockMvcRequestBuilders.request(
-                        HttpMethod.valueOf(operation.method()), concretePath))
+        MockHttpServletRequestBuilder request = MockMvcRequestBuilders.request(
+                HttpMethod.valueOf(operation.method()), concretePath);
+        if (methodCarriesBody(operation.method())) {
+            request.contentType(MediaType.APPLICATION_JSON).content("{}");
+        }
+
+        mockMvc.perform(request)
                 .andExpect(status().isNoContent());
 
         for (Map.Entry<String, BackendProbe> probe : PROBES.entrySet()) {
@@ -129,6 +136,10 @@ class GatewayOpenApiRuntimeCompletenessTest {
                 assertThat(probe.getValue().requests()).isEmpty();
             }
         }
+    }
+
+    private static boolean methodCarriesBody(String method) {
+        return method.equals("POST") || method.equals("PUT") || method.equals("PATCH");
     }
 
     private static void addAliases(
