@@ -1,0 +1,22 @@
+{
+  "git_sha": "fa7d75ec0f75573938bf46ed6a68f0aee99606ac",
+  "git_branch": "feature/entrega-4",
+  "git_worktree_clean": true,
+  "source_tree_clean": true,
+  "allowed_evidence_changes": [],
+  "environment_id": "vm-e3-seguridad",
+  "parameters": {
+    "repetitions": 3,
+    "commands": [
+      "npm run --silent test:e2e -- --config=playwright.security-e3.config.ts --project=chromium --reporter=json"
+    ],
+    "environment_id": "vm-e3-seguridad",
+    "gateway_base_url": "http://34.31.141.79:8080"
+  },
+  "repetitions": [
+    1,
+    2,
+    3
+  ],
+  "created_at_utc": "2026-09-12T06:20:06.892496Z"
+}

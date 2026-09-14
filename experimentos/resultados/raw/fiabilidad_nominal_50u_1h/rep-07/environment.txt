@@ -1,0 +1,12 @@
+captured_at_utc=2026-09-11T03:51:23.5934004Z
+git_branch=feature/entrega-4
+git_sha=061a1050a94e1bd30d81b30c47c7e818005a33bb
+git_worktree_clean=True
+host=http://localhost:8080
+prometheus_url=http://localhost:9090
+compose_file=docker-compose.prod.yml
+python=Python 3.12.3
+locust=locust 2.31.6 from /tmp/scli-locust/lib/python3.12/site-packages/locust (Python 3.12.3)
+os=Ubuntu 24.04.4 LTS
+architecture=X64
+processor_count=4

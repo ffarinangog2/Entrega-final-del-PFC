@@ -1,0 +1,12 @@
+component,metric,percentage,threshold,exit_code
+auth,lines,88.042203985932,70.0,0
+usuarios,lines,84.0523509452254,70.0,0
+academico,lines,83.16089903674634,70.0,0
+reservas,lines,84.35857805255023,80.0,0
+reservas,branch,56.72559569561876,48.0,0
+gateway,lines,88.88888888888889,70.0,0
+web,lines,89.91,70.0,0
+web,branches,73.69,70.0,0
+web,functions,81.87,70.0,0
+web,statements,85.96,70.0,0
+android,lines,38.34070796460177,70.0,0

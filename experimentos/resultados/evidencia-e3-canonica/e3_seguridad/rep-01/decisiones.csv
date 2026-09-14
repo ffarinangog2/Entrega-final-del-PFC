@@ -1,0 +1,8 @@
+decision_id,request,endpoint,method,identity,role,expected_http,observed_http,assertion_pass,attempt
+admin_login_permitido,login admin,/api/v1/auth/login,POST,admin,ADMINISTRADOR,200,200,True,0
+admin_login_invalido_401,login con credencial inválida,/api/v1/auth/login,POST,admin,NO_AUTENTICADO,401,401,True,0
+reservas_sin_token_401,consulta sin token,/api/v1/reservas,GET,anónimo,NO_AUTENTICADO,401,401,True,0
+docente_login_permitido,login docente,/api/v1/auth/login,POST,demo.docente,DOCENTE,200,200,True,0
+docente_crea_consulta_cancela,crear/consultar/cancelar solicitud propia,/api/v1/solicitudes + /{id} + /cancelar,POST/GET/POST,demo.docente,DOCENTE,201/200/200,201/200/200,True,0
+admin_piso_fuera_scope_403,propuesta fuera de piso,/api/v1/solicitudes/{id}/propuesta,POST,demo.admin.piso,ADMINISTRADOR_PISO,403,403,True,0
+admin_piso_scope_permitido,revisión/propuesta dentro de piso,/api/v1/solicitudes/{id}/revision + /propuesta,POST/POST,demo.admin.piso,ADMINISTRADOR_PISO,200/200,200/200,True,0

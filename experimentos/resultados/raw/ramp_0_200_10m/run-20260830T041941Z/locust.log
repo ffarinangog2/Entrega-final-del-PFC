@@ -1,0 +1,607 @@
+[2026-08-30 04:19:50,518] servidor-proyectos/INFO/locust.runners: Shape test starting.
+[2026-08-30 04:19:50,521] servidor-proyectos/INFO/locust.runners: Shape worker starting
+[2026-08-30 04:19:50,522] servidor-proyectos/INFO/locust.runners: Shape test updating to 1 users at 1.00 spawn rate
+[2026-08-30 04:19:50,522] servidor-proyectos/INFO/locust.runners: Ramping to 1 users at a rate of 1.00 per second
+[2026-08-30 04:19:50,523] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 1} (1 total users)
+[2026-08-30 04:19:53,526] servidor-proyectos/INFO/locust.runners: Shape test updating to 2 users at 1.00 spawn rate
+[2026-08-30 04:19:53,527] servidor-proyectos/INFO/locust.runners: Ramping to 2 users at a rate of 1.00 per second
+[2026-08-30 04:19:53,528] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 2} (2 total users)
+[2026-08-30 04:19:56,531] servidor-proyectos/INFO/locust.runners: Shape test updating to 3 users at 1.00 spawn rate
+[2026-08-30 04:19:56,532] servidor-proyectos/INFO/locust.runners: Ramping to 3 users at a rate of 1.00 per second
+[2026-08-30 04:19:56,532] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 3} (3 total users)
+[2026-08-30 04:19:59,537] servidor-proyectos/INFO/locust.runners: Shape test updating to 4 users at 1.00 spawn rate
+[2026-08-30 04:19:59,538] servidor-proyectos/INFO/locust.runners: Ramping to 4 users at a rate of 1.00 per second
+[2026-08-30 04:19:59,538] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 4} (4 total users)
+[2026-08-30 04:20:02,543] servidor-proyectos/INFO/locust.runners: Shape test updating to 5 users at 1.00 spawn rate
+[2026-08-30 04:20:02,544] servidor-proyectos/INFO/locust.runners: Ramping to 5 users at a rate of 1.00 per second
+[2026-08-30 04:20:02,544] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 5} (5 total users)
+[2026-08-30 04:20:05,548] servidor-proyectos/INFO/locust.runners: Shape test updating to 6 users at 1.00 spawn rate
+[2026-08-30 04:20:05,548] servidor-proyectos/INFO/locust.runners: Ramping to 6 users at a rate of 1.00 per second
+[2026-08-30 04:20:05,549] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 6} (6 total users)
+[2026-08-30 04:20:08,553] servidor-proyectos/INFO/locust.runners: Shape test updating to 7 users at 1.00 spawn rate
+[2026-08-30 04:20:08,553] servidor-proyectos/INFO/locust.runners: Ramping to 7 users at a rate of 1.00 per second
+[2026-08-30 04:20:08,554] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 7} (7 total users)
+[2026-08-30 04:20:11,559] servidor-proyectos/INFO/locust.runners: Shape test updating to 8 users at 1.00 spawn rate
+[2026-08-30 04:20:11,559] servidor-proyectos/INFO/locust.runners: Ramping to 8 users at a rate of 1.00 per second
+[2026-08-30 04:20:11,560] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 8} (8 total users)
+[2026-08-30 04:20:14,566] servidor-proyectos/INFO/locust.runners: Shape test updating to 9 users at 1.00 spawn rate
+[2026-08-30 04:20:14,567] servidor-proyectos/INFO/locust.runners: Ramping to 9 users at a rate of 1.00 per second
+[2026-08-30 04:20:14,567] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 9} (9 total users)
+[2026-08-30 04:20:17,573] servidor-proyectos/INFO/locust.runners: Shape test updating to 10 users at 1.00 spawn rate
+[2026-08-30 04:20:17,573] servidor-proyectos/INFO/locust.runners: Ramping to 10 users at a rate of 1.00 per second
+[2026-08-30 04:20:17,574] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 10} (10 total users)
+[2026-08-30 04:20:20,580] servidor-proyectos/INFO/locust.runners: Shape test updating to 11 users at 1.00 spawn rate
+[2026-08-30 04:20:20,580] servidor-proyectos/INFO/locust.runners: Ramping to 11 users at a rate of 1.00 per second
+[2026-08-30 04:20:20,581] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 11} (11 total users)
+[2026-08-30 04:20:23,587] servidor-proyectos/INFO/locust.runners: Shape test updating to 12 users at 1.00 spawn rate
+[2026-08-30 04:20:23,588] servidor-proyectos/INFO/locust.runners: Ramping to 12 users at a rate of 1.00 per second
+[2026-08-30 04:20:23,590] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 12} (12 total users)
+[2026-08-30 04:20:26,593] servidor-proyectos/INFO/locust.runners: Shape test updating to 13 users at 1.00 spawn rate
+[2026-08-30 04:20:26,594] servidor-proyectos/INFO/locust.runners: Ramping to 13 users at a rate of 1.00 per second
+[2026-08-30 04:20:26,594] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 13} (13 total users)
+[2026-08-30 04:20:29,599] servidor-proyectos/INFO/locust.runners: Shape test updating to 14 users at 1.00 spawn rate
+[2026-08-30 04:20:29,600] servidor-proyectos/INFO/locust.runners: Ramping to 14 users at a rate of 1.00 per second
+[2026-08-30 04:20:29,601] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 14} (14 total users)
+[2026-08-30 04:20:32,606] servidor-proyectos/INFO/locust.runners: Shape test updating to 15 users at 1.00 spawn rate
+[2026-08-30 04:20:32,608] servidor-proyectos/INFO/locust.runners: Ramping to 15 users at a rate of 1.00 per second
+[2026-08-30 04:20:32,608] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 15} (15 total users)
+[2026-08-30 04:20:35,613] servidor-proyectos/INFO/locust.runners: Shape test updating to 16 users at 1.00 spawn rate
+[2026-08-30 04:20:35,613] servidor-proyectos/INFO/locust.runners: Ramping to 16 users at a rate of 1.00 per second
+[2026-08-30 04:20:35,613] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 16} (16 total users)
+[2026-08-30 04:20:38,621] servidor-proyectos/INFO/locust.runners: Shape test updating to 17 users at 1.00 spawn rate
+[2026-08-30 04:20:38,622] servidor-proyectos/INFO/locust.runners: Ramping to 17 users at a rate of 1.00 per second
+[2026-08-30 04:20:38,623] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 17} (17 total users)
+[2026-08-30 04:20:41,635] servidor-proyectos/INFO/locust.runners: Shape test updating to 18 users at 1.00 spawn rate
+[2026-08-30 04:20:41,635] servidor-proyectos/INFO/locust.runners: Ramping to 18 users at a rate of 1.00 per second
+[2026-08-30 04:20:41,636] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 18} (18 total users)
+[2026-08-30 04:20:44,644] servidor-proyectos/INFO/locust.runners: Shape test updating to 19 users at 1.00 spawn rate
+[2026-08-30 04:20:44,645] servidor-proyectos/INFO/locust.runners: Ramping to 19 users at a rate of 1.00 per second
+[2026-08-30 04:20:44,645] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 19} (19 total users)
+[2026-08-30 04:20:47,651] servidor-proyectos/INFO/locust.runners: Shape test updating to 20 users at 1.00 spawn rate
+[2026-08-30 04:20:47,651] servidor-proyectos/INFO/locust.runners: Ramping to 20 users at a rate of 1.00 per second
+[2026-08-30 04:20:47,652] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 20} (20 total users)
+[2026-08-30 04:20:50,660] servidor-proyectos/INFO/locust.runners: Shape test updating to 21 users at 1.00 spawn rate
+[2026-08-30 04:20:50,660] servidor-proyectos/INFO/locust.runners: Ramping to 21 users at a rate of 1.00 per second
+[2026-08-30 04:20:50,661] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 21} (21 total users)
+[2026-08-30 04:20:53,670] servidor-proyectos/INFO/locust.runners: Shape test updating to 22 users at 1.00 spawn rate
+[2026-08-30 04:20:53,671] servidor-proyectos/INFO/locust.runners: Ramping to 22 users at a rate of 1.00 per second
+[2026-08-30 04:20:53,671] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 22} (22 total users)
+[2026-08-30 04:20:56,680] servidor-proyectos/INFO/locust.runners: Shape test updating to 23 users at 1.00 spawn rate
+[2026-08-30 04:20:56,680] servidor-proyectos/INFO/locust.runners: Ramping to 23 users at a rate of 1.00 per second
+[2026-08-30 04:20:56,681] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 23} (23 total users)
+[2026-08-30 04:20:59,688] servidor-proyectos/INFO/locust.runners: Shape test updating to 24 users at 1.00 spawn rate
+[2026-08-30 04:20:59,689] servidor-proyectos/INFO/locust.runners: Ramping to 24 users at a rate of 1.00 per second
+[2026-08-30 04:20:59,690] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 24} (24 total users)
+[2026-08-30 04:21:02,698] servidor-proyectos/INFO/locust.runners: Shape test updating to 25 users at 1.00 spawn rate
+[2026-08-30 04:21:02,698] servidor-proyectos/INFO/locust.runners: Ramping to 25 users at a rate of 1.00 per second
+[2026-08-30 04:21:02,699] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 25} (25 total users)
+[2026-08-30 04:21:05,707] servidor-proyectos/INFO/locust.runners: Shape test updating to 26 users at 1.00 spawn rate
+[2026-08-30 04:21:05,707] servidor-proyectos/INFO/locust.runners: Ramping to 26 users at a rate of 1.00 per second
+[2026-08-30 04:21:05,708] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 26} (26 total users)
+[2026-08-30 04:21:08,716] servidor-proyectos/INFO/locust.runners: Shape test updating to 27 users at 1.00 spawn rate
+[2026-08-30 04:21:08,717] servidor-proyectos/INFO/locust.runners: Ramping to 27 users at a rate of 1.00 per second
+[2026-08-30 04:21:08,718] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 27} (27 total users)
+[2026-08-30 04:21:11,727] servidor-proyectos/INFO/locust.runners: Shape test updating to 28 users at 1.00 spawn rate
+[2026-08-30 04:21:11,727] servidor-proyectos/INFO/locust.runners: Ramping to 28 users at a rate of 1.00 per second
+[2026-08-30 04:21:11,728] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 28} (28 total users)
+[2026-08-30 04:21:14,746] servidor-proyectos/INFO/locust.runners: Shape test updating to 29 users at 1.00 spawn rate
+[2026-08-30 04:21:14,747] servidor-proyectos/INFO/locust.runners: Ramping to 29 users at a rate of 1.00 per second
+[2026-08-30 04:21:14,748] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 29} (29 total users)
+[2026-08-30 04:21:17,755] servidor-proyectos/INFO/locust.runners: Shape test updating to 30 users at 1.00 spawn rate
+[2026-08-30 04:21:17,755] servidor-proyectos/INFO/locust.runners: Ramping to 30 users at a rate of 1.00 per second
+[2026-08-30 04:21:17,756] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 30} (30 total users)
+[2026-08-30 04:21:20,767] servidor-proyectos/INFO/locust.runners: Shape test updating to 31 users at 1.00 spawn rate
+[2026-08-30 04:21:20,768] servidor-proyectos/INFO/locust.runners: Ramping to 31 users at a rate of 1.00 per second
+[2026-08-30 04:21:20,772] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 31} (31 total users)
+[2026-08-30 04:21:23,781] servidor-proyectos/INFO/locust.runners: Shape test updating to 32 users at 1.00 spawn rate
+[2026-08-30 04:21:23,781] servidor-proyectos/INFO/locust.runners: Ramping to 32 users at a rate of 1.00 per second
+[2026-08-30 04:21:23,782] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 32} (32 total users)
+[2026-08-30 04:21:26,789] servidor-proyectos/INFO/locust.runners: Shape test updating to 33 users at 1.00 spawn rate
+[2026-08-30 04:21:26,789] servidor-proyectos/INFO/locust.runners: Ramping to 33 users at a rate of 1.00 per second
+[2026-08-30 04:21:26,790] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 33} (33 total users)
+[2026-08-30 04:21:29,799] servidor-proyectos/INFO/locust.runners: Shape test updating to 34 users at 1.00 spawn rate
+[2026-08-30 04:21:29,799] servidor-proyectos/INFO/locust.runners: Ramping to 34 users at a rate of 1.00 per second
+[2026-08-30 04:21:29,800] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 34} (34 total users)
+[2026-08-30 04:21:32,822] servidor-proyectos/INFO/locust.runners: Shape test updating to 35 users at 1.00 spawn rate
+[2026-08-30 04:21:32,824] servidor-proyectos/INFO/locust.runners: Ramping to 35 users at a rate of 1.00 per second
+[2026-08-30 04:21:32,826] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 35} (35 total users)
+[2026-08-30 04:21:35,836] servidor-proyectos/INFO/locust.runners: Shape test updating to 36 users at 1.00 spawn rate
+[2026-08-30 04:21:35,837] servidor-proyectos/INFO/locust.runners: Ramping to 36 users at a rate of 1.00 per second
+[2026-08-30 04:21:35,838] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 36} (36 total users)
+[2026-08-30 04:21:38,844] servidor-proyectos/INFO/locust.runners: Shape test updating to 37 users at 1.00 spawn rate
+[2026-08-30 04:21:38,845] servidor-proyectos/INFO/locust.runners: Ramping to 37 users at a rate of 1.00 per second
+[2026-08-30 04:21:38,846] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 37} (37 total users)
+[2026-08-30 04:21:41,858] servidor-proyectos/INFO/locust.runners: Shape test updating to 38 users at 1.00 spawn rate
+[2026-08-30 04:21:41,858] servidor-proyectos/INFO/locust.runners: Ramping to 38 users at a rate of 1.00 per second
+[2026-08-30 04:21:41,859] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 38} (38 total users)
+[2026-08-30 04:21:44,869] servidor-proyectos/INFO/locust.runners: Shape test updating to 39 users at 1.00 spawn rate
+[2026-08-30 04:21:44,870] servidor-proyectos/INFO/locust.runners: Ramping to 39 users at a rate of 1.00 per second
+[2026-08-30 04:21:44,871] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 39} (39 total users)
+[2026-08-30 04:21:47,880] servidor-proyectos/INFO/locust.runners: Shape test updating to 40 users at 1.00 spawn rate
+[2026-08-30 04:21:47,880] servidor-proyectos/INFO/locust.runners: Ramping to 40 users at a rate of 1.00 per second
+[2026-08-30 04:21:47,881] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 40} (40 total users)
+[2026-08-30 04:21:50,891] servidor-proyectos/INFO/locust.runners: Shape test updating to 41 users at 1.00 spawn rate
+[2026-08-30 04:21:50,891] servidor-proyectos/INFO/locust.runners: Ramping to 41 users at a rate of 1.00 per second
+[2026-08-30 04:21:50,892] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 41} (41 total users)
+[2026-08-30 04:21:53,969] servidor-proyectos/INFO/locust.runners: Shape test updating to 42 users at 1.00 spawn rate
+[2026-08-30 04:21:53,970] servidor-proyectos/INFO/locust.runners: Ramping to 42 users at a rate of 1.00 per second
+[2026-08-30 04:21:53,971] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 42} (42 total users)
+[2026-08-30 04:21:56,973] servidor-proyectos/INFO/locust.runners: Shape test updating to 43 users at 1.00 spawn rate
+[2026-08-30 04:21:56,973] servidor-proyectos/INFO/locust.runners: Ramping to 43 users at a rate of 1.00 per second
+[2026-08-30 04:21:56,976] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 43} (43 total users)
+[2026-08-30 04:21:59,986] servidor-proyectos/INFO/locust.runners: Shape test updating to 44 users at 1.00 spawn rate
+[2026-08-30 04:21:59,986] servidor-proyectos/INFO/locust.runners: Ramping to 44 users at a rate of 1.00 per second
+[2026-08-30 04:21:59,987] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 44} (44 total users)
+[2026-08-30 04:22:02,996] servidor-proyectos/INFO/locust.runners: Shape test updating to 45 users at 1.00 spawn rate
+[2026-08-30 04:22:02,996] servidor-proyectos/INFO/locust.runners: Ramping to 45 users at a rate of 1.00 per second
+[2026-08-30 04:22:02,997] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 45} (45 total users)
+[2026-08-30 04:22:06,014] servidor-proyectos/INFO/locust.runners: Shape test updating to 46 users at 1.00 spawn rate
+[2026-08-30 04:22:06,015] servidor-proyectos/INFO/locust.runners: Ramping to 46 users at a rate of 1.00 per second
+[2026-08-30 04:22:06,015] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 46} (46 total users)
+[2026-08-30 04:22:09,024] servidor-proyectos/INFO/locust.runners: Shape test updating to 47 users at 1.00 spawn rate
+[2026-08-30 04:22:09,025] servidor-proyectos/INFO/locust.runners: Ramping to 47 users at a rate of 1.00 per second
+[2026-08-30 04:22:09,025] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 47} (47 total users)
+[2026-08-30 04:22:12,034] servidor-proyectos/INFO/locust.runners: Shape test updating to 48 users at 1.00 spawn rate
+[2026-08-30 04:22:12,035] servidor-proyectos/INFO/locust.runners: Ramping to 48 users at a rate of 1.00 per second
+[2026-08-30 04:22:12,036] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 48} (48 total users)
+[2026-08-30 04:22:15,047] servidor-proyectos/INFO/locust.runners: Shape test updating to 49 users at 1.00 spawn rate
+[2026-08-30 04:22:15,048] servidor-proyectos/INFO/locust.runners: Ramping to 49 users at a rate of 1.00 per second
+[2026-08-30 04:22:15,048] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 49} (49 total users)
+[2026-08-30 04:22:18,058] servidor-proyectos/INFO/locust.runners: Shape test updating to 50 users at 1.00 spawn rate
+[2026-08-30 04:22:18,059] servidor-proyectos/INFO/locust.runners: Ramping to 50 users at a rate of 1.00 per second
+[2026-08-30 04:22:18,060] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 50} (50 total users)
+[2026-08-30 04:22:21,066] servidor-proyectos/INFO/locust.runners: Shape test updating to 51 users at 1.00 spawn rate
+[2026-08-30 04:22:21,067] servidor-proyectos/INFO/locust.runners: Ramping to 51 users at a rate of 1.00 per second
+[2026-08-30 04:22:21,068] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 51} (51 total users)
+[2026-08-30 04:22:24,080] servidor-proyectos/INFO/locust.runners: Shape test updating to 52 users at 1.00 spawn rate
+[2026-08-30 04:22:24,080] servidor-proyectos/INFO/locust.runners: Ramping to 52 users at a rate of 1.00 per second
+[2026-08-30 04:22:24,081] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 52} (52 total users)
+[2026-08-30 04:22:27,091] servidor-proyectos/INFO/locust.runners: Shape test updating to 53 users at 1.00 spawn rate
+[2026-08-30 04:22:27,091] servidor-proyectos/INFO/locust.runners: Ramping to 53 users at a rate of 1.00 per second
+[2026-08-30 04:22:27,092] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 53} (53 total users)
+[2026-08-30 04:22:30,114] servidor-proyectos/INFO/locust.runners: Shape test updating to 54 users at 1.00 spawn rate
+[2026-08-30 04:22:30,115] servidor-proyectos/INFO/locust.runners: Ramping to 54 users at a rate of 1.00 per second
+[2026-08-30 04:22:30,116] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 54} (54 total users)
+[2026-08-30 04:22:33,123] servidor-proyectos/INFO/locust.runners: Shape test updating to 55 users at 1.00 spawn rate
+[2026-08-30 04:22:33,123] servidor-proyectos/INFO/locust.runners: Ramping to 55 users at a rate of 1.00 per second
+[2026-08-30 04:22:33,124] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 55} (55 total users)
+[2026-08-30 04:22:36,132] servidor-proyectos/INFO/locust.runners: Shape test updating to 56 users at 1.00 spawn rate
+[2026-08-30 04:22:36,132] servidor-proyectos/INFO/locust.runners: Ramping to 56 users at a rate of 1.00 per second
+[2026-08-30 04:22:36,133] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 56} (56 total users)
+[2026-08-30 04:22:39,149] servidor-proyectos/INFO/locust.runners: Shape test updating to 57 users at 1.00 spawn rate
+[2026-08-30 04:22:39,149] servidor-proyectos/INFO/locust.runners: Ramping to 57 users at a rate of 1.00 per second
+[2026-08-30 04:22:39,150] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 57} (57 total users)
+[2026-08-30 04:22:42,161] servidor-proyectos/INFO/locust.runners: Shape test updating to 58 users at 1.00 spawn rate
+[2026-08-30 04:22:42,161] servidor-proyectos/INFO/locust.runners: Ramping to 58 users at a rate of 1.00 per second
+[2026-08-30 04:22:42,162] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 58} (58 total users)
+[2026-08-30 04:22:45,180] servidor-proyectos/INFO/locust.runners: Shape test updating to 59 users at 1.00 spawn rate
+[2026-08-30 04:22:45,182] servidor-proyectos/INFO/locust.runners: Ramping to 59 users at a rate of 1.00 per second
+[2026-08-30 04:22:45,183] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 59} (59 total users)
+[2026-08-30 04:22:48,374] servidor-proyectos/INFO/locust.runners: Shape test updating to 60 users at 1.00 spawn rate
+[2026-08-30 04:22:48,375] servidor-proyectos/INFO/locust.runners: Ramping to 60 users at a rate of 1.00 per second
+[2026-08-30 04:22:48,379] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 60} (60 total users)
+[2026-08-30 04:22:50,616] servidor-proyectos/INFO/locust.runners: Shape test updating to 61 users at 1.00 spawn rate
+[2026-08-30 04:22:50,658] servidor-proyectos/INFO/locust.runners: Ramping to 61 users at a rate of 1.00 per second
+[2026-08-30 04:22:50,665] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 61} (61 total users)
+[2026-08-30 04:22:53,774] servidor-proyectos/INFO/locust.runners: Shape test updating to 62 users at 1.00 spawn rate
+[2026-08-30 04:22:53,776] servidor-proyectos/INFO/locust.runners: Ramping to 62 users at a rate of 1.00 per second
+[2026-08-30 04:22:53,786] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 62} (62 total users)
+[2026-08-30 04:22:56,916] servidor-proyectos/INFO/locust.runners: Shape test updating to 63 users at 1.00 spawn rate
+[2026-08-30 04:22:56,919] servidor-proyectos/INFO/locust.runners: Ramping to 63 users at a rate of 1.00 per second
+[2026-08-30 04:22:56,978] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 63} (63 total users)
+[2026-08-30 04:23:00,130] servidor-proyectos/INFO/locust.runners: Shape test updating to 64 users at 1.00 spawn rate
+[2026-08-30 04:23:00,145] servidor-proyectos/INFO/locust.runners: Ramping to 64 users at a rate of 1.00 per second
+[2026-08-30 04:23:00,155] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 64} (64 total users)
+[2026-08-30 04:23:03,198] servidor-proyectos/INFO/locust.runners: Shape test updating to 65 users at 1.00 spawn rate
+[2026-08-30 04:23:03,202] servidor-proyectos/INFO/locust.runners: Ramping to 65 users at a rate of 1.00 per second
+[2026-08-30 04:23:03,203] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 65} (65 total users)
+[2026-08-30 04:23:06,382] servidor-proyectos/INFO/locust.runners: Shape test updating to 66 users at 1.00 spawn rate
+[2026-08-30 04:23:06,410] servidor-proyectos/INFO/locust.runners: Ramping to 66 users at a rate of 1.00 per second
+[2026-08-30 04:23:06,419] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 66} (66 total users)
+[2026-08-30 04:23:09,684] servidor-proyectos/INFO/locust.runners: Shape test updating to 67 users at 1.00 spawn rate
+[2026-08-30 04:23:09,688] servidor-proyectos/INFO/locust.runners: Ramping to 67 users at a rate of 1.00 per second
+[2026-08-30 04:23:09,779] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 67} (67 total users)
+[2026-08-30 04:23:12,068] servidor-proyectos/INFO/locust.runners: Shape test updating to 68 users at 1.00 spawn rate
+[2026-08-30 04:23:12,069] servidor-proyectos/INFO/locust.runners: Ramping to 68 users at a rate of 1.00 per second
+[2026-08-30 04:23:12,081] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 68} (68 total users)
+[2026-08-30 04:23:15,173] servidor-proyectos/INFO/locust.runners: Shape test updating to 69 users at 1.00 spawn rate
+[2026-08-30 04:23:15,175] servidor-proyectos/INFO/locust.runners: Ramping to 69 users at a rate of 1.00 per second
+[2026-08-30 04:23:15,179] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 69} (69 total users)
+[2026-08-30 04:23:18,226] servidor-proyectos/INFO/locust.runners: Shape test updating to 70 users at 1.00 spawn rate
+[2026-08-30 04:23:18,227] servidor-proyectos/INFO/locust.runners: Ramping to 70 users at a rate of 1.00 per second
+[2026-08-30 04:23:18,228] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 70} (70 total users)
+[2026-08-30 04:23:21,248] servidor-proyectos/INFO/locust.runners: Shape test updating to 71 users at 1.00 spawn rate
+[2026-08-30 04:23:21,249] servidor-proyectos/INFO/locust.runners: Ramping to 71 users at a rate of 1.00 per second
+[2026-08-30 04:23:21,250] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 71} (71 total users)
+[2026-08-30 04:23:24,298] servidor-proyectos/INFO/locust.runners: Shape test updating to 72 users at 1.00 spawn rate
+[2026-08-30 04:23:24,299] servidor-proyectos/INFO/locust.runners: Ramping to 72 users at a rate of 1.00 per second
+[2026-08-30 04:23:24,299] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 72} (72 total users)
+[2026-08-30 04:23:27,341] servidor-proyectos/INFO/locust.runners: Shape test updating to 73 users at 1.00 spawn rate
+[2026-08-30 04:23:27,345] servidor-proyectos/INFO/locust.runners: Ramping to 73 users at a rate of 1.00 per second
+[2026-08-30 04:23:27,346] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 73} (73 total users)
+[2026-08-30 04:23:30,363] servidor-proyectos/INFO/locust.runners: Shape test updating to 74 users at 1.00 spawn rate
+[2026-08-30 04:23:30,363] servidor-proyectos/INFO/locust.runners: Ramping to 74 users at a rate of 1.00 per second
+[2026-08-30 04:23:30,364] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 74} (74 total users)
+[2026-08-30 04:23:33,378] servidor-proyectos/INFO/locust.runners: Shape test updating to 75 users at 1.00 spawn rate
+[2026-08-30 04:23:33,379] servidor-proyectos/INFO/locust.runners: Ramping to 75 users at a rate of 1.00 per second
+[2026-08-30 04:23:33,381] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 75} (75 total users)
+[2026-08-30 04:23:36,393] servidor-proyectos/INFO/locust.runners: Shape test updating to 76 users at 1.00 spawn rate
+[2026-08-30 04:23:36,394] servidor-proyectos/INFO/locust.runners: Ramping to 76 users at a rate of 1.00 per second
+[2026-08-30 04:23:36,394] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 76} (76 total users)
+[2026-08-30 04:23:39,439] servidor-proyectos/INFO/locust.runners: Shape test updating to 77 users at 1.00 spawn rate
+[2026-08-30 04:23:39,448] servidor-proyectos/INFO/locust.runners: Ramping to 77 users at a rate of 1.00 per second
+[2026-08-30 04:23:39,449] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 77} (77 total users)
+[2026-08-30 04:23:42,455] servidor-proyectos/INFO/locust.runners: Shape test updating to 78 users at 1.00 spawn rate
+[2026-08-30 04:23:42,456] servidor-proyectos/INFO/locust.runners: Ramping to 78 users at a rate of 1.00 per second
+[2026-08-30 04:23:42,458] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 78} (78 total users)
+[2026-08-30 04:23:45,474] servidor-proyectos/INFO/locust.runners: Shape test updating to 79 users at 1.00 spawn rate
+[2026-08-30 04:23:45,474] servidor-proyectos/INFO/locust.runners: Ramping to 79 users at a rate of 1.00 per second
+[2026-08-30 04:23:45,475] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 79} (79 total users)
+[2026-08-30 04:23:48,514] servidor-proyectos/INFO/locust.runners: Shape test updating to 80 users at 1.00 spawn rate
+[2026-08-30 04:23:48,524] servidor-proyectos/INFO/locust.runners: Ramping to 80 users at a rate of 1.00 per second
+[2026-08-30 04:23:48,525] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 80} (80 total users)
+[2026-08-30 04:23:50,533] servidor-proyectos/INFO/locust.runners: Shape test updating to 81 users at 1.00 spawn rate
+[2026-08-30 04:23:50,534] servidor-proyectos/INFO/locust.runners: Ramping to 81 users at a rate of 1.00 per second
+[2026-08-30 04:23:50,535] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 81} (81 total users)
+[2026-08-30 04:23:53,559] servidor-proyectos/INFO/locust.runners: Shape test updating to 82 users at 1.00 spawn rate
+[2026-08-30 04:23:53,560] servidor-proyectos/INFO/locust.runners: Ramping to 82 users at a rate of 1.00 per second
+[2026-08-30 04:23:53,561] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 82} (82 total users)
+[2026-08-30 04:23:56,578] servidor-proyectos/INFO/locust.runners: Shape test updating to 83 users at 1.00 spawn rate
+[2026-08-30 04:23:56,579] servidor-proyectos/INFO/locust.runners: Ramping to 83 users at a rate of 1.00 per second
+[2026-08-30 04:23:56,580] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 83} (83 total users)
+[2026-08-30 04:23:59,598] servidor-proyectos/INFO/locust.runners: Shape test updating to 84 users at 1.00 spawn rate
+[2026-08-30 04:23:59,599] servidor-proyectos/INFO/locust.runners: Ramping to 84 users at a rate of 1.00 per second
+[2026-08-30 04:23:59,599] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 84} (84 total users)
+[2026-08-30 04:24:02,720] servidor-proyectos/INFO/locust.runners: Shape test updating to 85 users at 1.00 spawn rate
+[2026-08-30 04:24:02,721] servidor-proyectos/INFO/locust.runners: Ramping to 85 users at a rate of 1.00 per second
+[2026-08-30 04:24:02,722] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 85} (85 total users)
+[2026-08-30 04:24:05,741] servidor-proyectos/INFO/locust.runners: Shape test updating to 86 users at 1.00 spawn rate
+[2026-08-30 04:24:05,741] servidor-proyectos/INFO/locust.runners: Ramping to 86 users at a rate of 1.00 per second
+[2026-08-30 04:24:05,742] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 86} (86 total users)
+[2026-08-30 04:24:08,763] servidor-proyectos/INFO/locust.runners: Shape test updating to 87 users at 1.00 spawn rate
+[2026-08-30 04:24:08,763] servidor-proyectos/INFO/locust.runners: Ramping to 87 users at a rate of 1.00 per second
+[2026-08-30 04:24:08,764] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 87} (87 total users)
+[2026-08-30 04:24:11,787] servidor-proyectos/INFO/locust.runners: Shape test updating to 88 users at 1.00 spawn rate
+[2026-08-30 04:24:11,787] servidor-proyectos/INFO/locust.runners: Ramping to 88 users at a rate of 1.00 per second
+[2026-08-30 04:24:11,788] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 88} (88 total users)
+[2026-08-30 04:24:14,852] servidor-proyectos/INFO/locust.runners: Shape test updating to 89 users at 1.00 spawn rate
+[2026-08-30 04:24:14,853] servidor-proyectos/INFO/locust.runners: Ramping to 89 users at a rate of 1.00 per second
+[2026-08-30 04:24:14,854] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 89} (89 total users)
+[2026-08-30 04:24:17,878] servidor-proyectos/INFO/locust.runners: Shape test updating to 90 users at 1.00 spawn rate
+[2026-08-30 04:24:17,879] servidor-proyectos/INFO/locust.runners: Ramping to 90 users at a rate of 1.00 per second
+[2026-08-30 04:24:17,880] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 90} (90 total users)
+[2026-08-30 04:24:20,912] servidor-proyectos/INFO/locust.runners: Shape test updating to 91 users at 1.00 spawn rate
+[2026-08-30 04:24:20,912] servidor-proyectos/INFO/locust.runners: Ramping to 91 users at a rate of 1.00 per second
+[2026-08-30 04:24:20,914] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 91} (91 total users)
+[2026-08-30 04:24:23,952] servidor-proyectos/INFO/locust.runners: Shape test updating to 92 users at 1.00 spawn rate
+[2026-08-30 04:24:23,955] servidor-proyectos/INFO/locust.runners: Ramping to 92 users at a rate of 1.00 per second
+[2026-08-30 04:24:23,958] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 92} (92 total users)
+[2026-08-30 04:24:26,989] servidor-proyectos/INFO/locust.runners: Shape test updating to 93 users at 1.00 spawn rate
+[2026-08-30 04:24:26,990] servidor-proyectos/INFO/locust.runners: Ramping to 93 users at a rate of 1.00 per second
+[2026-08-30 04:24:26,992] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 93} (93 total users)
+[2026-08-30 04:24:30,015] servidor-proyectos/INFO/locust.runners: Shape test updating to 94 users at 1.00 spawn rate
+[2026-08-30 04:24:30,016] servidor-proyectos/INFO/locust.runners: Ramping to 94 users at a rate of 1.00 per second
+[2026-08-30 04:24:30,018] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 94} (94 total users)
+[2026-08-30 04:24:33,036] servidor-proyectos/INFO/locust.runners: Shape test updating to 95 users at 1.00 spawn rate
+[2026-08-30 04:24:33,036] servidor-proyectos/INFO/locust.runners: Ramping to 95 users at a rate of 1.00 per second
+[2026-08-30 04:24:33,037] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 95} (95 total users)
+[2026-08-30 04:24:36,060] servidor-proyectos/INFO/locust.runners: Shape test updating to 96 users at 1.00 spawn rate
+[2026-08-30 04:24:36,062] servidor-proyectos/INFO/locust.runners: Ramping to 96 users at a rate of 1.00 per second
+[2026-08-30 04:24:36,062] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 96} (96 total users)
+[2026-08-30 04:24:39,100] servidor-proyectos/INFO/locust.runners: Shape test updating to 97 users at 1.00 spawn rate
+[2026-08-30 04:24:39,101] servidor-proyectos/INFO/locust.runners: Ramping to 97 users at a rate of 1.00 per second
+[2026-08-30 04:24:39,106] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 97} (97 total users)
+[2026-08-30 04:24:42,124] servidor-proyectos/INFO/locust.runners: Shape test updating to 98 users at 1.00 spawn rate
+[2026-08-30 04:24:42,124] servidor-proyectos/INFO/locust.runners: Ramping to 98 users at a rate of 1.00 per second
+[2026-08-30 04:24:42,125] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 98} (98 total users)
+[2026-08-30 04:24:45,145] servidor-proyectos/INFO/locust.runners: Shape test updating to 99 users at 1.00 spawn rate
+[2026-08-30 04:24:45,146] servidor-proyectos/INFO/locust.runners: Ramping to 99 users at a rate of 1.00 per second
+[2026-08-30 04:24:45,153] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 99} (99 total users)
+[2026-08-30 04:24:48,200] servidor-proyectos/INFO/locust.runners: Shape test updating to 100 users at 1.00 spawn rate
+[2026-08-30 04:24:48,208] servidor-proyectos/INFO/locust.runners: Ramping to 100 users at a rate of 1.00 per second
+[2026-08-30 04:24:48,219] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 100} (100 total users)
+[2026-08-30 04:24:51,227] servidor-proyectos/INFO/locust.runners: Shape test updating to 101 users at 1.00 spawn rate
+[2026-08-30 04:24:51,229] servidor-proyectos/INFO/locust.runners: Ramping to 101 users at a rate of 1.00 per second
+[2026-08-30 04:24:51,229] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 101} (101 total users)
+[2026-08-30 04:24:54,247] servidor-proyectos/INFO/locust.runners: Shape test updating to 102 users at 1.00 spawn rate
+[2026-08-30 04:24:54,248] servidor-proyectos/INFO/locust.runners: Ramping to 102 users at a rate of 1.00 per second
+[2026-08-30 04:24:54,249] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 102} (102 total users)
+[2026-08-30 04:24:57,265] servidor-proyectos/INFO/locust.runners: Shape test updating to 103 users at 1.00 spawn rate
+[2026-08-30 04:24:57,266] servidor-proyectos/INFO/locust.runners: Ramping to 103 users at a rate of 1.00 per second
+[2026-08-30 04:24:57,267] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 103} (103 total users)
+[2026-08-30 04:25:00,287] servidor-proyectos/INFO/locust.runners: Shape test updating to 104 users at 1.00 spawn rate
+[2026-08-30 04:25:00,289] servidor-proyectos/INFO/locust.runners: Ramping to 104 users at a rate of 1.00 per second
+[2026-08-30 04:25:00,290] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 104} (104 total users)
+[2026-08-30 04:25:03,315] servidor-proyectos/INFO/locust.runners: Shape test updating to 105 users at 1.00 spawn rate
+[2026-08-30 04:25:03,316] servidor-proyectos/INFO/locust.runners: Ramping to 105 users at a rate of 1.00 per second
+[2026-08-30 04:25:03,316] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 105} (105 total users)
+[2026-08-30 04:25:06,331] servidor-proyectos/INFO/locust.runners: Shape test updating to 106 users at 1.00 spawn rate
+[2026-08-30 04:25:06,331] servidor-proyectos/INFO/locust.runners: Ramping to 106 users at a rate of 1.00 per second
+[2026-08-30 04:25:06,332] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 106} (106 total users)
+[2026-08-30 04:25:09,352] servidor-proyectos/INFO/locust.runners: Shape test updating to 107 users at 1.00 spawn rate
+[2026-08-30 04:25:09,353] servidor-proyectos/INFO/locust.runners: Ramping to 107 users at a rate of 1.00 per second
+[2026-08-30 04:25:09,353] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 107} (107 total users)
+[2026-08-30 04:25:12,371] servidor-proyectos/INFO/locust.runners: Shape test updating to 108 users at 1.00 spawn rate
+[2026-08-30 04:25:12,377] servidor-proyectos/INFO/locust.runners: Ramping to 108 users at a rate of 1.00 per second
+[2026-08-30 04:25:12,378] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 108} (108 total users)
+[2026-08-30 04:25:15,388] servidor-proyectos/INFO/locust.runners: Shape test updating to 109 users at 1.00 spawn rate
+[2026-08-30 04:25:15,389] servidor-proyectos/INFO/locust.runners: Ramping to 109 users at a rate of 1.00 per second
+[2026-08-30 04:25:15,390] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 109} (109 total users)
+[2026-08-30 04:25:18,406] servidor-proyectos/INFO/locust.runners: Shape test updating to 110 users at 1.00 spawn rate
+[2026-08-30 04:25:18,406] servidor-proyectos/INFO/locust.runners: Ramping to 110 users at a rate of 1.00 per second
+[2026-08-30 04:25:18,407] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 110} (110 total users)
+[2026-08-30 04:25:21,432] servidor-proyectos/INFO/locust.runners: Shape test updating to 111 users at 1.00 spawn rate
+[2026-08-30 04:25:21,434] servidor-proyectos/INFO/locust.runners: Ramping to 111 users at a rate of 1.00 per second
+[2026-08-30 04:25:21,435] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 111} (111 total users)
+[2026-08-30 04:25:24,466] servidor-proyectos/INFO/locust.runners: Shape test updating to 112 users at 1.00 spawn rate
+[2026-08-30 04:25:24,467] servidor-proyectos/INFO/locust.runners: Ramping to 112 users at a rate of 1.00 per second
+[2026-08-30 04:25:24,468] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 112} (112 total users)
+[2026-08-30 04:25:27,483] servidor-proyectos/INFO/locust.runners: Shape test updating to 113 users at 1.00 spawn rate
+[2026-08-30 04:25:27,484] servidor-proyectos/INFO/locust.runners: Ramping to 113 users at a rate of 1.00 per second
+[2026-08-30 04:25:27,485] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 113} (113 total users)
+[2026-08-30 04:25:30,512] servidor-proyectos/INFO/locust.runners: Shape test updating to 114 users at 1.00 spawn rate
+[2026-08-30 04:25:30,512] servidor-proyectos/INFO/locust.runners: Ramping to 114 users at a rate of 1.00 per second
+[2026-08-30 04:25:30,513] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 114} (114 total users)
+[2026-08-30 04:25:32,564] servidor-proyectos/INFO/locust.runners: Shape test updating to 115 users at 1.00 spawn rate
+[2026-08-30 04:25:32,566] servidor-proyectos/INFO/locust.runners: Ramping to 115 users at a rate of 1.00 per second
+[2026-08-30 04:25:32,567] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 115} (115 total users)
+[2026-08-30 04:25:35,620] servidor-proyectos/INFO/locust.runners: Shape test updating to 116 users at 1.00 spawn rate
+[2026-08-30 04:25:35,620] servidor-proyectos/INFO/locust.runners: Ramping to 116 users at a rate of 1.00 per second
+[2026-08-30 04:25:35,622] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 116} (116 total users)
+[2026-08-30 04:25:38,642] servidor-proyectos/INFO/locust.runners: Shape test updating to 117 users at 1.00 spawn rate
+[2026-08-30 04:25:38,642] servidor-proyectos/INFO/locust.runners: Ramping to 117 users at a rate of 1.00 per second
+[2026-08-30 04:25:38,643] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 117} (117 total users)
+[2026-08-30 04:25:41,675] servidor-proyectos/INFO/locust.runners: Shape test updating to 118 users at 1.00 spawn rate
+[2026-08-30 04:25:41,675] servidor-proyectos/INFO/locust.runners: Ramping to 118 users at a rate of 1.00 per second
+[2026-08-30 04:25:41,676] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 118} (118 total users)
+[2026-08-30 04:25:44,704] servidor-proyectos/INFO/locust.runners: Shape test updating to 119 users at 1.00 spawn rate
+[2026-08-30 04:25:44,705] servidor-proyectos/INFO/locust.runners: Ramping to 119 users at a rate of 1.00 per second
+[2026-08-30 04:25:44,706] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 119} (119 total users)
+[2026-08-30 04:25:47,724] servidor-proyectos/INFO/locust.runners: Shape test updating to 120 users at 1.00 spawn rate
+[2026-08-30 04:25:47,725] servidor-proyectos/INFO/locust.runners: Ramping to 120 users at a rate of 1.00 per second
+[2026-08-30 04:25:47,726] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 120} (120 total users)
+[2026-08-30 04:25:50,743] servidor-proyectos/INFO/locust.runners: Shape test updating to 121 users at 1.00 spawn rate
+[2026-08-30 04:25:50,743] servidor-proyectos/INFO/locust.runners: Ramping to 121 users at a rate of 1.00 per second
+[2026-08-30 04:25:50,745] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 121} (121 total users)
+[2026-08-30 04:25:54,167] servidor-proyectos/INFO/locust.runners: Shape test updating to 122 users at 1.00 spawn rate
+[2026-08-30 04:25:54,303] servidor-proyectos/INFO/locust.runners: Ramping to 122 users at a rate of 1.00 per second
+[2026-08-30 04:25:54,306] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 122} (122 total users)
+[2026-08-30 04:25:57,302] servidor-proyectos/INFO/locust.runners: Shape test updating to 123 users at 1.00 spawn rate
+[2026-08-30 04:25:57,302] servidor-proyectos/INFO/locust.runners: Ramping to 123 users at a rate of 1.00 per second
+[2026-08-30 04:25:57,303] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 123} (123 total users)
+[2026-08-30 04:26:00,319] servidor-proyectos/INFO/locust.runners: Shape test updating to 124 users at 1.00 spawn rate
+[2026-08-30 04:26:00,320] servidor-proyectos/INFO/locust.runners: Ramping to 124 users at a rate of 1.00 per second
+[2026-08-30 04:26:00,320] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 124} (124 total users)
+[2026-08-30 04:26:03,341] servidor-proyectos/INFO/locust.runners: Shape test updating to 125 users at 1.00 spawn rate
+[2026-08-30 04:26:03,342] servidor-proyectos/INFO/locust.runners: Ramping to 125 users at a rate of 1.00 per second
+[2026-08-30 04:26:03,343] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 125} (125 total users)
+[2026-08-30 04:26:06,364] servidor-proyectos/INFO/locust.runners: Shape test updating to 126 users at 1.00 spawn rate
+[2026-08-30 04:26:06,364] servidor-proyectos/INFO/locust.runners: Ramping to 126 users at a rate of 1.00 per second
+[2026-08-30 04:26:06,365] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 126} (126 total users)
+[2026-08-30 04:26:09,395] servidor-proyectos/INFO/locust.runners: Shape test updating to 127 users at 1.00 spawn rate
+[2026-08-30 04:26:09,396] servidor-proyectos/INFO/locust.runners: Ramping to 127 users at a rate of 1.00 per second
+[2026-08-30 04:26:09,397] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 127} (127 total users)
+[2026-08-30 04:26:12,419] servidor-proyectos/INFO/locust.runners: Shape test updating to 128 users at 1.00 spawn rate
+[2026-08-30 04:26:12,422] servidor-proyectos/INFO/locust.runners: Ramping to 128 users at a rate of 1.00 per second
+[2026-08-30 04:26:12,423] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 128} (128 total users)
+[2026-08-30 04:26:15,445] servidor-proyectos/INFO/locust.runners: Shape test updating to 129 users at 1.00 spawn rate
+[2026-08-30 04:26:15,445] servidor-proyectos/INFO/locust.runners: Ramping to 129 users at a rate of 1.00 per second
+[2026-08-30 04:26:15,446] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 129} (129 total users)
+[2026-08-30 04:26:18,467] servidor-proyectos/INFO/locust.runners: Shape test updating to 130 users at 1.00 spawn rate
+[2026-08-30 04:26:18,468] servidor-proyectos/INFO/locust.runners: Ramping to 130 users at a rate of 1.00 per second
+[2026-08-30 04:26:18,469] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 130} (130 total users)
+[2026-08-30 04:26:21,518] servidor-proyectos/INFO/locust.runners: Shape test updating to 131 users at 1.00 spawn rate
+[2026-08-30 04:26:21,519] servidor-proyectos/INFO/locust.runners: Ramping to 131 users at a rate of 1.00 per second
+[2026-08-30 04:26:21,520] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 131} (131 total users)
+[2026-08-30 04:26:23,538] servidor-proyectos/INFO/locust.runners: Shape test updating to 132 users at 1.00 spawn rate
+[2026-08-30 04:26:23,563] servidor-proyectos/INFO/locust.runners: Ramping to 132 users at a rate of 1.00 per second
+[2026-08-30 04:26:23,566] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 132} (132 total users)
+[2026-08-30 04:26:26,558] servidor-proyectos/INFO/locust.runners: Shape test updating to 133 users at 1.00 spawn rate
+[2026-08-30 04:26:26,559] servidor-proyectos/INFO/locust.runners: Ramping to 133 users at a rate of 1.00 per second
+[2026-08-30 04:26:26,560] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 133} (133 total users)
+[2026-08-30 04:26:29,574] servidor-proyectos/INFO/locust.runners: Shape test updating to 134 users at 1.00 spawn rate
+[2026-08-30 04:26:29,574] servidor-proyectos/INFO/locust.runners: Ramping to 134 users at a rate of 1.00 per second
+[2026-08-30 04:26:29,575] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 134} (134 total users)
+[2026-08-30 04:26:32,597] servidor-proyectos/INFO/locust.runners: Shape test updating to 135 users at 1.00 spawn rate
+[2026-08-30 04:26:32,598] servidor-proyectos/INFO/locust.runners: Ramping to 135 users at a rate of 1.00 per second
+[2026-08-30 04:26:32,599] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 135} (135 total users)
+[2026-08-30 04:26:35,616] servidor-proyectos/INFO/locust.runners: Shape test updating to 136 users at 1.00 spawn rate
+[2026-08-30 04:26:35,618] servidor-proyectos/INFO/locust.runners: Ramping to 136 users at a rate of 1.00 per second
+[2026-08-30 04:26:35,619] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 136} (136 total users)
+[2026-08-30 04:26:38,643] servidor-proyectos/INFO/locust.runners: Shape test updating to 137 users at 1.00 spawn rate
+[2026-08-30 04:26:38,644] servidor-proyectos/INFO/locust.runners: Ramping to 137 users at a rate of 1.00 per second
+[2026-08-30 04:26:38,645] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 137} (137 total users)
+[2026-08-30 04:26:41,668] servidor-proyectos/INFO/locust.runners: Shape test updating to 138 users at 1.00 spawn rate
+[2026-08-30 04:26:41,673] servidor-proyectos/INFO/locust.runners: Ramping to 138 users at a rate of 1.00 per second
+[2026-08-30 04:26:41,675] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 138} (138 total users)
+[2026-08-30 04:26:44,698] servidor-proyectos/INFO/locust.runners: Shape test updating to 139 users at 1.00 spawn rate
+[2026-08-30 04:26:44,699] servidor-proyectos/INFO/locust.runners: Ramping to 139 users at a rate of 1.00 per second
+[2026-08-30 04:26:44,700] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 139} (139 total users)
+[2026-08-30 04:26:47,716] servidor-proyectos/INFO/locust.runners: Shape test updating to 140 users at 1.00 spawn rate
+[2026-08-30 04:26:47,717] servidor-proyectos/INFO/locust.runners: Ramping to 140 users at a rate of 1.00 per second
+[2026-08-30 04:26:47,718] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 140} (140 total users)
+[2026-08-30 04:26:50,739] servidor-proyectos/INFO/locust.runners: Shape test updating to 141 users at 1.00 spawn rate
+[2026-08-30 04:26:50,740] servidor-proyectos/INFO/locust.runners: Ramping to 141 users at a rate of 1.00 per second
+[2026-08-30 04:26:50,740] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 141} (141 total users)
+[2026-08-30 04:26:53,766] servidor-proyectos/INFO/locust.runners: Shape test updating to 142 users at 1.00 spawn rate
+[2026-08-30 04:26:53,766] servidor-proyectos/INFO/locust.runners: Ramping to 142 users at a rate of 1.00 per second
+[2026-08-30 04:26:53,767] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 142} (142 total users)
+[2026-08-30 04:26:56,788] servidor-proyectos/INFO/locust.runners: Shape test updating to 143 users at 1.00 spawn rate
+[2026-08-30 04:26:56,789] servidor-proyectos/INFO/locust.runners: Ramping to 143 users at a rate of 1.00 per second
+[2026-08-30 04:26:56,790] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 143} (143 total users)
+[2026-08-30 04:26:59,815] servidor-proyectos/INFO/locust.runners: Shape test updating to 144 users at 1.00 spawn rate
+[2026-08-30 04:26:59,816] servidor-proyectos/INFO/locust.runners: Ramping to 144 users at a rate of 1.00 per second
+[2026-08-30 04:26:59,817] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 144} (144 total users)
+[2026-08-30 04:27:02,832] servidor-proyectos/INFO/locust.runners: Shape test updating to 145 users at 1.00 spawn rate
+[2026-08-30 04:27:02,833] servidor-proyectos/INFO/locust.runners: Ramping to 145 users at a rate of 1.00 per second
+[2026-08-30 04:27:02,833] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 145} (145 total users)
+[2026-08-30 04:27:05,854] servidor-proyectos/INFO/locust.runners: Shape test updating to 146 users at 1.00 spawn rate
+[2026-08-30 04:27:05,855] servidor-proyectos/INFO/locust.runners: Ramping to 146 users at a rate of 1.00 per second
+[2026-08-30 04:27:05,857] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 146} (146 total users)
+[2026-08-30 04:27:08,878] servidor-proyectos/INFO/locust.runners: Shape test updating to 147 users at 1.00 spawn rate
+[2026-08-30 04:27:08,879] servidor-proyectos/INFO/locust.runners: Ramping to 147 users at a rate of 1.00 per second
+[2026-08-30 04:27:08,879] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 147} (147 total users)
+[2026-08-30 04:27:11,917] servidor-proyectos/INFO/locust.runners: Shape test updating to 148 users at 1.00 spawn rate
+[2026-08-30 04:27:11,921] servidor-proyectos/INFO/locust.runners: Ramping to 148 users at a rate of 1.00 per second
+[2026-08-30 04:27:11,922] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 148} (148 total users)
+[2026-08-30 04:27:14,950] servidor-proyectos/INFO/locust.runners: Shape test updating to 149 users at 1.00 spawn rate
+[2026-08-30 04:27:14,951] servidor-proyectos/INFO/locust.runners: Ramping to 149 users at a rate of 1.00 per second
+[2026-08-30 04:27:14,952] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 149} (149 total users)
+[2026-08-30 04:27:17,987] servidor-proyectos/INFO/locust.runners: Shape test updating to 150 users at 1.00 spawn rate
+[2026-08-30 04:27:17,987] servidor-proyectos/INFO/locust.runners: Ramping to 150 users at a rate of 1.00 per second
+[2026-08-30 04:27:17,988] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 150} (150 total users)
+[2026-08-30 04:27:21,010] servidor-proyectos/INFO/locust.runners: Shape test updating to 151 users at 1.00 spawn rate
+[2026-08-30 04:27:21,011] servidor-proyectos/INFO/locust.runners: Ramping to 151 users at a rate of 1.00 per second
+[2026-08-30 04:27:21,012] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 151} (151 total users)
+[2026-08-30 04:27:24,036] servidor-proyectos/INFO/locust.runners: Shape test updating to 152 users at 1.00 spawn rate
+[2026-08-30 04:27:24,036] servidor-proyectos/INFO/locust.runners: Ramping to 152 users at a rate of 1.00 per second
+[2026-08-30 04:27:24,037] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 152} (152 total users)
+[2026-08-30 04:27:27,072] servidor-proyectos/INFO/locust.runners: Shape test updating to 153 users at 1.00 spawn rate
+[2026-08-30 04:27:27,072] servidor-proyectos/INFO/locust.runners: Ramping to 153 users at a rate of 1.00 per second
+[2026-08-30 04:27:27,073] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 153} (153 total users)
+[2026-08-30 04:27:30,106] servidor-proyectos/INFO/locust.runners: Shape test updating to 154 users at 1.00 spawn rate
+[2026-08-30 04:27:30,108] servidor-proyectos/INFO/locust.runners: Ramping to 154 users at a rate of 1.00 per second
+[2026-08-30 04:27:30,109] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 154} (154 total users)
+[2026-08-30 04:27:33,130] servidor-proyectos/INFO/locust.runners: Shape test updating to 155 users at 1.00 spawn rate
+[2026-08-30 04:27:33,131] servidor-proyectos/INFO/locust.runners: Ramping to 155 users at a rate of 1.00 per second
+[2026-08-30 04:27:33,131] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 155} (155 total users)
+[2026-08-30 04:27:36,153] servidor-proyectos/INFO/locust.runners: Shape test updating to 156 users at 1.00 spawn rate
+[2026-08-30 04:27:36,154] servidor-proyectos/INFO/locust.runners: Ramping to 156 users at a rate of 1.00 per second
+[2026-08-30 04:27:36,155] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 156} (156 total users)
+[2026-08-30 04:27:39,171] servidor-proyectos/INFO/locust.runners: Shape test updating to 157 users at 1.00 spawn rate
+[2026-08-30 04:27:39,172] servidor-proyectos/INFO/locust.runners: Ramping to 157 users at a rate of 1.00 per second
+[2026-08-30 04:27:39,173] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 157} (157 total users)
+[2026-08-30 04:27:42,200] servidor-proyectos/INFO/locust.runners: Shape test updating to 158 users at 1.00 spawn rate
+[2026-08-30 04:27:42,200] servidor-proyectos/INFO/locust.runners: Ramping to 158 users at a rate of 1.00 per second
+[2026-08-30 04:27:42,202] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 158} (158 total users)
+[2026-08-30 04:27:45,240] servidor-proyectos/INFO/locust.runners: Shape test updating to 159 users at 1.00 spawn rate
+[2026-08-30 04:27:45,240] servidor-proyectos/INFO/locust.runners: Ramping to 159 users at a rate of 1.00 per second
+[2026-08-30 04:27:45,242] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 159} (159 total users)
+[2026-08-30 04:27:48,258] servidor-proyectos/INFO/locust.runners: Shape test updating to 160 users at 1.00 spawn rate
+[2026-08-30 04:27:48,258] servidor-proyectos/INFO/locust.runners: Ramping to 160 users at a rate of 1.00 per second
+[2026-08-30 04:27:48,259] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 160} (160 total users)
+[2026-08-30 04:27:51,280] servidor-proyectos/INFO/locust.runners: Shape test updating to 161 users at 1.00 spawn rate
+[2026-08-30 04:27:51,280] servidor-proyectos/INFO/locust.runners: Ramping to 161 users at a rate of 1.00 per second
+[2026-08-30 04:27:51,281] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 161} (161 total users)
+[2026-08-30 04:27:54,303] servidor-proyectos/INFO/locust.runners: Shape test updating to 162 users at 1.00 spawn rate
+[2026-08-30 04:27:54,303] servidor-proyectos/INFO/locust.runners: Ramping to 162 users at a rate of 1.00 per second
+[2026-08-30 04:27:54,306] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 162} (162 total users)
+[2026-08-30 04:27:57,332] servidor-proyectos/INFO/locust.runners: Shape test updating to 163 users at 1.00 spawn rate
+[2026-08-30 04:27:57,333] servidor-proyectos/INFO/locust.runners: Ramping to 163 users at a rate of 1.00 per second
+[2026-08-30 04:27:57,335] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 163} (163 total users)
+[2026-08-30 04:28:00,356] servidor-proyectos/INFO/locust.runners: Shape test updating to 164 users at 1.00 spawn rate
+[2026-08-30 04:28:00,356] servidor-proyectos/INFO/locust.runners: Ramping to 164 users at a rate of 1.00 per second
+[2026-08-30 04:28:00,357] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 164} (164 total users)
+[2026-08-30 04:28:03,393] servidor-proyectos/INFO/locust.runners: Shape test updating to 165 users at 1.00 spawn rate
+[2026-08-30 04:28:03,393] servidor-proyectos/INFO/locust.runners: Ramping to 165 users at a rate of 1.00 per second
+[2026-08-30 04:28:03,395] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 165} (165 total users)
+[2026-08-30 04:28:06,412] servidor-proyectos/INFO/locust.runners: Shape test updating to 166 users at 1.00 spawn rate
+[2026-08-30 04:28:06,412] servidor-proyectos/INFO/locust.runners: Ramping to 166 users at a rate of 1.00 per second
+[2026-08-30 04:28:06,413] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 166} (166 total users)
+[2026-08-30 04:28:09,434] servidor-proyectos/INFO/locust.runners: Shape test updating to 167 users at 1.00 spawn rate
+[2026-08-30 04:28:09,434] servidor-proyectos/INFO/locust.runners: Ramping to 167 users at a rate of 1.00 per second
+[2026-08-30 04:28:09,436] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 167} (167 total users)
+[2026-08-30 04:28:12,461] servidor-proyectos/INFO/locust.runners: Shape test updating to 168 users at 1.00 spawn rate
+[2026-08-30 04:28:12,464] servidor-proyectos/INFO/locust.runners: Ramping to 168 users at a rate of 1.00 per second
+[2026-08-30 04:28:12,466] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 168} (168 total users)
+[2026-08-30 04:28:15,483] servidor-proyectos/INFO/locust.runners: Shape test updating to 169 users at 1.00 spawn rate
+[2026-08-30 04:28:15,483] servidor-proyectos/INFO/locust.runners: Ramping to 169 users at a rate of 1.00 per second
+[2026-08-30 04:28:15,484] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 169} (169 total users)
+[2026-08-30 04:28:18,506] servidor-proyectos/INFO/locust.runners: Shape test updating to 170 users at 1.00 spawn rate
+[2026-08-30 04:28:18,507] servidor-proyectos/INFO/locust.runners: Ramping to 170 users at a rate of 1.00 per second
+[2026-08-30 04:28:18,508] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 170} (170 total users)
+[2026-08-30 04:28:21,533] servidor-proyectos/INFO/locust.runners: Shape test updating to 171 users at 1.00 spawn rate
+[2026-08-30 04:28:21,535] servidor-proyectos/INFO/locust.runners: Ramping to 171 users at a rate of 1.00 per second
+[2026-08-30 04:28:21,536] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 171} (171 total users)
+[2026-08-30 04:28:23,587] servidor-proyectos/INFO/locust.runners: Shape test updating to 172 users at 1.00 spawn rate
+[2026-08-30 04:28:23,593] servidor-proyectos/INFO/locust.runners: Ramping to 172 users at a rate of 1.00 per second
+[2026-08-30 04:28:23,594] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 172} (172 total users)
+[2026-08-30 04:28:26,611] servidor-proyectos/INFO/locust.runners: Shape test updating to 173 users at 1.00 spawn rate
+[2026-08-30 04:28:26,613] servidor-proyectos/INFO/locust.runners: Ramping to 173 users at a rate of 1.00 per second
+[2026-08-30 04:28:26,615] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 173} (173 total users)
+[2026-08-30 04:28:29,634] servidor-proyectos/INFO/locust.runners: Shape test updating to 174 users at 1.00 spawn rate
+[2026-08-30 04:28:29,634] servidor-proyectos/INFO/locust.runners: Ramping to 174 users at a rate of 1.00 per second
+[2026-08-30 04:28:29,635] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 174} (174 total users)
+[2026-08-30 04:28:32,659] servidor-proyectos/INFO/locust.runners: Shape test updating to 175 users at 1.00 spawn rate
+[2026-08-30 04:28:32,659] servidor-proyectos/INFO/locust.runners: Ramping to 175 users at a rate of 1.00 per second
+[2026-08-30 04:28:32,666] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 175} (175 total users)
+[2026-08-30 04:28:35,698] servidor-proyectos/INFO/locust.runners: Shape test updating to 176 users at 1.00 spawn rate
+[2026-08-30 04:28:35,699] servidor-proyectos/INFO/locust.runners: Ramping to 176 users at a rate of 1.00 per second
+[2026-08-30 04:28:35,700] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 176} (176 total users)
+[2026-08-30 04:28:38,753] servidor-proyectos/INFO/locust.runners: Shape test updating to 177 users at 1.00 spawn rate
+[2026-08-30 04:28:38,754] servidor-proyectos/INFO/locust.runners: Ramping to 177 users at a rate of 1.00 per second
+[2026-08-30 04:28:38,755] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 177} (177 total users)
+[2026-08-30 04:28:41,775] servidor-proyectos/INFO/locust.runners: Shape test updating to 178 users at 1.00 spawn rate
+[2026-08-30 04:28:41,775] servidor-proyectos/INFO/locust.runners: Ramping to 178 users at a rate of 1.00 per second
+[2026-08-30 04:28:41,776] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 178} (178 total users)
+[2026-08-30 04:28:44,888] servidor-proyectos/INFO/locust.runners: Shape test updating to 179 users at 1.00 spawn rate
+[2026-08-30 04:28:44,888] servidor-proyectos/INFO/locust.runners: Ramping to 179 users at a rate of 1.00 per second
+[2026-08-30 04:28:44,889] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 179} (179 total users)
+[2026-08-30 04:28:47,917] servidor-proyectos/INFO/locust.runners: Shape test updating to 180 users at 1.00 spawn rate
+[2026-08-30 04:28:47,918] servidor-proyectos/INFO/locust.runners: Ramping to 180 users at a rate of 1.00 per second
+[2026-08-30 04:28:47,919] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 180} (180 total users)
+[2026-08-30 04:28:50,947] servidor-proyectos/INFO/locust.runners: Shape test updating to 181 users at 1.00 spawn rate
+[2026-08-30 04:28:50,947] servidor-proyectos/INFO/locust.runners: Ramping to 181 users at a rate of 1.00 per second
+[2026-08-30 04:28:50,948] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 181} (181 total users)
+[2026-08-30 04:28:53,976] servidor-proyectos/INFO/locust.runners: Shape test updating to 182 users at 1.00 spawn rate
+[2026-08-30 04:28:53,977] servidor-proyectos/INFO/locust.runners: Ramping to 182 users at a rate of 1.00 per second
+[2026-08-30 04:28:53,978] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 182} (182 total users)
+[2026-08-30 04:28:56,998] servidor-proyectos/INFO/locust.runners: Shape test updating to 183 users at 1.00 spawn rate
+[2026-08-30 04:28:56,998] servidor-proyectos/INFO/locust.runners: Ramping to 183 users at a rate of 1.00 per second
+[2026-08-30 04:28:57,000] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 183} (183 total users)
+[2026-08-30 04:29:00,038] servidor-proyectos/INFO/locust.runners: Shape test updating to 184 users at 1.00 spawn rate
+[2026-08-30 04:29:00,038] servidor-proyectos/INFO/locust.runners: Ramping to 184 users at a rate of 1.00 per second
+[2026-08-30 04:29:00,039] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 184} (184 total users)
+[2026-08-30 04:29:03,068] servidor-proyectos/INFO/locust.runners: Shape test updating to 185 users at 1.00 spawn rate
+[2026-08-30 04:29:03,070] servidor-proyectos/INFO/locust.runners: Ramping to 185 users at a rate of 1.00 per second
+[2026-08-30 04:29:03,071] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 185} (185 total users)
+[2026-08-30 04:29:06,089] servidor-proyectos/INFO/locust.runners: Shape test updating to 186 users at 1.00 spawn rate
+[2026-08-30 04:29:06,090] servidor-proyectos/INFO/locust.runners: Ramping to 186 users at a rate of 1.00 per second
+[2026-08-30 04:29:06,091] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 186} (186 total users)
+[2026-08-30 04:29:09,116] servidor-proyectos/INFO/locust.runners: Shape test updating to 187 users at 1.00 spawn rate
+[2026-08-30 04:29:09,117] servidor-proyectos/INFO/locust.runners: Ramping to 187 users at a rate of 1.00 per second
+[2026-08-30 04:29:09,120] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 187} (187 total users)
+[2026-08-30 04:29:12,149] servidor-proyectos/INFO/locust.runners: Shape test updating to 188 users at 1.00 spawn rate
+[2026-08-30 04:29:12,150] servidor-proyectos/INFO/locust.runners: Ramping to 188 users at a rate of 1.00 per second
+[2026-08-30 04:29:12,151] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 188} (188 total users)
+[2026-08-30 04:29:15,174] servidor-proyectos/INFO/locust.runners: Shape test updating to 189 users at 1.00 spawn rate
+[2026-08-30 04:29:15,175] servidor-proyectos/INFO/locust.runners: Ramping to 189 users at a rate of 1.00 per second
+[2026-08-30 04:29:15,176] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 189} (189 total users)
+[2026-08-30 04:29:18,208] servidor-proyectos/INFO/locust.runners: Shape test updating to 190 users at 1.00 spawn rate
+[2026-08-30 04:29:18,209] servidor-proyectos/INFO/locust.runners: Ramping to 190 users at a rate of 1.00 per second
+[2026-08-30 04:29:18,210] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 190} (190 total users)
+[2026-08-30 04:29:21,233] servidor-proyectos/INFO/locust.runners: Shape test updating to 191 users at 1.00 spawn rate
+[2026-08-30 04:29:21,233] servidor-proyectos/INFO/locust.runners: Ramping to 191 users at a rate of 1.00 per second
+[2026-08-30 04:29:21,234] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 191} (191 total users)
+[2026-08-30 04:29:24,253] servidor-proyectos/INFO/locust.runners: Shape test updating to 192 users at 1.00 spawn rate
+[2026-08-30 04:29:24,254] servidor-proyectos/INFO/locust.runners: Ramping to 192 users at a rate of 1.00 per second
+[2026-08-30 04:29:24,256] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 192} (192 total users)
+[2026-08-30 04:29:27,279] servidor-proyectos/INFO/locust.runners: Shape test updating to 193 users at 1.00 spawn rate
+[2026-08-30 04:29:27,280] servidor-proyectos/INFO/locust.runners: Ramping to 193 users at a rate of 1.00 per second
+[2026-08-30 04:29:27,285] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 193} (193 total users)
+[2026-08-30 04:29:30,301] servidor-proyectos/INFO/locust.runners: Shape test updating to 194 users at 1.00 spawn rate
+[2026-08-30 04:29:30,302] servidor-proyectos/INFO/locust.runners: Ramping to 194 users at a rate of 1.00 per second
+[2026-08-30 04:29:30,303] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 194} (194 total users)
+[2026-08-30 04:29:33,337] servidor-proyectos/INFO/locust.runners: Shape test updating to 195 users at 1.00 spawn rate
+[2026-08-30 04:29:33,337] servidor-proyectos/INFO/locust.runners: Ramping to 195 users at a rate of 1.00 per second
+[2026-08-30 04:29:33,338] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 195} (195 total users)
+[2026-08-30 04:29:36,375] servidor-proyectos/INFO/locust.runners: Shape test updating to 196 users at 1.00 spawn rate
+[2026-08-30 04:29:36,379] servidor-proyectos/INFO/locust.runners: Ramping to 196 users at a rate of 1.00 per second
+[2026-08-30 04:29:36,381] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 196} (196 total users)
+[2026-08-30 04:29:39,397] servidor-proyectos/INFO/locust.runners: Shape test updating to 197 users at 1.00 spawn rate
+[2026-08-30 04:29:39,398] servidor-proyectos/INFO/locust.runners: Ramping to 197 users at a rate of 1.00 per second
+[2026-08-30 04:29:39,399] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 197} (197 total users)
+[2026-08-30 04:29:42,434] servidor-proyectos/INFO/locust.runners: Shape test updating to 198 users at 1.00 spawn rate
+[2026-08-30 04:29:42,440] servidor-proyectos/INFO/locust.runners: Ramping to 198 users at a rate of 1.00 per second
+[2026-08-30 04:29:42,441] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 198} (198 total users)
+[2026-08-30 04:29:45,512] servidor-proyectos/INFO/locust.runners: Shape test updating to 199 users at 1.00 spawn rate
+[2026-08-30 04:29:45,512] servidor-proyectos/INFO/locust.runners: Ramping to 199 users at a rate of 1.00 per second
+[2026-08-30 04:29:45,513] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 199} (199 total users)
+[2026-08-30 04:29:47,524] servidor-proyectos/INFO/locust.runners: Shape test updating to 200 users at 1.00 spawn rate
+[2026-08-30 04:29:47,525] servidor-proyectos/INFO/locust.runners: Ramping to 200 users at a rate of 1.00 per second
+[2026-08-30 04:29:47,526] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 200} (200 total users)
+[2026-08-30 04:29:50,549] servidor-proyectos/INFO/locust.runners: Shape test stopping
+[2026-08-30 04:29:51,207] servidor-proyectos/INFO/locust.main: --run-time limit reached, shutting down
+[2026-08-30 04:29:51,253] servidor-proyectos/INFO/locust.main: Starting Locust 2.31.6
+[2026-08-30 04:29:51,560] servidor-proyectos/INFO/locust.main: writing html report to file: /evidence/locust-report.html
+[2026-08-30 04:29:51,563] servidor-proyectos/INFO/locust.main: Shutting down (exit code 1)

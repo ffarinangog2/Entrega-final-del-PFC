@@ -1,0 +1,46 @@
+C4Component
+    title Diagrama de Componentes - academico-laboratorios-service - Nivel 3
+
+    Container(gateway, "API Gateway", "Spring Cloud Gateway", "Enruta peticiones autenticadas")
+    Container(web, "Aplicacion Web", "React", "Panel de laboratorios y monitoreo")
+    Container(mobile, "Aplicacion Movil", "Kotlin/Compose", "Escaneo QR y detalle de laboratorio")
+    Container(prometheus, "Prometheus", "Prometheus", "Series temporales de ocupacion")
+
+    Container_Boundary(academico, "academico-laboratorios-service") {
+
+        Component(controllers, "Controllers", "presentation/controller", "11 REST controllers: Laboratorio, Campus, Equipo, Horario, etc.")
+        Component(metricsRegistry, "HttpRequestsMetricsRegistry", "infrastructure/observability (Singleton)", "Instancia unica que registra http_requests_total")
+        Component(promClient, "PrometheusQueryClient", "infrastructure/observability", "Consulta PromQL para series historicas de ocupacion")
+
+        Component(facade, "LaboratorioDetalleFacade", "application/facade (Facade)", "Coordina Laboratorio + Piso + Bloque + Campus + Equipos en una sola respuesta agregada")
+        Component(services, "Application Services", "application/service", "Casos de uso por entidad (LaboratorioService, CampusService, etc.)")
+
+        Component(ports, "Repository Ports", "domain/port (Repository)", "Interfaces de dominio, sin dependencia de JPA")
+        Component(gaugeRegistry, "LaboratorioEstadoMetricsRegistry", "infrastructure/observability", "Gauge Micrometer: laboratorios_por_estado")
+        Component(domainModel, "Domain Model", "domain/model", "Entidades y objetos de valor del dominio academico")
+
+        Component(adapters, "Repository Adapters", "infrastructure/persistence/adapter", "Implementan los puertos delegando en Spring Data JPA")
+    }
+
+    ContainerDb(crdb, "CockroachDB - Academico", "CockroachDB", "Persistencia de las 11 entidades academicas")
+
+    Rel(gateway, controllers, "Enruta peticiones", "HTTP/JSON")
+    Rel(web, gateway, "GET /laboratorios, /metricas/ocupacion", "HTTPS")
+    Rel(mobile, gateway, "GET /laboratorios/{id}/detalle-completo", "HTTPS")
+
+    Rel(controllers, metricsRegistry, "Incrementa contador por peticion", "HttpMetricsFilter")
+    Rel(controllers, promClient, "GET /metricas/ocupacion", "")
+    Rel(promClient, prometheus, "Consulta /api/v1/query_range", "PromQL")
+    Rel(prometheus, metricsRegistry, "Scrapea /actuator/prometheus", "HTTP")
+
+    Rel(controllers, facade, "Usa para /detalle-completo", "")
+    Rel(controllers, services, "Delega casos de uso", "")
+    Rel(facade, services, "Orquesta Laboratorio + Piso + Bloque + Campus + Equipo", "")
+
+    Rel(services, ports, "Depende de", "")
+    Rel(services, domainModel, "Usa", "")
+    Rel(gaugeRegistry, ports, "Recalcula contarPorEstado() en cada scrape", "")
+    Rel(prometheus, gaugeRegistry, "Scrapea /actuator/prometheus", "HTTP")
+
+    Rel(adapters, ports, "Implementa", "")
+    Rel(adapters, crdb, "Lee/escribe", "SQL via Spring Data JPA")

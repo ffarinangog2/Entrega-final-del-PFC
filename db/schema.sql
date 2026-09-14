@@ -1,5 +1,7 @@
--- Esquema ejecutable de reservas-solicitudes-service para CockroachDB E3.
--- Conserva el contrato definido por Flyway V1 y materializa ADR-003 y ADR-004.
+-- LEGACY: este archivo ya no es una ruta de instalación ejecutada por Compose.
+-- La fuente de verdad de Reservas son las migraciones Flyway versionadas en
+-- services/reservas-solicitudes-service/src/main/resources/db/migration.
+-- Se conserva solo como referencia histórica; no debe aplicarse a instalaciones nuevas.
 
 CREATE DATABASE IF NOT EXISTS reservas_db;
 

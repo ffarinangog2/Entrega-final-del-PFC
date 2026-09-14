@@ -1,0 +1,17 @@
+C4Context
+    title Diagrama de Contexto - SCLI (Sistema de Control de Laboratorios Informaticos) - Nivel 1
+
+    Person(docente, "Docente", "Consulta horarios y materias")
+    Person(tecnico, "Tecnico de laboratorio", "Gestiona reservas, incidentes y escaneo QR")
+    Person(administrador, "Administrador", "Administra catalogo academico y de laboratorios")
+    Person(estudiante, "Estudiante", "Consulta disponibilidad de laboratorios")
+
+    System(scli, "SCLI", "Sistema de Control de Laboratorios Informaticos: gestiona informacion academica, laboratorios, reservas e incidentes")
+
+    System_Ext(fcm, "Firebase Cloud Messaging", "Servicio externo de notificaciones push")
+
+    Rel(docente, scli, "Consulta horarios y materias", "HTTPS")
+    Rel(tecnico, scli, "Gestiona reservas y reporta incidentes", "HTTPS / App movil")
+    Rel(administrador, scli, "Administra campus, laboratorios y equipos", "HTTPS")
+    Rel(estudiante, scli, "Consulta disponibilidad", "HTTPS")
+    Rel(scli, fcm, "Envia notificaciones de incidentes", "HTTPS")

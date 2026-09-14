@@ -1,0 +1,18 @@
+.admin-institution { display: grid; gap: 1rem; }
+.admin-institution header p { margin: 0; color: #526070; }
+.admin-institution header h1 { margin: .2rem 0; }
+.admin-institution section { background: #fff; border: 1px solid #dfe5ea; border-radius: .7rem; padding: 1rem; }
+.admin-institution__summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: .7rem; }
+.admin-institution__summary article { background: #fff; border: 1px solid #dfe5ea; border-radius: .6rem; padding: .8rem; display: grid; }
+.admin-institution__summary strong { font-size: 1.5rem; }
+.admin-institution__table-wrap { overflow-x: auto; }
+.admin-institution table { width: 100%; border-collapse: collapse; }
+.admin-institution th, .admin-institution td { padding: .65rem; border-bottom: 1px solid #e5e9ed; text-align: left; }
+.admin-institution__form { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: .7rem; align-items: end; }
+.admin-institution__form label { display: grid; gap: .3rem; }
+.admin-institution input, .admin-institution select { min-height: 2.5rem; padding: .45rem; }
+.admin-institution button { min-height: 2.5rem; }
+.admin-institution__cards, .admin-institution__catalogs { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: .7rem; margin-top: 1rem; }
+.admin-institution__cards article, .admin-institution__catalogs article { border: 1px solid #e1e6ea; border-radius: .5rem; padding: .8rem; display: grid; gap: .4rem; }
+.admin-institution__cards article div { display: flex; gap: .5rem; }
+.admin-institution__error { color: #991b1b; }.admin-institution__success { color: #166534; }

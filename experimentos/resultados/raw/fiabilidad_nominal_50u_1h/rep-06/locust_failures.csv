@@ -1,0 +1,5 @@
+Method,Name,Error,Occurrences
+GET,GET /api/v1/reservas/{id},"CatchResponseError('HTTP esperado 200, recibido 500')",14
+GET,GET /api/v1/reservas,"CatchResponseError('HTTP esperado 200, recibido 500')",43
+GET,GET /api/v1/reservas/{id},"CatchResponseError('HTTP esperado 200, recibido 401')",16673
+GET,GET /api/v1/reservas,"CatchResponseError('HTTP esperado 200, recibido 401')",50002

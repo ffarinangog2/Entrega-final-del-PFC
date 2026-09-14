@@ -1,0 +1,318 @@
+import { useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { DashboardLayout } from '../components/DashboardLayout'
+import { LaboratoriosPanel } from '../features/laboratorios/LaboratoriosPanel'
+import { MonitoreoPanel } from '../features/monitoreo/MonitoreoPanel'
+import { StudentHome } from '../features/estudiante/StudentHome'
+import { AdminDashboard } from '../features/admin/AdminDashboard'
+import { hasRole, useAuth } from '../auth'
+import {
+  obtenerDocentePorPerfil,
+  obtenerDocentesPlanificacion,
+  obtenerLaboratorios,
+  obtenerMaterias,
+  obtenerPeriodoActual,
+  obtenerCarreras,
+  type Laboratorio,
+  type Materia,
+} from '../services/academicoApi'
+import { listarPlanificacionesAgregadas, obtenerMiHorarioDocente, type Planificacion, type PlanificacionAgregada } from '../services/operationalApi'
+import { useAcademicPeriod } from '../academicPeriodContext'
+import { etiquetaPeriodo } from '../academicPeriodHelpers'
+
+const dias = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES']
+
+function MiSemana({ perfilId }: { perfilId: string }) {
+  const { periodoSeleccionado } = useAcademicPeriod()
+  const [horarios, setHorarios] = useState<Planificacion[]>([])
+  const [materias, setMaterias] = useState<Materia[]>([])
+  const [laboratorios, setLaboratorios] = useState<Laboratorio[]>([])
+  const [cargando, setCargando] = useState(true)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    let active = true
+    async function cargar() {
+      setCargando(true)
+      setError('')
+      try {
+        await obtenerDocentePorPerfil(perfilId)
+        const [horariosData, materiasData, laboratoriosData] =
+          await Promise.all([
+            obtenerMiHorarioDocente(periodoSeleccionado?.id),
+            obtenerMaterias(),
+            obtenerLaboratorios(),
+          ])
+        if (!active) return
+        setHorarios(horariosData)
+        setMaterias(materiasData)
+        setLaboratorios(laboratoriosData)
+      } catch (cause) {
+        if (active)
+          setError(
+            cause instanceof Error
+              ? cause.message
+              : 'No se pudo cargar su horario.',
+          )
+      } finally {
+        if (active) setCargando(false)
+      }
+    }
+    void cargar()
+    return () => {
+      active = false
+    }
+  }, [perfilId, periodoSeleccionado?.id])
+
+  const materiaPorId = useMemo(
+    () => new Map(materias.map((materia) => [materia.id, materia])),
+    [materias],
+  )
+  const laboratorioPorId = useMemo(
+    () =>
+      new Map(laboratorios.map((laboratorio) => [laboratorio.id, laboratorio])),
+    [laboratorios],
+  )
+  const diaActual = dias[new Date().getDay() - 1]
+  const clasesHoy = horarios.filter(
+    (horario) => horario.diaSemana === diaActual,
+  )
+
+  return (
+    <section className="my-week" aria-labelledby="mi-semana-title">
+      <header>
+        <div>
+          <p>Docencia</p>
+          <h1 id="mi-semana-title">Mi semana</h1>
+        </div>
+        <Link to="/reservas/nueva">Nueva solicitud extraordinaria</Link>
+      </header>
+      {cargando && <p role="status">Cargando su horario...</p>}
+      {!cargando && error && (
+        <p role="alert" className="my-week__error">
+          {error}
+        </p>
+      )}
+      {!cargando && !error && horarios.length === 0 && (
+        <p>No tiene clases asignadas en el periodo actual.</p>
+      )}
+      {!cargando && !error && horarios.length > 0 && (
+        <>
+          <section
+            className="my-week__today"
+            aria-labelledby="clases-hoy-title"
+          >
+            <h2 id="clases-hoy-title">Hoy</h2>
+            {clasesHoy.length === 0 ? (
+              <p>No tienes clases programadas para hoy.</p>
+            ) : (
+              clasesHoy.map((clase) => (
+                <article key={clase.id}>
+                  <time>
+                    {clase.horaInicio}–{clase.horaFin}
+                  </time>
+                  <strong>
+                    {materiaPorId.get(clase.materiaId)?.nombre ??
+                      'Materia asignada'}
+                  </strong>
+                  <span>
+                    {clase.laboratorioId
+                      ? (laboratorioPorId.get(clase.laboratorioId)?.nombre ??
+                        'Laboratorio asignado')
+                      : 'Aula por confirmar'}
+                  </span>
+                  <span>Programada</span>
+                </article>
+              ))
+            )}
+          </section>
+          <div className="my-week__grid">
+            {dias.map((dia) => {
+              const clases = horarios
+                .filter((horario) => horario.diaSemana === dia)
+                .sort((a, b) => a.horaInicio.localeCompare(b.horaInicio))
+              return (
+                <section key={dia} className="my-week__day">
+                  <h2>{dia.charAt(0) + dia.slice(1).toLowerCase()}</h2>
+                  {clases.length === 0 ? (
+                    <p>Sin clases</p>
+                  ) : (
+                    clases.map((clase) => (
+                      <article key={clase.id}>
+                        <time>
+                          {clase.horaInicio}–{clase.horaFin}
+                        </time>
+                        <strong>
+                          {materiaPorId.get(clase.materiaId)?.nombre ??
+                            'Materia asignada'}
+                        </strong>
+                        <span>
+                          {clase.laboratorioId
+                            ? (laboratorioPorId.get(clase.laboratorioId)
+                                ?.nombre ?? 'Laboratorio asignado')
+                            : 'Aula por confirmar'}
+                        </span>
+                      </article>
+                    ))
+                  )}
+                </section>
+              )
+            })}
+          </div>
+        </>
+      )}
+    </section>
+  )
+}
+
+function InicioPorRol() {
+  const { periodoSeleccionado } = useAcademicPeriod()
+  const { usuario } = useAuth()
+  const estudiante = hasRole(usuario, 'ESTUDIANTE')
+  const coordinador = hasRole(usuario, 'COORDINADOR')
+  const administradorPiso = hasRole(usuario, 'ADMINISTRADOR_PISO')
+  const [resumenCoordinacion, setResumenCoordinacion] = useState<{
+    periodo: string
+    carrera: string
+    plan: PlanificacionAgregada | null
+    materias: number
+    docentes: number
+    laboratorios: number
+  } | null>(null)
+  const [errorCoordinacion, setErrorCoordinacion] = useState('')
+  useEffect(() => {
+    if (!coordinador) return
+    let active = true
+    void Promise.all([
+      listarPlanificacionesAgregadas(),
+      periodoSeleccionado ? Promise.resolve(periodoSeleccionado) : obtenerPeriodoActual(),
+      obtenerMaterias(),
+      obtenerCarreras(),
+      obtenerDocentesPlanificacion(),
+      obtenerLaboratorios(),
+    ])
+      .then(([planes, periodoConsulta, materias, carreras, docentes, laboratorios]) => {
+        if (!active) return
+        const carreraId = materias[0]?.carreraId
+        setResumenCoordinacion({
+          periodo: etiquetaPeriodo(periodoConsulta),
+          carrera:
+            carreras.find((item) => item.id === carreraId)?.nombre ??
+            'Mi carrera institucional',
+          plan: planes.find((item) => item.periodoId === periodoConsulta.id) ?? null,
+          materias: materias.filter((item) => item.activo).length,
+          docentes: docentes.filter((item) => item.activo).length,
+          laboratorios: laboratorios.filter((item) => item.activo).length,
+        })
+      })
+      .catch((cause) => {
+        if (active)
+          setErrorCoordinacion(
+            cause instanceof Error
+              ? cause.message
+              : 'No se pudo cargar el resumen de coordinación.',
+          )
+      })
+    return () => {
+      active = false
+    }
+  }, [coordinador, periodoSeleccionado])
+  const titulo = estudiante
+    ? 'Mi información académica'
+    : coordinador
+      ? 'Planificación de mi carrera'
+      : administradorPiso
+        ? 'Operación de mi piso'
+        : 'Bienvenido a SCLI'
+  const descripcion = estudiante
+    ? 'Registre su presencia cuando exista una actividad de laboratorio habilitada y consulte su historial propio.'
+    : coordinador
+      ? 'Organice el horario semestral de su carrera y consulte su estado sin intervenir en la operación diaria.'
+      : administradorPiso
+        ? 'Revise la planificación, las solicitudes y los incidentes correspondientes a su piso.'
+        : 'Use el menú para acceder a las funciones disponibles para su perfil.'
+
+  return (
+    <section className="role-home">
+      <h1>{titulo}</h1>
+      <p>{descripcion}</p>
+      <div className="role-home__links">
+        {coordinador && (
+          <>
+            {errorCoordinacion && <p role="alert">{errorCoordinacion}</p>}
+            {resumenCoordinacion && (
+              <section
+                className="role-home__summary role-home__summary--coordination"
+                aria-label="Resumen de coordinación"
+              >
+                <p>
+                  <strong>Carrera:</strong> {resumenCoordinacion.carrera}
+                </p>
+                <p>
+                  <strong>Periodo:</strong> {resumenCoordinacion.periodo}
+                </p>
+                <p>
+                  <strong>Estado:</strong>{' '}
+                  {resumenCoordinacion.plan?.estado === 'EN_REVISION' ? 'En revisión' : resumenCoordinacion.plan?.estado === 'REQUIERE_CAMBIOS' ? 'Requiere cambios' : resumenCoordinacion.plan?.estado === 'APROBADA' ? 'Aprobada' : resumenCoordinacion.plan?.estado === 'FINALIZADA' ? 'Finalizada' : resumenCoordinacion.plan ? 'Borrador' : 'Sin iniciar'}
+                </p>
+                <p>
+                  {resumenCoordinacion.materias} materias disponibles ·{' '}
+                  {resumenCoordinacion.docentes} docentes disponibles ·{' '}
+                  {resumenCoordinacion.laboratorios} laboratorios disponibles ·{' '}
+                  {resumenCoordinacion.plan?.bloques.filter((item) => item.estado !== 'CANCELADA').length ?? 0} bloques planificados
+                </p>
+                <div className="role-home__level-progress" aria-label="Progreso por niveles">
+                  {Array.from({ length: 10 }, (_, index) => index + 1).map((value) => {
+                    const cantidad = (resumenCoordinacion.plan?.bloques ?? []).filter(
+                      (item) => (item.nivel ?? 1) === value,
+                    ).length
+                    return <span key={value}>{value}° <strong>{cantidad}</strong></span>
+                  })}
+                </div>
+              </section>
+            )}
+            <Link to="/planificacion">Abrir planificación</Link>
+            <Link to="/reservas/calendario">
+              Disponibilidad de laboratorios
+            </Link>
+          </>
+        )}
+        {administradorPiso && (
+          <>
+            <Link to="/planificacion">Planificación recibida</Link>
+            <Link to="/reservas">Solicitudes de mi piso</Link>
+            <Link to="/incidentes">Incidentes de mi piso</Link>
+          </>
+        )}
+        {estudiante && (
+          <>
+            <Link to="/asistencia">Registro de laboratorio</Link>
+            <Link to="/perfil">Mi perfil</Link>
+          </>
+        )}
+      </div>
+    </section>
+  )
+}
+
+export function MainPage() {
+  const { usuario } = useAuth()
+  const administrador = hasRole(usuario, 'ADMINISTRADOR')
+  const administradorPiso = hasRole(usuario, 'ADMINISTRADOR_PISO')
+  const docente = hasRole(usuario, 'DOCENTE')
+  const estudiante = hasRole(usuario, 'ESTUDIANTE')
+  return (
+    <DashboardLayout breadcrumb="Inicio">
+      {administrador && (
+        <>
+          <AdminDashboard />
+          <MonitoreoPanel />
+        </>
+      )}
+      {administradorPiso && <LaboratoriosPanel />}
+      {docente && usuario?.perfilId && <MiSemana perfilId={usuario.perfilId} />}
+      {estudiante && <StudentHome />}
+      {!administrador && !docente && !estudiante && <InicioPorRol />}
+    </DashboardLayout>
+  )
+}

@@ -1,0 +1,7 @@
+[2026-08-30 04:42:20,827] servidor-proyectos/INFO/locust.main: Run time limit set to 300 seconds
+[2026-08-30 04:42:20,828] servidor-proyectos/INFO/locust.main: Starting Locust 2.31.6
+[2026-08-30 04:42:20,830] servidor-proyectos/INFO/locust.runners: Ramping to 50 users at a rate of 10.00 per second
+[2026-08-30 04:42:24,847] servidor-proyectos/INFO/locust.runners: All users spawned: {"ReservasUser": 50} (50 total users)
+[2026-08-30 04:47:20,178] servidor-proyectos/INFO/locust.main: --run-time limit reached, shutting down
+[2026-08-30 04:47:20,577] servidor-proyectos/INFO/locust.main: writing html report to file: /evidence/locust-report.html
+[2026-08-30 04:47:20,584] servidor-proyectos/INFO/locust.main: Shutting down (exit code 0)

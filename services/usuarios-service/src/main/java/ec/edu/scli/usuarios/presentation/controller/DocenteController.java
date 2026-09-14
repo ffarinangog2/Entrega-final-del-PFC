@@ -1,0 +1,109 @@
+package ec.edu.scli.usuarios.presentation.controller;
+
+import ec.edu.scli.usuarios.presentation.dto.docente.DocenteRequest;
+import ec.edu.scli.usuarios.presentation.dto.docente.DocenteResponse;
+import ec.edu.scli.usuarios.application.usecase.DocenteService;
+import ec.edu.scli.usuarios.application.usecase.PerfilService;
+import ec.edu.scli.usuarios.presentation.dto.docente.DocenteResumenResponse;
+import ec.edu.scli.usuarios.security.JwtPrincipal;
+
+import jakarta.validation.Valid;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
+
+import java.net.URI;
+import java.util.UUID;
+
+@RestController
+@RequestMapping("/api/v1/docentes")
+public class DocenteController {
+
+    private final DocenteService docenteService;
+    private final PerfilService perfilService;
+
+    public DocenteController(DocenteService docenteService, PerfilService perfilService) {
+        this.docenteService = docenteService;
+        this.perfilService = perfilService;
+    }
+
+    @GetMapping("/{id}/resumen")
+    public DocenteResumenResponse resumen(@PathVariable UUID id) {
+        var docente=docenteService.obtenerPorId(id); var perfil=perfilService.obtenerPorId(docente.perfilId());
+        return new DocenteResumenResponse(docente.id(),perfil.nombres(),perfil.apellidos(),docente.codigoDocente());
+    }
+
+    @PostMapping
+    public ResponseEntity<DocenteResponse> crear(
+            @Valid @RequestBody DocenteRequest request
+    ) {
+
+        DocenteResponse docenteCreado =
+                docenteService.crear(request);
+
+        URI ubicacion = URI.create(
+                "/api/v1/docentes/" + docenteCreado.id()
+        );
+
+        return ResponseEntity
+                .created(ubicacion)
+                .body(docenteCreado);
+    }
+
+    @GetMapping
+    public ResponseEntity<Page<DocenteResponse>> listar(
+            Pageable pageable
+    ) {
+
+        Page<DocenteResponse> docentes =
+                docenteService.listar(pageable);
+
+        return ResponseEntity.ok(docentes);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<DocenteResponse> obtenerPorId(
+            @PathVariable UUID id
+    ) {
+
+        DocenteResponse docente =
+                docenteService.obtenerPorId(id);
+
+        return ResponseEntity.ok(docente);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<DocenteResponse> actualizar(
+            @PathVariable UUID id,
+            @Valid @RequestBody DocenteRequest request
+    ) {
+
+        DocenteResponse docenteActualizado =
+                docenteService.actualizar(id, request);
+
+        return ResponseEntity.ok(docenteActualizado);
+    }
+
+    @GetMapping("/perfil/{perfilId}")
+    public ResponseEntity<DocenteResponse> obtenerPorPerfilId(
+            @PathVariable UUID perfilId,
+            Authentication authentication
+    ) {
+        boolean puedeLeerUsuarios = authentication.getAuthorities().stream()
+                .anyMatch(authority -> "USUARIO_LEER".equals(authority.getAuthority()));
+        boolean esPropio = authentication.getPrincipal() instanceof JwtPrincipal principal
+                && perfilId.equals(principal.perfilId());
+        if (!puedeLeerUsuarios && !esPropio) {
+            throw new AccessDeniedException("No puede consultar el docente de otro perfil");
+        }
+
+        DocenteResponse docente =
+                docenteService.obtenerPorPerfilId(perfilId);
+
+        return ResponseEntity.ok(docente);
+    }
+}

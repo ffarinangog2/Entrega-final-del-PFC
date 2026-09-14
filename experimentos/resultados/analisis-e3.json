@@ -1,0 +1,272 @@
+{
+  "security": {
+    "total": 21,
+    "correct": 21,
+    "proportion": 1.0,
+    "wilson95": [
+      0.845360981013798,
+      1.0
+    ],
+    "false_allowed": 0,
+    "false_rejected": 0,
+    "flaky": false,
+    "decision": "CUMPLE",
+    "unfavorable": []
+  },
+  "maintenance": {
+    "metrics": [
+      {
+        "component": "academico",
+        "metric": "lines",
+        "n": 3,
+        "values": [
+          83.16089903674634,
+          83.16089903674634,
+          83.16089903674634
+        ],
+        "mean": 83.16089903674634,
+        "sample_sd": 0.0,
+        "ci95_low": 83.16089903674634,
+        "ci95_high": 83.16089903674634,
+        "threshold": 70.0,
+        "commands_ok": true,
+        "decision": "CUMPLE"
+      },
+      {
+        "component": "android",
+        "metric": "lines",
+        "n": 3,
+        "values": [
+          38.34070796460177,
+          38.34070796460177,
+          38.34070796460177
+        ],
+        "mean": 38.34070796460177,
+        "sample_sd": 0.0,
+        "ci95_low": 38.34070796460177,
+        "ci95_high": 38.34070796460177,
+        "threshold": 70.0,
+        "commands_ok": true,
+        "decision": "NO CUMPLE"
+      },
+      {
+        "component": "auth",
+        "metric": "lines",
+        "n": 3,
+        "values": [
+          88.042203985932,
+          88.042203985932,
+          88.042203985932
+        ],
+        "mean": 88.042203985932,
+        "sample_sd": 0.0,
+        "ci95_low": 88.042203985932,
+        "ci95_high": 88.042203985932,
+        "threshold": 70.0,
+        "commands_ok": true,
+        "decision": "CUMPLE"
+      },
+      {
+        "component": "gateway",
+        "metric": "lines",
+        "n": 3,
+        "values": [
+          88.88888888888889,
+          88.88888888888889,
+          88.88888888888889
+        ],
+        "mean": 88.88888888888889,
+        "sample_sd": 0.0,
+        "ci95_low": 88.88888888888889,
+        "ci95_high": 88.88888888888889,
+        "threshold": 70.0,
+        "commands_ok": true,
+        "decision": "CUMPLE"
+      },
+      {
+        "component": "reservas",
+        "metric": "branch",
+        "n": 3,
+        "values": [
+          56.72559569561876,
+          56.72559569561876,
+          56.72559569561876
+        ],
+        "mean": 56.72559569561876,
+        "sample_sd": 0.0,
+        "ci95_low": 56.72559569561876,
+        "ci95_high": 56.72559569561876,
+        "threshold": 48.0,
+        "commands_ok": true,
+        "decision": "CUMPLE"
+      },
+      {
+        "component": "reservas",
+        "metric": "lines",
+        "n": 3,
+        "values": [
+          84.35857805255023,
+          84.35857805255023,
+          84.35857805255023
+        ],
+        "mean": 84.35857805255023,
+        "sample_sd": 0.0,
+        "ci95_low": 84.35857805255023,
+        "ci95_high": 84.35857805255023,
+        "threshold": 80.0,
+        "commands_ok": true,
+        "decision": "CUMPLE"
+      },
+      {
+        "component": "usuarios",
+        "metric": "lines",
+        "n": 3,
+        "values": [
+          84.0523509452254,
+          84.0523509452254,
+          84.0523509452254
+        ],
+        "mean": 84.0523509452254,
+        "sample_sd": 0.0,
+        "ci95_low": 84.0523509452254,
+        "ci95_high": 84.0523509452254,
+        "threshold": 70.0,
+        "commands_ok": true,
+        "decision": "CUMPLE"
+      },
+      {
+        "component": "web",
+        "metric": "branches",
+        "n": 3,
+        "values": [
+          73.69,
+          73.69,
+          73.69
+        ],
+        "mean": 73.69,
+        "sample_sd": 0.0,
+        "ci95_low": 73.69,
+        "ci95_high": 73.69,
+        "threshold": 70.0,
+        "commands_ok": true,
+        "decision": "CUMPLE"
+      },
+      {
+        "component": "web",
+        "metric": "functions",
+        "n": 3,
+        "values": [
+          81.87,
+          81.87,
+          81.87
+        ],
+        "mean": 81.87,
+        "sample_sd": 0.0,
+        "ci95_low": 81.87,
+        "ci95_high": 81.87,
+        "threshold": 70.0,
+        "commands_ok": true,
+        "decision": "CUMPLE"
+      },
+      {
+        "component": "web",
+        "metric": "lines",
+        "n": 3,
+        "values": [
+          89.91,
+          89.91,
+          89.91
+        ],
+        "mean": 89.91,
+        "sample_sd": 0.0,
+        "ci95_low": 89.91,
+        "ci95_high": 89.91,
+        "threshold": 70.0,
+        "commands_ok": true,
+        "decision": "CUMPLE"
+      },
+      {
+        "component": "web",
+        "metric": "statements",
+        "n": 3,
+        "values": [
+          85.96,
+          85.96,
+          85.96
+        ],
+        "mean": 85.96,
+        "sample_sd": 0.0,
+        "ci95_low": 85.96,
+        "ci95_high": 85.96,
+        "threshold": 70.0,
+        "commands_ok": true,
+        "decision": "CUMPLE"
+      }
+    ],
+    "decision": "NO CUMPLE",
+    "unfavorable": [
+      {
+        "component": "android",
+        "metric": "lines",
+        "n": 3,
+        "values": [
+          38.34070796460177,
+          38.34070796460177,
+          38.34070796460177
+        ],
+        "mean": 38.34070796460177,
+        "sample_sd": 0.0,
+        "ci95_low": 38.34070796460177,
+        "ci95_high": 38.34070796460177,
+        "threshold": 70.0,
+        "commands_ok": true,
+        "decision": "NO CUMPLE"
+      }
+    ]
+  },
+  "compatibility": {
+    "motors": {
+      "chromium": {
+        "total": 24,
+        "passed": 24,
+        "failed": 0,
+        "skipped": 0,
+        "flaky": 0,
+        "proportion": 1.0,
+        "wilson95": [
+          0.862023795269197,
+          1.0
+        ],
+        "decision": "CUMPLE"
+      },
+      "firefox": {
+        "total": 24,
+        "passed": 24,
+        "failed": 0,
+        "skipped": 0,
+        "flaky": 0,
+        "proportion": 1.0,
+        "wilson95": [
+          0.862023795269197,
+          1.0
+        ],
+        "decision": "CUMPLE"
+      },
+      "webkit": {
+        "total": 24,
+        "passed": 24,
+        "failed": 0,
+        "skipped": 0,
+        "flaky": 0,
+        "proportion": 1.0,
+        "wilson95": [
+          0.862023795269197,
+          1.0
+        ],
+        "decision": "CUMPLE"
+      }
+    },
+    "decision": "CUMPLE",
+    "unfavorable": {}
+  }
+}

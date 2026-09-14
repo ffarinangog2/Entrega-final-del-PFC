@@ -1,0 +1,15 @@
+{
+  "run_id": "esc1-production-r04",
+  "strategy": "production",
+  "scenario": "esc1",
+  "repetition": 4,
+  "seed": 20260908,
+  "sha": "e43967eda31410b7fef060cfc7903cea94efbe96",
+  "started_at": "2026-09-05T02:03:17.300352+00:00",
+  "finished_at": "2026-09-05T02:08:18.727477+00:00",
+  "users": 50,
+  "duration": "5m",
+  "exit_code": 1,
+  "excluded_from_analysis": false,
+  "records": []
+}

@@ -1,0 +1,2 @@
+Method,Name,Error,Occurrences,First Seen,Last Seen
+GET,GET /api/v1/reservas,"CatchResponseError('HTTP esperado 200, recibido 500')",2,2026-09-05T01:50:07Z,2026-09-05T01:50:07Z

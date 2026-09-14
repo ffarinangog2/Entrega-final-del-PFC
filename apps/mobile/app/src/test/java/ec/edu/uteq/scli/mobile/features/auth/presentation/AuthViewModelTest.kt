@@ -1,0 +1,197 @@
+package ec.edu.uteq.scli.mobile.features.auth.presentation
+
+import ec.edu.uteq.scli.mobile.common.network.NetworkResult
+import ec.edu.uteq.scli.mobile.features.auth.data.AuthRepository
+import ec.edu.uteq.scli.mobile.features.auth.data.AuthSession
+import ec.edu.uteq.scli.mobile.features.auth.data.AuthUserResponse
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runCurrent
+import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
+import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Before
+import org.junit.Test
+
+@OptIn(ExperimentalCoroutinesApi::class)
+class AuthViewModelTest {
+    private val dispatcher = StandardTestDispatcher()
+
+    @Before fun setUp() = Dispatchers.setMain(dispatcher)
+    @After fun tearDown() = Dispatchers.resetMain()
+
+    @Test
+    fun `login correcto autentica la sesion`() = runTest {
+        val repository = FakeAuthRepository()
+        val viewModel = AuthViewModel(repository)
+
+        viewModel.login("admin", "Admin123!")
+        runCurrent()
+
+        assertEquals(SESSION, viewModel.uiState.value.sesion)
+        assertFalse(viewModel.uiState.value.cargando)
+    }
+
+    @Test
+    fun `credenciales invalidas muestran error`() = runTest {
+        val repository = FakeAuthRepository().apply {
+            loginResult = NetworkResult.Failure(401, "credenciales_invalidas")
+        }
+        val viewModel = AuthViewModel(repository)
+
+        viewModel.login("admin", "incorrecta")
+        runCurrent()
+
+        assertEquals("credenciales_invalidas", viewModel.uiState.value.error)
+        assertTrue(viewModel.uiState.value.sesion == null)
+    }
+
+    @Test
+    fun `error de red se expone`() = runTest {
+        val repository = FakeAuthRepository().apply {
+            loginResult = NetworkResult.Failure(null, "error_red")
+        }
+        val viewModel = AuthViewModel(repository)
+
+        viewModel.login("admin", "Admin123!")
+        runCurrent()
+
+        assertEquals("error_red", viewModel.uiState.value.error)
+    }
+
+    @Test
+    fun `login vacio se rechaza sin llamar al repositorio`() = runTest {
+        val repository = FakeAuthRepository()
+        val viewModel = AuthViewModel(repository)
+        runCurrent()
+
+        viewModel.login(" ", "")
+
+        assertEquals("Completa usuario y contraseña", viewModel.uiState.value.error)
+        assertEquals(0, repository.loginCalls)
+    }
+
+    @Test
+    fun `sesion persistida se restaura sin refresh`() = runTest {
+        val repository = FakeAuthRepository().apply { restored = SESSION }
+
+        val viewModel = AuthViewModel(repository)
+        runCurrent()
+
+        assertEquals(SESSION, viewModel.uiState.value.sesion)
+        assertEquals(0, repository.refreshCalls)
+    }
+
+    @Test
+    fun `sin sesion persistida intenta refresh`() = runTest {
+        val repository = FakeAuthRepository().apply { refreshed = SESSION }
+
+        val viewModel = AuthViewModel(repository)
+        runCurrent()
+
+        assertEquals(SESSION, viewModel.uiState.value.sesion)
+        assertEquals(1, repository.refreshCalls)
+    }
+
+    @Test
+    fun `expiracion notificada elimina sesion y muestra error`() = runTest {
+        val repository = FakeAuthRepository().apply { restored = SESSION }
+        val viewModel = AuthViewModel(repository)
+
+        repository.expireSession()
+
+        assertEquals(null, viewModel.uiState.value.sesion)
+        assertEquals("Tu sesión expiró.", viewModel.uiState.value.error)
+    }
+
+    @Test
+    fun `logout elimina la sesion`() = runTest {
+        val repository = FakeAuthRepository().apply { restored = SESSION }
+        val viewModel = AuthViewModel(repository)
+
+        viewModel.logout()
+        runCurrent()
+
+        assertTrue(viewModel.uiState.value.sesion == null)
+        assertTrue(repository.loggedOut)
+    }
+
+    @Test
+    fun `solicitarRecuperacion exitosa expone mensaje neutro`() = runTest {
+        val repository = FakeAuthRepository().apply {
+            forgotPasswordResult = NetworkResult.Success("Si el identificador existe en el sistema, recibirás un enlace...")
+        }
+        val viewModel = AuthViewModel(repository)
+        runCurrent()
+
+        viewModel.solicitarRecuperacion("docente@uteq.edu.ec")
+        runCurrent()
+
+        assertEquals("Si el identificador existe en el sistema, recibirás un enlace...", viewModel.uiState.value.recuperacionMensaje)
+        assertFalse(viewModel.uiState.value.recuperacionCargando)
+        assertEquals(1, repository.forgotPasswordCalls)
+    }
+
+    @Test
+    fun `solicitarRecuperacion vacia muestra error sin llamar al repositorio`() = runTest {
+        val repository = FakeAuthRepository()
+        val viewModel = AuthViewModel(repository)
+        runCurrent()
+
+        viewModel.solicitarRecuperacion("   ")
+
+        assertEquals("Ingresa tu usuario o correo institucional", viewModel.uiState.value.recuperacionError)
+        assertEquals(0, repository.forgotPasswordCalls)
+    }
+
+    private class FakeAuthRepository : AuthRepository {
+        var loginResult: NetworkResult<AuthSession> = NetworkResult.Success(SESSION)
+        var forgotPasswordResult: NetworkResult<String> = NetworkResult.Success("ok")
+        var restored: AuthSession? = null
+        var refreshed: AuthSession? = null
+        var loggedOut = false
+        var loginCalls = 0
+        var refreshCalls = 0
+        var forgotPasswordCalls = 0
+        private var expirationHandler: (() -> Unit)? = null
+
+        override suspend fun login(username: String, password: String): NetworkResult<AuthSession> {
+            loginCalls++
+            return loginResult
+        }
+        override fun restoreSession() = restored
+        override suspend fun refreshSession(): AuthSession? {
+            refreshCalls++
+            return refreshed
+        }
+        override suspend fun logout() { loggedOut = true }
+        override suspend fun forgotPassword(identifier: String): NetworkResult<String> {
+            forgotPasswordCalls++
+            return forgotPasswordResult
+        }
+        override fun onSessionExpired(listener: () -> Unit) { expirationHandler = listener }
+        fun expireSession() = expirationHandler?.invoke()
+    }
+
+    private companion object {
+        val SESSION = AuthSession(
+            tokenType = "Bearer",
+            accessToken = "access-token",
+            refreshToken = "refresh-token",
+            expiresAtMillis = Long.MAX_VALUE,
+            usuario = AuthUserResponse(
+                id = "user-id",
+                perfilId = "profile-id",
+                username = "admin",
+                nombres = "Admin",
+                apellidos = "SCLI",
+                emailInstitucional = "admin@example.edu",
+            ),
+        )
+    }
+}

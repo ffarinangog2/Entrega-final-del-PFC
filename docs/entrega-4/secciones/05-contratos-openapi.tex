@@ -1,0 +1,74 @@
+\section{Contratos OpenAPI y trazabilidad de interfaz}
+\label{sec:contratos-openapi}
+
+La E5 incorpora contratos OpenAPI 3.1.0 versionados para describir de forma
+reproducible la superficie HTTP de los cuatro servicios de dominio y de la
+fachada expuesta por el API Gateway. Los contratos se conservan en
+\path{docs/openapi/}:
+
+\begin{itemize}
+  \item \texttt{auth-service-openapi.json};
+  \item \texttt{usuarios-service-openapi.json};
+  \item \texttt{academico-laboratorios-service-openapi.json};
+  \item \texttt{reservas-solicitudes-service-openapi.json}; y
+  \item \texttt{api-gateway-openapi.json}.
+\end{itemize}
+
+\subsection{Cobertura y fachada}
+
+La fuente autoritativa contrasta cada snapshot con los
+\texttt{RequestMappingInfo} que Spring registra en el
+\texttt{RequestMappingHandlerMapping} del contexto de prueba. Auth cubre 12/12
+operaciones, Usuarios 44/44 y Académico 71/71. Reservas cubre 79/79 con el
+componente experimental ARBITER habilitado; con su configuración predeterminada
+hay 77 operaciones y no existen los dos mappings experimentales. El contrato de
+79 describe, por tanto, la superficie habilitable y no afirma que ARBITER esté
+activo por defecto.
+
+La fachada del Gateway contiene 159 rutas y 224/224 operaciones: 182 canónicas,
+8 alias de Auth y 34 alias de Usuarios. Como el Gateway usa
+\texttt{RouterFunction}, la prueba envía cada operación a los routers reales y
+comprueba el backend elegido y la reescritura de los alias. La completitud de la
+fachada se define como todas las operaciones de backend públicas, previamente
+validadas contra Spring runtime, más los alias explícitos realmente enrutados.
+
+\subsection{Seguridad contractual}
+
+Las operaciones externas protegidas declaran un esquema HTTP Bearer con formato
+JWT. Los endpoints públicos de autenticación no exigen ese esquema. Las APIs
+internas de los servicios usan un esquema \texttt{apiKey} en el encabezado
+\texttt{X-Internal-Api-Key}; esas rutas internas no forman parte del contrato de
+fachada del Gateway.
+
+\subsection{Producción, validación y CI}
+
+Los snapshots se generan determinísticamente de controladores, DTO y rutas
+vigentes sin requerir que los servicios arranquen con infraestructura externa.
+Desde la raíz se validan o regeneran con:
+
+\begin{lstlisting}
+python scripts/validar-contratos-openapi.py
+python scripts/validar-contratos-openapi.py --generate
+\end{lstlisting}
+
+El script Python conserva la generación y comprueba JSON, estructura OpenAPI,
+identificadores de operación, referencias locales, esquemas de seguridad y
+deriva del snapshot respecto de su productor. El mecanismo histórico obtenía
+tanto el esperado como el snapshot mediante el mismo extractor regex; por ello
+era circular como prueba de completitud. Ya no se presenta con ese alcance.
+
+La completitud método+ruta se comprueba ahora de forma independiente con clases
+compiladas y contextos Spring reales de prueba: no se leen fuentes Java como
+texto ni se reutiliza \texttt{discover\_operations()}. El comparador es
+bidireccional, normaliza solo los nombres de variables de path y rechaza rutas
+faltantes o adicionales, método/path incorrectos y duplicados exactos o
+semánticos. Pruebas negativas cubren además prefijos de clase,
+\texttt{RequestMapping(method=...)}, mappings múltiples y deriva del Gateway.
+El job matricial existente ejecuta \texttt{mvn verify} para los cinco módulos en
+cada push y pull request; no existe un flag opcional que omita estas pruebas.
+
+OpenAPI y Pact son complementarios. OpenAPI describe la superficie de la API,
+sus parámetros y schemas; Pact verifica interacciones consumidor--proveedor
+seleccionadas. Ninguno sustituye al otro. La validación runtime acredita la
+completitud estructural método+ruta, pero no demuestra por sí sola todos los
+comportamientos dinámicos ni las reglas de negocio durante ejecución.

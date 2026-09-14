@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">SCLI Mobile</string>
+
+    <string name="nav_incidentes">Incidents</string>
+    <string name="nav_reservas">Reservations</string>
+    <string name="nav_perfil">Profile</string>
+    <string name="auth_logout">Log out</string>
+
+    <string name="incidentes_titulo">Reported incidents</string>
+    <string name="incidentes_form_titulo">Report new incident</string>
+    <string name="incidentes_form_laboratorio_equipo">Affected lab / equipment</string>
+    <string name="incidentes_form_descripcion">Description</string>
+    <string name="incidentes_form_prioridad">Priority</string>
+    <string name="incidentes_form_fecha">Date</string>
+    <string name="incidentes_form_guardar">Save incident</string>
+    <string name="incidentes_lista_vacia">No incidents reported yet.</string>
+    <string name="incidentes_form_error_campos">Fill in the lab/equipment and description fields.</string>
+
+    <string name="perfil_titulo">Technician profile</string>
+    <string name="perfil_nombre_label">Name</string>
+    <string name="perfil_settings_titulo">Settings</string>
+    <string name="perfil_settings_notificaciones">Incident notifications</string>
+    <string name="perfil_settings_tema_titulo">Theme</string>
+    <string name="perfil_settings_tema_sistema">System</string>
+    <string name="perfil_settings_tema_claro">Light</string>
+    <string name="perfil_settings_tema_oscuro">Dark</string>
+    <string name="perfil_settings_idioma_titulo">Language</string>
+    <string name="perfil_settings_idioma_sistema">System</string>
+    <string name="perfil_settings_idioma_es">Español</string>
+    <string name="perfil_settings_idioma_en">English</string>
+
+    <string name="notification_channel_id" translatable="false">incidentes_channel</string>
+    <string name="notification_channel_nombre">Incidents</string>
+    <string name="notification_channel_descripcion">Alerts for new incidents and push messages</string>
+    <string name="notification_incidente_creado_titulo">Incident reported</string>
+</resources>

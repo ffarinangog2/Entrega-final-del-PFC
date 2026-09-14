@@ -1,0 +1,886 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "SCLI - Auth API",
+    "version": "1.0.0",
+    "description": "Snapshot determinista derivado de controladores y DTO del código fuente vigente."
+  },
+  "paths": {
+    "/api/v1/auth/admin/usuarios": {
+      "get": {
+        "operationId": "AdminUsuarioController_listar",
+        "tags": [
+          "AdminUsuarioController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AdminUsuarioResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "AdminUsuarioController_crear",
+        "tags": [
+          "AdminUsuarioController"
+        ],
+        "responses": {
+          "201": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminUsuarioResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminUsuarioCreateRequest"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/auth/admin/usuarios/{id}": {
+      "put": {
+        "operationId": "AdminUsuarioController_actualizar",
+        "tags": [
+          "AdminUsuarioController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminUsuarioResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminUsuarioUpdateRequest"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/v1/auth/forgot-password": {
+      "post": {
+        "operationId": "AuthController_forgotPassword",
+        "tags": [
+          "AuthController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ForgotPasswordRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/login": {
+      "post": {
+        "operationId": "AuthController_login",
+        "tags": [
+          "AuthController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/logout": {
+      "post": {
+        "operationId": "AuthController_logout",
+        "tags": [
+          "AuthController"
+        ],
+        "responses": {
+          "204": {
+            "description": "Respuesta satisfactoria"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshTokenRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/refresh": {
+      "post": {
+        "operationId": "AuthController_refresh",
+        "tags": [
+          "AuthController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshTokenRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/reset-password": {
+      "post": {
+        "operationId": "AuthController_resetPassword",
+        "tags": [
+          "AuthController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetPasswordRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/internal/admin/usuarios": {
+      "post": {
+        "operationId": "InternalAdminUsuarioController_crear",
+        "tags": [
+          "InternalAdminUsuarioController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminUsuarioResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminUsuarioCreateRequest"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "internalApiKey": []
+          }
+        ]
+      }
+    },
+    "/api/v1/internal/admin/usuarios/{id}": {
+      "delete": {
+        "operationId": "InternalAdminUsuarioController_eliminarCredencialCreada",
+        "tags": [
+          "InternalAdminUsuarioController"
+        ],
+        "responses": {
+          "204": {
+            "description": "Respuesta satisfactoria"
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "perfilId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "internalApiKey": []
+          }
+        ]
+      },
+      "get": {
+        "operationId": "InternalAdminUsuarioController_obtener",
+        "tags": [
+          "InternalAdminUsuarioController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminUsuarioResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "internalApiKey": []
+          }
+        ]
+      },
+      "put": {
+        "operationId": "InternalAdminUsuarioController_actualizar",
+        "tags": [
+          "InternalAdminUsuarioController"
+        ],
+        "responses": {
+          "200": {
+            "description": "Respuesta satisfactoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminUsuarioResponse"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminUsuarioUpdateRequest"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "internalApiKey": []
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      },
+      "internalApiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-Internal-Api-Key"
+      }
+    },
+    "schemas": {
+      "Account": {
+        "type": "object",
+        "properties": {
+          "authId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "profileId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "username": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          }
+        }
+      },
+      "AdminUsuarioCreateRequest": {
+        "type": "object",
+        "properties": {
+          "perfilId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "username": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "passwordInicial": {
+            "type": "string"
+          },
+          "rol": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "perfilId",
+          "username",
+          "email",
+          "passwordInicial",
+          "rol"
+        ]
+      },
+      "AdminUsuarioResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "perfilId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "username": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "rol": {
+            "type": "string"
+          },
+          "activo": {
+            "type": "boolean"
+          }
+        }
+      },
+      "AdminUsuarioUpdateRequest": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "rol": {
+            "type": "string"
+          },
+          "activo": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "username",
+          "email",
+          "rol"
+        ]
+      },
+      "AuthUserResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "perfilId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "username": {
+            "type": "string"
+          },
+          "nombres": {
+            "type": "string"
+          },
+          "apellidos": {
+            "type": "string"
+          },
+          "emailInstitucional": {
+            "type": "string"
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "permisos": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "tiposPerfil": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "timestamp": {
+            "type": "string",
+            "description": "Valor Java OffsetDateTime"
+          },
+          "status": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "error": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          }
+        }
+      },
+      "ForgotPasswordRequest": {
+        "type": "object",
+        "properties": {
+          "identifier": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "identifier"
+        ]
+      },
+      "JwtProperties": {
+        "type": "object",
+        "properties": {
+          "issuer": {
+            "type": "string"
+          },
+          "secret": {
+            "type": "string"
+          },
+          "accessTokenExpirationMs": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "refreshTokenExpirationMs": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "required": [
+          "issuer",
+          "secret"
+        ]
+      },
+      "LoginMetadata": {
+        "type": "object",
+        "properties": {
+          "ipAddress": {
+            "type": "string"
+          },
+          "userAgent": {
+            "type": "string"
+          }
+        }
+      },
+      "LoginRequest": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "username",
+          "password"
+        ]
+      },
+      "LoginResponse": {
+        "type": "object",
+        "properties": {
+          "tokenType": {
+            "type": "string"
+          },
+          "accessToken": {
+            "type": "string"
+          },
+          "refreshToken": {
+            "type": "string"
+          },
+          "expiresIn": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "usuario": {
+            "$ref": "#/components/schemas/AuthUserResponse"
+          }
+        }
+      },
+      "MessageResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "PerfilAuthResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "nombres": {
+            "type": "string"
+          },
+          "apellidos": {
+            "type": "string"
+          },
+          "emailInstitucional": {
+            "type": "string"
+          },
+          "activo": {
+            "type": "boolean"
+          },
+          "tiposPerfil": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "Permiso": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "codigo": {
+            "type": "string"
+          },
+          "nombre": {
+            "type": "string"
+          },
+          "descripcion": {
+            "type": "string"
+          },
+          "activo": {
+            "type": "boolean"
+          }
+        }
+      },
+      "RefreshSession": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "usuarioId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "tokenHash": {
+            "type": "string"
+          },
+          "familiaToken": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "emitidoEn": {
+            "type": "string",
+            "description": "Valor Java OffsetDateTime"
+          },
+          "expiraEn": {
+            "type": "string",
+            "description": "Valor Java OffsetDateTime"
+          },
+          "revocado": {
+            "type": "boolean"
+          },
+          "revocadoEn": {
+            "type": "string",
+            "description": "Valor Java OffsetDateTime"
+          },
+          "reemplazadoPor": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "RefreshTokenInfo": {
+        "type": "object",
+        "properties": {
+          "usuarioId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "jti": {
+            "type": "string"
+          },
+          "emitidoEn": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expiraEn": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "RefreshTokenRequest": {
+        "type": "object",
+        "properties": {
+          "refreshToken": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "refreshToken"
+        ]
+      },
+      "ResetPasswordRequest": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string"
+          },
+          "newPassword": {
+            "type": "string"
+          },
+          "confirmPassword": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "token",
+          "newPassword",
+          "confirmPassword"
+        ]
+      },
+      "Rol": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "codigo": {
+            "type": "string"
+          },
+          "nombre": {
+            "type": "string"
+          },
+          "descripcion": {
+            "type": "string"
+          },
+          "activo": {
+            "type": "boolean"
+          },
+          "permisos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Permiso"
+            }
+          }
+        }
+      },
+      "Usuario": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "perfilId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "username": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "passwordHash": {
+            "type": "string"
+          },
+          "activo": {
+            "type": "boolean"
+          },
+          "cuentaBloqueada": {
+            "type": "boolean"
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Rol"
+            }
+          }
+        }
+      },
+      "Window": {
+        "type": "object",
+        "properties": {
+          "until": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "count": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      }
+    }
+  }
+}
